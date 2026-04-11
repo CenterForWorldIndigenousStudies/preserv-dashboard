@@ -1,0 +1,98 @@
+name: Code Quality
+
+on:
+    pull_request:
+        branches: [develop]
+        types: [opened, reopened, synchronize]
+    workflow_dispatch:
+
+jobs:
+    quality:
+        name: Quality
+        timeout-minutes: 15
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Check if PR should skip quality gate
+              id: check-branch
+              run: |
+                  base="${{ github.base_ref }}"
+                  head="${{ github.head_ref }}"
+                  skip=false
+                  if [[ "$base" == "staging" && "$head" == "develop" ]]; then
+                    skip=true
+                  elif [[ "$base" == "main" && "$head" == "staging" ]]; then
+                    skip=true
+                  fi
+                  echo "skip=${skip}" >> $GITHUB_OUTPUT
+                  echo "Base: $base | Head: $head | Skip: $skip"
+              shell: bash
+
+            - name: Get changed files
+              if: steps.check-branch.outputs.skip != 'true'
+              id: changed-files
+              uses: tj-actions/changed-files@v47
+              with:
+                  files: |
+                      **/*
+                  files_ignore: |
+                      CLAUDE.md
+                      .cursorrules
+
+            - name: Should lint docs
+              id: lint-docs
+              if: steps.check-branch.outputs.skip != 'true'
+              run: |
+                  run=false
+                  if [[ "${{ steps.changed-files.outputs.any_modified }}" == "true" ]] || \
+                     [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+                    # Only lint docs if md files changed
+                    if [[ "${{ steps.changed-files.outputs.all_changed_and_modified_files }}" == *"."*"md"* ]]; then
+                      run=true
+                    fi
+                  fi
+                  echo "run=${run}" >> $GITHUB_OUTPUT
+              shell: bash
+
+            - name: Should run build
+              id: check-build
+              if: steps.check-branch.outputs.skip != 'true'
+              run: |
+                  run=false
+                  if [[ "${{ steps.changed-files.outputs.any_modified }}" == "true" ]] || \
+                     [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+                    run=true
+                  fi
+                  echo "run=${run}" >> $GITHUB_OUTPUT
+              shell: bash
+
+            - name: Setup Node.js
+              if: steps.check-build.outputs.run == 'true'
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+                  cache: "npm"
+
+            - name: Install dependencies
+              if: steps.check-build.outputs.run == 'true'
+              run: npm ci
+
+            - name: Build
+              if: steps.check-build.outputs.run == 'true'
+              run: npm run build
+
+            - name: Lint all documentation
+              if: steps.lint-docs.outputs.run == 'true'
+              uses: DavidAnson/markdownlint-cli2-action@v22
+              with:
+                  globs: |
+                      **/*.md
+
+            - name: Default Job Success
+              if: steps.check-build.outputs.run == 'false' && steps.lint-docs.outputs.run == 'false'
+              run: exit 0
+              shell: bash
