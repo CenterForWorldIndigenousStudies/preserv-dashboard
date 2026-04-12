@@ -1,4 +1,4 @@
-export { auth as middleware } from "@/auth";
+export { auth as middleware } from "next-auth/middleware";
 
 export const config = {
   matcher: ["/((?!auth/|api/auth|_next/static|_next/image|favicon.ico).*)"],
