@@ -8,20 +8,6 @@ const handler = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
   ],
-  callbacks: {
-    async session({ session, token }) {
-      if (session.user && token.email) {
-        session.user.email = token.email as string;
-      }
-      return session;
-    },
-    async jwt({ token, account }) {
-      if (account) {
-        token.accessToken = account.access_token;
-      }
-      return token;
-    },
-  },
   pages: {
     signIn: "/auth/signin",
     error: "/auth/error",

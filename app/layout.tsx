@@ -3,7 +3,6 @@ import type { ReactElement, ReactNode } from "react";
 
 import "./globals.css";
 import Providers from "@/components/Providers";
-import AuthStatus from "@/components/AuthStatus";
 
 export const metadata: Metadata = {
   title: "CWIS Preservation Pipeline Dashboard",
@@ -37,7 +36,12 @@ export default function RootLayout({
                     Failures
                   </a>
                 </nav>
-                <AuthStatus />
+                <a
+                  href="/auth/signin"
+                  className="rounded-full bg-moss px-4 py-2 text-sm text-white hover:bg-moss/90"
+                >
+                  Sign In
+                </a>
               </div>
             </header>
             <main className="flex-1">{children}</main>
