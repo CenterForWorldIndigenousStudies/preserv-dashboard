@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   getDocumentDetail,
   updateDocumentCollectionTags,
-} from "@/lib/queries";
+} from "@lib/queries";
 
 interface RouteContext {
   params: Promise<{

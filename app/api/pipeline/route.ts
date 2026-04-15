@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getPipelineSummary } from "@/lib/queries";
+import { getPipelineSummary } from "@lib/queries";
 
 export async function GET(): Promise<NextResponse> {
   try {

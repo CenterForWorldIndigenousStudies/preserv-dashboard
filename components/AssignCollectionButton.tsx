@@ -1,13 +1,23 @@
 "use client";
 
-import type { ReactElement } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type MouseEvent, type ReactElement } from "react";
 
 interface AssignCollectionButtonProps {
   /** The document ID to update */
   documentId: string;
   /** Tags already assigned to this document */
   currentTags: string[];
+}
+
+interface CollectionTagsResponse {
+  collections?: string[];
+  error?: string;
+}
+
+interface SaveCollectionTagsResponse {
+  id?: string;
+  collection_tags?: string[];
+  error?: string;
 }
 
 /**
@@ -41,7 +51,7 @@ export function AssignCollectionButton({
     setError(null);
 
     fetch(`/api/documents/${documentId}/collections`)
-      .then((res) => res.json())
+      .then(async (res): Promise<CollectionTagsResponse> => res.json() as Promise<CollectionTagsResponse>)
       .then((data) => {
         if (data.error) {
           setError(data.error);
@@ -94,7 +104,7 @@ export function AssignCollectionButton({
         body: JSON.stringify({ collection_tags: tagsToSave }),
       });
 
-      const data = await res.json();
+      const data = await res.json() as SaveCollectionTagsResponse;
 
       if (!res.ok) {
         setError(data.error ?? "Failed to save collection tags.");
@@ -201,7 +211,9 @@ export function AssignCollectionButton({
                     {availableTags.map((tag) => (
                       <button
                         key={tag}
-                        onClick={() => toggleTag(tag)}
+                        onClick={() => {
+                          toggleTag(tag);
+                        }}
                         className={`rounded-full px-3 py-1 text-sm transition-colors ${selectedTags.includes(tag) ? "bg-moss text-white" : "bg-sand text-ink hover:bg-sky"}`}
                       >
                         {tag}
@@ -258,7 +270,9 @@ export function AssignCollectionButton({
                       >
                         {tag}
                         <button
-                          onClick={() => toggleTag(tag)}
+                          onClick={() => {
+                            toggleTag(tag);
+                          }}
                           className="ml-1 rounded-full hover:bg-moss/20"
                           aria-label={`Remove ${tag}`}
                         >
@@ -284,7 +298,9 @@ export function AssignCollectionButton({
             Cancel
           </button>
           <button
-            onClick={handleSave}
+            onClick={(_event: MouseEvent<HTMLButtonElement>) => {
+              void handleSave();
+            }}
             disabled={isLoading || selectedTags.length === 0}
             className="rounded-full bg-moss px-5 py-2 text-sm font-medium text-white hover:bg-moss/80 disabled:cursor-not-allowed disabled:opacity-50"
           >

@@ -1,8 +1,8 @@
 import type { ReactElement } from "react";
 import Link from "next/link";
 
-import { formatBytes, formatDateTime } from "@/lib/format";
-import type { Document } from "@/lib/types";
+import { formatBytes, formatDateTime } from "@lib/format";
+import type { Document } from "@lib/types";
 
 interface DocumentTableProps {
   documents: Document[];

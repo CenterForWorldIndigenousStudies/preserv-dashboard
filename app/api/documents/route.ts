@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getDocuments } from "@/lib/queries";
+import { getDocuments } from "@lib/queries";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {

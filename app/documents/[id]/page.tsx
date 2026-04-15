@@ -2,10 +2,10 @@ import type { ReactElement } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { AssignCollectionButton } from "@/components/AssignCollectionButton";
-import { PageHeader } from "@/components/PageHeader";
-import { formatBytes, formatDateTime, formatMetadataValue } from "@/lib/format";
-import { getDocumentDetail } from "@/lib/queries";
+import { AssignCollectionButton } from "@components/AssignCollectionButton";
+import { PageHeader } from "@components/PageHeader";
+import { formatBytes, formatDateTime, formatMetadataValue } from "@lib/format";
+import { getDocumentDetail } from "@lib/queries";
 
 export const dynamic = "force-dynamic";
 

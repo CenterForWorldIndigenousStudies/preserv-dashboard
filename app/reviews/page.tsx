@@ -1,10 +1,10 @@
 import type { ReactElement } from "react";
 import Link from "next/link";
 
-import { PageHeader } from "@/components/PageHeader";
-import { Pagination } from "@/components/Pagination";
-import { formatDateTime } from "@/lib/format";
-import { getDistinctReviewFields, getPageSize, getReviewQueue } from "@/lib/queries";
+import { PageHeader } from "@components/PageHeader";
+import { Pagination } from "@components/Pagination";
+import { formatDateTime } from "@lib/format";
+import { getDistinctReviewFields, getPageSize, getReviewQueue } from "@lib/queries";
 
 export const dynamic = "force-dynamic";
 
