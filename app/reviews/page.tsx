@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 import Link from "next/link";
 
+import { NoDataState } from "@components/NoDataState";
 import { PageHeader } from "@components/PageHeader";
 import { Pagination } from "@components/Pagination";
 import { formatDateTime } from "@lib/format";
@@ -41,147 +42,164 @@ export default async function ReviewsPage({ searchParams }: ReviewsPageProps): P
   const field = resolvedSearchParams.field;
   const page = Number(resolvedSearchParams.page ?? "1");
 
-  const [reviewResult, fieldOptions] = await Promise.all([
-    getReviewQueue({
-      status,
-      field,
-      page,
-    }),
-    getDistinctReviewFields(),
-  ]);
+  try {
+    const [reviewResult, fieldOptions] = await Promise.all([
+      getReviewQueue({
+        status,
+        field,
+        page,
+      }),
+      getDistinctReviewFields(),
+    ]);
 
-  const statuses = ["pending", "in_progress", "resolved"];
+    const statuses = ["pending", "in_progress", "resolved"];
 
-  return (
-    <div className="space-y-8">
-      <PageHeader
-        eyebrow="Human Review Queue"
-        title="Resolve metadata conflicts before final completion."
-        description="Review items are sorted by newest first and can be filtered by status or field name. Each row links back to the document detail page."
-      />
-
-      <section className="space-y-4">
-        <div className="rounded-2xl border border-moss/15 bg-white p-5 shadow-panel">
-          <div className="flex flex-col gap-4">
-            <div>
-              <p className="text-sm font-medium text-ink">Status</p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <Link
-                  href={buildReviewsHref(undefined, field, 1)}
-                  className={`rounded-full px-4 py-2 text-sm ${
-                    !status ? "bg-moss text-white" : "bg-sand text-ink hover:bg-sky"
-                  }`}
-                >
-                  All
-                </Link>
-                {statuses.map((statusOption) => (
-                  <Link
-                    key={statusOption}
-                    href={buildReviewsHref(statusOption, field, 1)}
-                    className={`rounded-full px-4 py-2 text-sm ${
-                      status === statusOption ? "bg-moss text-white" : "bg-sand text-ink hover:bg-sky"
-                    }`}
-                  >
-                    {statusOption}
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <p className="text-sm font-medium text-ink">Field Name</p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <Link
-                  href={buildReviewsHref(status, undefined, 1)}
-                  className={`rounded-full px-4 py-2 text-sm ${
-                    !field ? "bg-moss text-white" : "bg-sand text-ink hover:bg-sky"
-                  }`}
-                >
-                  All Fields
-                </Link>
-                {fieldOptions.map((fieldOption) => (
-                  <Link
-                    key={fieldOption}
-                    href={buildReviewsHref(status, fieldOption, 1)}
-                    className={`rounded-full px-4 py-2 text-sm ${
-                      field === fieldOption ? "bg-moss text-white" : "bg-sand text-ink hover:bg-sky"
-                    }`}
-                  >
-                    {fieldOption}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="overflow-hidden rounded-2xl border border-moss/15 bg-white shadow-panel">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-moss/10 text-sm">
-              <thead className="bg-sand/55 text-left text-xs uppercase tracking-[0.15em] text-ink/70">
-                <tr>
-                  <th className="px-4 py-3">Document ID</th>
-                  <th className="px-4 py-3">Filename</th>
-                  <th className="px-4 py-3">Field</th>
-                  <th className="px-4 py-3">Conflicting Values</th>
-                  <th className="px-4 py-3">Winning Source</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Created</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-moss/10">
-                {reviewResult.items.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-ink/60">
-                      No review items matched the current filters.
-                    </td>
-                  </tr>
-                ) : (
-                  reviewResult.items.map((reviewItem) => (
-                    <tr key={reviewItem.id} className="align-top">
-                      <td className="px-4 py-3 font-medium text-moss">
-                        <Link href={`/documents/${reviewItem.document_id}`} className="hover:text-ink">
-                          {reviewItem.document_id}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-3 text-ink">{reviewItem.filename || "—"}</td>
-                      <td className="px-4 py-3 text-ink">{reviewItem.field_name}</td>
-                      <td className="px-4 py-3">
-                        <div className="grid gap-2 md:grid-cols-2">
-                          {reviewItem.conflicting_values.length === 0 ? (
-                            <p className="text-ink/55">No conflict payload</p>
-                          ) : (
-                            reviewItem.conflicting_values.map((conflictValue, index) => (
-                              <div key={`${reviewItem.id}-${index}`} className="rounded-xl bg-sand/60 p-3">
-                                <p className="text-xs uppercase tracking-[0.15em] text-ink/60">{conflictValue.source}</p>
-                                <p className="mt-2 whitespace-pre-wrap text-ink">{conflictValue.value || "—"}</p>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-ink">{reviewItem.winning_source || "—"}</td>
-                      <td className="px-4 py-3">
-                        <span className="rounded-full bg-sky px-3 py-1 text-xs font-medium uppercase tracking-[0.15em] text-ink">
-                          {reviewItem.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-ink/70">{formatDateTime(reviewItem.created_at)}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <Pagination
-          currentPage={Number.isNaN(page) || page < 1 ? 1 : page}
-          totalItems={reviewResult.total}
-          pageSize={getPageSize()}
-          buildHref={(nextPage: number) => buildReviewsHref(status, field, nextPage)}
+    return (
+      <div className="space-y-8">
+        <PageHeader
+          eyebrow="Human Review Queue"
+          title="Resolve metadata conflicts before final completion."
+          description="Review items are sorted by newest first and can be filtered by status or field name. Each row links back to the document detail page."
         />
-      </section>
-    </div>
-  );
+
+        {reviewResult.total === 0 && fieldOptions.length === 0 && !status && !field ? (
+          <NoDataState message="The database is reachable, but there are no review records to display yet." />
+        ) : (
+          <section className="space-y-4">
+            <div className="rounded-2xl border border-moss/15 bg-white p-5 shadow-panel">
+              <div className="flex flex-col gap-4">
+                <div>
+                  <p className="text-sm font-medium text-ink">Status</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <Link
+                      href={buildReviewsHref(undefined, field, 1)}
+                      className={`rounded-full px-4 py-2 text-sm ${
+                        !status ? "bg-moss text-white" : "bg-sand text-ink hover:bg-sky"
+                      }`}
+                    >
+                      All
+                    </Link>
+                    {statuses.map((statusOption) => (
+                      <Link
+                        key={statusOption}
+                        href={buildReviewsHref(statusOption, field, 1)}
+                        className={`rounded-full px-4 py-2 text-sm ${
+                          status === statusOption ? "bg-moss text-white" : "bg-sand text-ink hover:bg-sky"
+                        }`}
+                      >
+                        {statusOption}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-sm font-medium text-ink">Field Name</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <Link
+                      href={buildReviewsHref(status, undefined, 1)}
+                      className={`rounded-full px-4 py-2 text-sm ${
+                        !field ? "bg-moss text-white" : "bg-sand text-ink hover:bg-sky"
+                      }`}
+                    >
+                      All Fields
+                    </Link>
+                    {fieldOptions.map((fieldOption) => (
+                      <Link
+                        key={fieldOption}
+                        href={buildReviewsHref(status, fieldOption, 1)}
+                        className={`rounded-full px-4 py-2 text-sm ${
+                          field === fieldOption ? "bg-moss text-white" : "bg-sand text-ink hover:bg-sky"
+                        }`}
+                      >
+                        {fieldOption}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-2xl border border-moss/15 bg-white shadow-panel">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-moss/10 text-sm">
+                  <thead className="bg-sand/55 text-left text-xs uppercase tracking-[0.15em] text-ink/70">
+                    <tr>
+                      <th className="px-4 py-3">Document ID</th>
+                      <th className="px-4 py-3">Filename</th>
+                      <th className="px-4 py-3">Field</th>
+                      <th className="px-4 py-3">Conflicting Values</th>
+                      <th className="px-4 py-3">Winning Source</th>
+                      <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3">Created</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-moss/10">
+                    {reviewResult.items.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="px-4 py-8 text-center text-ink/60">
+                          No review items matched the current filters.
+                        </td>
+                      </tr>
+                    ) : (
+                      reviewResult.items.map((reviewItem) => (
+                        <tr key={reviewItem.id} className="align-top">
+                          <td className="px-4 py-3 font-medium text-moss">
+                            <Link href={`/documents/${reviewItem.document_id}`} className="hover:text-ink">
+                              {reviewItem.document_id}
+                            </Link>
+                          </td>
+                          <td className="px-4 py-3 text-ink">{reviewItem.filename || "—"}</td>
+                          <td className="px-4 py-3 text-ink">{reviewItem.field_name}</td>
+                          <td className="px-4 py-3">
+                            <div className="grid gap-2 md:grid-cols-2">
+                              {reviewItem.conflicting_values.length === 0 ? (
+                                <p className="text-ink/55">No conflict payload</p>
+                              ) : (
+                                reviewItem.conflicting_values.map((conflictValue, index) => (
+                                  <div key={`${reviewItem.id}-${index}`} className="rounded-xl bg-sand/60 p-3">
+                                    <p className="text-xs uppercase tracking-[0.15em] text-ink/60">{conflictValue.source}</p>
+                                    <p className="mt-2 whitespace-pre-wrap text-ink">{conflictValue.value || "—"}</p>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-ink">{reviewItem.winning_source || "—"}</td>
+                          <td className="px-4 py-3">
+                            <span className="rounded-full bg-sky px-3 py-1 text-xs font-medium uppercase tracking-[0.15em] text-ink">
+                              {reviewItem.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-ink/70">{formatDateTime(reviewItem.created_at)}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <Pagination
+              currentPage={Number.isNaN(page) || page < 1 ? 1 : page}
+              totalItems={reviewResult.total}
+              pageSize={getPageSize()}
+              buildHref={(nextPage: number) => buildReviewsHref(status, field, nextPage)}
+            />
+          </section>
+        )}
+      </div>
+    );
+  } catch {
+    return (
+      <div className="space-y-8">
+        <PageHeader
+          eyebrow="Human Review Queue"
+          title="Resolve metadata conflicts before final completion."
+          description="Review items are sorted by newest first and can be filtered by status or field name. Each row links back to the document detail page."
+        />
+        <NoDataState message="No data is available right now. The database may be empty, unavailable, or still being initialized." />
+      </div>
+    );
+  }
 }
