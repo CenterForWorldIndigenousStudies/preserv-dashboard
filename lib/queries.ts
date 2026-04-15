@@ -76,6 +76,14 @@ interface FailureRow extends DocumentRow {
   metadata: string | null;
 }
 
+interface ReviewFieldRow extends RowDataPacket {
+  field_name: string;
+}
+
+interface CollectionTagsRow extends RowDataPacket {
+  collection_tags: string | null;
+}
+
 function parseJsonValue(value: string | null): unknown {
   if (!value) {
     return null;
@@ -344,7 +352,7 @@ export async function getReviewQueue(
 }
 
 export async function getDistinctReviewFields(): Promise<string[]> {
-  const [rows] = await pool.execute<RowDataPacket[]>(
+  const [rows] = await pool.execute<ReviewFieldRow[]>(
     `
       SELECT DISTINCT field_name
       FROM document_reviews
@@ -474,7 +482,7 @@ export async function getFailures(): Promise<FailureItem[]> {
 }
 
 export async function getDistinctCollectionTags(): Promise<string[]> {
-  const [rows] = await pool.execute<RowDataPacket[]>(
+  const [rows] = await pool.execute<CollectionTagsRow[]>(
     `
       SELECT DISTINCT collection_tags
       FROM documents

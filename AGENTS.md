@@ -14,7 +14,7 @@ This is a Next.js dashboard application for the CWIS Digital Preservation system
 
 ## Project Structure
 
-```
+```layout
 app/              # Next.js App Router pages and layouts
 components/       # React components
 lib/              # Utility functions and shared logic
@@ -31,6 +31,7 @@ types/            # TypeScript type definitions
 ## Deployment
 
 This project uses Vercel's native GitHub integration for automatic deployments:
+
 - `develop` branch → Vercel staging preview
 - `main` branch → Vercel production
 
@@ -39,6 +40,7 @@ No GitHub Actions deploy workflows needed - Vercel handles all deployments autom
 ## GitHub Actions
 
 Only `code-quality.yml` runs on PRs to `develop`. It checks:
+
 - Build succeeds
 - No lint errors in changed files
 

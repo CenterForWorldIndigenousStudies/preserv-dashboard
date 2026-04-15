@@ -29,7 +29,9 @@ export default function AuthStatus() {
         {session?.user?.email}
       </span>
       <button
-        onClick={() => signOut({ redirectTo: "/auth/signin" })}
+        onClick={() => {
+          void signOut({ redirectTo: "/auth/signin" });
+        }}
         className="rounded-full bg-ink/10 px-4 py-2 text-sm text-ink hover:bg-ink/20"
       >
         Sign Out

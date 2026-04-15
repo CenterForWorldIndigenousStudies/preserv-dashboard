@@ -20,11 +20,11 @@ cp .env.local.example .env.local
 npm run dev
 ```
 
-Open http://localhost:3000
+Open <http://localhost:3000>
 
 ## Environment Variables
 
-```
+```.env
 MYSQL_HOST=your-mysql-host
 MYSQL_PORT=3306
 MYSQL_DATABASE=cwis_preservation
@@ -46,7 +46,7 @@ MYSQL_PASSWORD=your-password
 
 The dashboard uses Auth.js (`next-auth` v5) with Google OAuth. Only CWIS team members with Google accounts can sign in.
 
-### Setup
+### Auth Setup
 
 1. Copy `.env.local.example` to `.env.local`
 2. Create a Google OAuth 2.0 Client ID:
@@ -58,7 +58,7 @@ The dashboard uses Auth.js (`next-auth` v5) with Google OAuth. Only CWIS team me
 4. Set `NEXTAUTH_URL` to your deployment URL
 5. Run `npm run dev` and navigate to `http://localhost:3000`
 
-### Environment Variables
+### Auth Environment Variables
 
 ```env
 GOOGLE_CLIENT_ID=your-client-id
