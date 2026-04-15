@@ -1,9 +1,9 @@
 import type { ReactElement } from "react";
 import Link from "next/link";
 
-import { PageHeader } from "@/components/PageHeader";
-import { formatDateTime } from "@/lib/format";
-import { getFailures } from "@/lib/queries";
+import { PageHeader } from "@components/PageHeader";
+import { formatDateTime } from "@lib/format";
+import { getFailures } from "@lib/queries";
 
 export const dynamic = "force-dynamic";
 

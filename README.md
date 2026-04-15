@@ -40,11 +40,11 @@ MYSQL_PASSWORD=your-password
 - Processing failures view
 - MySQL connection via mysql2 with connection pooling
 - API routes for all data fetching
-- Google OAuth via NextAuth.js (sign in required)
+- Google OAuth via Auth.js (`next-auth` v5, sign in required)
 
 ## Authentication
 
-The dashboard uses NextAuth.js with Google OAuth. Only CWIS team members with Google accounts can sign in.
+The dashboard uses Auth.js (`next-auth` v5) with Google OAuth. Only CWIS team members with Google accounts can sign in.
 
 ### Setup
 

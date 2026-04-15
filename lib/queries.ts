@@ -1,6 +1,6 @@
 import type { ResultSetHeader, RowDataPacket } from "mysql2";
 
-import pool from "@/lib/db";
+import pool from "@lib/db";
 import type {
   AuditEntry,
   Document,
@@ -13,7 +13,7 @@ import type {
   ReviewConflictValue,
   ReviewItem,
   ReviewQueryParams,
-} from "@/lib/types";
+} from "@lib/types";
 
 const PAGE_SIZE = 20;
 const ALLOWED_STATES = new Set(["ingested", "normalized", "under_review", "completed", "failed"]);

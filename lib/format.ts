@@ -1,4 +1,4 @@
-import type { MetadataRecord } from "@/lib/types";
+import type { MetadataRecord } from "@lib/types";
 
 export function formatDateTime(value: string | null): string {
   if (!value) {

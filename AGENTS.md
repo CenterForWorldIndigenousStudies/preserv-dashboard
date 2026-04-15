@@ -1,4 +1,4 @@
-# CLAUDE.md - Preservation Dashboard
+# Preservation Dashboard
 
 ## Project Overview
 
@@ -6,11 +6,11 @@ This is a Next.js dashboard application for the CWIS Digital Preservation system
 
 ## Tech Stack
 
-- **Framework:** Next.js 15 (App Router)
-- **Language:** TypeScript
-- **Styling:** Tailwind CSS
-- **Auth:** NextAuth.js with Google OAuth (see `.env.local.example`)
-- **Runtime:** Node.js 20+
+- **Framework:** Next.js 16 (App Router - see `package.json` for version)
+- **Language:** TypeScript (see `package.json` for version)
+- **Styling:** Tailwind CSS (see `package.json` for version)
+- **Auth:** Auth.js (`next-auth` v5) with Google OAuth (see `.env.local.example`)
+- **Runtime:** Node.js (see `.tool-versions` for version)
 
 ## Project Structure
 
