@@ -2,18 +2,22 @@ import type { Metadata } from "next";
 import type { ReactElement, ReactNode } from "react";
 
 import "./globals.css";
+import AuthStatus from "@components/AuthStatus";
 import Providers from "@components/Providers";
+import { auth } from "@root/auth";
 
 export const metadata: Metadata = {
   title: "CWIS Preservation Pipeline Dashboard",
   description: "Operational dashboard for CWIS preservation pipeline documents, reviews, and failures.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: ReactNode;
-}>): ReactElement {
+}>): Promise<ReactElement> {
+  const session = await auth();
+
   return (
     <html lang="en">
       <body className="font-['Avenir_Next','Trebuchet_MS',sans-serif] antialiased">
@@ -25,23 +29,20 @@ export default function RootLayout({
                 <p className="mt-2 text-2xl font-semibold text-ink">Preservation Pipeline Dashboard</p>
               </div>
               <div className="flex items-center gap-4">
-                <nav className="flex flex-wrap gap-3 text-sm">
-                  <a href="/" className="rounded-full bg-sand px-4 py-2 text-ink hover:bg-sky">
-                    Overview
-                  </a>
-                  <a href="/reviews" className="rounded-full bg-sand px-4 py-2 text-ink hover:bg-sky">
-                    Review Queue
-                  </a>
-                  <a href="/failures" className="rounded-full bg-sand px-4 py-2 text-ink hover:bg-sky">
-                    Failures
-                  </a>
-                </nav>
-                <a
-                  href="/auth/signin"
-                  className="rounded-full bg-moss px-4 py-2 text-sm text-white hover:bg-moss/90"
-                >
-                  Sign In
-                </a>
+                {session && (
+                  <nav className="flex flex-wrap gap-3 text-sm">
+                    <a href="/" className="rounded-full bg-sand px-4 py-2 text-ink hover:bg-sky">
+                      Overview
+                    </a>
+                    <a href="/reviews" className="rounded-full bg-sand px-4 py-2 text-ink hover:bg-sky">
+                      Review Queue
+                    </a>
+                    <a href="/failures" className="rounded-full bg-sand px-4 py-2 text-ink hover:bg-sky">
+                      Failures
+                    </a>
+                  </nav>
+                )}
+                <AuthStatus />
               </div>
             </header>
             <main className="flex-1">{children}</main>

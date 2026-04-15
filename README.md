@@ -52,20 +52,53 @@ The dashboard uses Auth.js (`next-auth` v5) with Google OAuth. Only CWIS team me
 2. Create a Google OAuth 2.0 Client ID:
    - Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
    - Create an OAuth 2.0 Client ID (Web application type)
-   - Add authorized redirect URI: `https://your-domain.vercel.app/api/auth/callback/google`
+   - Add local authorized redirect URI: `http://localhost:3000/api/auth/callback/google`
+   - Add production authorized redirect URI: `https://your-domain.vercel.app/api/auth/callback/google`
    - Copy Client ID and Client Secret to `.env.local`
-3. Generate a NEXTAUTH_SECRET: `openssl rand -base64 32`
-4. Set `NEXTAUTH_URL` to your deployment URL
+3. Generate an Auth.js secret: `openssl rand -base64 32`
+4. Set `AUTH_URL` to your deployment URL
 5. Run `npm run dev` and navigate to `http://localhost:3000`
 
 ### Auth Environment Variables
 
 ```env
-GOOGLE_CLIENT_ID=your-client-id
-GOOGLE_CLIENT_SECRET=your-client-secret
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your-secret
+AUTH_GOOGLE_ID=your-client-id
+AUTH_GOOGLE_SECRET=your-client-secret
+AUTH_URL=http://localhost:3000
+AUTH_SECRET=your-secret
 ```
+
+### Vercel Deployment Environment Variables
+
+Set these in Vercel for the environments you deploy:
+
+```env
+AUTH_GOOGLE_ID=your-google-client-id
+AUTH_GOOGLE_SECRET=your-google-client-secret
+AUTH_SECRET=your-auth-secret
+AUTH_URL=https://your-domain.com
+MYSQL_HOST=your-mysql-host
+MYSQL_PORT=3306
+MYSQL_DATABASE=cwis_preservation
+MYSQL_USER=your-user
+MYSQL_PASSWORD=your-password
+```
+
+Notes:
+
+- Set `AUTH_URL` to the exact production domain users will visit.
+- If you use the Vercel default domain instead of a custom domain, use `https://your-project.vercel.app`.
+- If you want OAuth to work on any additional domains, those domains must also be configured in Google Cloud.
+
+### Google OAuth Redirect URIs
+
+In Google Cloud Console, add an authorized redirect URI for each domain that should support sign-in:
+
+- `http://localhost:3000/api/auth/callback/google`
+- `https://your-domain.com/api/auth/callback/google`
+- `https://your-project.vercel.app/api/auth/callback/google` if you use the Vercel default domain directly
+
+If you use Vercel preview deployments, Google OAuth will not work on arbitrary preview URLs unless each preview URL is explicitly registered or you add an OAuth redirect proxy strategy.
 
 ## CI/CD
 

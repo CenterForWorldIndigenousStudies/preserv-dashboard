@@ -1,4 +1,7 @@
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
+
+import { auth } from "@root/auth";
 
 import { SignInContent } from "./SignInContent";
 
@@ -14,7 +17,13 @@ function SignInFallback() {
   );
 }
 
-export default function SignInPage() {
+export default async function SignInPage() {
+  const session = await auth();
+
+  if (session) {
+    redirect("/");
+  }
+
   return (
     <Suspense fallback={<SignInFallback />}>
       <SignInContent />
