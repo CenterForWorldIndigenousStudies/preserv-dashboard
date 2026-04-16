@@ -84,6 +84,12 @@ interface CollectionTagsRow extends RowDataPacket {
   collection_tags: string | null;
 }
 
+interface ColumnDefinitionRow extends RowDataPacket {
+  Field: string;
+}
+
+let documentColumnsPromise: Promise<Set<string>> | null = null;
+
 function parseJsonValue(value: string | null): unknown {
   if (!value) {
     return null;
@@ -220,6 +226,43 @@ export function getPageSize(): number {
   return PAGE_SIZE;
 }
 
+async function getDocumentColumns(): Promise<Set<string>> {
+  if (!documentColumnsPromise) {
+    documentColumnsPromise = pool
+      .query<ColumnDefinitionRow[]>("SHOW COLUMNS FROM documents")
+      .then(([rows]) => new Set(rows.map((row) => row.Field)))
+      .catch((error: unknown) => {
+        documentColumnsPromise = null;
+        throw error;
+      });
+  }
+
+  return documentColumnsPromise;
+}
+
+function getDocumentSelectClause(columns: Set<string>, tableAlias?: string): string {
+  const prefix = tableAlias ? `${tableAlias}.` : "";
+
+  return [
+    `${prefix}id`,
+    `${prefix}filename`,
+    `${prefix}filesize`,
+    `${prefix}filetype`,
+    `${prefix}original_url`,
+    `${prefix}created_at`,
+    `${prefix}updated_at`,
+    `${prefix}file_folder_url`,
+    `${prefix}original_parent_folder`,
+    `${prefix}parent_id`,
+    `${prefix}duplicates`,
+    `${prefix}collection_tags`,
+    `${prefix}state`,
+    `${prefix}ingested_at`,
+    `${prefix}is_primary`,
+    columns.has("drive_file_id") ? `${prefix}drive_file_id` : "NULL AS drive_file_id",
+  ].join(",\n        ");
+}
+
 export async function getPipelineSummary(): Promise<PipelineSummary> {
   const [totalRows] = await pool.execute<CountRow[]>("SELECT COUNT(*) AS total FROM documents");
   const [stateRows] = await pool.execute<PipelineRow[]>(
@@ -250,6 +293,7 @@ export async function getDocuments(params: DocumentQueryParams = {}): Promise<Pa
   const offset = (page - 1) * PAGE_SIZE;
   const whereClause = state ? "WHERE state = ?" : "";
   const whereParams: Array<string | number> = state ? [state] : [];
+  const documentColumns = await getDocumentColumns();
 
   const [countRows] = await pool.execute<CountRow[]>(
     `SELECT COUNT(*) AS total FROM documents ${whereClause}`,
@@ -259,22 +303,7 @@ export async function getDocuments(params: DocumentQueryParams = {}): Promise<Pa
   const [documentRows] = await pool.execute<DocumentRow[]>(
     `
       SELECT
-        id,
-        filename,
-        filesize,
-        filetype,
-        original_url,
-        created_at,
-        updated_at,
-        file_folder_url,
-        original_parent_folder,
-        parent_id,
-        duplicates,
-        collection_tags,
-        state,
-        ingested_at,
-        is_primary,
-        drive_file_id
+        ${getDocumentSelectClause(documentColumns)}
       FROM documents
       ${whereClause}
       ORDER BY created_at DESC
@@ -367,25 +396,12 @@ export async function getDistinctReviewFields(): Promise<string[]> {
 }
 
 export async function getDocumentDetail(documentId: string): Promise<DocumentDetail | null> {
+  const documentColumns = await getDocumentColumns();
+
   const [documentRows] = await pool.execute<DocumentRow[]>(
     `
       SELECT
-        id,
-        filename,
-        filesize,
-        filetype,
-        original_url,
-        created_at,
-        updated_at,
-        file_folder_url,
-        original_parent_folder,
-        parent_id,
-        duplicates,
-        collection_tags,
-        state,
-        ingested_at,
-        is_primary,
-        drive_file_id
+        ${getDocumentSelectClause(documentColumns)}
       FROM documents
       WHERE id = ?
       LIMIT 1
@@ -447,25 +463,12 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
 }
 
 export async function getFailures(): Promise<FailureItem[]> {
+  const documentColumns = await getDocumentColumns();
+
   const [rows] = await pool.execute<FailureRow[]>(
     `
       SELECT
-        d.id,
-        d.filename,
-        d.filesize,
-        d.filetype,
-        d.original_url,
-        d.created_at,
-        d.updated_at,
-        d.file_folder_url,
-        d.original_parent_folder,
-        d.parent_id,
-        d.duplicates,
-        d.collection_tags,
-        d.state,
-        d.ingested_at,
-        d.is_primary,
-        d.drive_file_id,
+        ${getDocumentSelectClause(documentColumns, "d")},
         m.metadata
       FROM documents d
       LEFT JOIN document_metadata m ON m.document_id = d.id
