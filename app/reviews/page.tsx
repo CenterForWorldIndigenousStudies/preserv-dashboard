@@ -1,9 +1,9 @@
 import type { ReactElement } from "react";
 import Link from "next/link";
 
-import { NoDataState } from "@components/NoDataState";
-import { PageHeader } from "@components/PageHeader";
-import { Pagination } from "@components/Pagination";
+import { NoDataState } from "@organisms/NoDataState";
+import { PageHeader } from "@organisms/PageHeader";
+import { Pagination } from "@molecules/Pagination";
 import { formatDateTime } from "@lib/format";
 import { getDistinctReviewFields, getPageSize, getReviewQueue } from "@lib/queries";
 

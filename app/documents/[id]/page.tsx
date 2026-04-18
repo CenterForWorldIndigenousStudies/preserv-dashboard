@@ -1,9 +1,9 @@
 import type { ReactElement } from "react";
 import Link from "next/link";
 
-import { AssignCollectionButton } from "@components/AssignCollectionButton";
-import { NoDataState } from "@components/NoDataState";
-import { PageHeader } from "@components/PageHeader";
+import { AssignCollectionButton } from "@organisms/AssignCollectionButton";
+import { NoDataState } from "@organisms/NoDataState";
+import { PageHeader } from "@organisms/PageHeader";
 import { formatBytes, formatDateTime, formatMetadataValue } from "@lib/format";
 import { getDocumentDetail } from "@lib/queries";
 

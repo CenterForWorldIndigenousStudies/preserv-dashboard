@@ -1,11 +1,11 @@
 import type { ReactElement } from "react";
 import Link from "next/link";
 
-import { DocumentTable } from "@components/DocumentTable";
-import { NoDataState } from "@components/NoDataState";
-import { PageHeader } from "@components/PageHeader";
-import { Pagination } from "@components/Pagination";
-import { StatCard } from "@components/StatCard";
+import { DocumentTable } from "@organisms/DocumentTable";
+import { NoDataState } from "@organisms/NoDataState";
+import { PageHeader } from "@organisms/PageHeader";
+import { Pagination } from "@molecules/Pagination";
+import { StatCard } from "@molecules/StatCard";
 import { getDocuments, getPageSize, getPipelineSummary } from "@lib/queries";
 
 export const dynamic = "force-dynamic";
