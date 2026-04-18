@@ -7,9 +7,21 @@ import { PanelLeftClose, PanelLeft } from "lucide-react";
 
 interface LayoutBodyProps {
   children: ReactNode;
+  isAuthenticated?: boolean;
 }
 
-export default function LayoutBody({ children }: LayoutBodyProps) {
+export default function LayoutBody({ children, isAuthenticated }: LayoutBodyProps) {
+  // Unauthenticated: render minimal layout without sidebar
+  if (isAuthenticated === false) {
+    return (
+      <div className="flex h-screen overflow-hidden">
+        <main className="flex-1 overflow-y-auto px-4 py-6 md:px-6 md:py-8 lg:px-8">
+          <div className="mx-auto max-w-7xl">{children}</div>
+        </main>
+      </div>
+    );
+  }
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 

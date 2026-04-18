@@ -16,7 +16,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: ReactNode;
 }>): Promise<ReactElement> {
-  await auth();
+  const session = await auth();
 
   return (
     <html lang="en">
@@ -28,7 +28,7 @@ export default async function RootLayout({
       </head>
       <body className="font-sans antialiased">
         <Providers>
-          <LayoutBody>{children}</LayoutBody>
+          <LayoutBody isAuthenticated={!!session}>{children}</LayoutBody>
         </Providers>
       </body>
     </html>
