@@ -53,17 +53,20 @@ components/
 ### Layers
 
 **Atoms** - Smallest, reusable primitives. No internal state. Examples:
+
 - Badge.tsx - Pill-shaped state indicator
 - Button.tsx - Base button variants (ButtonPrimary, ButtonSecondary, ButtonGhost)
 - LoadingSpinner.tsx - Animated SVG spinner
 
 **Molecules** - Composed from atoms. May have minimal state. Examples:
+
 - StatCard.tsx - KPI card with title and value
 - Pagination.tsx - Previous/Next controls
 - AuthStatus.tsx - Sign in/out display
 - SidebarToggle.tsx - Mobile hamburger button
 
 **Organisms** - Complex components made of atoms and molecules. Own significant logic. Examples:
+
 - PageHeader.tsx - Full page header with eyebrow, title, description
 - NoDataState.tsx - Empty state display
 - DocumentTable.tsx - Data table with rows and columns
@@ -120,13 +123,44 @@ documentation/db/
 - Prefer `export function` named exports over `export default` for components
 - Use `next/link` for internal navigation, never raw `<a>` tags for app routes
 
-## Key Conventions
+## Component Library (Storybook)
 
-- Unauthenticated requests redirect to `/auth/signin`
-- Use Auth.js v5 with Google OAuth for authentication
-- Auth config lives in `auth.ts`; route handlers re-export from `app/api/auth/[...nextauth]/route.ts`
-- Route protection lives in `proxy.ts`, not `middleware.ts`
-- All API routes and pages behind auth via proxy
+Storybook provides an interactive component library for development and documentation. The static build is served by Next.js at `/storybook` (output goes to `public/storybook/`).
+
+### Running Storybook
+
+```bash
+npm run storybook       # Dev server on http://localhost:6006
+npm run build-storybook # Production static build → public/storybook/
+npm run storybook-preview  # Preview production build on port 6006
+```
+
+### Dev Workflow
+
+Run `npm run dev` (Next.js on :3000) and `npm run storybook` (:6006) side by side. Storybook's dev server proxies to Next.js for component rendering.
+
+### Story Files
+
+Stories live alongside their components using the `*.stories.tsx` convention:
+
+```layout
+components/
+  atoms/Badge.stories.tsx
+  molecules/StatCard.stories.tsx
+  organisms/PageHeader.stories.tsx
+  organisms/NoDataState.stories.tsx
+```
+
+### Component Library Page
+
+The `/developers/component-library` page (behind Google OAuth) is the entry point and developer hub. It links to `/storybook` where the static build is served.
+
+### Architecture
+
+- Storybook builds to `public/storybook/` so Next.js serves it as static files at `/storybook`
+- No iframe needed in production -- the page links directly to `/storybook`
+- In dev mode, the page shows the dev Storybook URL (`localhost:6006`)
+- `staticDirs: ['../public']` in `.storybook/main.ts` ensures Storybook can access public assets
 
 ## Environment Notes
 

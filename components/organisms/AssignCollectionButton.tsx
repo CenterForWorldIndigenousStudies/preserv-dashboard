@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState, type MouseEvent, type ReactElement } from "react";
 
+import { IconX } from "@atoms/IconX";
+import { InlineSpinner } from "@atoms/InlineSpinner";
+import { TagPill } from "@molecules/TagPill";
+
 interface AssignCollectionButtonProps {
   /** The document ID to update */
   documentId: string;
@@ -167,9 +171,7 @@ export function AssignCollectionButton({
               className="rounded-full p-1 text-ink/50 hover:bg-sand hover:text-ink"
               aria-label="Close"
             >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
+              <IconX size={20} />
             </button>
           </div>
 
@@ -192,13 +194,7 @@ export function AssignCollectionButton({
           )}
 
           {isFetchingTags ? (
-            <div className="mt-6 flex items-center gap-2 text-sm text-ink/60">
-              <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-              Loading available collections...
-            </div>
+            <InlineSpinner message="Loading available collections..." className="mt-6" />
           ) : (
             <>
               {/* Existing tag selections */}
@@ -264,23 +260,7 @@ export function AssignCollectionButton({
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {selectedTags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="inline-flex items-center gap-1 rounded-full bg-moss/10 px-3 py-1 text-sm text-moss"
-                      >
-                        {tag}
-                        <button
-                          onClick={() => {
-                            toggleTag(tag);
-                          }}
-                          className="ml-1 rounded-full hover:bg-moss/20"
-                          aria-label={`Remove ${tag}`}
-                        >
-                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                            <path d="M9 3L3 9M3 3l6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                          </svg>
-                        </button>
-                      </span>
+                      <TagPill key={tag} tag={tag} onRemove={toggleTag} />
                     ))}
                   </div>
                 </div>

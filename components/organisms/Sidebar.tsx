@@ -8,13 +8,17 @@ import {
   ClipboardList,
   AlertTriangle,
   Database,
+  BookOpen,
   X,
 } from "lucide-react";
 import AuthStatus from "@molecules/AuthStatus";
 
+export type SidebarVariant = "desktop" | "mobile";
+
 interface SidebarProps {
-  isOpen: boolean;
-  onClose: () => void;
+  variant: SidebarVariant;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
 const navItems = [
@@ -22,50 +26,54 @@ const navItems = [
   { href: "/reviews", label: "Review Queue", icon: ClipboardList },
   { href: "/failures", label: "Failures", icon: AlertTriangle },
   { href: "/db", label: "DB Schema", icon: Database },
+  { href: "/developers/component-library", label: "Components", icon: BookOpen },
 ];
 
-export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+export default function Sidebar({ variant, isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const isMobile = variant === "mobile";
 
   // Close sidebar when clicking outside on mobile
   useEffect(() => {
+    if (!isMobile || !isOpen) return;
+
     function handleClickOutside(event: MouseEvent) {
       if (
         isOpen &&
         sidebarRef.current &&
         !sidebarRef.current.contains(event.target as Node)
       ) {
-        onClose();
+        onClose?.();
       }
     }
 
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isOpen, onClose]);
+  }, [isMobile, isOpen, onClose]);
 
-  return (
+  const sidebarContent = (
     <>
       {/* Mobile overlay backdrop */}
-      <div
-        className={`fixed inset-0 z-40 bg-ink/50 md:hidden ${isOpen ? "block" : "hidden"}`}
-        onClick={onClose}
-        aria-hidden="true"
-      />
+      {isMobile && (
+        <div
+          className={`fixed inset-0 z-40 bg-ink/50 ${isOpen ? "block" : "hidden"}`}
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
 
       {/* Sidebar */}
       <aside
         ref={sidebarRef}
         className={`
-          fixed left-0 top-0 z-50 flex h-full w-60 flex-col border-r border-moss/10 bg-sand
-          transition-transform duration-200
-          md:relative md:translate-x-0 md:border-r
-          ${isOpen ? "translate-x-0" : "-translate-x-full"}
+          flex h-full w-60 flex-col border-r border-moss/10 bg-sand
+          ${isMobile
+            ? `fixed left-0 top-0 z-50 transition-transform duration-200 ${isOpen ? "translate-x-0" : "-translate-x-full"}`
+            : "relative border-r"
+          }
         `}
       >
         {/* Sidebar header */}
@@ -76,7 +84,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           {/* Close button (mobile only) */}
           <button
             onClick={onClose}
-            className="rounded p-1 text-ink hover:bg-sky md:hidden"
+            className={`rounded p-1 text-ink hover:bg-sky ${isMobile ? "md:hidden" : "hidden"}`}
             aria-label="Close navigation menu"
           >
             <X size={20} />
@@ -92,7 +100,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <li key={href}>
                   <Link
                     href={href}
-                    onClick={onClose}
+                    onClick={isMobile ? onClose : undefined}
                     className={`
                       flex items-center gap-3 rounded-full px-4 py-2 text-sm
                       ${
@@ -118,4 +126,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       </aside>
     </>
   );
+
+  return sidebarContent;
 }

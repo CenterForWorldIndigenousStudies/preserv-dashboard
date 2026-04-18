@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 import Link from "next/link";
 
+import { FilterPill } from "@atoms/FilterPill";
 import { NoDataState } from "@organisms/NoDataState";
 import { PageHeader } from "@organisms/PageHeader";
 import { Pagination } from "@molecules/Pagination";
@@ -71,24 +72,14 @@ export default async function ReviewsPage({ searchParams }: ReviewsPageProps): P
                 <div>
                   <p className="text-sm font-medium text-ink">Status</p>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    <Link
-                      href={buildReviewsHref(undefined, field, 1)}
-                      className={`rounded-full px-4 py-2 text-sm ${
-                        !status ? "bg-moss text-white" : "bg-sand text-ink hover:bg-sky"
-                      }`}
-                    >
-                      All
-                    </Link>
+                    <FilterPill label="All" isActive={!status} href={buildReviewsHref(undefined, field, 1)} />
                     {statuses.map((statusOption) => (
-                      <Link
+                      <FilterPill
                         key={statusOption}
+                        label={statusOption}
+                        isActive={status === statusOption}
                         href={buildReviewsHref(statusOption, field, 1)}
-                        className={`rounded-full px-4 py-2 text-sm ${
-                          status === statusOption ? "bg-moss text-white" : "bg-sand text-ink hover:bg-sky"
-                        }`}
-                      >
-                        {statusOption}
-                      </Link>
+                      />
                     ))}
                   </div>
                 </div>
@@ -96,24 +87,14 @@ export default async function ReviewsPage({ searchParams }: ReviewsPageProps): P
                 <div>
                   <p className="text-sm font-medium text-ink">Field Name</p>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    <Link
-                      href={buildReviewsHref(status, undefined, 1)}
-                      className={`rounded-full px-4 py-2 text-sm ${
-                        !field ? "bg-moss text-white" : "bg-sand text-ink hover:bg-sky"
-                      }`}
-                    >
-                      All Fields
-                    </Link>
+                    <FilterPill label="All Fields" isActive={!field} href={buildReviewsHref(status, undefined, 1)} />
                     {fieldOptions.map((fieldOption) => (
-                      <Link
+                      <FilterPill
                         key={fieldOption}
+                        label={fieldOption}
+                        isActive={field === fieldOption}
                         href={buildReviewsHref(status, fieldOption, 1)}
-                        className={`rounded-full px-4 py-2 text-sm ${
-                          field === fieldOption ? "bg-moss text-white" : "bg-sand text-ink hover:bg-sky"
-                        }`}
-                      >
-                        {fieldOption}
-                      </Link>
+                      />
                     ))}
                   </div>
                 </div>

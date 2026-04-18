@@ -37,17 +37,29 @@ erDiagram
     batches {
         uuid id PK
         varchar name
-        timestamp binary_processing_date
+        timestamp binary_processing_datetime
         int total_files
         int unique_files
         int duplicate_files
+        int inter_duplicates
+        int intra_duplicates
+        int exact_duplicates_found
+        int total_duplicates_found
         decimal cost_saved
+        decimal cost
         int processing_time_seconds
         decimal total_cost
         varchar registry_version
+        varchar dedup_method
         timestamp started_at
         timestamp completed_at
         varchar started_by
+        json processing_details
+        timestamp duplicates_removed_timestamp
+        int error_count
+        int files_processed
+        timestamp last_processed
+        varchar status
     }
 
     document_to_batches {
@@ -204,15 +216,15 @@ erDiagram
     documents ||--o{ document_to_tags : "junction"
     tags ||--o{ document_to_tags : "junction"
 
-    documents ||--o{ metadata_fields : "has metadata"
+    documents ||--o{ metadata : "has metadata"
     documents ||--o{ document_to_metadata : "junction"
-    metadata_fields ||--o{ document_to_metadata : "junction"
+    metadata ||--o{ document_to_metadata : "junction"
 
     documents ||--o{ document_versions : "is child of"
     documents ||--o{ document_versions : "has child"
 
-    documents ||--o{ duplicate_groups : "canonical in"
-    documents ||--o{ duplicate_groups : "part of"
+    documents ||--o{ version_groups : "canonical in"
+    documents ||--o{ version_groups : "part of"
 
     documents ||--|| document_quality : "has"
     document_quality ||--o{ state_history : "final state"
@@ -239,24 +251,27 @@ Documents move through states tracked in `state_history`. See Design Decisions.m
 
 - `document_id` = the child/derived document
 - `canonical_document_id` = the parent/original document
+- `hash_content` = SHA-256 of the canonical document content
 
 ### Version Groups
 
-`version_groups` tracks documents that are related (splits, duplicates, versions).
+`version_groups` tracks documents that are duplicates of each other.
 
 - `group_id` = shared identifier for related documents
 - `canonical_document_id` = the primary/original document
+- `document_id` = reference to the document in this group
+- `hash_content` = SHA-256 content hash shared by all docs in group
 - Use `content_duplication` in `document_quality` to flag EXACT_DUPLICATE/UNIQUE
 - Use tags (OCR, split_document, duplicate_document, version_document, canonical_document)
 
 ### Metadata (EAV Pattern)
 
-`metadata_fields` table defines available fields (Dublin Core, OCR scores, etc.).
+`metadata` table defines available fields (Dublin Core, OCR scores, etc.) with `name` column for field identification.
 `document_to_metadata` stores values per document using JSON type.
 The `value` column stores actual data as JSON: `{ "value": [actual data] }`
 The `value_type` column indicates the data type: string, int, float, boolean, or json.
 This allows flexibility while maintaining type safety.
-The `description` field on `metadata_fields` is TEXT(MEDIUM) for longer descriptions.
+The `notes` field on `metadata` is TEXT(MEDIUM) for longer descriptions.
 
 ### Tags
 
@@ -269,6 +284,14 @@ Seed tags: OCR, split_document, duplicate_document, version_document, canonical_
 `document_to_batches` allows a document to belong to multiple batches.
 Per-document batch metrics (cost, processing_time) live in the junction.
 Batch-level metrics (total_cost, processing_time_seconds) live in `batches`.
+
+### Processing Details
+
+`batches.processing_details` JSON stores flexible per-notebook processing data:
+- Per-notebook status (NB1-NB8)
+- Registry version per notebook
+- Processing timestamps per notebook
+- Any other flexible batch-level data
 
 ### Quality & Access
 

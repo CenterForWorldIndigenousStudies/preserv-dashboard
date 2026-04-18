@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 import Link from "next/link";
 
+import { StateBadge } from "@atoms/StateBadge";
 import { formatBytes, formatDateTime } from "@lib/format";
 import type { Document } from "@lib/types";
 
@@ -41,9 +42,7 @@ export function DocumentTable({ documents }: DocumentTableProps): ReactElement {
                 </td>
                 <td className="px-4 py-3 text-ink">{document.filename || "—"}</td>
                 <td className="px-4 py-3">
-                  <span className="rounded-full bg-sky px-3 py-1 text-xs font-medium uppercase tracking-[0.15em] text-ink">
-                    {document.state}
-                  </span>
+                  <StateBadge state={document.state} />
                 </td>
                 <td className="px-4 py-3 text-ink/70">{document.filetype || "—"}</td>
                 <td className="px-4 py-3 text-ink/70">{formatBytes(document.filesize)}</td>
