@@ -22,7 +22,7 @@ type Story = StoryObj<typeof Pagination>;
 const buildHref = (page: number) => `/documents?page=${page}`;
 
 export const FirstPage: Story = {
-  name: "First Page",
+
   args: {
     currentPage: 1,
     totalItems: 87,
@@ -32,7 +32,7 @@ export const FirstPage: Story = {
 };
 
 export const MiddlePage: Story = {
-  name: "Middle Page",
+
   args: {
     currentPage: 3,
     totalItems: 87,
@@ -42,7 +42,7 @@ export const MiddlePage: Story = {
 };
 
 export const LastPage: Story = {
-  name: "Last Page",
+
   args: {
     currentPage: 5,
     totalItems: 87,
@@ -52,7 +52,7 @@ export const LastPage: Story = {
 };
 
 export const SinglePage: Story = {
-  name: "Single Page",
+
   args: {
     currentPage: 1,
     totalItems: 12,

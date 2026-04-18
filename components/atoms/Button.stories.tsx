@@ -18,7 +18,7 @@ export default meta;
 type Story = StoryObj<typeof ButtonPrimary>;
 
 export const Primary: Story = {
-  name: "ButtonPrimary",
+
   render: () => (
     <div className="flex flex-wrap gap-4">
       <ButtonPrimary>Approve Document</ButtonPrimary>
@@ -28,7 +28,7 @@ export const Primary: Story = {
 };
 
 export const Secondary: Story = {
-  name: "ButtonSecondary",
+
   render: () => (
     <div className="flex flex-wrap gap-4">
       <ButtonSecondary>View Schema</ButtonSecondary>
@@ -38,7 +38,7 @@ export const Secondary: Story = {
 };
 
 export const Ghost: Story = {
-  name: "ButtonGhost",
+
   render: () => (
     <div className="flex flex-wrap gap-4">
       <ButtonGhost>Cancel</ButtonGhost>

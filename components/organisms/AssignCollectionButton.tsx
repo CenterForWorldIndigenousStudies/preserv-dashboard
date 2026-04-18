@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type MouseEvent, type ReactElement } from "react";
 
 import { IconX } from "@atoms/IconX";
-import { InlineSpinner } from "@atoms/InlineSpinner";
+import { LoadingSpinner } from "@atoms/LoadingSpinner";
 import { TagPill } from "@molecules/TagPill";
 
 interface AssignCollectionButtonProps {
@@ -194,7 +194,7 @@ export function AssignCollectionButton({
           )}
 
           {isFetchingTags ? (
-            <InlineSpinner message="Loading available collections..." className="mt-6" />
+            <LoadingSpinner message="Loading available collections..." className="mt-6" />
           ) : (
             <>
               {/* Existing tag selections */}

@@ -18,7 +18,7 @@ export default meta;
 type Story = StoryObj<typeof MermaidDiagram>;
 
 export const SimpleFlowchart: Story = {
-  name: "Simple Flowchart",
+
   args: {
     source: `graph TD
       A[Document Ingested] --> B{Validation}
@@ -34,7 +34,7 @@ export const SimpleFlowchart: Story = {
 };
 
 export const SequenceDiagram: Story = {
-  name: "Sequence Diagram",
+
   args: {
     source: `sequenceDiagram
       participant D as Document Source
@@ -53,7 +53,7 @@ export const SequenceDiagram: Story = {
 };
 
 export const EntityRelationship: Story = {
-  name: "Entity Relationship",
+
   args: {
     source: `erDiagram
       DOCUMENTS {

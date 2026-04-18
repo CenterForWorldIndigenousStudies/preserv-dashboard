@@ -17,7 +17,7 @@ type Story = StoryObj<typeof AuthStatus>;
 // AuthStatus uses useSession from next-auth, which requires a session provider.
 // We use render functions with mock sessions to demonstrate both states.
 export const SignedIn: Story = {
-  name: "Signed In",
+
   render: () => (
     <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
       <p className="mb-1 text-xs uppercase tracking-[0.15em] text-ink/60">Authenticated</p>
@@ -32,7 +32,7 @@ export const SignedIn: Story = {
 };
 
 export const SignedOut: Story = {
-  name: "Signed Out",
+
   render: () => (
     <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
       <p className="mb-1 text-xs uppercase tracking-[0.15em] text-ink/60">Not Authenticated</p>

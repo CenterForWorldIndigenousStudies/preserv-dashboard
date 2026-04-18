@@ -22,28 +22,28 @@ export default meta;
 type Story = StoryObj<typeof IconX>;
 
 export const Size12: Story = {
-  name: "Size 12",
+
   args: {
     size: 12,
   },
 };
 
 export const Size16: Story = {
-  name: "Size 16",
+
   args: {
     size: 16,
   },
 };
 
 export const Size20: Story = {
-  name: "Size 20",
+
   args: {
     size: 20,
   },
 };
 
 export const Size24: Story = {
-  name: "Size 24",
+
   args: {
     size: 24,
   },

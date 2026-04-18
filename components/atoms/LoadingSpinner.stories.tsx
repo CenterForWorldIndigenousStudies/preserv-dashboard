@@ -9,8 +9,9 @@ const meta: Meta<typeof LoadingSpinner> = {
     size: {
       control: "select",
       options: [12, 16, 20, 24, 32],
-      description: "Pixel size of the spinner",
+      description: "Pixel size of the spinner (default: 32)",
     },
+    message: { control: "text" },
     className: { control: false },
   },
   parameters: {
@@ -22,36 +23,51 @@ export default meta;
 type Story = StoryObj<typeof LoadingSpinner>;
 
 export const Default: Story = {
-  args: {
-    size: 16,
-  },
+
+  args: {},
 };
 
 export const Small: Story = {
-  name: "Size 12",
   args: {
     size: 12,
   },
 };
 
 export const Medium: Story = {
-  name: "Size 20",
   args: {
     size: 20,
   },
 };
 
 export const Large: Story = {
-  name: "Size 32",
   args: {
     size: 32,
   },
 };
 
 export const CustomColor: Story = {
-  name: "Custom Color",
   args: {
     size: 20,
     className: "text-moss",
+  },
+};
+
+// Inline / message variants
+
+export const WithMessage: Story = {
+  args: {
+    message: "Loading available collections...",
+  },
+};
+
+export const Saving: Story = {
+  args: {
+    message: "Saving collection tags...",
+  },
+};
+
+export const Fetching: Story = {
+  args: {
+    message: "Fetching document metadata...",
   },
 };

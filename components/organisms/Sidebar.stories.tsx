@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import Sidebar from "@components/organisms/Sidebar";
-import type { SidebarVariant } from "@components/organisms/Sidebar";
+import Sidebar, { type SidebarVariant } from "@components/organisms/Sidebar";
 
 const meta: Meta<typeof Sidebar> = {
   title: "Organisms/Sidebar",
@@ -21,7 +20,6 @@ export default meta;
 type Story = StoryObj<typeof Sidebar>;
 
 export const Desktop: Story = {
-  name: "Desktop Variant",
   args: {
     variant: "desktop" as SidebarVariant,
     isOpen: true,
@@ -30,7 +28,6 @@ export const Desktop: Story = {
 };
 
 export const MobileOpen: Story = {
-  name: "Mobile (Open)",
   args: {
     variant: "mobile" as SidebarVariant,
     isOpen: true,
@@ -39,7 +36,6 @@ export const MobileOpen: Story = {
 };
 
 export const MobileClosed: Story = {
-  name: "Mobile (Closed)",
   args: {
     variant: "mobile" as SidebarVariant,
     isOpen: false,

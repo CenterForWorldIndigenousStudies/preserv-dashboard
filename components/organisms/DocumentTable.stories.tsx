@@ -111,21 +111,21 @@ const mockDocuments: Document[] = [
 ];
 
 export const Default: Story = {
-  name: "Default",
+
   args: {
     documents: mockDocuments,
   },
 };
 
 export const SingleRow: Story = {
-  name: "Single Document",
+
   args: {
     documents: [mockDocuments[0]],
   },
 };
 
 export const Empty: Story = {
-  name: "Empty State",
+
   args: {
     documents: [],
   },
