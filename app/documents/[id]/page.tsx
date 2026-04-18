@@ -1,9 +1,11 @@
 import type { ReactElement } from "react";
 import Link from "next/link";
 
-import { AssignCollectionButton } from "@components/AssignCollectionButton";
-import { NoDataState } from "@components/NoDataState";
-import { PageHeader } from "@components/PageHeader";
+import { FieldRow } from "@molecules/FieldRow";
+import { StateBadge } from "@atoms/StateBadge";
+import { AssignCollectionButton } from "@organisms/AssignCollectionButton";
+import { NoDataState } from "@organisms/NoDataState";
+import { PageHeader } from "@organisms/PageHeader";
 import { formatBytes, formatDateTime, formatMetadataValue } from "@lib/format";
 import { getDocumentDetail } from "@lib/queries";
 
@@ -117,12 +119,9 @@ export default async function DocumentDetailPage({
               ) : (
                 <dl className="mt-6 space-y-3">
                   {Object.entries(metadata).map(([key, value]) => (
-                    <div key={key} className="rounded-xl bg-sand/45 p-4">
-                      <dt className="text-xs uppercase tracking-[0.15em] text-ink/60">{key}</dt>
-                      <dd className="mt-2 text-sm text-ink">
-                        <pre>{formatMetadataValue(value)}</pre>
-                      </dd>
-                    </div>
+                    <FieldRow key={key} label={key}>
+                      <pre>{formatMetadataValue(value)}</pre>
+                    </FieldRow>
                   ))}
                 </dl>
               )}
@@ -188,9 +187,7 @@ export default async function DocumentDetailPage({
                   <div key={review.id} className="rounded-xl border border-moss/10 bg-sand/45 p-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <p className="text-sm font-semibold text-ink">{review.field_name}</p>
-                      <span className="rounded-full bg-sky px-3 py-1 text-xs font-medium uppercase tracking-[0.15em] text-ink">
-                        {review.status}
-                      </span>
+                      <StateBadge state={review.status} />
                     </div>
                     <p className="mt-3 text-xs uppercase tracking-[0.15em] text-ink/55">
                       Winning Source: {review.winning_source || "—"} • {formatDateTime(review.created_at)}

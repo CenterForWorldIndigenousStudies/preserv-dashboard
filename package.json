@@ -4,19 +4,31 @@
   "private": true,
   "scripts": {
     "build": "next build",
+    "predev": "npm run build-storybook && rm -rf public/storybook",
     "dev": "next dev",
     "lint": "run-p lint:project lint:markdown",
     "lint:markdown": "markdownlint-cli2 '**/*.md'",
     "lint:project": "eslint './**/*.{ts,tsx}' --max-warnings=0 --cache --cache-location .eslintcache",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build --quiet --output-dir ./storybook-static && cp -r node_modules/storybook/dist/_browser-chunks storybook-static/ && mkdir -p public/developers/storybook && cp -r storybook-static/. public/developers/storybook/ && rm -rf public/developers/storybook/developers",
+    "clean-storybook": "rm -rf storybook-static public/developers/storybook",
+    "storybook-preview": "storybook preview -p 6006 --storybook-dir ../public/storybook"
   },
   "dependencies": {
+    "@tailwindcss/typography": "^0.5.19",
+    "lucide-react": "^1.8.0",
     "mysql2": "^3.14.1",
     "next": "16.2.3",
     "next-auth": "5.0.0-beta.31",
+    "playwright": "^1.59.1",
     "react": "19.2.5",
-    "react-dom": "19.2.5"
+    "react-dom": "19.2.5",
+    "react-markdown": "^10.1.0",
+    "rehype-mermaid": "^3.0.0",
+    "rehype-mermaidjs": "^2.0.0",
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
@@ -33,7 +45,19 @@
     "prettier": "3.8.3",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",
-    "typescript-eslint": "8.58.2"
+    "typescript-eslint": "8.58.2",
+    "storybook": "^10.3.5",
+    "@storybook/nextjs-vite": "^10.3.5",
+    "@chromatic-com/storybook": "^5.1.2",
+    "@storybook/addon-vitest": "^10.3.5",
+    "@storybook/addon-a11y": "^10.3.5",
+    "@storybook/addon-docs": "^10.3.5",
+    "@storybook/addon-onboarding": "^10.3.5",
+    "vite": "^8.0.8",
+    "eslint-plugin-storybook": "^10.3.5",
+    "vitest": "^4.1.4",
+    "@vitest/browser-playwright": "^4.1.4",
+    "@vitest/coverage-v8": "^4.1.4"
   },
   "engines": {
     "node": "24.14.1"

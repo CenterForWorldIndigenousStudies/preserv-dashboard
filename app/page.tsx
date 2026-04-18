@@ -1,11 +1,11 @@
 import type { ReactElement } from "react";
-import Link from "next/link";
 
-import { DocumentTable } from "@components/DocumentTable";
-import { NoDataState } from "@components/NoDataState";
-import { PageHeader } from "@components/PageHeader";
-import { Pagination } from "@components/Pagination";
-import { StatCard } from "@components/StatCard";
+import { FilterPill } from "@atoms/FilterPill";
+import { DocumentTable } from "@organisms/DocumentTable";
+import { NoDataState } from "@organisms/NoDataState";
+import { PageHeader } from "@organisms/PageHeader";
+import { Pagination } from "@molecules/Pagination";
+import { StatCard } from "@molecules/StatCard";
 import { getDocuments, getPageSize, getPipelineSummary } from "@lib/queries";
 
 export const dynamic = "force-dynamic";
@@ -82,24 +82,14 @@ export default async function OverviewPage({ searchParams }: OverviewPageProps):
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Link
-                    href="/"
-                    className={`rounded-full px-4 py-2 text-sm ${
-                      !state ? "bg-moss text-white" : "bg-sand text-ink hover:bg-sky"
-                    }`}
-                  >
-                    All
-                  </Link>
+                  <FilterPill label="All" isActive={!state} href="/" />
                   {["ingested", "normalized", "under_review", "completed", "failed"].map((stateOption) => (
-                    <Link
+                    <FilterPill
                       key={stateOption}
+                      label={stateOption}
+                      isActive={state === stateOption}
                       href={buildOverviewHref(stateOption, 1)}
-                      className={`rounded-full px-4 py-2 text-sm ${
-                        state === stateOption ? "bg-moss text-white" : "bg-sand text-ink hover:bg-sky"
-                      }`}
-                    >
-                      {stateOption}
-                    </Link>
+                    />
                   ))}
                 </div>
               </div>

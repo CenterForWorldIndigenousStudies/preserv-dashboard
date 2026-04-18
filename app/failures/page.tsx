@@ -1,8 +1,8 @@
 import type { ReactElement } from "react";
 import Link from "next/link";
 
-import { NoDataState } from "@components/NoDataState";
-import { PageHeader } from "@components/PageHeader";
+import { NoDataState } from "@organisms/NoDataState";
+import { PageHeader } from "@organisms/PageHeader";
 import { formatDateTime } from "@lib/format";
 import { getFailures } from "@lib/queries";
 

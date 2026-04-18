@@ -1,8 +1,70 @@
-.next
-node_modules
-.env.local
-npm-debug.log*
-.eslintcache
+# See https://help.github.com/ignore-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+
+# testing
+/.coverage
+/coverage
+/e2e/compiled
+/e2e/error-shots
+/css-test/
+
+# production
+/build
+
+# next.js
+/.next/
+/out/
+
+# misc
 .DS_Store
-coverage
-*.log
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.prettierignore
+
+# generated
+.eslintcache
+*.scss.d.ts
+*.css.d.ts
+/dist/
+/src/components/**/*.css
+/src/fonts/**/*
+/src/fonts/icon-fonts/**/*
+/static/fonts/**/*
+**/*.css
+!public/styles/*.*
+/storybook-static/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+public/developers/storybook
+
+# yarn
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# IDE Stuff
+.code-workspace
+.idea
+.project
+.next/
+/.project/
+/.settings/
+.settings/org.eclipse.wst.common.project.facet.core.xml
+.settings/ts.eclipse.ide.core.prefs
+
+# VScode settings
+.vscode/*
+!.vscode/co-authored-by.code-snippets
+!.vscode/extensions.json
+!.vscode/cspell.json
+!pdb.code-workspace
