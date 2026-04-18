@@ -26,7 +26,7 @@ export const Default: Story = {
 };
 
 export const CulturalArchive: Story = {
-  name: "Cultural Archive",
+
   args: {
     tag: "Cultural Archive",
     onRemove: () => {},
@@ -34,7 +34,7 @@ export const CulturalArchive: Story = {
 };
 
 export const OralHistory: Story = {
-  name: "Oral History",
+
   args: {
     tag: "Oral History",
     onRemove: () => {},
@@ -42,7 +42,7 @@ export const OralHistory: Story = {
 };
 
 export const LegalTreaty: Story = {
-  name: "Legal Treaty",
+
   args: {
     tag: "Legal Treaty",
     onRemove: () => {},
@@ -50,7 +50,7 @@ export const LegalTreaty: Story = {
 };
 
 export const MultipleTags: Story = {
-  name: "Multiple Tags",
+
   render: () => (
     <div className="flex flex-wrap gap-2">
       <TagPill tag="Cherokee Language" onRemove={() => {}} />

@@ -20,7 +20,7 @@ export default meta;
 type Story = StoryObj<typeof FilterPill>;
 
 export const All: Story = {
-  name: "Filter: All",
+
   args: {
     label: "All",
     isActive: false,
@@ -29,7 +29,7 @@ export const All: Story = {
 };
 
 export const Active: Story = {
-  name: "Active State",
+
   args: {
     label: "All",
     isActive: true,
@@ -38,7 +38,7 @@ export const Active: Story = {
 };
 
 export const Completed: Story = {
-  name: "Filter: Completed",
+
   args: {
     label: "Completed",
     isActive: true,
@@ -47,7 +47,7 @@ export const Completed: Story = {
 };
 
 export const Failed: Story = {
-  name: "Filter: Failed",
+
   args: {
     label: "Failed",
     isActive: false,
@@ -56,7 +56,7 @@ export const Failed: Story = {
 };
 
 export const UnderReview: Story = {
-  name: "Filter: Under Review",
+
   args: {
     label: "Under Review",
     isActive: false,

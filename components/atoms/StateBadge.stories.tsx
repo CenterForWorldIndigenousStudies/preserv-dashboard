@@ -34,7 +34,7 @@ export const Failed: Story = {
 };
 
 export const UnderReview: Story = {
-  name: "Under Review",
+
   args: {
     state: "under_review",
   },
@@ -53,7 +53,7 @@ export const Normalized: Story = {
 };
 
 export const Default: Story = {
-  name: "Unknown State",
+
   args: {
     state: "pending",
   },

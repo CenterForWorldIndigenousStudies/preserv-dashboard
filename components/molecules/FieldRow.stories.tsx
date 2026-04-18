@@ -19,7 +19,7 @@ export default meta;
 type Story = StoryObj<typeof FieldRow>;
 
 export const ShortValue: Story = {
-  name: "Short Value",
+
   args: {
     label: "Document ID",
     children: "DOC-2024-0042",
@@ -27,7 +27,7 @@ export const ShortValue: Story = {
 };
 
 export const LongValue: Story = {
-  name: "Long Value (Overflow)",
+
   args: {
     label: "Original URL",
     children: "https://archive.cwis.org/repository/indigenous-knowledge/cherokee/oral-traditions/transcripts/2023/session-042-enriched.pdf",
@@ -35,7 +35,7 @@ export const LongValue: Story = {
 };
 
 export const EmptyValue: Story = {
-  name: "Empty Value",
+
   args: {
     label: "Parent Collection",
     children: "—",
@@ -43,7 +43,7 @@ export const EmptyValue: Story = {
 };
 
 export const MetadataField: Story = {
-  name: "Metadata Field",
+
   args: {
     label: "File Type",
     children: "application/pdf",
@@ -51,7 +51,7 @@ export const MetadataField: Story = {
 };
 
 export const MultipleFields: Story = {
-  name: "Multiple Fields",
+
   render: () => (
     <div className="flex flex-col gap-3">
       <FieldRow label="Document ID">DOC-2024-0042</FieldRow>
