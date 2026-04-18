@@ -288,6 +288,7 @@ Batch-level metrics (total_cost, processing_time_seconds) live in `batches`.
 ### Processing Details
 
 `batches.processing_details` JSON stores flexible per-notebook processing data:
+
 - Per-notebook status (NB1-NB8)
 - Registry version per notebook
 - Processing timestamps per notebook
