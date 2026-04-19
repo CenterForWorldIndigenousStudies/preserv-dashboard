@@ -271,7 +271,7 @@ Documents move through states tracked in `state_history`. See Design Decisions.m
 The `value` column stores actual data as JSON: `{ "value": [actual data] }`
 The `value_type` column indicates the data type: string, int, float, boolean, or json.
 This allows flexibility while maintaining type safety.
-The `notes` field on `metadata` is TEXT(MEDIUM) for longer descriptions.
+The `notes` field on `metadata` is TEXT for longer descriptions.
 
 ### Tags
 
