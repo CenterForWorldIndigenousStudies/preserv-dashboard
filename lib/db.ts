@@ -1,15 +1,21 @@
-import mysql from "mysql2/promise";
+import { PrismaClient } from "@prisma/client";
+import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 
-const pool = mysql.createPool({
-  host: process.env.MYSQL_HOST,
-  port: parseInt(process.env.MYSQL_PORT || "3306", 10),
-  database: process.env.MYSQL_DATABASE,
-  user: process.env.MYSQL_USER,
-  password: process.env.MYSQL_PASSWORD,
-  dateStrings: true,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
-export default pool;
+function createClient(): PrismaClient {
+  const adapter = new PrismaMariaDb({
+    host: "localhost",
+    port: 3306,
+    user: "mariadb",
+    password: "docker",
+    database: "cwis_preservation",
+  });
+  return new PrismaClient({ adapter });
+}
+
+export const db = globalForPrisma.prisma ?? createClient();
+
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = db;
+}

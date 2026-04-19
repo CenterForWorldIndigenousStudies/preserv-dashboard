@@ -1,9 +1,6 @@
 import type { ReactElement } from "react";
-import Link from "next/link";
-
 import { FieldRow } from "@molecules/FieldRow";
 import { StateBadge } from "@atoms/StateBadge";
-import { AssignCollectionButton } from "@organisms/AssignCollectionButton";
 import { NoDataState } from "@organisms/NoDataState";
 import { PageHeader } from "@organisms/PageHeader";
 import { formatBytes, formatDateTime, formatMetadataValue } from "@lib/format";
@@ -23,17 +20,11 @@ const documentFieldLabels: Array<{ key: string; label: string }> = [
   { key: "filesize", label: "File Size" },
   { key: "filetype", label: "File Type" },
   { key: "original_url", label: "Original URL" },
+  { key: "source_id", label: "Source ID" },
+  { key: "hash_binary", label: "Hash (Binary)" },
+  { key: "hash_content", label: "Hash (Content)" },
   { key: "created_at", label: "Created At" },
   { key: "updated_at", label: "Updated At" },
-  { key: "file_folder_url", label: "File Folder URL" },
-  { key: "original_parent_folder", label: "Original Parent Folder" },
-  { key: "parent_id", label: "Parent ID" },
-  { key: "duplicates", label: "Duplicates" },
-  { key: "collection_tags", label: "Collection Tags" },
-  { key: "state", label: "State" },
-  { key: "ingested_at", label: "Ingested At" },
-  { key: "is_primary", label: "Primary File" },
-  { key: "drive_file_id", label: "Drive File ID" },
 ];
 
 export default async function DocumentDetailPage({
@@ -60,14 +51,16 @@ export default async function DocumentDetailPage({
     const { document, metadata, audits, reviews } = detail;
 
     const documentFieldValues = {
-      ...document,
+      id: document.id,
+      filename: document.filename ?? "—",
       filesize: formatBytes(document.filesize),
+      filetype: document.filetype ?? "—",
+      original_url: document.original_url ?? "—",
+      source_id: document.source_id ?? "—",
+      hash_binary: document.hash_binary ?? "—",
+      hash_content: document.hash_content ?? "—",
       created_at: formatDateTime(document.created_at),
       updated_at: formatDateTime(document.updated_at),
-      ingested_at: formatDateTime(document.ingested_at),
-      duplicates: document.duplicates.length > 0 ? document.duplicates.join(", ") : "—",
-      collection_tags: document.collection_tags.length > 0 ? document.collection_tags.join(", ") : "—",
-      is_primary: document.is_primary ? "Yes" : "No",
     } as Record<string, string>;
 
     return (
@@ -90,18 +83,6 @@ export default async function DocumentDetailPage({
                       <a href={document.original_url} className="text-moss underline" target="_blank" rel="noreferrer">
                         {document.original_url}
                       </a>
-                    ) : field.key === "file_folder_url" && document.file_folder_url ? (
-                      <a href={document.file_folder_url} className="text-moss underline" target="_blank" rel="noreferrer">
-                        {document.file_folder_url}
-                      </a>
-                    ) : field.key === "collection_tags" ? (
-                      <div className="flex flex-col gap-2">
-                        <span>{documentFieldValues[field.key] || "—"}</span>
-                        <AssignCollectionButton
-                          documentId={document.id}
-                          currentTags={document.collection_tags}
-                        />
-                      </div>
                     ) : (
                       documentFieldValues[field.key] || "—"
                     )}
@@ -127,22 +108,6 @@ export default async function DocumentDetailPage({
               )}
             </div>
 
-            <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
-              <h2 className="text-xl font-semibold text-ink">Duplicates</h2>
-              {document.duplicates.length === 0 ? (
-                <p className="mt-4 text-sm text-ink/65">No duplicate links recorded.</p>
-              ) : (
-                <ul className="mt-4 space-y-2">
-                  {document.duplicates.map((duplicateId: string) => (
-                    <li key={duplicateId}>
-                      <Link href={`/documents/${duplicateId}`} className="text-sm text-moss underline">
-                        {duplicateId}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
           </div>
         </section>
 

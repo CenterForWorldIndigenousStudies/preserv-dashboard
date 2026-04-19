@@ -1,224 +1,29 @@
-import type { ResultSetHeader, RowDataPacket } from "mysql2";
-
-import pool from "@lib/db";
 import type {
   AuditEntry,
   Document,
   DocumentDetail,
   DocumentQueryParams,
+  DocumentQuality,
   FailureItem,
-  MetadataRecord,
   PagedResult,
   PipelineSummary,
-  ReviewConflictValue,
   ReviewItem,
   ReviewQueryParams,
 } from "@lib/types";
+import { db } from "@lib/db";
 
 const PAGE_SIZE = 20;
-const ALLOWED_STATES = new Set(["ingested", "normalized", "under_review", "completed", "failed"]);
-const ALLOWED_REVIEW_STATUSES = new Set(["pending", "in_progress", "resolved"]);
 
-interface DocumentRow extends RowDataPacket {
-  id: string;
-  filename: string;
-  filesize: number | null;
-  filetype: string | null;
-  original_url: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-  file_folder_url: string | null;
-  original_parent_folder: string | null;
-  parent_id: string | null;
-  duplicates: string | null;
-  collection_tags: string | null;
-  state: string;
-  ingested_at: string | null;
-  is_primary: number | boolean;
-  drive_file_id: string | null;
-}
-
-interface PipelineRow extends RowDataPacket {
-  state: string;
-  count: number;
-}
-
-interface CountRow extends RowDataPacket {
-  total: number;
-}
-
-interface ReviewRow extends RowDataPacket {
-  id: number;
-  document_id: string;
-  filename: string | null;
-  field_name: string;
-  winning_source: string | null;
-  winning_value: string | null;
-  conflicting_values: string | null;
-  status: string;
-  created_at: string | null;
-}
-
-interface AuditRow extends RowDataPacket {
-  document_id: string;
-  field_name: string;
-  source_name: string;
-  before_value: string | null;
-  after_value: string | null;
-  changed_at: string | null;
-}
-
-interface MetadataRow extends RowDataPacket {
-  metadata: string | null;
-}
-
-interface FailureRow extends DocumentRow {
-  metadata: string | null;
-}
-
-interface ReviewFieldRow extends RowDataPacket {
-  field_name: string;
-}
-
-interface CollectionTagsRow extends RowDataPacket {
-  collection_tags: string | null;
-}
-
-interface ColumnDefinitionRow extends RowDataPacket {
-  Field: string;
-}
-
-let documentColumnsPromise: Promise<Set<string>> | null = null;
-
-function parseJsonValue(value: string | null): unknown {
-  if (!value) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(value) as unknown;
-  } catch {
-    return null;
-  }
-}
-
-function parseJsonArray(value: string | null): string[] {
-  const parsedValue = parseJsonValue(value);
-
-  if (!Array.isArray(parsedValue)) {
-    return [];
-  }
-
-  return parsedValue
-    .filter((item: unknown): item is string => typeof item === "string")
-    .map((item: string) => item.trim())
-    .filter((item: string) => item.length > 0);
-}
-
-function parseConflictValues(value: string | null): ReviewConflictValue[] {
-  const parsedValue = parseJsonValue(value);
-
-  if (!Array.isArray(parsedValue)) {
-    return [];
-  }
-
-  return parsedValue
-    .map((item: unknown) => {
-      if (typeof item !== "object" || item === null) {
-        return null;
-      }
-
-      const source = "source" in item && typeof item.source === "string" ? item.source : "unknown";
-      const conflictValue = "value" in item && typeof item.value === "string" ? item.value : "";
-
-      return {
-        source,
-        value: conflictValue,
-      };
-    })
-    .filter((item: ReviewConflictValue | null): item is ReviewConflictValue => item !== null);
-}
-
-function normalizeDocumentRow(row: DocumentRow): Document {
-  return {
-    id: row.id,
-    filename: row.filename,
-    filesize: row.filesize,
-    filetype: row.filetype,
-    original_url: row.original_url ?? "",
-    created_at: row.created_at,
-    updated_at: row.updated_at,
-    file_folder_url: row.file_folder_url ?? "",
-    original_parent_folder: row.original_parent_folder,
-    parent_id: row.parent_id,
-    duplicates: parseJsonArray(row.duplicates),
-    collection_tags: parseJsonArray(row.collection_tags),
-    state: row.state,
-    ingested_at: row.ingested_at,
-    is_primary: Boolean(row.is_primary),
-    drive_file_id: row.drive_file_id,
-  };
-}
-
-function normalizeReviewRow(row: ReviewRow): ReviewItem {
-  return {
-    id: row.id,
-    document_id: row.document_id,
-    field_name: row.field_name,
-    winning_source: row.winning_source ?? "",
-    winning_value: row.winning_value,
-    conflicting_values: parseConflictValues(row.conflicting_values),
-    status: row.status,
-    created_at: row.created_at ?? "",
-  };
-}
-
-function normalizeAuditRow(row: AuditRow): AuditEntry {
-  return {
-    document_id: row.document_id,
-    field_name: row.field_name,
-    source_name: row.source_name,
-    before_value: row.before_value,
-    after_value: row.after_value,
-    changed_at: row.changed_at ?? "",
-  };
-}
-
-function parseMetadata(value: string | null): MetadataRecord | null {
-  const parsedValue = parseJsonValue(value);
-
-  if (typeof parsedValue !== "object" || parsedValue === null || Array.isArray(parsedValue)) {
-    return null;
-  }
-
-  return parsedValue as MetadataRecord;
-}
-
-function deriveFailureReason(metadata: string | null): string | null {
-  const parsedMetadata = parseMetadata(metadata);
-
-  if (!parsedMetadata) {
-    return null;
-  }
-
-  const candidateKeys = ["failure_reason", "error", "message", "reason"];
-
-  for (const key of candidateKeys) {
-    const candidateValue = parsedMetadata[key];
-
-    if (typeof candidateValue === "string" && candidateValue.trim().length > 0) {
-      return candidateValue;
-    }
-  }
-
-  return null;
+function dateToString(value: Date | string | null | undefined): string | null {
+  if (!value) return null;
+  if (value instanceof Date) return value.toISOString();
+  return String(value);
 }
 
 function normalizePageNumber(page?: number): number {
   if (!page || page < 1 || Number.isNaN(page)) {
     return 1;
   }
-
   return Math.floor(page);
 }
 
@@ -226,293 +31,234 @@ export function getPageSize(): number {
   return PAGE_SIZE;
 }
 
-async function getDocumentColumns(): Promise<Set<string>> {
-  if (!documentColumnsPromise) {
-    documentColumnsPromise = pool
-      .query<ColumnDefinitionRow[]>("SHOW COLUMNS FROM documents")
-      .then(([rows]) => new Set(rows.map((row) => row.Field)))
-      .catch((error: unknown) => {
-        documentColumnsPromise = null;
-        throw error;
-      });
-  }
-
-  return documentColumnsPromise;
-}
-
-function getDocumentSelectClause(columns: Set<string>, tableAlias?: string): string {
-  const prefix = tableAlias ? `${tableAlias}.` : "";
-
-  return [
-    `${prefix}id`,
-    `${prefix}filename`,
-    `${prefix}filesize`,
-    `${prefix}filetype`,
-    `${prefix}original_url`,
-    `${prefix}created_at`,
-    `${prefix}updated_at`,
-    `${prefix}file_folder_url`,
-    `${prefix}original_parent_folder`,
-    `${prefix}parent_id`,
-    `${prefix}duplicates`,
-    `${prefix}collection_tags`,
-    `${prefix}state`,
-    `${prefix}ingested_at`,
-    `${prefix}is_primary`,
-    columns.has("drive_file_id") ? `${prefix}drive_file_id` : "NULL AS drive_file_id",
-  ].join(",\n        ");
-}
-
+// ---------------------------------------------------------------------------
+// getPipelineSummary
+// Returns total document count and a breakdown by validation_status from
+// document_quality.  Also includes by_state (always empty) for backward
+// compat since documents.state does not exist.
+// ---------------------------------------------------------------------------
 export async function getPipelineSummary(): Promise<PipelineSummary> {
-  const [totalRows] = await pool.execute<CountRow[]>("SELECT COUNT(*) AS total FROM documents");
-  const [stateRows] = await pool.execute<PipelineRow[]>(
-    "SELECT state, COUNT(*) AS count FROM documents GROUP BY state",
-  );
+  const [total, qualityRows] = await Promise.all([
+    db.documents.count(),
+    db.document_quality.groupBy({
+      by: ["validation_status"],
+      _count: { _all: true },
+    }),
+  ]);
 
-  const byState: Record<string, number> = {
-    ingested: 0,
-    normalized: 0,
-    under_review: 0,
-    completed: 0,
-    failed: 0,
-  };
-
-  for (const row of stateRows) {
-    byState[row.state] = row.count;
+  const by_validation_status: Record<string, number> = {};
+  for (const row of qualityRows) {
+    const key = row.validation_status ?? "unknown";
+    by_validation_status[key] = row._count._all;
   }
 
   return {
-    total: totalRows[0]?.total ?? 0,
-    by_state: byState,
-  };
-}
-
-export async function getDocuments(params: DocumentQueryParams = {}): Promise<PagedResult<Document>> {
-  const page = normalizePageNumber(params.page);
-  const state = params.state && ALLOWED_STATES.has(params.state) ? params.state : undefined;
-  const offset = (page - 1) * PAGE_SIZE;
-  const whereClause = state ? "WHERE state = ?" : "";
-  const whereParams: Array<string | number> = state ? [state] : [];
-  const documentColumns = await getDocumentColumns();
-
-  const [countRows] = await pool.execute<CountRow[]>(
-    `SELECT COUNT(*) AS total FROM documents ${whereClause}`,
-    whereParams,
-  );
-
-  const [documentRows] = await pool.execute<DocumentRow[]>(
-    `
-      SELECT
-        ${getDocumentSelectClause(documentColumns)}
-      FROM documents
-      ${whereClause}
-      ORDER BY created_at DESC
-      LIMIT ? OFFSET ?
-    `,
-    [...whereParams, PAGE_SIZE, offset],
-  );
-
-  return {
-    items: documentRows.map(normalizeDocumentRow),
-    total: countRows[0]?.total ?? 0,
+    total,
+    by_validation_status,
+    // Deprecated — no state column exists on documents
+    by_state: {},
   };
 }
 
-export async function getReviewQueue(
-  params: ReviewQueryParams = {},
-): Promise<PagedResult<ReviewItem & { filename: string | null }>> {
+// ---------------------------------------------------------------------------
+// getDocuments
+// The `state` filter is accepted for API stability but silently ignored because
+// documents.state does not exist.
+// ---------------------------------------------------------------------------
+export async function getDocuments(
+  params: DocumentQueryParams = {},
+): Promise<PagedResult<Document>> {
   const page = normalizePageNumber(params.page);
-  const status = params.status && ALLOWED_REVIEW_STATUSES.has(params.status) ? params.status : undefined;
-  const field = params.field?.trim() ? params.field.trim() : undefined;
+  // params.state is silently ignored — documents.state does not exist
   const offset = (page - 1) * PAGE_SIZE;
 
-  const filters: string[] = [];
-  const queryParams: Array<string | number> = [];
-
-  if (status) {
-    filters.push("r.status = ?");
-    queryParams.push(status);
-  }
-
-  if (field) {
-    filters.push("r.field_name = ?");
-    queryParams.push(field);
-  }
-
-  const whereClause = filters.length > 0 ? `WHERE ${filters.join(" AND ")}` : "";
-
-  const [countRows] = await pool.execute<CountRow[]>(
-    `
-      SELECT COUNT(*) AS total
-      FROM document_reviews r
-      ${whereClause}
-    `,
-    queryParams,
-  );
-
-  const [reviewRows] = await pool.execute<ReviewRow[]>(
-    `
-      SELECT
-        r.id,
-        r.document_id,
-        d.filename,
-        r.field_name,
-        r.winning_source,
-        r.winning_value,
-        r.conflicting_values,
-        r.status,
-        r.created_at
-      FROM document_reviews r
-      INNER JOIN documents d ON d.id = r.document_id
-      ${whereClause}
-      ORDER BY r.created_at DESC
-      LIMIT ? OFFSET ?
-    `,
-    [...queryParams, PAGE_SIZE, offset],
-  );
+  const [items, total] = await Promise.all([
+    db.documents.findMany({
+      orderBy: { created_at: "desc" },
+      skip: offset,
+      take: PAGE_SIZE,
+    }),
+    db.documents.count(),
+  ]);
 
   return {
-    items: reviewRows.map((row) => ({
-      ...normalizeReviewRow(row),
-      filename: row.filename,
+    items: items.map((row) => ({
+      id: String(row.id),
+      filename: row.filename ?? "",
+      filesize: row.filesize !== null && row.filesize !== undefined
+        ? Number(row.filesize)
+        : null,
+      filetype: row.filetype ?? null,
+      original_url: row.original_url ?? "",
+      source_id: row.source_id ?? null,
+      hash_binary: row.hash_binary ?? null,
+      hash_content: row.hash_content ?? null,
+      created_at: dateToString(row.created_at),
+      updated_at: dateToString(row.updated_at),
+      // Deprecated fields — not stored in the DB
+      state: "",
+      file_folder_url: "",
+      original_parent_folder: null,
+      parent_id: null,
+      duplicates: [],
+      collection_tags: [],
+      ingested_at: null,
+      is_primary: false,
+      drive_file_id: null,
     })),
-    total: countRows[0]?.total ?? 0,
+    total,
   };
 }
 
-export async function getDistinctReviewFields(): Promise<string[]> {
-  const [rows] = await pool.execute<ReviewFieldRow[]>(
-    `
-      SELECT DISTINCT field_name
-      FROM document_reviews
-      WHERE field_name IS NOT NULL AND field_name <> ''
-      ORDER BY field_name ASC
-    `,
-  );
-
-  return rows
-    .map((row) => row.field_name)
-    .filter((fieldName: unknown): fieldName is string => typeof fieldName === "string");
-}
-
+// ---------------------------------------------------------------------------
+// getDocumentDetail
+// Returns a document with its document_quality and document_versions.
+// Metadata, audits, and reviews are empty stubs because those tables do not exist.
+// ---------------------------------------------------------------------------
 export async function getDocumentDetail(documentId: string): Promise<DocumentDetail | null> {
-  const documentColumns = await getDocumentColumns();
+  const document = await db.documents.findUnique({
+    where: { id: documentId },
+  });
 
-  const [documentRows] = await pool.execute<DocumentRow[]>(
-    `
-      SELECT
-        ${getDocumentSelectClause(documentColumns)}
-      FROM documents
-      WHERE id = ?
-      LIMIT 1
-    `,
-    [documentId],
-  );
-
-  const documentRow = documentRows[0];
-
-  if (!documentRow) {
+  if (!document) {
     return null;
   }
 
-  const [metadataRows] = await pool.execute<MetadataRow[]>(
-    `
-      SELECT metadata
-      FROM document_metadata
-      WHERE document_id = ?
-      LIMIT 1
-    `,
-    [documentId],
-  );
+  const [quality, versions] = await Promise.all([
+    db.document_quality.findUnique({
+      where: { document_id: documentId },
+    }),
+    db.document_versions.findMany({
+      where: { document_id: documentId },
+      orderBy: { created_at: "desc" },
+    }),
+  ]);
 
-  const [auditRows] = await pool.execute<AuditRow[]>(
-    `
-      SELECT document_id, field_name, source_name, before_value, after_value, changed_at
-      FROM document_audits
-      WHERE document_id = ?
-      ORDER BY changed_at DESC
-    `,
-    [documentId],
-  );
-
-  const [reviewRows] = await pool.execute<ReviewRow[]>(
-    `
-      SELECT
-        id,
-        document_id,
-        NULL AS filename,
-        field_name,
-        winning_source,
-        winning_value,
-        conflicting_values,
-        status,
-        created_at
-      FROM document_reviews
-      WHERE document_id = ?
-      ORDER BY created_at DESC
-    `,
-    [documentId],
-  );
+  const mapQuality = (row: typeof quality): DocumentQuality | null => {
+    if (!row) return null;
+    return {
+      id: String(row.id),
+      document_id: String(row.document_id),
+      page_count: row.page_count ?? null,
+      validation_type: row.validation_type ?? null,
+      validation_status: row.validation_status ?? null,
+      validator: row.validator ?? null,
+      validation_timestamp: dateToString(row.validation_timestamp),
+      access_level: row.access_level ?? null,
+      content_duplication: row.content_duplication ?? null,
+      final_status: row.final_status ?? null,
+      created_at: dateToString(row.created_at),
+      updated_at: dateToString(row.updated_at),
+    };
+  };
 
   return {
-    document: normalizeDocumentRow(documentRow),
-    metadata: parseMetadata(metadataRows[0]?.metadata ?? null),
-    audits: auditRows.map(normalizeAuditRow),
-    reviews: reviewRows.map(normalizeReviewRow),
+    document: {
+      id: String(document.id),
+      filename: document.filename ?? "",
+      filesize: document.filesize !== null && document.filesize !== undefined
+        ? Number(document.filesize)
+        : null,
+      filetype: document.filetype ?? null,
+      original_url: document.original_url ?? "",
+      source_id: document.source_id ?? null,
+      hash_binary: document.hash_binary ?? null,
+      hash_content: document.hash_content ?? null,
+      created_at: dateToString(document.created_at),
+      updated_at: dateToString(document.updated_at),
+      // Deprecated fields
+      state: "",
+      file_folder_url: "",
+      original_parent_folder: null,
+      parent_id: null,
+      duplicates: [],
+      collection_tags: [],
+      ingested_at: null,
+      is_primary: false,
+      drive_file_id: null,
+    },
+    // document_to_metadata join exists but is not wired here; stub null
+    metadata: null,
+    // document_audits does not exist
+    audits: [] as AuditEntry[],
+    // document_reviews does not exist
+    reviews: [] as ReviewItem[],
+    quality: mapQuality(quality),
+    versions: versions.map((v) => ({
+      id: String(v.id),
+      document_id: String(v.document_id),
+      canonical_document_id: String(v.canonical_document_id),
+      hash_content: v.hash_content ?? null,
+      comments: v.comments ?? null,
+      changes_summary: v.changes_summary ?? null,
+      created_at: dateToString(v.created_at),
+      updated_at: dateToString(v.updated_at),
+    })),
   };
 }
 
+// ---------------------------------------------------------------------------
+// getFailures
+// Returns an empty array.  The documents table has no `state` column, so
+// there is no reliable way to determine which documents have failed.
+// ---------------------------------------------------------------------------
 export async function getFailures(): Promise<FailureItem[]> {
-  const documentColumns = await getDocumentColumns();
-
-  const [rows] = await pool.execute<FailureRow[]>(
-    `
-      SELECT
-        ${getDocumentSelectClause(documentColumns, "d")},
-        m.metadata
-      FROM documents d
-      LEFT JOIN document_metadata m ON m.document_id = d.id
-      WHERE d.state = ?
-      ORDER BY d.ingested_at DESC
-    `,
-    ["failed"],
-  );
-
-  return rows.map((row) => ({
-    ...normalizeDocumentRow(row),
-    failure_reason: deriveFailureReason(row.metadata),
-  }));
+  // documents table has no state column — cannot determine failures
+  return await Promise.resolve([]);
 }
 
+// ---------------------------------------------------------------------------
+// getDistinctCollectionTags
+// Returns distinct tag names by querying the tags + document_to_tags join.
+// The documents table has no `collection_tags` column.
+// ---------------------------------------------------------------------------
 export async function getDistinctCollectionTags(): Promise<string[]> {
-  const [rows] = await pool.execute<CollectionTagsRow[]>(
-    `
-      SELECT DISTINCT collection_tags
-      FROM documents
-      WHERE collection_tags IS NOT NULL AND collection_tags <> '[]' AND collection_tags <> ''
-    `,
-  );
+  const rows = await db.tags.findMany({
+    include: {
+      document_to_tags: {
+        select: { document_id: true },
+      },
+    },
+  });
 
   const tagSet = new Set<string>();
-  for (const row of rows) {
-    const tags = parseJsonArray(row.collection_tags);
-    for (const tag of tags) {
-      tagSet.add(tag);
+  for (const tag of rows) {
+    if (tag.document_to_tags.length > 0) {
+      tagSet.add(tag.name);
     }
   }
-
   return Array.from(tagSet).sort();
 }
 
+// ---------------------------------------------------------------------------
+// updateDocumentCollectionTags
+// Returns false.  The documents table has no `collection_tags` column,
+// so this operation cannot be performed.
+// ---------------------------------------------------------------------------
 export async function updateDocumentCollectionTags(
-  documentId: string,
-  collectionTags: string[],
+  _documentId: string,
+  _collectionTags: string[],
 ): Promise<boolean> {
-  const [result] = await pool.execute(
-    "UPDATE documents SET collection_tags = ? WHERE id = ?",
-    [JSON.stringify(collectionTags), documentId],
-  );
+  // documents table has no collection_tags column — operation not supported
+  return await Promise.resolve(false);
+}
 
-  const affected = (result as ResultSetHeader).affectedRows;
-  return affected > 0;
+// ---------------------------------------------------------------------------
+// getReviewQueue
+// Returns an empty result.  The document_reviews table does not exist.
+// ---------------------------------------------------------------------------
+export async function getReviewQueue(
+  _params: ReviewQueryParams = {},
+): Promise<PagedResult<ReviewItem & { filename: string | null }>> {
+  // document_reviews table does not exist
+  return await Promise.resolve({ items: [], total: 0 });
+}
+
+// ---------------------------------------------------------------------------
+// getDistinctReviewFields
+// Returns an empty array.  The document_reviews table does not exist.
+// ---------------------------------------------------------------------------
+export async function getDistinctReviewFields(): Promise<string[]> {
+  // document_reviews table does not exist
+  return await Promise.resolve([]);
 }

@@ -4,13 +4,14 @@
 erDiagram
     documents {
         uuid id PK
+        bigint filesize
+        varchar hash_binary
+        varchar hash_content
+        varchar id_legacy
         varchar original_url
         varchar source_id
         varchar filename
         varchar filetype
-        bigint filesize
-        varchar hash_binary
-        varchar hash_content
         timestamp created_at
         timestamp updated_at
     }
@@ -38,28 +39,38 @@ erDiagram
         uuid id PK
         varchar name
         timestamp binary_processing_datetime
-        int total_files
-        int unique_files
+        decimal cost
+        decimal cost_saved
+        varchar dedup_method
+        timestamp discrepancy_correction_timestamp
+        varchar discrepancy_explanation
+        int discrepancy_missing_unique_entries
+        varchar discrepancy_source
+        varchar discrepancy_status
+        varchar discrepancy_summary
+        int discrepancy_total_binary_registered
+        int discrepancy_total_content_hashes
+        int distribution_high_quality
+        int distribution_medium_quality
+        int distribution_low_quality
+        int duplicate_content
         int duplicate_files
+        int duplicate_groups
+        timestamp duplicates_removed_timestamp
+        varchar id_legacy
         int inter_duplicates
         int intra_duplicates
-        int exact_duplicates_found
-        int total_duplicates_found
-        decimal cost_saved
-        decimal cost
-        int processing_time_seconds
-        decimal total_cost
+        json processing_details
+        varchar quality_assessment_note
+        varchar quality_assessment_source
+        varchar quality_recommendation
         varchar registry_version
-        varchar dedup_method
+        int total_files
+        int unique_files
         timestamp started_at
         timestamp completed_at
-        varchar started_by
-        json processing_details
-        timestamp duplicates_removed_timestamp
-        int error_count
-        int files_processed
         timestamp last_processed
-        varchar status
+        varchar started_by
     }
 
     document_to_batches {
@@ -69,6 +80,8 @@ erDiagram
         timestamp added_at
         decimal cost
         int processing_time_seconds
+        TINYINT(1) ocr_quality_low
+        TINYINT(1) ocr_quality_medium
     }
 
     authors {
@@ -134,7 +147,7 @@ erDiagram
     document_to_metadata {
         uuid id PK
         uuid document_id FK
-        uuid metadata_field_id FK
+        uuid metadata_id FK
         json value
         varchar value_type
         timestamp created_at
@@ -149,6 +162,7 @@ erDiagram
         text(medium) changes_summary
         timestamp created_at
         timestamp updated_at
+        timestamp analyzed_at
     }
 
     version_groups {
@@ -163,14 +177,15 @@ erDiagram
     document_quality {
         uuid id PK
         uuid document_id FK, UK
-        int page_count
-        varchar validation_type
+        text(medium) comment
+        text(medium) comment_additional
+        varchar metadata_sufficiency
         varchar validation_status
+        varchar validation_type
+        timestamp validation_timestamp
         varchar validator_name
         varchar validator_email
-        timestamp validation_timestamp
         varchar access_level
-        varchar content_duplication
         uuid current_status FK
         timestamp created_at
         timestamp updated_at
