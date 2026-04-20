@@ -1,14 +1,11 @@
 import type { MetadataRecord } from "@lib/types";
 
-export function formatDateTime(value: string | null): string {
-  if (!value) {
-    return "—";
-  }
-
-  const date = new Date(value);
+export function formatDateTime(value: string | Date | null | undefined): string | null {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return value;
+    return null;
   }
 
   return new Intl.DateTimeFormat("en-US", {

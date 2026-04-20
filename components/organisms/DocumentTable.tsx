@@ -24,8 +24,7 @@ export function DocumentTable({ documents }: DocumentTableProps): ReactElement {
           <thead className="bg-sand/55 text-left text-xs uppercase tracking-[0.15em] text-ink/70">
             <tr>
               <th className="px-4 py-3">Document</th>
-              <th className="px-4 py-3">Filename</th>
-              <th className="px-4 py-3">Type</th>
+              <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Size</th>
               <th className="px-4 py-3">Created</th>
             </tr>
@@ -38,8 +37,7 @@ export function DocumentTable({ documents }: DocumentTableProps): ReactElement {
                     {document.id}
                   </Link>
                 </td>
-                <td className="px-4 py-3 text-ink">{document.filename || "—"}</td>
-                <td className="px-4 py-3 text-ink/70">{document.filetype || "—"}</td>
+                <td className="px-4 py-3 text-ink">{document.name || "—"}</td>
                 <td className="px-4 py-3 text-ink/70">{formatBytes(document.filesize)}</td>
                 <td className="px-4 py-3 text-ink/70">{formatDateTime(document.created_at)}</td>
               </tr>

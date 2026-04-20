@@ -16,11 +16,10 @@ interface DocumentDetailPageProps {
 
 const documentFieldLabels: Array<{ key: string; label: string }> = [
   { key: "id", label: "Document ID" },
-  { key: "filename", label: "Filename" },
-  { key: "filesize", label: "File Size" },
-  { key: "filetype", label: "File Type" },
-  { key: "original_url", label: "Original URL" },
+  { key: "name", label: "Name" },
+  { key: "id_legacy", label: "Legacy ID" },
   { key: "source_id", label: "Source ID" },
+  { key: "filesize", label: "File Size" },
   { key: "hash_binary", label: "Hash (Binary)" },
   { key: "hash_content", label: "Hash (Content)" },
   { key: "created_at", label: "Created At" },
@@ -52,11 +51,10 @@ export default async function DocumentDetailPage({
 
     const documentFieldValues = {
       id: document.id,
-      filename: document.filename ?? "—",
-      filesize: formatBytes(document.filesize),
-      filetype: document.filetype ?? "—",
-      original_url: document.original_url ?? "—",
+      name: document.name ?? "—",
+      id_legacy: document.id_legacy ?? "—",
       source_id: document.source_id ?? "—",
+      filesize: formatBytes(document.filesize),
       hash_binary: document.hash_binary ?? "—",
       hash_content: document.hash_content ?? "—",
       created_at: formatDateTime(document.created_at),
@@ -67,7 +65,7 @@ export default async function DocumentDetailPage({
       <div className="space-y-8">
         <PageHeader
           eyebrow="Document Detail"
-          title={document.filename || document.id}
+          title={document.name || document.id}
           description="Inspect the full document record, metadata payload, audit trail, review history, and duplicate relationships."
         />
 
@@ -79,13 +77,7 @@ export default async function DocumentDetailPage({
                 <div key={field.key} className="rounded-xl bg-sand/45 p-4">
                   <dt className="text-xs uppercase tracking-[0.15em] text-ink/60">{field.label}</dt>
                   <dd className="mt-2 break-words text-sm text-ink">
-                    {field.key === "original_url" && document.original_url ? (
-                      <a href={document.original_url} className="text-moss underline" target="_blank" rel="noreferrer">
-                        {document.original_url}
-                      </a>
-                    ) : (
-                      documentFieldValues[field.key] || "—"
-                    )}
+                    {documentFieldValues[field.key] || "—"}
                   </dd>
                 </div>
               ))}

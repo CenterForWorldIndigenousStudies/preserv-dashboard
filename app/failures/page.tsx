@@ -29,10 +29,10 @@ export default async function FailuresPage(): Promise<ReactElement> {
                 <thead className="bg-sand/55 text-left text-xs uppercase tracking-[0.15em] text-ink/70">
                   <tr>
                     <th className="px-4 py-3">Document ID</th>
-                    <th className="px-4 py-3">Filename</th>
-                    <th className="px-4 py-3">State</th>
+                    <th className="px-4 py-3">Name</th>
+                    <th className="px-4 py-3">Source ID</th>
                     <th className="px-4 py-3">Failure Reason</th>
-                    <th className="px-4 py-3">Ingested At</th>
+                    <th className="px-4 py-3">Created</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-moss/10">
@@ -43,14 +43,10 @@ export default async function FailuresPage(): Promise<ReactElement> {
                           {failure.id}
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-ink">{failure.filename || "—"}</td>
-                      <td className="px-4 py-3">
-                        <span className="rounded-full bg-clay/15 px-3 py-1 text-xs font-medium uppercase tracking-[0.15em] text-clay">
-                          {failure.state}
-                        </span>
-                      </td>
+                      <td className="px-4 py-3 text-ink">{failure.name || "—"}</td>
+                      <td className="px-4 py-3 text-ink">{failure.source_id || "—"}</td>
                       <td className="px-4 py-3 whitespace-pre-wrap text-ink/80">{failure.failure_reason || "Unknown"}</td>
-                      <td className="px-4 py-3 text-ink/70">{formatDateTime(failure.ingested_at ?? null)}</td>
+                      <td className="px-4 py-3 text-ink/70">{formatDateTime(failure.created_at)}</td>
                     </tr>
                   ))}
                 </tbody>

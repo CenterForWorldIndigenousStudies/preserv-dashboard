@@ -12,13 +12,84 @@ import type {
 } from "@lib/types";
 import { db } from "@lib/db";
 
-const PAGE_SIZE = 20;
+// Fields on the documents model used for orderBy/filtering
+const DOCUMENTS_ORDERABLE_FIELDS = [
+  "id",
+  "filesize",
+  "source_id",
+  "hash_binary",
+  "hash_content",
+  "id_legacy",
+  "name",
+  "created_at",
+  "updated_at",
+] as const;
 
-function dateToString(value: Date | string | null | undefined): string | null {
-  if (!value) return null;
-  if (value instanceof Date) return value.toISOString();
-  return String(value);
+export interface DocumentsQueryParams {
+  page?: number;
+  pageSize?: number;
+  orderBy?: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number];
+  sortDirection?: "asc" | "desc";
+  search?: string;
 }
+
+export async function getAllDocuments(
+  params: DocumentsQueryParams = {},
+): Promise<{ data: Document[]; total: number }> {
+  const page = normalizePageNumber(params.page);
+  const pageSize = params.pageSize && params.pageSize > 0 ? Math.min(params.pageSize, 1000) : 25;
+  const skip = (page - 1) * pageSize;
+
+  // Build orderBy
+  let orderBy: Record<string, "asc" | "desc"> | undefined;
+  if (params.orderBy && (DOCUMENTS_ORDERABLE_FIELDS as readonly string[]).includes(params.orderBy)) {
+    orderBy = { [params.orderBy]: params.sortDirection === "desc" ? "desc" : "asc" };
+  } else {
+    orderBy = { created_at: "desc" };
+  }
+
+  // Build where clause for global search
+  const where: Record<string, unknown> = {};
+  if (params.search && params.search.trim()) {
+    const searchTerm = params.search.trim();
+    where.OR = [
+      { name: { contains: searchTerm } },
+      { source_id: { contains: searchTerm } },
+      { hash_binary: { contains: searchTerm } },
+      { hash_content: { contains: searchTerm } },
+      { id_legacy: { contains: searchTerm } },
+    ];
+  }
+
+  const [items, total] = await Promise.all([
+    db.documents.findMany({
+      where,
+      orderBy,
+      skip,
+      take: pageSize,
+    }),
+    db.documents.count({ where }),
+  ]);
+
+  return {
+    data: items.map((row) => ({
+      id: String(row.id),
+      filesize: row.filesize !== null && row.filesize !== undefined
+        ? Number(row.filesize)
+        : null,
+      hash_binary: row.hash_binary ?? null,
+      hash_content: row.hash_content ?? null,
+      id_legacy: row.id_legacy ?? null,
+      source_id: row.source_id ?? null,
+      name: row.name ?? null,
+      created_at: row.created_at ?? null,
+      updated_at: row.updated_at ?? null,
+    })),
+    total,
+  };
+}
+
+const PAGE_SIZE = 20;
 
 function normalizePageNumber(page?: number): number {
   if (!page || page < 1 || Number.isNaN(page)) {
@@ -55,21 +126,17 @@ export async function getPipelineSummary(): Promise<PipelineSummary> {
   return {
     total,
     by_validation_status,
-    // Deprecated — no state column exists on documents
     by_state: {},
   };
 }
 
 // ---------------------------------------------------------------------------
 // getDocuments
-// The `state` filter is accepted for API stability but silently ignored because
-// documents.state does not exist.
 // ---------------------------------------------------------------------------
 export async function getDocuments(
   params: DocumentQueryParams = {},
 ): Promise<PagedResult<Document>> {
   const page = normalizePageNumber(params.page);
-  // params.state is silently ignored — documents.state does not exist
   const offset = (page - 1) * PAGE_SIZE;
 
   const [items, total] = await Promise.all([
@@ -84,27 +151,16 @@ export async function getDocuments(
   return {
     items: items.map((row) => ({
       id: String(row.id),
-      filename: row.filename ?? "",
       filesize: row.filesize !== null && row.filesize !== undefined
         ? Number(row.filesize)
         : null,
-      filetype: row.filetype ?? null,
-      original_url: row.original_url ?? "",
-      source_id: row.source_id ?? null,
       hash_binary: row.hash_binary ?? null,
       hash_content: row.hash_content ?? null,
-      created_at: dateToString(row.created_at),
-      updated_at: dateToString(row.updated_at),
-      // Deprecated fields — not stored in the DB
-      state: "",
-      file_folder_url: "",
-      original_parent_folder: null,
-      parent_id: null,
-      duplicates: [],
-      collection_tags: [],
-      ingested_at: null,
-      is_primary: false,
-      drive_file_id: null,
+      id_legacy: row.id_legacy ?? null,
+      source_id: row.source_id ?? null,
+      name: row.name ?? null,
+      created_at: row.created_at ?? null,
+      updated_at: row.updated_at ?? null,
     })),
     total,
   };
@@ -139,14 +195,16 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
     return {
       id: String(row.id),
       document_id: String(row.document_id),
-      page_count: row.page_count ?? null,
-      validation_type: row.validation_type ?? null,
+      comment: row.comment ?? null,
+      comment_additional: row.comment_additional ?? null,
+      metadata_sufficiency: row.metadata_sufficiency ?? null,
       validation_status: row.validation_status ?? null,
-      validator: row.validator ?? null,
+      validation_type: row.validation_type ?? null,
       validation_timestamp: dateToString(row.validation_timestamp),
+      validator_name: row.validator_name ?? null,
+      validator_email: row.validator_email ?? null,
       access_level: row.access_level ?? null,
-      content_duplication: row.content_duplication ?? null,
-      final_status: row.final_status ?? null,
+      current_status: row.current_status ?? null,
       created_at: dateToString(row.created_at),
       updated_at: dateToString(row.updated_at),
     };
@@ -155,27 +213,16 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
   return {
     document: {
       id: String(document.id),
-      filename: document.filename ?? "",
       filesize: document.filesize !== null && document.filesize !== undefined
         ? Number(document.filesize)
         : null,
-      filetype: document.filetype ?? null,
-      original_url: document.original_url ?? "",
-      source_id: document.source_id ?? null,
       hash_binary: document.hash_binary ?? null,
       hash_content: document.hash_content ?? null,
-      created_at: dateToString(document.created_at),
-      updated_at: dateToString(document.updated_at),
-      // Deprecated fields
-      state: "",
-      file_folder_url: "",
-      original_parent_folder: null,
-      parent_id: null,
-      duplicates: [],
-      collection_tags: [],
-      ingested_at: null,
-      is_primary: false,
-      drive_file_id: null,
+      id_legacy: document.id_legacy ?? null,
+      source_id: document.source_id ?? null,
+      name: document.name ?? null,
+      created_at: document.created_at ?? null,
+      updated_at: document.updated_at ?? null,
     },
     // document_to_metadata join exists but is not wired here; stub null
     metadata: null,
@@ -188,13 +235,19 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
       id: String(v.id),
       document_id: String(v.document_id),
       canonical_document_id: String(v.canonical_document_id),
-      hash_content: v.hash_content ?? null,
-      comments: v.comments ?? null,
+      notes: v.notes ?? null,
       changes_summary: v.changes_summary ?? null,
       created_at: dateToString(v.created_at),
       updated_at: dateToString(v.updated_at),
+      analyzed_at: dateToString(v.analyzed_at),
     })),
   };
+}
+
+function dateToString(value: Date | string | null | undefined): string | null {
+  if (!value) return null;
+  if (value instanceof Date) return value.toISOString();
+  return String(value);
 }
 
 // ---------------------------------------------------------------------------
@@ -249,7 +302,7 @@ export async function updateDocumentCollectionTags(
 // ---------------------------------------------------------------------------
 export async function getReviewQueue(
   _params: ReviewQueryParams = {},
-): Promise<PagedResult<ReviewItem & { filename: string | null }>> {
+): Promise<PagedResult<ReviewItem>> {
   // document_reviews table does not exist
   return await Promise.resolve({ items: [], total: 0 });
 }

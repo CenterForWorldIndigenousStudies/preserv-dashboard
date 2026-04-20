@@ -36,7 +36,9 @@
       "types": ["./types"],
       "types/*": ["./types/*"],
       "@lib": ["./lib"],
-      "@lib/*": ["./lib/*"]
+      "@lib/*": ["./lib/*"],
+      "@actions": ["./app/actions"],
+      "@actions/*": ["./app/actions/*"]
     }
   }
 }
