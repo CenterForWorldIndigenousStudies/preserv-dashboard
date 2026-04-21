@@ -38,72 +38,55 @@ jobs:
                   files: |
                       **/*
                   files_ignore: |
-                      AGENTS.md
-                      README.md
+                      **/*.md
                       .cursorrules
-                      .eslint*
                       .markdownlint-cli2.json
                       .prettier*
                       vercel.json
-                  folders_ignore: |
-                      .github
-                      .next
-                      .storybook
-                      .vscode
-                      documentation
-                      lib/prisma/generated
-                      public/developers/storybook
-                      scripts
+                      .next/**
+                      .storybook/**
+                      .vscode/**
+                      documentation/**
+                      lib/prisma/generated/**
+                      public/developers/storybook/**
+                      scripts/**
+
+            - name: Get changed markdown files
+              if: steps.check-branch.outputs.skip != 'true'
+              id: changed-markdown
+              uses: tj-actions/changed-files@v47
+              with:
+                  files: |
+                      **/*.md
+                  files_ignore: |
+                      .next/**
+                      .storybook/**
+                      .vscode/**
+                      lib/prisma/generated/**
+                      public/developers/storybook/**
 
             - name: Should lint docs
               id: lint-docs
-              if: steps.check-branch.outputs.skip != 'true'
-              run: |
-                  run=false
-                  if [[ "${{ steps.changed-files.outputs.any_modified }}" == "true" ]] || \
-                     [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-                    # Only lint docs if md files changed
-                    if [[ "${{ steps.changed-files.outputs.all_changed_and_modified_files }}" == *"."*"md"* ]]; then
-                      run=true
-                    fi
-                  fi
-                  echo "run=${run}" >> $GITHUB_OUTPUT
+              if: steps.changed-markdown.outputs.any_modified == 'true' || github.event_name == 'workflow_dispatch'
+              run: echo "run=true" >> $GITHUB_OUTPUT
               shell: bash
 
             - name: Should run build
               id: check-build
-              if: steps.check-branch.outputs.skip != 'true'
-              run: |
-                  run=false
-                  if [[ "${{ steps.changed-files.outputs.any_modified }}" == "true" ]] || \
-                     [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-                    run=true
-                  fi
-                  echo "run=${run}" >> $GITHUB_OUTPUT
+              if: steps.changed-files.outputs.any_modified == 'true' || github.event_name == 'workflow_dispatch'
+              run: echo "run=true" >> $GITHUB_OUTPUT
               shell: bash
 
             - name: Should lint project
               id: lint-project
-              if: steps.check-branch.outputs.skip != 'true'
-              run: |
-                  run=false
-                  if [[ "${{ steps.changed-files.outputs.any_modified }}" == "true" ]] || \
-                     [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-                    run=true
-                  fi
-                  echo "run=${run}" >> $GITHUB_OUTPUT
+              if: steps.changed-files.outputs.any_modified == 'true' || github.event_name == 'workflow_dispatch'
+              run: echo "run=true" >> $GITHUB_OUTPUT
               shell: bash
             
             - name: Should run tests
               id: run-tests
-              if: steps.check-branch.outputs.skip != 'true'
-              run: |
-                  run=false
-                  if [[ "${{ steps.changed-files.outputs.any_modified }}" == "true" ]] || \
-                     [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-                    run=true
-                  fi
-                  echo "run=${run}" >> $GITHUB_OUTPUT
+              if: steps.changed-files.outputs.any_modified == 'true' || github.event_name == 'workflow_dispatch'
+              run: echo "run=true" >> $GITHUB_OUTPUT
               shell: bash
 
             - name: Setup Node.js
@@ -114,7 +97,7 @@ jobs:
                   cache: "npm"
 
             - name: Install dependencies
-              if: steps.check-build.outputs.run == 'true'
+              if: steps.check-branch.outputs.skip != 'true'
               run: npm ci
 
             - name: Build
@@ -137,6 +120,6 @@ jobs:
               shell: bash
 
             - name: Default Job Success
-              if: steps.check-build.outputs.run == 'false' && steps.lint-docs.outputs.run == 'false'
+              if: steps.check-build.outputs.run == 'false' && steps.lint-docs.outputs.run == 'false' && steps.lint-project.outputs.run == 'false' && steps.run-tests.outputs.run == 'false'
               run: exit 0
               shell: bash
