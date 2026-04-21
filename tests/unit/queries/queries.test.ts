@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, it, expect, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, it, expect, vi } from 'vitest';
 
 // ---------------------------------------------------------------------------
 // Mock the Prisma client via vi.hoisted() — ensures mocks are available at
@@ -127,11 +127,8 @@ describe('getAllDocuments', () => {
     mockCount.mockResolvedValue(1);
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   afterEach(() => {
-     
     mockFindMany.mockClear();
-     
     mockCount.mockClear();
   });
 
@@ -271,11 +268,8 @@ describe('getDocuments', () => {
     mockCount.mockResolvedValue(1);
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   afterEach(() => {
-     
     mockFindMany.mockClear();
-     
     mockCount.mockClear();
   });
 

@@ -20,6 +20,16 @@ export default defineConfig({
     },
   },
   test: {
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html'],
+      thresholds: {
+        statements: 70,
+        branches: 70,
+        functions: 70,
+        lines: 70,
+      },
+    },
     projects: [
       {
         extends: true,
@@ -46,16 +56,6 @@ export default defineConfig({
           setupFiles: [],
           environment: 'node',
           include: ['tests/unit/**/*.test.ts'],
-          coverage: {
-            provider: 'v8',
-            reporter: ['text', 'html'],
-            thresholds: {
-              statements: 70,
-              branches: 70,
-              functions: 70,
-              lines: 70,
-            },
-          },
         },
       },
       {

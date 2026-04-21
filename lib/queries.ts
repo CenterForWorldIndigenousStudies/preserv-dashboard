@@ -234,7 +234,7 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
     versions: versions.map((v) => ({
       id: String(v.id),
       document_id: String(v.document_id),
-      canonical_document_id: String(v.canonical_document_id),
+      version_group_id: String(v.version_group_id),
       notes: v.notes ?? null,
       changes_summary: v.changes_summary ?? null,
       created_at: dateToString(v.created_at),

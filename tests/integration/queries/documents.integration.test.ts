@@ -32,8 +32,17 @@ describe('documents queries (integration)', () => {
   // ---------------------------------------------------------------------------
   // Helper: create a test document with retry on uniqueness collisions
   // ---------------------------------------------------------------------------
-  const createTestDocument = async (overrides: Record<string, unknown> = {}) => {
-    let doc: (Record<string, unknown> & { id: string }) | null = null;
+  const createTestDocument = async (overrides: {
+    id_legacy?: string;
+    name?: string;
+    source_id?: string;
+    hash_binary?: string;
+    hash_content?: string;
+    filesize?: bigint;
+    created_at?: Date;
+    updated_at?: Date;
+  } = {}) => {
+    let doc: { id: string } | null = null;
     let lastErr: unknown;
     for (let attempt = 0; attempt < 10; attempt++) {
       try {
@@ -42,15 +51,14 @@ describe('documents queries (integration)', () => {
         doc = await db.documents.create({
           data: {
             id,
-            id_legacy: (overrides.id_legacy as string | undefined) ?? idLegacy,
-            name: (overrides.name as string | undefined) ?? `Test ${id}`,
-            source_id: (overrides.source_id as string | undefined) ?? 'test-source',
-            hash_binary: (overrides.hash_binary as string | undefined) ?? `hb-${id}`,
-            hash_content: (overrides.hash_content as string | undefined) ?? `hc-${id}`,
+            id_legacy: overrides.id_legacy ?? idLegacy,
+            name: overrides.name ?? `Test ${id}`,
+            source_id: overrides.source_id ?? 'test-source',
+            hash_binary: overrides.hash_binary ?? `hb-${id}`,
+            hash_content: overrides.hash_content ?? `hc-${id}`,
             filesize: overrides.filesize ?? BigInt(1024),
-            created_at: (overrides.created_at as Date | undefined) ?? new Date(),
-            updated_at: (overrides.updated_at as Date | undefined) ?? new Date(),
-            ...overrides,
+            created_at: overrides.created_at ?? new Date(),
+            updated_at: overrides.updated_at ?? new Date(),
           },
         });
         break;

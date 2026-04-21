@@ -33,7 +33,7 @@ export interface DocumentQuality {
 export interface DocumentVersion {
   id: string;
   document_id: string;
-  canonical_document_id: string;
+  version_group_id: string;
   notes: string | null;
   changes_summary: string | null;
   created_at: string | null;

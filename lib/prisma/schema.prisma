@@ -25,44 +25,45 @@ model authors {
   document_to_authors document_to_authors[]
 }
 
+model batch_metadata {
+  id                        String                      @id @db.VarChar(36)
+  name                      String                      @db.Text
+  notes                     String?                     @db.MediumText
+  name_hash                 String?                     @unique(map: "uk_batch_metadata_name") @db.VarChar(64)
+  created_at                DateTime?                   @default(now()) @db.Timestamp(0)
+  updated_at                DateTime?                   @default(now()) @db.Timestamp(0)
+  batch_to_batches_metadata batch_to_batches_metadata[]
+}
+
+model batch_to_batches_metadata {
+  id             String         @id @db.VarChar(36)
+  batch_id       String         @db.VarChar(36)
+  metadata_id    String         @db.VarChar(36)
+  value          String?        @db.LongText
+  value_type     String?        @db.VarChar(50)
+  created_at     DateTime?      @default(now()) @db.Timestamp(0)
+  updated_at     DateTime?      @default(now()) @db.Timestamp(0)
+  batches        batches        @relation(fields: [batch_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_batch_to_batches_metadata_batch")
+  batch_metadata batch_metadata @relation(fields: [metadata_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_batch_to_batches_metadata_metadata")
+
+  @@index([batch_id], map: "idx_batch_to_batches_metadata_batch_id")
+  @@index([metadata_id], map: "idx_batch_to_batches_metadata_metadata_id")
+}
+
 model batches {
-  id                                  String                @id @db.VarChar(36)
-  name                                String?               @db.Text
-  name_hash                           String?               @unique(map: "uk_batches_name") @db.VarChar(64)
-  binary_processing_datetime          DateTime?             @db.Timestamp(0)
-  cost                                Decimal?              @db.Decimal(10, 2)
-  cost_saved                          Decimal?              @db.Decimal(10, 2)
-  dedup_method                        String?               @db.VarChar(255)
-  discrepancy_correction_timestamp    DateTime?             @db.Timestamp(0)
-  discrepancy_explanation             String?               @db.VarChar(255)
-  discrepancy_missing_unique_entries  Int?
-  discrepancy_source                  String?               @db.VarChar(255)
-  discrepancy_status                  String?               @db.VarChar(255)
-  discrepancy_summary                 String?               @db.VarChar(255)
-  discrepancy_total_binary_registered Int?
-  discrepancy_total_content_hashes    Int?
-  distribution_high_quality           Int?
-  distribution_medium_quality         Int?
-  distribution_low_quality            Int?
-  duplicate_content                   Int?
-  duplicate_files                     Int?
-  duplicate_groups                    Int?
-  duplicates_removed_timestamp        DateTime?             @db.Timestamp(0)
-  id_legacy                           String?               @db.VarChar(255)
-  inter_duplicates                    Int?
-  intra_duplicates                    Int?
-  processing_details                  String?               @db.LongText
-  quality_assessment_note             String?               @db.VarChar(255)
-  quality_assessment_source           String?               @db.VarChar(255)
-  quality_recommendation              String?               @db.VarChar(255)
-  registry_version                    String?               @db.VarChar(255)
-  total_files                         Int?
-  unique_files                        Int?
-  started_at                          DateTime?             @db.Timestamp(0)
-  completed_at                        DateTime?             @db.Timestamp(0)
-  last_processed                      DateTime?             @db.Timestamp(0)
-  started_by                          String?               @db.VarChar(255)
-  document_to_batches                 document_to_batches[]
+  id                        String                      @id @db.VarChar(36)
+  id_legacy                 String?                     @db.VarChar(255)
+  name                      String?                     @db.Text
+  name_hash                 String?                     @unique(map: "uk_batches_name") @db.VarChar(64)
+  processing_details        String?                     @db.LongText
+  created_at                DateTime?                   @default(now()) @db.Timestamp(0)
+  updated_at                DateTime?                   @default(now()) @db.Timestamp(0)
+  started_at                DateTime?                   @db.Timestamp(0)
+  completed_at              DateTime?                   @db.Timestamp(0)
+  last_processed            DateTime?                   @db.Timestamp(0)
+  started_by                String?                     @db.VarChar(255)
+  batch_to_batches_metadata batch_to_batches_metadata[]
+  document_to_batches       document_to_batches[]
 }
 
 model document_access {
@@ -176,42 +177,41 @@ model document_to_tags {
 }
 
 model document_versions {
-  id                                                           String    @id @db.VarChar(36)
-  document_id                                                  String    @db.VarChar(36)
-  canonical_document_id                                        String    @db.VarChar(36)
-  notes                                                        String?   @db.MediumText
-  changes_summary                                              String?   @db.MediumText
-  created_at                                                   DateTime? @default(now()) @db.Timestamp(0)
-  updated_at                                                   DateTime? @default(now()) @db.Timestamp(0)
-  analyzed_at                                                  DateTime? @db.Timestamp(0)
-  documents_document_versions_canonical_document_idTodocuments documents @relation("document_versions_canonical_document_idTodocuments", fields: [canonical_document_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_versions_canonical_document")
-  documents_document_versions_document_idTodocuments           documents @relation("document_versions_document_idTodocuments", fields: [document_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_versions_document")
+  id               String         @id @db.VarChar(36)
+  document_id      String         @db.VarChar(36)
+  version_group_id String         @db.VarChar(36)
+  notes            String?        @db.MediumText
+  changes_summary  String?        @db.MediumText
+  created_at       DateTime?      @default(now()) @db.Timestamp(0)
+  updated_at       DateTime?      @default(now()) @db.Timestamp(0)
+  analyzed_at      DateTime?      @db.Timestamp(0)
+  documents        documents      @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_versions_document")
+  version_groups   version_groups @relation(fields: [version_group_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_versions_version_group")
 
-  @@index([canonical_document_id], map: "idx_document_versions_canonical_document_id")
   @@index([document_id], map: "idx_document_versions_document_id")
+  @@index([version_group_id], map: "idx_document_versions_version_group_id")
 }
 
 model documents {
-  id                                                                   String                   @id @db.VarChar(36)
-  filesize                                                             BigInt?
-  hash_binary                                                          String?                  @db.VarChar(255)
-  hash_content                                                         String?                  @db.VarChar(255)
-  id_legacy                                                            String                   @unique(map: "uk_documents_id_legacy") @db.VarChar(255)
-  source_id                                                            String?                  @db.VarChar(255)
-  name                                                                 String?                  @db.VarChar(255)
-  created_at                                                           DateTime?                @default(now()) @db.Timestamp(0)
-  updated_at                                                           DateTime?                @default(now()) @db.Timestamp(0)
-  document_access                                                      document_access[]
-  document_quality                                                     document_quality?
-  document_to_authors                                                  document_to_authors[]
-  document_to_batches                                                  document_to_batches[]
-  document_to_metadata                                                 document_to_metadata[]
-  document_to_publishers                                               document_to_publishers[]
-  document_to_tags                                                     document_to_tags[]
-  document_versions_document_versions_canonical_document_idTodocuments document_versions[]      @relation("document_versions_canonical_document_idTodocuments")
-  document_versions_document_versions_document_idTodocuments           document_versions[]      @relation("document_versions_document_idTodocuments")
-  state_history                                                        state_history[]
-  version_groups                                                       version_groups[]
+  id                     String                   @id @db.VarChar(36)
+  filesize               BigInt?
+  hash_binary            String?                  @db.VarChar(255)
+  hash_content           String?                  @db.VarChar(255)
+  id_legacy              String                   @unique(map: "uk_documents_id_legacy") @db.VarChar(255)
+  source_id              String?                  @db.VarChar(255)
+  name                   String?                  @db.VarChar(255)
+  created_at             DateTime?                @default(now()) @db.Timestamp(0)
+  updated_at             DateTime?                @default(now()) @db.Timestamp(0)
+  document_access        document_access[]
+  document_quality       document_quality?
+  document_to_authors    document_to_authors[]
+  document_to_batches    document_to_batches[]
+  document_to_metadata   document_to_metadata[]
+  document_to_publishers document_to_publishers[]
+  document_to_tags       document_to_tags[]
+  document_versions      document_versions[]
+  state_history          state_history[]
+  version_groups         version_groups?
 
   @@index([hash_binary], map: "idx_documents_hash_binary")
   @@index([hash_content], map: "idx_documents_hash_content")
@@ -233,7 +233,7 @@ model edit_history {
 
 model metadata {
   id                   String                 @id @db.VarChar(36)
-  name                 String                 @db.VarChar(100)
+  name                 String                 @db.Text
   notes                String?                @db.MediumText
   name_hash            String?                @unique(map: "uk_metadata_name") @db.VarChar(64)
   created_at           DateTime?              @default(now()) @db.Timestamp(0)
@@ -264,7 +264,7 @@ model state_history {
 
 model tags {
   id               String             @id @db.VarChar(36)
-  name             String             @db.VarChar(100)
+  name             String             @db.Text
   notes            String?            @db.MediumText
   name_hash        String?            @unique(map: "uk_tags_name") @db.VarChar(64)
   created_at       DateTime?          @default(now()) @db.Timestamp(0)
@@ -273,13 +273,14 @@ model tags {
 }
 
 model version_groups {
-  id                    String    @id @db.VarChar(36)
-  group_id              String?   @db.VarChar(36)
-  canonical_document_id String    @db.VarChar(36)
-  notes                 String?   @db.MediumText
-  created_at            DateTime? @default(now()) @db.Timestamp(0)
-  updated_at            DateTime? @default(now()) @db.Timestamp(0)
-  documents             documents @relation(fields: [canonical_document_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_version_groups_canonical_document")
+  id                    String              @id @db.VarChar(36)
+  group_id              String?             @db.VarChar(36)
+  canonical_document_id String              @unique(map: "uk_version_groups_canonical_document_id") @db.VarChar(36)
+  notes                 String?             @db.MediumText
+  created_at            DateTime?           @default(now()) @db.Timestamp(0)
+  updated_at            DateTime?           @default(now()) @db.Timestamp(0)
+  document_versions     document_versions[]
+  documents             documents           @relation(fields: [canonical_document_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_version_groups_canonical_document")
 
   @@index([canonical_document_id], map: "idx_version_groups_canonical_document_id")
   @@index([group_id], map: "idx_version_groups_group_id")
