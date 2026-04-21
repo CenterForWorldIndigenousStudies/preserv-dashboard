@@ -2,16 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  useReactTable,
-  getCoreRowModel,
-  getSortedRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  flexRender,
-  type SortingState,
-  type ColumnFiltersState,
-  type PaginationState,
-} from "@tanstack/react-table";
+  MaterialReactTable,
+  useMaterialReactTable,
+  type MRT_ColumnDef,
+  type MRT_PaginationState,
+  type MRT_SortingState,
+} from "material-react-table";
 import Link from "next/link";
 import { getDocumentsAction } from "@actions/documents";
 import type { Document } from "@lib/types";
@@ -23,18 +19,101 @@ interface DocumentsTableProps {
 }
 
 export function DocumentsTable({ initialData }: DocumentsTableProps) {
+  const [pagination, setPagination] = useState<MRT_PaginationState>({ pageIndex: 0, pageSize: 25 });
+  const [sorting, setSorting] = useState<MRT_SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 25,
-  });
-  const [tableData, setTableData] = useState<Document[]>(initialData?.data ?? []);
-  const [totalRowCount, setTotalRowCount] = useState<number>(initialData?.total ?? 0);
-  const [isLoading, setIsLoading] = useState(false);
+  const [rowCount, setRowCount] = useState(initialData?.total ?? 0);
+  const [data, setData] = useState<Document[]>(initialData?.data ?? []);
 
-  const queryParams = useMemo(
+  const columns = useMemo<MRT_ColumnDef<Document>[]>(() => [
+    {
+      accessorKey: "id",
+      header: "ID",
+      size: 120,
+      Cell: ({ renderedCellValue }) => {
+        const val = String(renderedCellValue as string | null ?? "");
+        return <span title={val}>{val.length > 8 ? `${val.slice(0, 8)}...` : val}</span>;
+      },
+    },
+    {
+      accessorKey: "name",
+      header: "Name",
+      size: 280,
+      Cell: ({ row }) => {
+        const val = row.original.name;
+        if (!val) return "—";
+        return (
+          <Link href={`/documents/${row.original.id}`} style={{ color: "#355834" }}>
+            {val}
+          </Link>
+        );
+      },
+    },
+    {
+      accessorKey: "id_legacy",
+      header: "Legacy ID",
+      size: 180,
+      Cell: ({ renderedCellValue }) => {
+        const val = String(renderedCellValue as string | null ?? "");
+        if (!val) return "—";
+        return <span title={val}>{val.length > 30 ? `${val.slice(0, 30)}...` : val}</span>;
+      },
+    },
+    {
+      accessorKey: "source_id",
+      header: "Source ID",
+      size: 150,
+      Cell: ({ renderedCellValue }) => String(renderedCellValue as string | null ?? "") || "—",
+    },
+    {
+      accessorKey: "filesize",
+      header: "Size",
+      size: 110,
+      Cell: ({ renderedCellValue }) => formatBytes(renderedCellValue as number | null),
+    },
+    {
+      accessorKey: "hash_binary",
+      header: "Binary Hash",
+      size: 180,
+      Cell: ({ renderedCellValue }) => {
+        const val = String(renderedCellValue as string | null ?? "");
+        if (!val) return "—";
+        return (
+          <span style={{ fontFamily: "monospace", fontSize: "0.75rem" }} title={val}>
+            {val.length > 20 ? `${val.slice(0, 20)}...` : val}
+          </span>
+        );
+      },
+    },
+    {
+      accessorKey: "hash_content",
+      header: "Content Hash",
+      size: 180,
+      Cell: ({ renderedCellValue }) => {
+        const val = String(renderedCellValue as string | null ?? "");
+        if (!val) return "—";
+        return (
+          <span style={{ fontFamily: "monospace", fontSize: "0.75rem" }} title={val}>
+            {val.length > 20 ? `${val.slice(0, 20)}...` : val}
+          </span>
+        );
+      },
+    },
+    {
+      accessorKey: "created_at",
+      header: "Created",
+      size: 160,
+      Cell: ({ renderedCellValue }) => formatDateTime(renderedCellValue as string | Date | null) ?? "—",
+    },
+    {
+      accessorKey: "updated_at",
+      header: "Updated",
+      size: 160,
+      Cell: ({ renderedCellValue }) => formatDateTime(renderedCellValue as string | Date | null) ?? "—",
+    },
+  ], []);
+
+  const queryParams: DocumentsQueryParams = useMemo(
     () => ({
       page: pagination.pageIndex + 1,
       pageSize: pagination.pageSize,
@@ -42,314 +121,91 @@ export function DocumentsTable({ initialData }: DocumentsTableProps) {
       sortDirection: sorting[0]?.desc ? ("desc" as const) : ("asc" as const),
       search: globalFilter || undefined,
     }),
-    [pagination.pageIndex, pagination.pageSize, sorting, globalFilter],
+    [pagination, sorting, globalFilter],
   );
 
   const shouldUseInitialData =
-    initialData &&
-    pagination.pageIndex === 0 &&
-    !sorting.length &&
-    !globalFilter &&
-    !columnFilters.length;
+    initialData && pagination.pageIndex === 0 && !sorting.length && !globalFilter;
 
   useEffect(() => {
     if (shouldUseInitialData) {
-      setTableData(initialData.data);
-      setTotalRowCount(initialData.total);
+      setData(initialData.data);
+      setRowCount(initialData.total);
       return;
     }
 
     let cancelled = false;
-    setIsLoading(true);
     getDocumentsAction(queryParams)
-      .then((result) => {
+      .then((result: { data: Document[]; total: number }) => {
         if (!cancelled) {
-          setTableData(result.data);
-          setTotalRowCount(result.total);
+          setData(result.data);
+          setRowCount(result.total);
         }
       })
       .catch(() => {
         if (!cancelled) {
-          setTableData([]);
-          setTotalRowCount(0);
+          setData([]);
+          setRowCount(0);
         }
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
       });
     return () => {
       cancelled = true;
     };
   }, [queryParams, shouldUseInitialData, initialData]);
 
-  const columns = useMemo(
-    () => [
-      {
-        accessorKey: "id",
-        header: "ID",
-        size: 120,
-        cell: ({ getValue }: { getValue: () => unknown }) => {
-          const val = (getValue() as string | null) ?? "";
-          const truncated = val.length > 8 ? `${val.slice(0, 8)}...` : val;
-          return <span title={val}>{truncated}</span>;
-        },
-      },
-      {
-        accessorKey: "name",
-        header: "Name",
-        size: 280,
-        cell: ({ row }: { row: { original: Document } }) => {
-          const val = row.original.name;
-          if (!val) return "—";
-          return (
-            <Link
-              href={`/documents/${row.original.id}`}
-              className="text-moss hover:text-ink hover:underline"
-            >
-              {val}
-            </Link>
-          );
-        },
-      },
-      {
-        accessorKey: "id_legacy",
-        header: "Legacy ID",
-        size: 180,
-        cell: ({ getValue }: { getValue: () => unknown }) => {
-          const val = (getValue() as string | null) ?? "";
-          if (!val) return "—";
-          const display = val.length > 30 ? `${val.slice(0, 30)}...` : val;
-          return <span title={val}>{display}</span>;
-        },
-      },
-      {
-        accessorKey: "source_id",
-        header: "Source ID",
-        size: 150,
-        cell: ({ getValue }: { getValue: () => unknown }) => {
-          const val = (getValue() as string | null) ?? "";
-          return val || "—";
-        },
-      },
-      {
-        accessorKey: "filesize",
-        header: "Size",
-        size: 110,
-        cell: ({ getValue }: { getValue: () => unknown }) => {
-          return formatBytes(getValue() as number | null);
-        },
-      },
-      {
-        accessorKey: "hash_binary",
-        header: "Binary Hash",
-        size: 180,
-        cell: ({ getValue }: { getValue: () => unknown }) => {
-          const val = (getValue() as string | null) ?? "";
-          if (!val) return "—";
-          return (
-            <span title={val} className="font-mono text-xs">
-              {val.length > 20 ? `${val.slice(0, 20)}...` : val}
-            </span>
-          );
-        },
-      },
-      {
-        accessorKey: "hash_content",
-        header: "Content Hash",
-        size: 180,
-        cell: ({ getValue }: { getValue: () => unknown }) => {
-          const val = (getValue() as string | null) ?? "";
-          if (!val) return "—";
-          return (
-            <span title={val} className="font-mono text-xs">
-              {val.length > 20 ? `${val.slice(0, 20)}...` : val}
-            </span>
-          );
-        },
-      },
-      {
-        accessorKey: "created_at",
-        header: "Created",
-        size: 160,
-        cell: ({ getValue }: { getValue: () => unknown }) => {
-          const formatted = formatDateTime(getValue() as string | Date | null);
-          return formatted ?? "—";
-        },
-      },
-      {
-        accessorKey: "updated_at",
-        header: "Updated",
-        size: 160,
-        cell: ({ getValue }: { getValue: () => unknown }) => {
-          const formatted = formatDateTime(getValue() as string | Date | null);
-          return formatted ?? "—";
-        },
-      },
-    ],
-    [],
-  );
-
-  const table = useReactTable({
+  const table = useMaterialReactTable({
     columns,
-    data: tableData,
-    pageCount: Math.ceil(totalRowCount / pagination.pageSize),
-    state: {
-      pagination,
-      sorting,
-      globalFilter,
-      columnFilters,
-    },
-    onPaginationChange: setPagination,
-    onSortingChange: setSorting,
-    onGlobalFilterChange: setGlobalFilter,
-    onColumnFiltersChange: setColumnFilters,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    data,
+    rowCount,
     manualPagination: true,
     manualSorting: true,
     manualFiltering: true,
-    autoResetPageIndex: false,
+    onPaginationChange: setPagination,
+    onSortingChange: setSorting,
+    onGlobalFilterChange: setGlobalFilter,
+    state: { pagination, sorting, globalFilter },
+    muiPaginationProps: {
+      rowsPerPageOptions: [10, 25, 50, 100],
+      variant: "outlined",
+    },
+    muiTableHeadCellProps: {
+      sx: {
+        backgroundColor: "#f4f1f0",
+        color: "#231f20",
+        fontWeight: 600,
+        fontSize: "0.75rem",
+        textTransform: "uppercase",
+        letterSpacing: "0.1em",
+        borderBottom: "2px solid #355834",
+      },
+    },
+    muiTableBodyCellProps: {
+      sx: { color: "#231f20", fontSize: "0.875rem" },
+    },
+    muiTableBodyProps: {
+      sx: {
+        "& tr:nth-of-type(even)": { backgroundColor: "rgba(244,241,240,0.3)" },
+        "& tr:hover": { backgroundColor: "rgba(53,88,52,0.06)" },
+      },
+    },
+    muiTableContainerProps: {
+      sx: { borderRadius: "0.75rem", border: "1px solid rgba(53,88,52,0.125)" },
+    },
+    muiSearchTextFieldProps: {
+      placeholder: "Search documents...",
+      sx: {
+        "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(53,88,52,0.25)" },
+        "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#355834" },
+      },
+    },
+    localization: {
+      noRecordsToDisplay: "No documents found.",
+      search: "Search",
+      of: "of",
+      rowsPerPage: "Rows per page",
+    },
+    getRowId: (row) => row.id,
   });
 
-  return (
-    <div className="flex flex-col gap-4">
-      {/* Search */}
-      <div className="flex items-center gap-2">
-        <input
-          type="text"
-          placeholder="Search documents..."
-          value={globalFilter ?? ""}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-          className="w-64 px-3 py-2 border border-ink/20 rounded-lg text-sm placeholder:text-ink/40 focus:outline-none focus:border-moss"
-        />
-      </div>
-
-      {/* Table */}
-      <div className="overflow-x-auto rounded-xl border border-ink/10">
-        <table className="w-full text-sm">
-          <thead>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id} className="border-b border-ink/20">
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    style={{ width: header.getSize() }}
-                    className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-widest text-ink bg-paper"
-                  >
-                    <div
-                      className={
-                        header.column.getCanSort() ? "cursor-pointer select-none" : ""
-                      }
-                      onClick={header.column.getToggleSortingHandler()}
-                    >
-                      {flexRender(header.column.columnDef.header, header.getContext())}
-                      {header.column.getCanSort() && (
-                        <span className="ml-1 text-ink/40">
-                          {header.column.getIsSorted() === "asc"
-                            ? " ↑"
-                            : header.column.getIsSorted() === "desc"
-                              ? " ↓"
-                              : ""}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {isLoading ? (
-              <tr>
-                <td colSpan={columns.length} className="px-4 py-12 text-center text-ink/60">
-                  Loading...
-                </td>
-              </tr>
-            ) : table.getRowModel().rows.length === 0 ? (
-              <tr>
-                <td colSpan={columns.length} className="px-4 py-12 text-center text-ink/60">
-                  No documents found.
-                </td>
-              </tr>
-            ) : (
-              table.getRowModel().rows.map((row, idx) => (
-                <tr
-                  key={row.id}
-                  className={`border-b border-ink/10 ${idx % 2 === 0 ? "bg-paper" : "bg-paper/50"} hover:bg-moss/10 transition-colors`}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-4 py-3 text-ink">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Pagination */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm text-ink/70">
-          <span>Rows per page:</span>
-          <select
-            value={pagination.pageSize}
-            onChange={(e) => table.setPageSize(Number(e.target.value))}
-            className="border border-ink/20 rounded px-2 py-1 text-sm focus:outline-none focus:border-moss"
-          >
-            {[10, 25, 50, 100].map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
-          <span className="ml-4">
-            {pagination.pageIndex * pagination.pageSize + 1}-
-            {Math.min(
-              (pagination.pageIndex + 1) * pagination.pageSize,
-              totalRowCount,
-            )}{" "}
-            of {totalRowCount}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => table.setPageIndex(0)}
-            disabled={!table.getCanPreviousPage()}
-            className="px-3 py-1 border border-ink/20 rounded text-sm hover:bg-paper disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {"<<"}
-          </button>
-          <button
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-            className="px-3 py-1 border border-ink/20 rounded text-sm hover:bg-paper disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {"<"}
-          </button>
-          <span className="px-3 py-1 text-sm">
-            Page {pagination.pageIndex + 1} of {table.getPageCount() || 1}
-          </span>
-          <button
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-            className="px-3 py-1 border border-ink/20 rounded text-sm hover:bg-paper disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {">"}
-          </button>
-          <button
-            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-            disabled={!table.getCanNextPage()}
-            className="px-3 py-1 border border-ink/20 rounded text-sm hover:bg-paper disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {">>"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  return <MaterialReactTable table={table} />;
 }
