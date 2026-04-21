@@ -113,3 +113,30 @@ export interface PagedResult<T> {
   items: T[];
   total: number;
 }
+
+export interface ReviewQueueItem {
+  id: string;
+  name: string | null;
+  validation_status: string | null;
+  validation_type: string | null;
+  validator_name: string | null;
+  validator_email: string | null;
+  needs_review: boolean;
+  sensitive: boolean;
+}
+
+export interface ReadyForLibraryItem {
+  id: string;
+  name: string | null;
+  validation_status: string | null;
+  validation_timestamp: string | null;
+  access_level: string | null;
+  metadata_complete: boolean;
+}
+
+export interface BatchSummary {
+  batch_id: string;
+  batch_name: string | null;
+  validation_status: string | null;
+  document_count: number;
+}
