@@ -29,6 +29,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@mui/material": "^9.0.0",
     "@prisma/adapter-mariadb": "^7.7.0",
     "@prisma/client": "^7.7.0",
     "@tailwindcss/typography": "^0.5.19",
@@ -36,6 +37,7 @@
     "@tanstack/react-table": "^8.21.3",
     "lucide-react": "^1.8.0",
     "mariadb": "^3.5.2",
+    "material-react-table": "^3.2.1",
     "mermaid": "^11.14.0",
     "mysql2": "^3.14.1",
     "next": "16.2.3",

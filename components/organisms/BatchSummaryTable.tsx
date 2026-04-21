@@ -2,14 +2,11 @@
 
 import { useMemo, useState } from "react";
 import {
-  useReactTable,
-  getCoreRowModel,
-  getSortedRowModel,
-  getFilteredRowModel,
-  flexRender,
-  type SortingState,
-  type ColumnFiltersState,
-} from "@tanstack/react-table";
+  MaterialReactTable,
+  useMaterialReactTable,
+  type MRT_ColumnDef,
+  type MRT_SortingState,
+} from "material-react-table";
 import type { BatchSummary } from "@lib/types";
 
 interface BatchSummaryTableProps {
@@ -17,128 +14,82 @@ interface BatchSummaryTableProps {
 }
 
 export function BatchSummaryTable({ data }: BatchSummaryTableProps) {
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [sorting, setSorting] = useState<MRT_SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
-  const columns = useMemo(
-    () => [
-      {
-        accessorKey: "batch_name",
-        header: "Batch Name",
-        size: 280,
-        cell: ({ getValue }: { getValue: () => unknown }) => {
-          const val = (getValue() as string | null) ?? "—";
-          return val;
-        },
+  const columns = useMemo<MRT_ColumnDef<BatchSummary>[]>(() => [
+    {
+      accessorKey: "batch_name",
+      header: "Batch Name",
+      size: 280,
+      Cell: ({ renderedCellValue }) => String(renderedCellValue as string | null ?? "—"),
+    },
+    {
+      accessorKey: "validation_status",
+      header: "Validation Status",
+      size: 160,
+      Cell: ({ renderedCellValue }) => String(renderedCellValue as string | null ?? "unknown"),
+    },
+    {
+      accessorKey: "document_count",
+      header: "Document Count",
+      size: 140,
+      Cell: ({ renderedCellValue }) => renderedCellValue as number,
+    },
+    {
+      accessorKey: "batch_id",
+      header: "Batch ID",
+      size: 120,
+      Cell: ({ renderedCellValue }) => {
+        const val = String(renderedCellValue as string | null ?? "");
+        return <span title={val}>{val.length > 8 ? `${val.slice(0, 8)}...` : val}</span>;
       },
-      {
-        accessorKey: "validation_status",
-        header: "Validation Status",
-        size: 160,
-        cell: ({ getValue }: { getValue: () => unknown }) => {
-          return (getValue() as string | null) ?? "unknown";
-        },
-      },
-      {
-        accessorKey: "document_count",
-        header: "Document Count",
-        size: 140,
-        cell: ({ getValue }: { getValue: () => unknown }) => {
-          return getValue() as number;
-        },
-      },
-      {
-        accessorKey: "batch_id",
-        header: "Batch ID",
-        size: 120,
-        cell: ({ getValue }: { getValue: () => unknown }) => {
-          const val = (getValue() as string | null) ?? "";
-          const truncated = val.length > 8 ? `${val.slice(0, 8)}...` : val;
-          return <span title={val}>{truncated}</span>;
-        },
-      },
-    ],
-    [],
-  );
+    },
+  ], []);
 
-  const table = useReactTable({
+  const table = useMaterialReactTable({
     columns,
     data,
-    state: { sorting, globalFilter, columnFilters },
+    manualFiltering: true,
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
-    onColumnFiltersChange: setColumnFilters,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    manualFiltering: true,
-    autoResetPageIndex: false,
+    state: { sorting, globalFilter },
+    muiTableHeadCellProps: {
+      sx: {
+        backgroundColor: "#f4f1f0",
+        color: "#231f20",
+        fontWeight: 600,
+        fontSize: "0.75rem",
+        textTransform: "uppercase",
+        letterSpacing: "0.1em",
+        borderBottom: "2px solid #355834",
+      },
+    },
+    muiTableBodyCellProps: {
+      sx: { color: "#231f20", fontSize: "0.875rem" },
+    },
+    muiTableBodyProps: {
+      sx: {
+        "& tr:nth-of-type(even)": { backgroundColor: "rgba(244,241,240,0.3)" },
+        "& tr:hover": { backgroundColor: "rgba(53,88,52,0.06)" },
+      },
+    },
+    muiTableContainerProps: {
+      sx: { borderRadius: "0.75rem", border: "1px solid rgba(53,88,52,0.125)" },
+    },
+    muiSearchTextFieldProps: {
+      placeholder: "Search batches...",
+      sx: {
+        "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(53,88,52,0.25)" },
+        "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#355834" },
+      },
+    },
+    localization: {
+      noRecordsToDisplay: "No batch data found.",
+      search: "Search",
+    },
+    getRowId: (row) => row.batch_id,
   });
 
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
-        <input
-          type="text"
-          placeholder="Search batches..."
-          value={globalFilter ?? ""}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-          className="w-64 px-3 py-2 border border-ink/20 rounded-lg text-sm placeholder:text-ink/40 focus:outline-none focus:border-moss"
-        />
-      </div>
-
-      <div className="overflow-x-auto rounded-xl border border-ink/10">
-        <table className="w-full text-sm">
-          <thead>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id} className="border-b border-ink/20">
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    style={{ width: header.getSize() }}
-                    className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-widest text-ink bg-paper"
-                  >
-                    <div
-                      className={header.column.getCanSort() ? "cursor-pointer select-none" : ""}
-                      onClick={header.column.getToggleSortingHandler()}
-                    >
-                      {flexRender(header.column.columnDef.header, header.getContext())}
-                      {header.column.getCanSort() && (
-                        <span className="ml-1 text-ink/40">
-                          {header.column.getIsSorted() === "asc" ? " ↑" : header.column.getIsSorted() === "desc" ? " ↓" : ""}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {table.getRowModel().rows.length === 0 ? (
-              <tr>
-                <td colSpan={columns.length} className="px-4 py-12 text-center text-ink/60">
-                  No batch data found.
-                </td>
-              </tr>
-            ) : (
-              table.getRowModel().rows.map((row, idx) => (
-                <tr
-                  key={row.id}
-                  className={`border-b border-ink/10 ${idx % 2 === 0 ? "bg-paper" : "bg-paper/50"} hover:bg-moss/10 transition-colors`}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-4 py-3 text-ink">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+  return <MaterialReactTable table={table} />;
 }
