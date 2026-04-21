@@ -1,4 +1,4 @@
-import type { ReactElement } from "react";
+import { Suspense, type ReactElement } from "react";
 import { PageHeader } from "@organisms/PageHeader";
 import { BatchSummaryTable } from "@organisms/BatchSummaryTable";
 import { NoDataState } from "@organisms/NoDataState";
@@ -35,60 +35,47 @@ function SummaryCard({
   );
 }
 
-export default async function BatchSummaryPage(): Promise<ReactElement> {
-  try {
-    const rows = await getBatchSummary();
+async function BatchSummaryContent() {
+  const rows = await getBatchSummary();
 
-    if (rows.length === 0) {
-      return (
-        <div className="w-full space-y-8">
-          <PageHeader
-            eyebrow="Batch Summary"
-            title="Pipeline summary grouped by batch."
-            description="Count of documents per validation status per batch, from the batches, document_to_batches, documents, and document_quality tables."
-          />
-          <NoDataState message="No batch data is available yet." />
-        </div>
-      );
-    }
-
-    // Aggregate for summary cards
-    const batchIds = new Set(rows.map((r) => r.batch_id));
-    const totalBatches = batchIds.size;
-    const totalDocuments = rows.reduce((sum, r) => sum + r.document_count, 0);
-    const byStatus: Record<string, number> = {};
-    for (const row of rows) {
-      const key = row.validation_status ?? "unknown";
-      byStatus[key] = (byStatus[key] ?? 0) + row.document_count;
-    }
-
-    return (
-      <div className="w-full space-y-8">
-        <PageHeader
-          eyebrow="Batch Summary"
-          title="Pipeline summary grouped by batch."
-          description="Count of documents per validation status per batch, from the batches, document_to_batches, documents, and document_quality tables."
-        />
-
-        <SummaryCard
-          totalBatches={totalBatches}
-          totalDocuments={totalDocuments}
-          byStatus={byStatus}
-        />
-
-        <BatchSummaryTable data={rows} />
-      </div>
-    );
-  } catch {
-    return (
-      <div className="w-full space-y-8">
-        <PageHeader
-          eyebrow="Batch Summary"
-          title="Pipeline summary grouped by batch."
-          description="Count of documents per validation status per batch, from the batches, document_to_batches, documents, and document_quality tables."
-        />
-        <NoDataState message="No data is available right now. The database may be unavailable or still initializing." />
-      </div>
-    );
+  if (rows.length === 0) {
+    return <NoDataState message="No batch data is available yet." />;
   }
+
+  // Aggregate for summary cards
+  const batchIds = new Set(rows.map((r) => r.batch_id));
+  const totalBatches = batchIds.size;
+  const totalDocuments = rows.reduce((sum, r) => sum + r.document_count, 0);
+  const byStatus: Record<string, number> = {};
+  for (const row of rows) {
+    const key = row.validation_status ?? "unknown";
+    byStatus[key] = (byStatus[key] ?? 0) + row.document_count;
+  }
+
+  return (
+    <>
+      <SummaryCard
+        totalBatches={totalBatches}
+        totalDocuments={totalDocuments}
+        byStatus={byStatus}
+      />
+      <BatchSummaryTable data={rows} />
+    </>
+  );
+}
+
+export default function BatchSummaryPage(): ReactElement {
+  return (
+    <div className="w-full space-y-8">
+      <PageHeader
+        eyebrow="Batch Summary"
+        title="Pipeline summary grouped by batch."
+        description="Count of documents per validation status per batch, from the batches, document_to_batches, documents, and document_quality tables."
+      />
+
+      <Suspense fallback={null}>
+        <BatchSummaryContent />
+      </Suspense>
+    </div>
+  );
 }
