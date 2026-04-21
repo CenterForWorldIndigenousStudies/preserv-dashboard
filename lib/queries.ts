@@ -1,224 +1,103 @@
-import type { ResultSetHeader, RowDataPacket } from "mysql2";
-
-import pool from "@lib/db";
 import type {
   AuditEntry,
   Document,
   DocumentDetail,
   DocumentQueryParams,
+  DocumentQuality,
   FailureItem,
-  MetadataRecord,
   PagedResult,
   PipelineSummary,
-  ReviewConflictValue,
   ReviewItem,
   ReviewQueryParams,
+  ReviewQueueItem,
+  ReadyForLibraryItem,
+  BatchSummary,
 } from "@lib/types";
+import { db } from "@lib/db";
+
+// Fields on the documents model used for orderBy/filtering
+const DOCUMENTS_ORDERABLE_FIELDS = [
+  "id",
+  "filesize",
+  "source_id",
+  "hash_binary",
+  "hash_content",
+  "id_legacy",
+  "name",
+  "created_at",
+  "updated_at",
+] as const;
+
+export interface DocumentsQueryParams {
+  page?: number;
+  pageSize?: number;
+  orderBy?: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number];
+  sortDirection?: "asc" | "desc";
+  search?: string;
+}
+
+export async function getAllDocuments(
+  params: DocumentsQueryParams = {},
+): Promise<{ data: Document[]; total: number }> {
+  const page = normalizePageNumber(params.page);
+  const pageSize = params.pageSize && params.pageSize > 0 ? Math.min(params.pageSize, 1000) : 25;
+  const skip = (page - 1) * pageSize;
+
+  // Build orderBy
+  let orderBy: Record<string, "asc" | "desc"> | undefined;
+  if (params.orderBy && (DOCUMENTS_ORDERABLE_FIELDS as readonly string[]).includes(params.orderBy)) {
+    orderBy = { [params.orderBy]: params.sortDirection === "desc" ? "desc" : "asc" };
+  } else {
+    orderBy = { created_at: "desc" };
+  }
+
+  // Build where clause for global search
+  const where: Record<string, unknown> = {};
+  if (params.search && params.search.trim()) {
+    const searchTerm = params.search.trim();
+    where.OR = [
+      { name: { contains: searchTerm } },
+      { source_id: { contains: searchTerm } },
+      { hash_binary: { contains: searchTerm } },
+      { hash_content: { contains: searchTerm } },
+      { id_legacy: { contains: searchTerm } },
+    ];
+  }
+
+  const [items, total] = await Promise.all([
+    db.documents.findMany({
+      where,
+      orderBy,
+      skip,
+      take: pageSize,
+    }),
+    db.documents.count({ where }),
+  ]);
+
+  return {
+    data: items.map((row) => ({
+      id: String(row.id),
+      filesize: row.filesize !== null && row.filesize !== undefined
+        ? Number(row.filesize)
+        : null,
+      hash_binary: row.hash_binary ?? null,
+      hash_content: row.hash_content ?? null,
+      id_legacy: row.id_legacy ?? null,
+      source_id: row.source_id ?? null,
+      name: row.name ?? null,
+      created_at: row.created_at ?? null,
+      updated_at: row.updated_at ?? null,
+    })),
+    total,
+  };
+}
 
 const PAGE_SIZE = 20;
-const ALLOWED_STATES = new Set(["ingested", "normalized", "under_review", "completed", "failed"]);
-const ALLOWED_REVIEW_STATUSES = new Set(["pending", "in_progress", "resolved"]);
-
-interface DocumentRow extends RowDataPacket {
-  id: string;
-  filename: string;
-  filesize: number | null;
-  filetype: string | null;
-  original_url: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-  file_folder_url: string | null;
-  original_parent_folder: string | null;
-  parent_id: string | null;
-  duplicates: string | null;
-  collection_tags: string | null;
-  state: string;
-  ingested_at: string | null;
-  is_primary: number | boolean;
-  drive_file_id: string | null;
-}
-
-interface PipelineRow extends RowDataPacket {
-  state: string;
-  count: number;
-}
-
-interface CountRow extends RowDataPacket {
-  total: number;
-}
-
-interface ReviewRow extends RowDataPacket {
-  id: number;
-  document_id: string;
-  filename: string | null;
-  field_name: string;
-  winning_source: string | null;
-  winning_value: string | null;
-  conflicting_values: string | null;
-  status: string;
-  created_at: string | null;
-}
-
-interface AuditRow extends RowDataPacket {
-  document_id: string;
-  field_name: string;
-  source_name: string;
-  before_value: string | null;
-  after_value: string | null;
-  changed_at: string | null;
-}
-
-interface MetadataRow extends RowDataPacket {
-  metadata: string | null;
-}
-
-interface FailureRow extends DocumentRow {
-  metadata: string | null;
-}
-
-interface ReviewFieldRow extends RowDataPacket {
-  field_name: string;
-}
-
-interface CollectionTagsRow extends RowDataPacket {
-  collection_tags: string | null;
-}
-
-interface ColumnDefinitionRow extends RowDataPacket {
-  Field: string;
-}
-
-let documentColumnsPromise: Promise<Set<string>> | null = null;
-
-function parseJsonValue(value: string | null): unknown {
-  if (!value) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(value) as unknown;
-  } catch {
-    return null;
-  }
-}
-
-function parseJsonArray(value: string | null): string[] {
-  const parsedValue = parseJsonValue(value);
-
-  if (!Array.isArray(parsedValue)) {
-    return [];
-  }
-
-  return parsedValue
-    .filter((item: unknown): item is string => typeof item === "string")
-    .map((item: string) => item.trim())
-    .filter((item: string) => item.length > 0);
-}
-
-function parseConflictValues(value: string | null): ReviewConflictValue[] {
-  const parsedValue = parseJsonValue(value);
-
-  if (!Array.isArray(parsedValue)) {
-    return [];
-  }
-
-  return parsedValue
-    .map((item: unknown) => {
-      if (typeof item !== "object" || item === null) {
-        return null;
-      }
-
-      const source = "source" in item && typeof item.source === "string" ? item.source : "unknown";
-      const conflictValue = "value" in item && typeof item.value === "string" ? item.value : "";
-
-      return {
-        source,
-        value: conflictValue,
-      };
-    })
-    .filter((item: ReviewConflictValue | null): item is ReviewConflictValue => item !== null);
-}
-
-function normalizeDocumentRow(row: DocumentRow): Document {
-  return {
-    id: row.id,
-    filename: row.filename,
-    filesize: row.filesize,
-    filetype: row.filetype,
-    original_url: row.original_url ?? "",
-    created_at: row.created_at,
-    updated_at: row.updated_at,
-    file_folder_url: row.file_folder_url ?? "",
-    original_parent_folder: row.original_parent_folder,
-    parent_id: row.parent_id,
-    duplicates: parseJsonArray(row.duplicates),
-    collection_tags: parseJsonArray(row.collection_tags),
-    state: row.state,
-    ingested_at: row.ingested_at,
-    is_primary: Boolean(row.is_primary),
-    drive_file_id: row.drive_file_id,
-  };
-}
-
-function normalizeReviewRow(row: ReviewRow): ReviewItem {
-  return {
-    id: row.id,
-    document_id: row.document_id,
-    field_name: row.field_name,
-    winning_source: row.winning_source ?? "",
-    winning_value: row.winning_value,
-    conflicting_values: parseConflictValues(row.conflicting_values),
-    status: row.status,
-    created_at: row.created_at ?? "",
-  };
-}
-
-function normalizeAuditRow(row: AuditRow): AuditEntry {
-  return {
-    document_id: row.document_id,
-    field_name: row.field_name,
-    source_name: row.source_name,
-    before_value: row.before_value,
-    after_value: row.after_value,
-    changed_at: row.changed_at ?? "",
-  };
-}
-
-function parseMetadata(value: string | null): MetadataRecord | null {
-  const parsedValue = parseJsonValue(value);
-
-  if (typeof parsedValue !== "object" || parsedValue === null || Array.isArray(parsedValue)) {
-    return null;
-  }
-
-  return parsedValue as MetadataRecord;
-}
-
-function deriveFailureReason(metadata: string | null): string | null {
-  const parsedMetadata = parseMetadata(metadata);
-
-  if (!parsedMetadata) {
-    return null;
-  }
-
-  const candidateKeys = ["failure_reason", "error", "message", "reason"];
-
-  for (const key of candidateKeys) {
-    const candidateValue = parsedMetadata[key];
-
-    if (typeof candidateValue === "string" && candidateValue.trim().length > 0) {
-      return candidateValue;
-    }
-  }
-
-  return null;
-}
 
 function normalizePageNumber(page?: number): number {
   if (!page || page < 1 || Number.isNaN(page)) {
     return 1;
   }
-
   return Math.floor(page);
 }
 
@@ -226,293 +105,428 @@ export function getPageSize(): number {
   return PAGE_SIZE;
 }
 
-async function getDocumentColumns(): Promise<Set<string>> {
-  if (!documentColumnsPromise) {
-    documentColumnsPromise = pool
-      .query<ColumnDefinitionRow[]>("SHOW COLUMNS FROM documents")
-      .then(([rows]) => new Set(rows.map((row) => row.Field)))
-      .catch((error: unknown) => {
-        documentColumnsPromise = null;
-        throw error;
-      });
-  }
-
-  return documentColumnsPromise;
-}
-
-function getDocumentSelectClause(columns: Set<string>, tableAlias?: string): string {
-  const prefix = tableAlias ? `${tableAlias}.` : "";
-
-  return [
-    `${prefix}id`,
-    `${prefix}filename`,
-    `${prefix}filesize`,
-    `${prefix}filetype`,
-    `${prefix}original_url`,
-    `${prefix}created_at`,
-    `${prefix}updated_at`,
-    `${prefix}file_folder_url`,
-    `${prefix}original_parent_folder`,
-    `${prefix}parent_id`,
-    `${prefix}duplicates`,
-    `${prefix}collection_tags`,
-    `${prefix}state`,
-    `${prefix}ingested_at`,
-    `${prefix}is_primary`,
-    columns.has("drive_file_id") ? `${prefix}drive_file_id` : "NULL AS drive_file_id",
-  ].join(",\n        ");
-}
-
+// ---------------------------------------------------------------------------
+// getPipelineSummary
+// Returns total document count and a breakdown by validation_status from
+// document_quality.  Also includes by_state (always empty) for backward
+// compat since documents.state does not exist.
+// ---------------------------------------------------------------------------
 export async function getPipelineSummary(): Promise<PipelineSummary> {
-  const [totalRows] = await pool.execute<CountRow[]>("SELECT COUNT(*) AS total FROM documents");
-  const [stateRows] = await pool.execute<PipelineRow[]>(
-    "SELECT state, COUNT(*) AS count FROM documents GROUP BY state",
-  );
+  const [total, qualityRows] = await Promise.all([
+    db.documents.count(),
+    db.document_quality.groupBy({
+      by: ["validation_status"],
+      _count: { _all: true },
+    }),
+  ]);
 
-  const byState: Record<string, number> = {
-    ingested: 0,
-    normalized: 0,
-    under_review: 0,
-    completed: 0,
-    failed: 0,
-  };
-
-  for (const row of stateRows) {
-    byState[row.state] = row.count;
+  const by_validation_status: Record<string, number> = {};
+  for (const row of qualityRows) {
+    const key = row.validation_status ?? "unknown";
+    by_validation_status[key] = row._count._all;
   }
 
   return {
-    total: totalRows[0]?.total ?? 0,
-    by_state: byState,
+    total,
+    by_validation_status,
+    by_state: {},
   };
 }
 
-export async function getDocuments(params: DocumentQueryParams = {}): Promise<PagedResult<Document>> {
+// ---------------------------------------------------------------------------
+// getDocuments
+// ---------------------------------------------------------------------------
+export async function getDocuments(
+  params: DocumentQueryParams = {},
+): Promise<PagedResult<Document>> {
   const page = normalizePageNumber(params.page);
-  const state = params.state && ALLOWED_STATES.has(params.state) ? params.state : undefined;
-  const offset = (page - 1) * PAGE_SIZE;
-  const whereClause = state ? "WHERE state = ?" : "";
-  const whereParams: Array<string | number> = state ? [state] : [];
-  const documentColumns = await getDocumentColumns();
-
-  const [countRows] = await pool.execute<CountRow[]>(
-    `SELECT COUNT(*) AS total FROM documents ${whereClause}`,
-    whereParams,
-  );
-
-  const [documentRows] = await pool.execute<DocumentRow[]>(
-    `
-      SELECT
-        ${getDocumentSelectClause(documentColumns)}
-      FROM documents
-      ${whereClause}
-      ORDER BY created_at DESC
-      LIMIT ? OFFSET ?
-    `,
-    [...whereParams, PAGE_SIZE, offset],
-  );
-
-  return {
-    items: documentRows.map(normalizeDocumentRow),
-    total: countRows[0]?.total ?? 0,
-  };
-}
-
-export async function getReviewQueue(
-  params: ReviewQueryParams = {},
-): Promise<PagedResult<ReviewItem & { filename: string | null }>> {
-  const page = normalizePageNumber(params.page);
-  const status = params.status && ALLOWED_REVIEW_STATUSES.has(params.status) ? params.status : undefined;
-  const field = params.field?.trim() ? params.field.trim() : undefined;
   const offset = (page - 1) * PAGE_SIZE;
 
-  const filters: string[] = [];
-  const queryParams: Array<string | number> = [];
-
-  if (status) {
-    filters.push("r.status = ?");
-    queryParams.push(status);
-  }
-
-  if (field) {
-    filters.push("r.field_name = ?");
-    queryParams.push(field);
-  }
-
-  const whereClause = filters.length > 0 ? `WHERE ${filters.join(" AND ")}` : "";
-
-  const [countRows] = await pool.execute<CountRow[]>(
-    `
-      SELECT COUNT(*) AS total
-      FROM document_reviews r
-      ${whereClause}
-    `,
-    queryParams,
-  );
-
-  const [reviewRows] = await pool.execute<ReviewRow[]>(
-    `
-      SELECT
-        r.id,
-        r.document_id,
-        d.filename,
-        r.field_name,
-        r.winning_source,
-        r.winning_value,
-        r.conflicting_values,
-        r.status,
-        r.created_at
-      FROM document_reviews r
-      INNER JOIN documents d ON d.id = r.document_id
-      ${whereClause}
-      ORDER BY r.created_at DESC
-      LIMIT ? OFFSET ?
-    `,
-    [...queryParams, PAGE_SIZE, offset],
-  );
+  const [items, total] = await Promise.all([
+    db.documents.findMany({
+      orderBy: { created_at: "desc" },
+      skip: offset,
+      take: PAGE_SIZE,
+    }),
+    db.documents.count(),
+  ]);
 
   return {
-    items: reviewRows.map((row) => ({
-      ...normalizeReviewRow(row),
-      filename: row.filename,
+    items: items.map((row) => ({
+      id: String(row.id),
+      filesize: row.filesize !== null && row.filesize !== undefined
+        ? Number(row.filesize)
+        : null,
+      hash_binary: row.hash_binary ?? null,
+      hash_content: row.hash_content ?? null,
+      id_legacy: row.id_legacy ?? null,
+      source_id: row.source_id ?? null,
+      name: row.name ?? null,
+      created_at: row.created_at ?? null,
+      updated_at: row.updated_at ?? null,
     })),
-    total: countRows[0]?.total ?? 0,
+    total,
   };
 }
 
-export async function getDistinctReviewFields(): Promise<string[]> {
-  const [rows] = await pool.execute<ReviewFieldRow[]>(
-    `
-      SELECT DISTINCT field_name
-      FROM document_reviews
-      WHERE field_name IS NOT NULL AND field_name <> ''
-      ORDER BY field_name ASC
-    `,
-  );
-
-  return rows
-    .map((row) => row.field_name)
-    .filter((fieldName: unknown): fieldName is string => typeof fieldName === "string");
-}
-
+// ---------------------------------------------------------------------------
+// getDocumentDetail
+// Returns a document with its document_quality and document_versions.
+// Metadata, audits, and reviews are empty stubs because those tables do not exist.
+// ---------------------------------------------------------------------------
 export async function getDocumentDetail(documentId: string): Promise<DocumentDetail | null> {
-  const documentColumns = await getDocumentColumns();
+  const document = await db.documents.findUnique({
+    where: { id: documentId },
+  });
 
-  const [documentRows] = await pool.execute<DocumentRow[]>(
-    `
-      SELECT
-        ${getDocumentSelectClause(documentColumns)}
-      FROM documents
-      WHERE id = ?
-      LIMIT 1
-    `,
-    [documentId],
-  );
-
-  const documentRow = documentRows[0];
-
-  if (!documentRow) {
+  if (!document) {
     return null;
   }
 
-  const [metadataRows] = await pool.execute<MetadataRow[]>(
-    `
-      SELECT metadata
-      FROM document_metadata
-      WHERE document_id = ?
-      LIMIT 1
-    `,
-    [documentId],
-  );
+  const [quality, versions] = await Promise.all([
+    db.document_quality.findUnique({
+      where: { document_id: documentId },
+    }),
+    db.document_versions.findMany({
+      where: { document_id: documentId },
+      orderBy: { created_at: "desc" },
+    }),
+  ]);
 
-  const [auditRows] = await pool.execute<AuditRow[]>(
-    `
-      SELECT document_id, field_name, source_name, before_value, after_value, changed_at
-      FROM document_audits
-      WHERE document_id = ?
-      ORDER BY changed_at DESC
-    `,
-    [documentId],
-  );
-
-  const [reviewRows] = await pool.execute<ReviewRow[]>(
-    `
-      SELECT
-        id,
-        document_id,
-        NULL AS filename,
-        field_name,
-        winning_source,
-        winning_value,
-        conflicting_values,
-        status,
-        created_at
-      FROM document_reviews
-      WHERE document_id = ?
-      ORDER BY created_at DESC
-    `,
-    [documentId],
-  );
+  const mapQuality = (row: typeof quality): DocumentQuality | null => {
+    if (!row) return null;
+    return {
+      id: String(row.id),
+      document_id: String(row.document_id),
+      comment: row.comment ?? null,
+      comment_additional: row.comment_additional ?? null,
+      metadata_sufficiency: row.metadata_sufficiency ?? null,
+      validation_status: row.validation_status ?? null,
+      validation_type: row.validation_type ?? null,
+      validation_timestamp: dateToString(row.validation_timestamp),
+      validator_name: row.validator_name ?? null,
+      validator_email: row.validator_email ?? null,
+      access_level: row.access_level ?? null,
+      current_status: row.current_status ?? null,
+      created_at: dateToString(row.created_at),
+      updated_at: dateToString(row.updated_at),
+    };
+  };
 
   return {
-    document: normalizeDocumentRow(documentRow),
-    metadata: parseMetadata(metadataRows[0]?.metadata ?? null),
-    audits: auditRows.map(normalizeAuditRow),
-    reviews: reviewRows.map(normalizeReviewRow),
+    document: {
+      id: String(document.id),
+      filesize: document.filesize !== null && document.filesize !== undefined
+        ? Number(document.filesize)
+        : null,
+      hash_binary: document.hash_binary ?? null,
+      hash_content: document.hash_content ?? null,
+      id_legacy: document.id_legacy ?? null,
+      source_id: document.source_id ?? null,
+      name: document.name ?? null,
+      created_at: document.created_at ?? null,
+      updated_at: document.updated_at ?? null,
+    },
+    // document_to_metadata join exists but is not wired here; stub null
+    metadata: null,
+    // document_audits does not exist
+    audits: [] as AuditEntry[],
+    // document_reviews does not exist
+    reviews: [] as ReviewItem[],
+    quality: mapQuality(quality),
+    versions: versions.map((v) => ({
+      id: String(v.id),
+      document_id: String(v.document_id),
+      version_group_id: String(v.version_group_id),
+      notes: v.notes ?? null,
+      changes_summary: v.changes_summary ?? null,
+      created_at: dateToString(v.created_at),
+      updated_at: dateToString(v.updated_at),
+      analyzed_at: dateToString(v.analyzed_at),
+    })),
   };
 }
 
-export async function getFailures(): Promise<FailureItem[]> {
-  const documentColumns = await getDocumentColumns();
-
-  const [rows] = await pool.execute<FailureRow[]>(
-    `
-      SELECT
-        ${getDocumentSelectClause(documentColumns, "d")},
-        m.metadata
-      FROM documents d
-      LEFT JOIN document_metadata m ON m.document_id = d.id
-      WHERE d.state = ?
-      ORDER BY d.ingested_at DESC
-    `,
-    ["failed"],
-  );
-
-  return rows.map((row) => ({
-    ...normalizeDocumentRow(row),
-    failure_reason: deriveFailureReason(row.metadata),
-  }));
+function dateToString(value: Date | string | null | undefined): string | null {
+  if (!value) return null;
+  if (value instanceof Date) return value.toISOString();
+  return String(value);
 }
 
+// ---------------------------------------------------------------------------
+// getFailures
+// Returns an empty array.  The documents table has no `state` column, so
+// there is no reliable way to determine which documents have failed.
+// ---------------------------------------------------------------------------
+export async function getFailures(): Promise<FailureItem[]> {
+  // documents table has no state column — cannot determine failures
+  return await Promise.resolve([]);
+}
+
+// ---------------------------------------------------------------------------
+// getDistinctCollectionTags
+// Returns distinct tag names by querying the tags + document_to_tags join.
+// The documents table has no `collection_tags` column.
+// ---------------------------------------------------------------------------
 export async function getDistinctCollectionTags(): Promise<string[]> {
-  const [rows] = await pool.execute<CollectionTagsRow[]>(
-    `
-      SELECT DISTINCT collection_tags
-      FROM documents
-      WHERE collection_tags IS NOT NULL AND collection_tags <> '[]' AND collection_tags <> ''
-    `,
-  );
+  const rows = await db.tags.findMany({
+    include: {
+      document_to_tags: {
+        select: { document_id: true },
+      },
+    },
+  });
 
   const tagSet = new Set<string>();
-  for (const row of rows) {
-    const tags = parseJsonArray(row.collection_tags);
-    for (const tag of tags) {
-      tagSet.add(tag);
+  for (const tag of rows) {
+    if (tag.document_to_tags.length > 0) {
+      tagSet.add(tag.name);
     }
   }
-
   return Array.from(tagSet).sort();
 }
 
+// ---------------------------------------------------------------------------
+// updateDocumentCollectionTags
+// Returns false.  The documents table has no `collection_tags` column,
+// so this operation cannot be performed.
+// ---------------------------------------------------------------------------
 export async function updateDocumentCollectionTags(
-  documentId: string,
-  collectionTags: string[],
+  _documentId: string,
+  _collectionTags: string[],
 ): Promise<boolean> {
-  const [result] = await pool.execute(
-    "UPDATE documents SET collection_tags = ? WHERE id = ?",
-    [JSON.stringify(collectionTags), documentId],
-  );
+  // documents table has no collection_tags column — operation not supported
+  return await Promise.resolve(false);
+}
 
-  const affected = (result as ResultSetHeader).affectedRows;
-  return affected > 0;
+// ---------------------------------------------------------------------------
+// getReviewQueue
+// Returns an empty result.  The document_reviews table does not exist.
+// ---------------------------------------------------------------------------
+export async function getReviewQueue(
+  _params: ReviewQueryParams = {},
+): Promise<PagedResult<ReviewItem>> {
+  // document_reviews table does not exist
+  return await Promise.resolve({ items: [], total: 0 });
+}
+
+// ---------------------------------------------------------------------------
+// getDistinctReviewFields
+// Returns an empty array.  The document_reviews table does not exist.
+// ---------------------------------------------------------------------------
+export async function getDistinctReviewFields(): Promise<string[]> {
+  // document_reviews table does not exist
+  return await Promise.resolve([]);
+}
+
+// ---------------------------------------------------------------------------
+// getReviewQueueDocuments
+// Returns documents with validation_status IN ('IN_PROGRESS', 'NEEDS_REVISION')
+// OR documents that have a 'needs_review' metadata flag OR 'sensitive' metadata TRUE.
+// ---------------------------------------------------------------------------
+export async function getReviewQueueDocuments(): Promise<{
+  items: ReviewQueueItem[];
+  total: number;
+}> {
+  // Find metadata ids for 'needs_review' and 'sensitive'
+  const [needsReviewMeta, sensitiveMeta] = await Promise.all([
+    db.metadata.findFirst({ where: { name: "needs_review" } }),
+    db.metadata.findFirst({ where: { name: "sensitive" } }),
+  ]);
+
+  const needsReviewMetaId = needsReviewMeta?.id;
+  const sensitiveMetaId = sensitiveMeta?.id;
+
+  // Get documents with IN_PROGRESS or NEEDS_REVISION validation_status
+  const qualityDocs = await db.document_quality.findMany({
+    where: {
+      validation_status: {
+        in: ["IN_PROGRESS", "NEEDS_REVISION"],
+      },
+    },
+    select: { document_id: true },
+  });
+
+  const qualityDocIds = new Set(qualityDocs.map((d) => d.document_id));
+
+  // Get documents with needs_review or sensitive metadata
+  const metadataFilters: { metadata_id: string; value: { notIn: string[] } }[] = [];
+  if (needsReviewMetaId) {
+    metadataFilters.push({ metadata_id: needsReviewMetaId, value: { notIn: ["", "false", "0", "no"] } });
+  }
+  if (sensitiveMetaId) {
+    metadataFilters.push({ metadata_id: sensitiveMetaId, value: { notIn: ["", "false", "0", "no"] } });
+  }
+
+  let metadataDocIds = new Set<string>();
+  if (metadataFilters.length > 0) {
+    const metadataRows = await db.document_to_metadata.findMany({
+      where: {
+        OR: metadataFilters,
+      },
+      select: { document_id: true },
+    });
+    metadataDocIds = new Set(metadataRows.map((r) => r.document_id));
+  }
+
+  // Union of quality doc IDs and metadata doc IDs
+  const allDocIds = new Set([...qualityDocIds, ...metadataDocIds]);
+
+
+  if (allDocIds.size === 0) {
+    return { items: [], total: 0 };
+  }
+
+  const documents = await db.documents.findMany({
+    where: { id: { in: [...allDocIds] } },
+    include: { document_quality: true, document_to_metadata: true },
+  });
+
+  const items: ReviewQueueItem[] = documents.map((doc) => {
+    const q = doc.document_quality;
+    // Determine needs_review and sensitive from metadata
+    const needsReview = doc.document_to_metadata.some(
+      (m) => m.metadata_id === needsReviewMetaId && m.value && !["", "false", "0", "no"].includes(m.value),
+    );
+    const sensitive = doc.document_to_metadata.some(
+      (m) => m.metadata_id === sensitiveMetaId && m.value && !["", "false", "0", "no"].includes(m.value),
+    );
+    return {
+      id: String(doc.id),
+      name: doc.name ?? null,
+      validation_status: q?.validation_status ?? null,
+      validation_type: q?.validation_type ?? null,
+      validator_name: q?.validator_name ?? null,
+      validator_email: q?.validator_email ?? null,
+      needs_review: needsReview,
+      sensitive,
+    };
+  });
+
+  return { items, total: items.length };
+}
+
+// ---------------------------------------------------------------------------
+// getReadyForLibraryDocuments
+// Returns documents with validation_status = 'APPROVED', access_level set,
+// and required Dublin Core metadata fields present.
+// ---------------------------------------------------------------------------
+export async function getReadyForLibraryDocuments(): Promise<{
+  items: ReadyForLibraryItem[];
+  total: number;
+}> {
+  const requiredDcFields = ["dc_title", "dc_type", "dc_subject", "dc_rights"];
+
+  const dcMetadata = await db.metadata.findMany({
+    where: { name: { in: requiredDcFields } },
+    select: { id: true, name: true },
+  });
+
+  const dcMetaMap = new Map(dcMetadata.map((m) => [m.id, m.name]));
+  const dcMetaIds = new Set(dcMetadata.map((m) => m.id));
+
+  const qualityDocs = await db.document_quality.findMany({
+    where: {
+      validation_status: "APPROVED",
+      access_level: { not: null },
+    },
+    select: { document_id: true, validation_status: true, validation_timestamp: true, access_level: true },
+  });
+
+  if (qualityDocs.length === 0) {
+    return { items: [], total: 0 };
+  }
+
+  const approvedDocIds = new Set(qualityDocs.map((d) => d.document_id));
+
+  const metadataRows = await db.document_to_metadata.findMany({
+    where: {
+      document_id: { in: [...approvedDocIds] },
+      metadata_id: { in: [...dcMetaIds] },
+    },
+    select: { document_id: true, metadata_id: true },
+  });
+
+  // Group by document_id and check which have all required fields
+  const docDcFields = new Map<string, Set<string>>();
+  for (const row of metadataRows) {
+    const metaName = dcMetaMap.get(row.metadata_id);
+    if (!metaName) continue;
+    if (!docDcFields.has(row.document_id)) {
+      docDcFields.set(row.document_id, new Set());
+    }
+    docDcFields.get(row.document_id)!.add(metaName);
+  }
+
+  const items: ReadyForLibraryItem[] = [];
+  for (const qd of qualityDocs) {
+    const dcFieldsPresent = docDcFields.get(qd.document_id);
+    const metadata_complete =
+      dcFieldsPresent !== undefined && requiredDcFields.every((f) => dcFieldsPresent.has(f));
+    items.push({
+      id: qd.document_id,
+      name: null, // name loaded separately below if needed
+      validation_status: qd.validation_status ?? null,
+      validation_timestamp: dateToString(qd.validation_timestamp),
+      access_level: qd.access_level ?? null,
+      metadata_complete,
+    });
+  }
+
+  // Hydrate names from documents table
+  const docRows = await db.documents.findMany({
+    where: { id: { in: [...approvedDocIds] } },
+    select: { id: true, name: true },
+  });
+  const nameMap = new Map(docRows.map((d) => [d.id, d.name ?? null]));
+
+  for (const item of items) {
+    item.name = nameMap.get(item.id) ?? null;
+  }
+
+  return { items, total: items.length };
+}
+
+// ---------------------------------------------------------------------------
+// getBatchSummary
+// Returns pipeline summary grouped by batch — counts of documents per
+// validation_status per batch.
+// ---------------------------------------------------------------------------
+export async function getBatchSummary(): Promise<BatchSummary[]> {
+  const rows = await db.batches.findMany({
+    include: {
+      document_to_batches: {
+        include: {
+          documents: {
+            include: {
+              document_quality: {
+                select: { validation_status: true },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const result: BatchSummary[] = [];
+
+  for (const batch of rows) {
+    const byStatus = new Map<string, number>();
+    for (const dtb of batch.document_to_batches) {
+      const status = dtb.documents.document_quality?.validation_status ?? null;
+      const key = status ?? "unknown";
+      byStatus.set(key, (byStatus.get(key) ?? 0) + 1);
+    }
+    for (const [validation_status, document_count] of byStatus) {
+      result.push({
+        batch_id: batch.id,
+        batch_name: batch.name ?? null,
+        validation_status,
+        document_count,
+      });
+    }
+  }
+
+  return result;
 }

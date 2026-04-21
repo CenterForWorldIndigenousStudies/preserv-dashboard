@@ -107,7 +107,7 @@ export default async function ReviewsPage({ searchParams }: ReviewsPageProps): P
                   <thead className="bg-sand/55 text-left text-xs uppercase tracking-[0.15em] text-ink/70">
                     <tr>
                       <th className="px-4 py-3">Document ID</th>
-                      <th className="px-4 py-3">Filename</th>
+                      <th className="px-4 py-3">Source ID</th>
                       <th className="px-4 py-3">Field</th>
                       <th className="px-4 py-3">Conflicting Values</th>
                       <th className="px-4 py-3">Winning Source</th>
@@ -130,7 +130,7 @@ export default async function ReviewsPage({ searchParams }: ReviewsPageProps): P
                               {reviewItem.document_id}
                             </Link>
                           </td>
-                          <td className="px-4 py-3 text-ink">{reviewItem.filename || "—"}</td>
+                          <td className="px-4 py-3 text-ink">—</td>
                           <td className="px-4 py-3 text-ink">{reviewItem.field_name}</td>
                           <td className="px-4 py-3">
                             <div className="grid gap-2 md:grid-cols-2">

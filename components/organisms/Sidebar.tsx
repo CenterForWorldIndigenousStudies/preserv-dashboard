@@ -6,7 +6,6 @@ import Link from "next/link";
 import {
   LayoutDashboard,
   ClipboardList,
-  AlertTriangle,
   Database,
   BookOpen,
   X,
@@ -23,8 +22,9 @@ interface SidebarProps {
 
 const navItems = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
-  { href: "/reviews", label: "Review Queue", icon: ClipboardList },
-  { href: "/failures", label: "Failures", icon: AlertTriangle },
+  { href: "/review-queue", label: "Review Queue", icon: ClipboardList },
+  { href: "/ready-for-library", label: "Ready for Library", icon: BookOpen },
+  { href: "/batch-summary", label: "Batch Summary", icon: Database },
   { href: "/db", label: "DB Schema", icon: Database },
   { href: "/developers/component-library", label: "Components", icon: BookOpen },
 ];

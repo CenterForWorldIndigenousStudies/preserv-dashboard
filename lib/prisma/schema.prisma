@@ -1,0 +1,287 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "generated"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model access_levels {
+  id              String            @id @db.VarChar(36)
+  level_name      String            @unique(map: "uk_access_levels_level_name") @db.VarChar(255)
+  description     String?           @db.VarChar(255)
+  created_at      DateTime?         @default(now()) @db.Timestamp(0)
+  updated_at      DateTime?         @default(now()) @db.Timestamp(0)
+  document_access document_access[]
+}
+
+model authors {
+  id                  String                @id @db.VarChar(36)
+  name                String?               @db.Text
+  notes               String?               @db.MediumText
+  created_at          DateTime?             @default(now()) @db.Timestamp(0)
+  updated_at          DateTime?             @default(now()) @db.Timestamp(0)
+  document_to_authors document_to_authors[]
+}
+
+model batch_metadata {
+  id                        String                      @id @db.VarChar(36)
+  name                      String                      @db.Text
+  notes                     String?                     @db.MediumText
+  name_hash                 String?                     @unique(map: "uk_batch_metadata_name") @db.VarChar(64)
+  created_at                DateTime?                   @default(now()) @db.Timestamp(0)
+  updated_at                DateTime?                   @default(now()) @db.Timestamp(0)
+  batch_to_batches_metadata batch_to_batches_metadata[]
+}
+
+model batch_to_batches_metadata {
+  id             String         @id @db.VarChar(36)
+  batch_id       String         @db.VarChar(36)
+  metadata_id    String         @db.VarChar(36)
+  value          String?        @db.LongText
+  value_type     String?        @db.VarChar(50)
+  created_at     DateTime?      @default(now()) @db.Timestamp(0)
+  updated_at     DateTime?      @default(now()) @db.Timestamp(0)
+  batches        batches        @relation(fields: [batch_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_batch_to_batches_metadata_batch")
+  batch_metadata batch_metadata @relation(fields: [metadata_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_batch_to_batches_metadata_metadata")
+
+  @@index([batch_id], map: "idx_batch_to_batches_metadata_batch_id")
+  @@index([metadata_id], map: "idx_batch_to_batches_metadata_metadata_id")
+}
+
+model batches {
+  id                        String                      @id @db.VarChar(36)
+  id_legacy                 String?                     @db.VarChar(255)
+  name                      String?                     @db.Text
+  name_hash                 String?                     @unique(map: "uk_batches_name") @db.VarChar(64)
+  processing_details        String?                     @db.LongText
+  created_at                DateTime?                   @default(now()) @db.Timestamp(0)
+  updated_at                DateTime?                   @default(now()) @db.Timestamp(0)
+  started_at                DateTime?                   @db.Timestamp(0)
+  completed_at              DateTime?                   @db.Timestamp(0)
+  last_processed            DateTime?                   @db.Timestamp(0)
+  started_by                String?                     @db.VarChar(255)
+  batch_to_batches_metadata batch_to_batches_metadata[]
+  document_to_batches       document_to_batches[]
+}
+
+model document_access {
+  id               String        @id @db.VarChar(36)
+  document_id      String        @db.VarChar(36)
+  access_level_id  String        @db.VarChar(36)
+  granted_by_name  String?       @db.VarChar(255)
+  granted_by_email String?       @db.VarChar(255)
+  granted_at       DateTime?     @default(now()) @db.Timestamp(0)
+  access_levels    access_levels @relation(fields: [access_level_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_access_access_level")
+  documents        documents     @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_access_document")
+
+  @@index([access_level_id], map: "idx_document_access_access_level_id")
+  @@index([document_id], map: "idx_document_access_document_id")
+}
+
+model document_quality {
+  id                   String         @id @db.VarChar(36)
+  document_id          String         @unique(map: "uk_document_quality_document_id") @db.VarChar(36)
+  comment              String?        @db.MediumText
+  comment_additional   String?        @db.MediumText
+  metadata_sufficiency String?        @db.VarChar(255)
+  validation_status    String?        @db.VarChar(255)
+  validation_type      String?        @db.VarChar(255)
+  validation_timestamp DateTime?      @db.Timestamp(0)
+  validator_name       String?        @db.VarChar(255)
+  validator_email      String?        @db.VarChar(255)
+  access_level         String?        @db.VarChar(255)
+  current_status       String?        @db.VarChar(36)
+  created_at           DateTime?      @default(now()) @db.Timestamp(0)
+  updated_at           DateTime?      @default(now()) @db.Timestamp(0)
+  state_history        state_history? @relation(fields: [current_status], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_document_quality_current_status")
+  documents            documents      @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_quality_document")
+
+  @@index([current_status], map: "idx_document_quality_current_status")
+}
+
+model document_to_authors {
+  id               String    @id @db.VarChar(36)
+  document_id      String    @db.VarChar(36)
+  author_id        String    @db.VarChar(36)
+  contributor_type String?   @db.VarChar(255)
+  notes            String?   @db.MediumText
+  created_at       DateTime? @default(now()) @db.Timestamp(0)
+  updated_at       DateTime? @default(now()) @db.Timestamp(0)
+  authors          authors   @relation(fields: [author_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_to_authors_author")
+  documents        documents @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_to_authors_document")
+
+  @@index([author_id], map: "idx_document_to_authors_author_id")
+  @@index([document_id], map: "idx_document_to_authors_document_id")
+}
+
+model document_to_batches {
+  id                      String    @id @db.VarChar(36)
+  document_id             String    @db.VarChar(36)
+  batch_id                String    @db.VarChar(36)
+  added_at                DateTime? @default(now()) @db.Timestamp(0)
+  cost                    Decimal?  @db.Decimal(10, 2)
+  processing_time_seconds Int?
+  ocr_quality_low         Boolean?
+  ocr_quality_medium      Boolean?
+  batches                 batches   @relation(fields: [batch_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_to_batches_batch")
+  documents               documents @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_to_batches_document")
+
+  @@unique([document_id, batch_id], map: "uk_document_to_batches")
+  @@index([batch_id], map: "idx_document_to_batches_batch_id")
+  @@index([document_id], map: "idx_document_to_batches_document_id")
+}
+
+model document_to_metadata {
+  id          String    @id @db.VarChar(36)
+  document_id String    @db.VarChar(36)
+  metadata_id String    @db.VarChar(36)
+  value       String?   @db.LongText
+  value_type  String?   @db.VarChar(50)
+  created_at  DateTime? @default(now()) @db.Timestamp(0)
+  updated_at  DateTime? @default(now()) @db.Timestamp(0)
+  documents   documents @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_to_metadata_document")
+  metadata    metadata  @relation(fields: [metadata_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_to_metadata_metadata")
+
+  @@index([document_id], map: "idx_document_to_metadata_document_id")
+  @@index([metadata_id], map: "idx_document_to_metadata_metadata_id")
+}
+
+model document_to_publishers {
+  id           String     @id @db.VarChar(36)
+  document_id  String     @db.VarChar(36)
+  publisher_id String     @db.VarChar(36)
+  notes        String?    @db.MediumText
+  created_at   DateTime?  @default(now()) @db.Timestamp(0)
+  updated_at   DateTime?  @default(now()) @db.Timestamp(0)
+  documents    documents  @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_to_publishers_document")
+  publishers   publishers @relation(fields: [publisher_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_to_publishers_publisher")
+
+  @@index([document_id], map: "idx_document_to_publishers_document_id")
+  @@index([publisher_id], map: "idx_document_to_publishers_publisher_id")
+}
+
+model document_to_tags {
+  id          String    @id @db.VarChar(36)
+  document_id String    @db.VarChar(36)
+  tag_id      String    @db.VarChar(36)
+  notes       String?   @db.MediumText
+  created_at  DateTime? @default(now()) @db.Timestamp(0)
+  updated_at  DateTime? @default(now()) @db.Timestamp(0)
+  documents   documents @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_to_tags_document")
+  tags        tags      @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_to_tags_tag")
+
+  @@index([document_id], map: "idx_document_to_tags_document_id")
+  @@index([tag_id], map: "idx_document_to_tags_tag_id")
+}
+
+model document_versions {
+  id               String         @id @db.VarChar(36)
+  document_id      String         @db.VarChar(36)
+  version_group_id String         @db.VarChar(36)
+  notes            String?        @db.MediumText
+  changes_summary  String?        @db.MediumText
+  created_at       DateTime?      @default(now()) @db.Timestamp(0)
+  updated_at       DateTime?      @default(now()) @db.Timestamp(0)
+  analyzed_at      DateTime?      @db.Timestamp(0)
+  documents        documents      @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_versions_document")
+  version_groups   version_groups @relation(fields: [version_group_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_versions_version_group")
+
+  @@index([document_id], map: "idx_document_versions_document_id")
+  @@index([version_group_id], map: "idx_document_versions_version_group_id")
+}
+
+model documents {
+  id                     String                   @id @db.VarChar(36)
+  filesize               BigInt?
+  hash_binary            String?                  @db.VarChar(255)
+  hash_content           String?                  @db.VarChar(255)
+  id_legacy              String                   @unique(map: "uk_documents_id_legacy") @db.VarChar(255)
+  source_id              String?                  @db.VarChar(255)
+  name                   String?                  @db.VarChar(255)
+  created_at             DateTime?                @default(now()) @db.Timestamp(0)
+  updated_at             DateTime?                @default(now()) @db.Timestamp(0)
+  document_access        document_access[]
+  document_quality       document_quality?
+  document_to_authors    document_to_authors[]
+  document_to_batches    document_to_batches[]
+  document_to_metadata   document_to_metadata[]
+  document_to_publishers document_to_publishers[]
+  document_to_tags       document_to_tags[]
+  document_versions      document_versions[]
+  state_history          state_history[]
+  version_groups         version_groups?
+
+  @@index([hash_binary], map: "idx_documents_hash_binary")
+  @@index([hash_content], map: "idx_documents_hash_content")
+  @@index([source_id], map: "idx_documents_source_id")
+}
+
+model edit_history {
+  id             String    @id @db.VarChar(36)
+  entity_id      String?   @db.VarChar(36)
+  entity_table   String?   @db.VarChar(255)
+  previous_value String?   @db.MediumText
+  new_value      String?   @db.MediumText
+  editor_email   String?   @db.VarChar(255)
+  edit_summary   String?   @db.MediumText
+  edited_at      DateTime? @default(now()) @db.Timestamp(0)
+
+  @@index([entity_table, entity_id], map: "idx_edit_history_entity")
+}
+
+model metadata {
+  id                   String                 @id @db.VarChar(36)
+  name                 String                 @db.Text
+  notes                String?                @db.MediumText
+  name_hash            String?                @unique(map: "uk_metadata_name") @db.VarChar(64)
+  created_at           DateTime?              @default(now()) @db.Timestamp(0)
+  updated_at           DateTime?              @default(now()) @db.Timestamp(0)
+  document_to_metadata document_to_metadata[]
+}
+
+model publishers {
+  id                     String                   @id @db.VarChar(36)
+  name                   String?                  @db.Text
+  notes                  String?                  @db.MediumText
+  created_at             DateTime?                @default(now()) @db.Timestamp(0)
+  updated_at             DateTime?                @default(now()) @db.Timestamp(0)
+  document_to_publishers document_to_publishers[]
+}
+
+model state_history {
+  id               String             @id @db.VarChar(36)
+  document_id      String             @db.VarChar(36)
+  previous_state   String?            @db.VarChar(255)
+  new_state        String?            @db.VarChar(255)
+  changed_at       DateTime?          @default(now()) @db.Timestamp(0)
+  document_quality document_quality[]
+  documents        documents          @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_state_history_document")
+
+  @@index([document_id], map: "idx_state_history_document_id")
+}
+
+model tags {
+  id               String             @id @db.VarChar(36)
+  name             String             @db.Text
+  notes            String?            @db.MediumText
+  name_hash        String?            @unique(map: "uk_tags_name") @db.VarChar(64)
+  created_at       DateTime?          @default(now()) @db.Timestamp(0)
+  updated_at       DateTime?          @default(now()) @db.Timestamp(0)
+  document_to_tags document_to_tags[]
+}
+
+model version_groups {
+  id                    String              @id @db.VarChar(36)
+  group_id              String?             @db.VarChar(36)
+  canonical_document_id String              @unique(map: "uk_version_groups_canonical_document_id") @db.VarChar(36)
+  notes                 String?             @db.MediumText
+  created_at            DateTime?           @default(now()) @db.Timestamp(0)
+  updated_at            DateTime?           @default(now()) @db.Timestamp(0)
+  document_versions     document_versions[]
+  documents             documents           @relation(fields: [canonical_document_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_version_groups_canonical_document")
+
+  @@index([canonical_document_id], map: "idx_version_groups_canonical_document_id")
+  @@index([group_id], map: "idx_version_groups_group_id")
+}

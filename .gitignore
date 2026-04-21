@@ -43,6 +43,10 @@ yarn-debug.log*
 yarn-error.log*
 public/developers/storybook
 
+
+# Prisma generated files
+lib/prisma/generated
+
 # yarn
 .pnp.*
 .yarn/*

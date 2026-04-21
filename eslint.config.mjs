@@ -22,7 +22,8 @@ export default tseslint.config({
     'next-env.d.ts',
     '.storybook/**',
     'storybook-static/**',
-    'stories/**'
+    'stories/**',
+    'lib/prisma/generated/**'
   ],
 }, eslint.configs.recommended, ...tseslint.configs.recommendedTypeChecked, {
   files: ['**/*.{ts,tsx}'],
