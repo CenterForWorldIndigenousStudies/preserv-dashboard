@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "next build",
+    "build": "run-s db:prisma:generate build:next",
+    "build:next": "next build",
     "db:prisma:generate": "prisma generate --schema=./lib/prisma/schema.prisma",
     "db:prisma:pull": "prisma db pull --schema=./lib/prisma/schema.prisma --force",
     "db:prisma:studio": "prisma studio",
@@ -20,11 +21,11 @@
     "storybook:build": "storybook build --quiet --output-dir ./storybook-static && cp -r node_modules/storybook/dist/_browser-chunks storybook-static/ && mkdir -p public/developers/storybook && cp -r storybook-static/. public/developers/storybook/ && rm -rf public/developers/storybook/developers",
     "storybook:clean": "rm -rf storybook-static public/developers/storybook",
     "storybook:preview": "storybook preview -p 6006 --storybook-dir ../public/storybook",
+    "test": "run-p test:unit test:integration",
     "test:unit": "vitest run tests/unit",
     "test:unit:watch": "vitest tests/unit",
     "test:coverage": "vitest run tests/unit --coverage",
     "test:integration": "vitest run tests/integration",
-    "test:all": "vitest run tests/unit tests/integration",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
