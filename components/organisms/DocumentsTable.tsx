@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -33,7 +33,6 @@ export function DocumentsTable({ initialData }: DocumentsTableProps) {
   const [tableData, setTableData] = useState<Document[]>(initialData?.data ?? []);
   const [totalRowCount, setTotalRowCount] = useState<number>(initialData?.total ?? 0);
   const [isLoading, setIsLoading] = useState(false);
-  const [isPending, startTransition] = useTransition();
 
   const queryParams = useMemo(
     () => ({
@@ -60,19 +59,27 @@ export function DocumentsTable({ initialData }: DocumentsTableProps) {
       return;
     }
 
+    let cancelled = false;
     setIsLoading(true);
-    startTransition(async () => {
-      try {
-        const result = await getDocumentsAction(queryParams);
-        setTableData(result.data);
-        setTotalRowCount(result.total);
-      } catch {
-        setTableData([]);
-        setTotalRowCount(0);
-      } finally {
-        setIsLoading(false);
-      }
-    });
+    getDocumentsAction(queryParams)
+      .then((result) => {
+        if (!cancelled) {
+          setTableData(result.data);
+          setTotalRowCount(result.total);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setTableData([]);
+          setTotalRowCount(0);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [queryParams, shouldUseInitialData, initialData]);
 
   const columns = useMemo(
@@ -254,7 +261,7 @@ export function DocumentsTable({ initialData }: DocumentsTableProps) {
             ))}
           </thead>
           <tbody>
-            {isLoading || isPending ? (
+            {isLoading ? (
               <tr>
                 <td colSpan={columns.length} className="px-4 py-12 text-center text-ink/60">
                   Loading...
