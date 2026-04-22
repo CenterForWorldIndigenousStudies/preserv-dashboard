@@ -183,13 +183,28 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
     return null;
   }
 
-  const [quality, versions] = await Promise.all([
+  const [quality, versions, metadata, batches, authors, tags] = await Promise.all([
     db.document_quality.findUnique({
       where: { document_id: documentId },
     }),
     db.document_versions.findMany({
       where: { document_id: documentId },
       orderBy: { created_at: "desc" },
+    }),
+    db.document_to_metadata.findMany({
+      where: { document_id: documentId },
+      include: { metadata: true },
+      orderBy: { metadata: { name: "asc" } },
+    }),
+    db.document_to_batches.findMany({
+      where: { document_id: documentId },
+    }),
+    db.document_to_authors.findMany({
+      where: { document_id: documentId },
+    }),
+    db.document_to_tags.findMany({
+      where: { document_id: documentId },
+      include: { tags: true },
     }),
   ]);
 
@@ -227,12 +242,6 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
       created_at: document.created_at ?? null,
       updated_at: document.updated_at ?? null,
     },
-    // document_to_metadata join exists but is not wired here; stub null
-    metadata: null,
-    // document_audits does not exist
-    audits: [] as AuditEntry[],
-    // document_reviews does not exist
-    reviews: [] as ReviewItem[],
     quality: mapQuality(quality),
     versions: versions.map((v) => ({
       id: String(v.id),
@@ -244,6 +253,41 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
       updated_at: dateToString(v.updated_at),
       analyzed_at: dateToString(v.analyzed_at),
     })),
+    metadata: metadata.map((m) => ({
+      name: m.metadata.name,
+      value: String(m.value ?? ""),
+      value_type: m.value_type ?? null,
+    })),
+    document_to_batches: batches.map((b) => ({
+      id: String(b.id),
+      document_id: String(b.document_id),
+      batch_id: String(b.batch_id),
+      added_at: dateToString(b.added_at),
+      cost: b.cost !== null ? String(b.cost) : null,
+      processing_time_seconds: b.processing_time_seconds ?? null,
+      ocr_quality_low: b.ocr_quality_low ?? null,
+      ocr_quality_medium: b.ocr_quality_medium ?? null,
+    })),
+    document_to_authors: authors.map((a) => ({
+      id: String(a.id),
+      document_id: String(a.document_id),
+      author_id: String(a.author_id),
+      contributor_type: a.contributor_type ?? null,
+      notes: a.notes ?? null,
+    })),
+    document_to_tags: tags.map((t) => ({
+      id: String(t.id),
+      document_id: String(t.document_id),
+      tag_id: String(t.tag_id),
+      notes: t.notes ?? null,
+      tags: {
+        id: String(t.tags.id),
+        name: t.tags.name ?? null,
+        notes: t.tags.notes ?? null,
+      },
+    })),
+    audits: [] as AuditEntry[],
+    reviews: [] as ReviewItem[],
   };
 }
 

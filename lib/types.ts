@@ -41,26 +41,55 @@ export interface DocumentVersion {
   analyzed_at: string | null;
 }
 
-export interface MetadataRecord {
-  [key: string]:
-    | string
-    | number
-    | boolean
-    | null
-    | MetadataRecord
-    | MetadataRecord[]
-    | string[]
-    | number[]
-    | boolean[];
+export interface DocumentMetadataField {
+  name: string;
+  value: string;
+  value_type: string | null;
+}
+
+export interface DocumentToBatch {
+  id: string;
+  document_id: string;
+  batch_id: string;
+  added_at: string | null;
+  cost: string | null;
+  processing_time_seconds: number | null;
+  ocr_quality_low: boolean | null;
+  ocr_quality_medium: boolean | null;
+}
+
+export interface DocumentToAuthor {
+  id: string;
+  document_id: string;
+  author_id: string;
+  contributor_type: string | null;
+  notes: string | null;
+}
+
+export interface Tag {
+  id: string;
+  name: string | null;
+  notes: string | null;
+}
+
+export interface DocumentToTag {
+  id: string;
+  document_id: string;
+  tag_id: string;
+  notes: string | null;
+  tags: Tag;
 }
 
 export interface DocumentDetail {
   document: Document;
-  metadata: MetadataRecord | null;
-  audits: AuditEntry[];
-  reviews: ReviewItem[];
   quality: DocumentQuality | null;
   versions: DocumentVersion[];
+  metadata: DocumentMetadataField[];
+  document_to_batches: DocumentToBatch[];
+  document_to_authors: DocumentToAuthor[];
+  document_to_tags: DocumentToTag[];
+  audits: AuditEntry[];
+  reviews: ReviewItem[];
 }
 
 export interface AuditEntry {
@@ -134,6 +163,7 @@ export interface ReadyForLibraryItem {
   metadata_complete: boolean;
 }
 
+// BatchSummary kept as-is below
 export interface BatchSummary {
   batch_id: string;
   batch_name: string | null;
