@@ -8,7 +8,6 @@ erDiagram
         varchar hash_binary
         varchar hash_content
         varchar id_legacy
-        varchar source_id
         varchar name
         timestamp created_at
         timestamp updated_at
@@ -253,8 +252,6 @@ anchor entity that all other tables relate to.
 - `hash_content` - SHA-256 hash of the extracted text or content. Used to detect
   content-level duplicates independent of file format. Indexed.
 - `filesize` - Size of the file in bytes, stored as BigInt.
-- `source_id` - Identifier of the source system or ingest pipeline that contributed the
-  document.
 
 **Design notes:**
 
@@ -263,7 +260,6 @@ anchor entity that all other tables relate to.
 - `hash_binary` and `hash_content` are the two pillars of the deduplication strategy.
   A match on either hash signals a potential duplicate.
 - `id_legacy` has a unique constraint; it is the business-facing identifier.
-- `source_id` is indexed for filtering by ingest source.
 
 ### document_quality
 
