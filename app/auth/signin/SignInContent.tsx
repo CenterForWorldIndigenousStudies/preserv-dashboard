@@ -1,25 +1,20 @@
-"use client";
+'use client'
 
-import { Button } from "@components/atoms/Button";
-import { signIn } from "next-auth/react";
-import { useSearchParams } from "next/navigation";
+import { Button } from '@components/atoms/Button'
+import { signIn } from 'next-auth/react'
+import { useSearchParams } from 'next/navigation'
 
 export function SignInContent() {
-  const params = useSearchParams();
-  const callbackUrl = params.get("callbackUrl") || "/";
-  const error = params.get("error");
+  const params = useSearchParams()
+  const callbackUrl = params.get('callbackUrl') || '/'
+  const error = params.get('error')
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-sand/20">
       <div className="bg-white rounded-panel shadow-md p-8 max-w-md w-full text-center">
         <div className="mb-6">
           <div className="w-16 h-16 bg-moss/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg
-              className="w-8 h-8 text-moss"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
+            <svg className="w-8 h-8 text-moss" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -28,25 +23,21 @@ export function SignInContent() {
               />
             </svg>
           </div>
-          <h1 className="text-2xl font-serif font-bold text-ink mb-2">
-            Sign in to CWIS Preservation
-          </h1>
-          <p className="text-sm text-ink/60">
-            Use your CWIS Google account to continue
-          </p>
+          <h1 className="text-2xl font-serif font-bold text-ink mb-2">Sign in to CWIS Preservation</h1>
+          <p className="text-sm text-ink/60">Use your CWIS Google account to continue</p>
         </div>
 
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
-            {error === "OAuthAccountNotLinked"
-              ? "This email is already linked to a different sign-in method."
-              : "An error occurred during sign in. Please try again."}
+            {error === 'OAuthAccountNotLinked'
+              ? 'This email is already linked to a different sign-in method.'
+              : 'An error occurred during sign in. Please try again.'}
           </div>
         )}
 
         <Button
           onClick={() => {
-            void signIn("google", { redirectTo: callbackUrl });
+            void signIn('google', { redirectTo: callbackUrl })
           }}
           variant="secondary"
           fullWidth
@@ -79,5 +70,5 @@ export function SignInContent() {
         </p>
       </div>
     </div>
-  );
+  )
 }

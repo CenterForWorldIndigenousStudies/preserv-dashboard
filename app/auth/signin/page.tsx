@@ -1,11 +1,11 @@
-import { redirect } from "next/navigation";
-import { Suspense } from "react";
+import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
 
-import { auth } from "@root/auth";
+import { auth } from '@root/auth'
 
-import { SignInContent } from "./SignInContent";
+import { SignInContent } from './SignInContent'
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic'
 
 function SignInFallback() {
   return (
@@ -14,19 +14,19 @@ function SignInFallback() {
         <p className="text-ink/60">Loading...</p>
       </div>
     </div>
-  );
+  )
 }
 
 export default async function SignInPage() {
-  const session = await auth();
+  const session = await auth()
 
   if (session) {
-    redirect("/");
+    redirect('/')
   }
 
   return (
     <Suspense fallback={<SignInFallback />}>
       <SignInContent />
     </Suspense>
-  );
+  )
 }

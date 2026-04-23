@@ -1,14 +1,11 @@
-import type { ReactElement } from "react";
+import type { ReactElement } from 'react'
 
 interface NoDataStateProps {
-  title?: string;
-  message: string;
+  title?: string
+  message: string
 }
 
-export function NoDataState({
-  title = "No Data",
-  message,
-}: NoDataStateProps): ReactElement {
+export function NoDataState({ title = 'No Data', message }: NoDataStateProps): ReactElement {
   return (
     <section className="rounded-2xl border border-moss/15 bg-white p-8 shadow-panel">
       <div className="mx-auto max-w-2xl text-center">
@@ -17,5 +14,5 @@ export function NoDataState({
         <p className="mt-3 text-sm text-ink/70">{message}</p>
       </div>
     </section>
-  );
+  )
 }

@@ -1,55 +1,55 @@
-'use client';
+'use client'
 
-import { useEffect, useId, useState, useCallback, type ReactElement } from 'react';
-import mermaid from 'mermaid';
-import { Button } from '@components/atoms/Button';
+import { useEffect, useId, useState, useCallback, type ReactElement } from 'react'
+import mermaid from 'mermaid'
+import { Button } from '@components/atoms/Button'
 
-let mermaidInitialized = false;
+let mermaidInitialized = false
 
 interface MermaidDiagramProps {
-  source: string;
-  className?: string;
+  source: string
+  className?: string
 }
 
 export function MermaidDiagram({ source, className = '' }: MermaidDiagramProps): ReactElement {
-  const [svg, setSvg] = useState<string>('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const uid = useId().replace(/:/g, '-');
+  const [svg, setSvg] = useState<string>('')
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const uid = useId().replace(/:/g, '-')
 
   const closeModal = useCallback(() => {
-    setIsModalOpen(false);
-  }, []);
+    setIsModalOpen(false)
+  }, [])
 
   useEffect(() => {
     async function doRender() {
       try {
         if (!mermaidInitialized) {
-          mermaid.initialize({});
-          mermaidInitialized = true;
+          mermaid.initialize({})
+          mermaidInitialized = true
         }
-        const id = `mermaid-${uid}`;
-        const result = await mermaid.render(id, source);
-        setSvg(result.svg);
+        const id = `mermaid-${uid}`
+        const result = await mermaid.render(id, source)
+        setSvg(result.svg)
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to render diagram');
-        setSvg('');
+        setError(err instanceof Error ? err.message : 'Failed to render diagram')
+        setSvg('')
       }
     }
-    void doRender();
-  }, [source]);
+    void doRender()
+  }, [source])
 
   useEffect(() => {
-    if (!isModalOpen) return;
+    if (!isModalOpen) return
 
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape' || e.key === 'Enter') {
-        closeModal();
+        closeModal()
       }
     }
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isModalOpen, closeModal]);
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isModalOpen, closeModal])
 
   return (
     <>
@@ -58,12 +58,7 @@ export function MermaidDiagram({ source, className = '' }: MermaidDiagramProps):
         className={`relative my-4 rounded-xl border border-moss/20 bg-white w-full max-w-full overflow-hidden ${className}`}
       >
         <div className="absolute right-2 top-2 z-10">
-          <Button
-            type="button"
-            onClick={() => setIsModalOpen(true)}
-            variant="secondary"
-            size="sm"
-          >
+          <Button type="button" onClick={() => setIsModalOpen(true)} variant="secondary" size="sm">
             Enlarge
           </Button>
         </div>
@@ -89,12 +84,7 @@ export function MermaidDiagram({ source, className = '' }: MermaidDiagramProps):
             onClick={(e) => e.stopPropagation()}
           >
             <div className="absolute right-2 top-2 z-10">
-              <Button
-                type="button"
-                onClick={closeModal}
-                variant="secondary"
-                size="sm"
-              >
+              <Button type="button" onClick={closeModal} variant="secondary" size="sm">
                 Close
               </Button>
             </div>
@@ -113,5 +103,5 @@ export function MermaidDiagram({ source, className = '' }: MermaidDiagramProps):
         </div>
       )}
     </>
-  );
+  )
 }

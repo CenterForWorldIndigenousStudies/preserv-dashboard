@@ -1,8 +1,8 @@
-import { Suspense } from "react";
+import { Suspense } from 'react'
 
-import { ErrorContent } from "./ErrorContent";
+import { ErrorContent } from './ErrorContent'
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic'
 
 function ErrorFallback() {
   return (
@@ -11,7 +11,7 @@ function ErrorFallback() {
         <p className="text-ink/60">Loading...</p>
       </div>
     </div>
-  );
+  )
 }
 
 export default function AuthErrorPage() {
@@ -19,5 +19,5 @@ export default function AuthErrorPage() {
     <Suspense fallback={<ErrorFallback />}>
       <ErrorContent />
     </Suspense>
-  );
+  )
 }

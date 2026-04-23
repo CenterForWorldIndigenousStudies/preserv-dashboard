@@ -1,18 +1,18 @@
-import { Suspense, type ReactElement } from "react";
-import { PageHeader } from "@organisms/PageHeader";
-import { ReviewQueueTable } from "@organisms/ReviewQueueTable";
-import { NoDataState } from "@organisms/NoDataState";
-import { getReviewQueueDocuments } from "@lib/queries";
+import { Suspense, type ReactElement } from 'react'
+import { PageHeader } from '@organisms/PageHeader'
+import { ReviewQueueTable } from '@organisms/ReviewQueueTable'
+import { NoDataState } from '@organisms/NoDataState'
+import { getReviewQueueDocuments } from '@lib/queries'
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic'
 
 async function ReviewQueueContent() {
-  const result = await getReviewQueueDocuments();
+  const result = await getReviewQueueDocuments()
 
   if (result.total === 0) {
-    return <NoDataState message="No documents are currently in the review queue." />;
+    return <NoDataState message="No documents are currently in the review queue." />
   }
-  return <ReviewQueueTable initialData={result} />;
+  return <ReviewQueueTable initialData={result} />
 }
 
 export default function ReviewQueuePage(): ReactElement {
@@ -28,5 +28,5 @@ export default function ReviewQueuePage(): ReactElement {
         <ReviewQueueContent />
       </Suspense>
     </div>
-  );
+  )
 }

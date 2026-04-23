@@ -1,9 +1,9 @@
-import type { ReactElement } from "react";
+import type { ReactElement } from 'react'
 
 interface PageHeaderProps {
-  eyebrow: string;
-  title: string;
-  description: string;
+  eyebrow: string
+  title: string
+  description: string
 }
 
 export function PageHeader({ eyebrow, title, description }: PageHeaderProps): ReactElement {
@@ -13,5 +13,5 @@ export function PageHeader({ eyebrow, title, description }: PageHeaderProps): Re
       <h1 className="mt-4 text-3xl font-semibold text-white md:text-4xl">{title}</h1>
       <p className="mt-4 max-w-2xl text-sm leading-6 text-sky/90">{description}</p>
     </div>
-  );
+  )
 }

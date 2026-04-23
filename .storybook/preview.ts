@@ -1,15 +1,15 @@
-import type { Preview, Decorator } from "@storybook/nextjs-vite";
-import "../app/globals.css";
+import type { Preview, Decorator } from '@storybook/nextjs-vite'
+import '../app/globals.css'
 
 const withRootLayout: Decorator = (story, context) => {
   // Minimal decorator that ensures Tailwind is applied
   // The actual root layout is applied per-story via nextjs-vite framework
-  return story();
-};
+  return story()
+}
 
 const preview: Preview = {
   parameters: {
-    layout: "centered",
+    layout: 'centered',
     controls: {
       matchers: {
         color: /(background|color)$/i,
@@ -17,14 +17,14 @@ const preview: Preview = {
       },
     },
     a11y: {
-      test: "error",
+      test: 'error',
     },
     backgrounds: {
-      default: "sand",
+      default: 'sand',
       values: [
-        { name: "sand", value: "#f4f1f0" },
-        { name: "ink", value: "#231f20" },
-        { name: "white", value: "#ffffff" },
+        { name: 'sand', value: '#f4f1f0' },
+        { name: 'ink', value: '#231f20' },
+        { name: 'white', value: '#ffffff' },
       ],
     },
     docs: {
@@ -34,7 +34,7 @@ const preview: Preview = {
     },
   },
   decorators: [withRootLayout],
-  tags: ["autodocs"],
-};
+  tags: ['autodocs'],
+}
 
-export default preview;
+export default preview

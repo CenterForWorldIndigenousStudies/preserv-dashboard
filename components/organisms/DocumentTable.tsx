@@ -1,11 +1,11 @@
-import type { ReactElement } from "react";
-import Link from "next/link";
+import type { ReactElement } from 'react'
+import Link from 'next/link'
 
-import { formatBytes, formatDateTime } from "@lib/format";
-import type { Document } from "@lib/types";
+import { formatBytes, formatDateTime } from '@lib/format'
+import type { Document } from '@lib/types'
 
 interface DocumentTableProps {
-  documents: Document[];
+  documents: Document[]
 }
 
 export function DocumentTable({ documents }: DocumentTableProps): ReactElement {
@@ -14,7 +14,7 @@ export function DocumentTable({ documents }: DocumentTableProps): ReactElement {
       <div className="rounded-2xl border border-dashed border-moss/25 bg-white px-6 py-8 text-sm text-ink/65">
         No documents matched the current filters.
       </div>
-    );
+    )
   }
 
   return (
@@ -37,7 +37,7 @@ export function DocumentTable({ documents }: DocumentTableProps): ReactElement {
                     {document.id}
                   </Link>
                 </td>
-                <td className="px-4 py-3 text-ink">{document.name || "—"}</td>
+                <td className="px-4 py-3 text-ink">{document.name || '—'}</td>
                 <td className="px-4 py-3 text-ink/70">{formatBytes(document.filesize)}</td>
                 <td className="px-4 py-3 text-ink/70">{formatDateTime(document.created_at)}</td>
               </tr>
@@ -46,5 +46,5 @@ export function DocumentTable({ documents }: DocumentTableProps): ReactElement {
         </table>
       </div>
     </div>
-  );
+  )
 }

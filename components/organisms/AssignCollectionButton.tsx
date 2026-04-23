@@ -1,28 +1,28 @@
-"use client";
+'use client'
 
-import { useCallback, useEffect, useRef, useState, type MouseEvent, type ReactElement } from "react";
+import { useCallback, useEffect, useRef, useState, type MouseEvent, type ReactElement } from 'react'
 
-import { Button } from "@components/atoms/Button";
-import { IconX } from "@components/atoms/icons/IconX";
-import { LoadingSpinner } from "@atoms/LoadingSpinner";
-import { TagPill } from "@molecules/TagPill";
+import { Button } from '@components/atoms/Button'
+import { IconX } from '@components/atoms/icons/IconX'
+import { LoadingSpinner } from '@atoms/LoadingSpinner'
+import { TagPill } from '@molecules/TagPill'
 
 interface AssignCollectionButtonProps {
   /** The document ID to update */
-  documentId: string;
+  documentId: string
   /** Tags already assigned to this document */
-  currentTags: string[];
+  currentTags: string[]
 }
 
 interface CollectionTagsResponse {
-  collections?: string[];
-  error?: string;
+  collections?: string[]
+  error?: string
 }
 
 interface SaveCollectionTagsResponse {
-  id?: string;
-  collection_tags?: string[];
-  error?: string;
+  id?: string
+  collection_tags?: string[]
+  error?: string
 }
 
 /**
@@ -34,104 +34,99 @@ interface SaveCollectionTagsResponse {
  * or more collections from the pool of known collection tags and persist the
  * selection to the MySQL documents table via PATCH /api/documents/[id].
  */
-export function AssignCollectionButton({
-  documentId,
-  currentTags,
-}: AssignCollectionButtonProps): ReactElement {
-  const [isOpen, setIsOpen] = useState(false);
-  const [availableTags, setAvailableTags] = useState<string[]>([]);
-  const [selectedTags, setSelectedTags] = useState<string[]>(currentTags);
-  const [customTag, setCustomTag] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [isFetchingTags, setIsFetchingTags] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-  const dialogRef = useRef<HTMLDialogElement>(null);
+export function AssignCollectionButton({ documentId, currentTags }: AssignCollectionButtonProps): ReactElement {
+  const [isOpen, setIsOpen] = useState(false)
+  const [availableTags, setAvailableTags] = useState<string[]>([])
+  const [selectedTags, setSelectedTags] = useState<string[]>(currentTags)
+  const [customTag, setCustomTag] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [isFetchingTags, setIsFetchingTags] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
+  const dialogRef = useRef<HTMLDialogElement>(null)
 
   // Load available collection tags when modal opens
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) return
 
-    setIsFetchingTags(true);
-    setError(null);
+    setIsFetchingTags(true)
+    setError(null)
 
     fetch(`/api/documents/${documentId}/collections`)
       .then(async (res): Promise<CollectionTagsResponse> => res.json() as Promise<CollectionTagsResponse>)
       .then((data) => {
         if (data.error) {
-          setError(data.error);
+          setError(data.error)
         } else {
-          setAvailableTags(data.collections ?? []);
+          setAvailableTags(data.collections ?? [])
         }
       })
-      .catch(() => setError("Failed to load available collections."))
-      .finally(() => setIsFetchingTags(false));
-  }, [isOpen, documentId]);
+      .catch(() => setError('Failed to load available collections.'))
+      .finally(() => setIsFetchingTags(false))
+  }, [isOpen, documentId])
 
   // Sync selected tags when currentTags change from parent (e.g., after save)
   useEffect(() => {
-    setSelectedTags(currentTags);
-  }, [currentTags]);
+    setSelectedTags(currentTags)
+  }, [currentTags])
 
   const openModal = useCallback(() => {
-    setIsOpen(true);
-    setSuccess(false);
-    setError(null);
-    setCustomTag("");
+    setIsOpen(true)
+    setSuccess(false)
+    setError(null)
+    setCustomTag('')
     // Let the dialog open, then focus the first tag button
-    requestAnimationFrame(() => dialogRef.current?.showModal());
-  }, []);
+    requestAnimationFrame(() => dialogRef.current?.showModal())
+  }, [])
 
   const closeModal = useCallback(() => {
-    dialogRef.current?.close();
-    setIsOpen(false);
-  }, []);
+    dialogRef.current?.close()
+    setIsOpen(false)
+  }, [])
 
   const toggleTag = useCallback((tag: string) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
-    );
-  }, []);
+    setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]))
+  }, [])
 
   const handleSave = useCallback(async () => {
-    const tagsToSave = selectedTags.filter((t) => t.trim().length > 0);
+    const tagsToSave = selectedTags.filter((t) => t.trim().length > 0)
     if (customTag.trim().length > 0 && !tagsToSave.includes(customTag.trim())) {
-      tagsToSave.push(customTag.trim());
+      tagsToSave.push(customTag.trim())
     }
 
-    setIsLoading(true);
-    setError(null);
+    setIsLoading(true)
+    setError(null)
 
     try {
       const res = await fetch(`/api/documents/${documentId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ collection_tags: tagsToSave }),
-      });
+      })
 
-      const data = await res.json() as SaveCollectionTagsResponse;
+      const data = (await res.json()) as SaveCollectionTagsResponse
 
       if (!res.ok) {
-        setError(data.error ?? "Failed to save collection tags.");
-        return;
+        setError(data.error ?? 'Failed to save collection tags.')
+        return
       }
 
-      setSuccess(true);
+      setSuccess(true)
       // Update parent state by reloading the page data
       // The parent component will re-fetch document detail
       setTimeout(() => {
-        closeModal();
+        closeModal()
         // Force Next.js to re-render the page by navigating to itself
-        window.location.reload();
-      }, 800);
+        window.location.reload()
+      }, 800)
     } catch {
-      setError("Network error. Please try again.");
+      setError('Network error. Please try again.')
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  }, [selectedTags, customTag, documentId, closeModal]);
+  }, [selectedTags, customTag, documentId, closeModal])
 
-  const alreadyAssigned = currentTags.length > 0;
+  const alreadyAssigned = currentTags.length > 0
 
   return (
     <>
@@ -139,19 +134,13 @@ export function AssignCollectionButton({
       <div className="mt-3 flex items-center gap-3">
         {alreadyAssigned ? (
           <span className="text-xs text-ink/50">
-            Tags assigned.{" "}
-            <button
-              onClick={openModal}
-              className="text-moss underline hover:text-ink"
-            >
+            Tags assigned.{' '}
+            <button onClick={openModal} className="text-moss underline hover:text-ink">
               Edit assignment
             </button>
           </span>
         ) : (
-          <Button
-            onClick={openModal}
-            variant="primary"
-          >
+          <Button onClick={openModal} variant="primary">
             Assign Collection
           </Button>
         )}
@@ -162,7 +151,7 @@ export function AssignCollectionButton({
         ref={dialogRef}
         onClose={closeModal}
         className="rounded-2xl border border-moss/15 bg-white p-0 shadow-panel backdrop:bg-ink/30"
-        style={{ padding: 0, minWidth: "min(480px, 90vw)" }}
+        style={{ padding: 0, minWidth: 'min(480px, 90vw)' }}
       >
         <div className="p-6">
           <div className="flex items-center justify-between">
@@ -177,15 +166,12 @@ export function AssignCollectionButton({
           </div>
 
           <p className="mt-2 text-sm text-ink/70">
-            Select one or more collections to assign to this document.
-            This is the Path B fallback for documents that arrived without a{" "}
-            <code className="text-xs">primary_collection_tag</code>.
+            Select one or more collections to assign to this document. This is the Path B fallback for documents that
+            arrived without a <code className="text-xs">primary_collection_tag</code>.
           </p>
 
           {error && (
-            <div className="mt-4 rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700">
-              {error}
-            </div>
+            <div className="mt-4 rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700">{error}</div>
           )}
 
           {success && (
@@ -201,17 +187,15 @@ export function AssignCollectionButton({
               {/* Existing tag selections */}
               {availableTags.length > 0 && (
                 <div className="mt-5">
-                  <p className="mb-2 text-xs font-medium uppercase tracking-[0.15em] text-ink/60">
-                    Known Collections
-                  </p>
+                  <p className="mb-2 text-xs font-medium uppercase tracking-[0.15em] text-ink/60">Known Collections</p>
                   <div className="flex flex-wrap gap-2">
                     {availableTags.map((tag) => (
                       <button
                         key={tag}
                         onClick={() => {
-                          toggleTag(tag);
+                          toggleTag(tag)
                         }}
-                        className={`rounded-full px-3 py-1 text-sm transition-colors ${selectedTags.includes(tag) ? "bg-moss text-white" : "bg-sand text-ink hover:bg-sky"}`}
+                        className={`rounded-full px-3 py-1 text-sm transition-colors ${selectedTags.includes(tag) ? 'bg-moss text-white' : 'bg-sand text-ink hover:bg-sky'}`}
                       >
                         {tag}
                       </button>
@@ -231,9 +215,9 @@ export function AssignCollectionButton({
                     value={customTag}
                     onChange={(e) => setCustomTag(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        if (customTag.trim()) toggleTag(customTag.trim());
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        if (customTag.trim()) toggleTag(customTag.trim())
                       }
                     }}
                     placeholder="Enter collection name..."
@@ -242,8 +226,8 @@ export function AssignCollectionButton({
                   <Button
                     onClick={() => {
                       if (customTag.trim()) {
-                        toggleTag(customTag.trim());
-                        setCustomTag("");
+                        toggleTag(customTag.trim())
+                        setCustomTag('')
                       }
                     }}
                     variant="primary"
@@ -273,15 +257,12 @@ export function AssignCollectionButton({
 
         {/* Modal footer */}
         <div className="flex items-center justify-end gap-3 border-t border-moss/10 px-6 py-4">
-          <Button
-            onClick={closeModal}
-            variant="ghost"
-          >
+          <Button onClick={closeModal} variant="ghost">
             Cancel
           </Button>
           <Button
             onClick={(_event: MouseEvent<HTMLButtonElement>) => {
-              void handleSave();
+              void handleSave()
             }}
             disabled={isLoading || selectedTags.length === 0}
             variant="primary"
@@ -292,5 +273,5 @@ export function AssignCollectionButton({
         </div>
       </dialog>
     </>
-  );
+  )
 }

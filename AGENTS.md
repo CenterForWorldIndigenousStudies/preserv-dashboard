@@ -19,14 +19,14 @@ This is a Next.js dashboard application for the CWIS Digital Preservation system
 
 ### Color Palette (Tailwind custom colors)
 
-| Token   | Hex       | Use                                      |
-|---------|-----------|------------------------------------------|
-| ink     | `#231f20` | Primary text, near-black warm            |
-| moss    | `#355834` | Links, accents, success states          |
-| sand    | `#f4f1f0` | Light warm backgrounds                   |
-| clay    | `#e96954` | Buttons, highlights, active states       |
-| sky     | `#94d9f8` | Subtle accents, hover states            |
-| accent  | `#ff7637` | Hover/link emphasis                     |
+| Token  | Hex       | Use                                |
+| ------ | --------- | ---------------------------------- |
+| ink    | `#231f20` | Primary text, near-black warm      |
+| moss   | `#355834` | Links, accents, success states     |
+| sand   | `#f4f1f0` | Light warm backgrounds             |
+| clay   | `#e96954` | Buttons, highlights, active states |
+| sky    | `#94d9f8` | Subtle accents, hover states       |
+| accent | `#ff7637` | Hover/link emphasis                |
 
 ### Typography
 

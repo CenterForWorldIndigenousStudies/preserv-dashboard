@@ -1,12 +1,12 @@
-import { Suspense } from "react";
-import { DocumentsTable } from "@organisms/DocumentsTable";
-import { getAllDocuments } from "@lib/queries";
+import { Suspense } from 'react'
+import { DocumentsTable } from '@organisms/DocumentsTable'
+import { getAllDocuments } from '@lib/queries'
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic'
 
 async function OverviewContent() {
-  const initialData = await getAllDocuments({ page: 1, pageSize: 25 });
-  return <DocumentsTable initialData={initialData} />;
+  const initialData = await getAllDocuments({ page: 1, pageSize: 25 })
+  return <DocumentsTable initialData={initialData} />
 }
 
 export default function OverviewPage() {
@@ -16,5 +16,5 @@ export default function OverviewPage() {
         <OverviewContent />
       </Suspense>
     </div>
-  );
+  )
 }

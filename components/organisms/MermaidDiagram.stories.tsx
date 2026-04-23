@@ -1,24 +1,23 @@
-import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { MermaidDiagram } from "@components/organisms/MermaidDiagram";
+import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { MermaidDiagram } from '@components/organisms/MermaidDiagram'
 
 const meta: Meta<typeof MermaidDiagram> = {
-  title: "Organisms/MermaidDiagram",
+  title: 'Organisms/MermaidDiagram',
   component: MermaidDiagram,
-  tags: ["autodocs"],
+  tags: ['autodocs'],
   argTypes: {
-    source: { control: "text" },
+    source: { control: 'text' },
     className: { control: false },
   },
   parameters: {
-    backgrounds: { default: "sand" },
+    backgrounds: { default: 'sand' },
   },
-};
+}
 
-export default meta;
-type Story = StoryObj<typeof MermaidDiagram>;
+export default meta
+type Story = StoryObj<typeof MermaidDiagram>
 
 export const SimpleFlowchart: Story = {
-
   args: {
     source: `graph TD
       A[Document Ingested] --> B{Validation}
@@ -31,10 +30,9 @@ export const SimpleFlowchart: Story = {
       H -->|Yes| I[State: completed]
       H -->|No| J[State: under_review]`,
   },
-};
+}
 
 export const SequenceDiagram: Story = {
-
   args: {
     source: `sequenceDiagram
       participant D as Document Source
@@ -50,10 +48,9 @@ export const SequenceDiagram: Story = {
       DB-->>P: ok
       P-->>D: 201 Created`,
   },
-};
+}
 
 export const EntityRelationship: Story = {
-
   args: {
     source: `erDiagram
       DOCUMENTS {
@@ -73,4 +70,4 @@ export const EntityRelationship: Story = {
       DOCUMENTS ||--o{ DOCUMENT_COLLECTIONS : tagged_in
       COLLECTIONS ||--o{ DOCUMENT_COLLECTIONS : contains`,
   },
-};
+}

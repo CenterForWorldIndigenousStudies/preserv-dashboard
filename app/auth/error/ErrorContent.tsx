@@ -1,38 +1,29 @@
-"use client";
+'use client'
 
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 
 export function ErrorContent() {
-  const params = useSearchParams();
-  const error = params.get("error");
+  const params = useSearchParams()
+  const error = params.get('error')
 
   const errorMessages: Record<string, string> = {
-    OAuthSignin: "Error starting the sign-in process.",
-    OAuthCallback: "Error during the sign-in callback.",
-    OAuthAccountNotLinked:
-      "This email is already linked to a different sign-in method.",
-    OAuthCreateAccount:
-      "Could not create an account. Contact your administrator.",
-    Callback: "Callback error. Please try again.",
-    Default: "An unknown error occurred.",
-  };
+    OAuthSignin: 'Error starting the sign-in process.',
+    OAuthCallback: 'Error during the sign-in callback.',
+    OAuthAccountNotLinked: 'This email is already linked to a different sign-in method.',
+    OAuthCreateAccount: 'Could not create an account. Contact your administrator.',
+    Callback: 'Callback error. Please try again.',
+    Default: 'An unknown error occurred.',
+  }
 
-  const message = error
-    ? errorMessages[error] || errorMessages.Default
-    : errorMessages.Default;
+  const message = error ? errorMessages[error] || errorMessages.Default : errorMessages.Default
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-sand/20">
       <div className="bg-white rounded-panel shadow-md p-8 max-w-md w-full text-center">
         <div className="mb-6">
           <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg
-              className="w-8 h-8 text-red-500"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
+            <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -41,9 +32,7 @@ export function ErrorContent() {
               />
             </svg>
           </div>
-          <h1 className="text-2xl font-serif font-bold text-ink mb-2">
-            Sign In Error
-          </h1>
+          <h1 className="text-2xl font-serif font-bold text-ink mb-2">Sign In Error</h1>
           <p className="text-sm text-ink/60">{message}</p>
         </div>
 
@@ -63,5 +52,5 @@ export function ErrorContent() {
         </div>
       </div>
     </div>
-  );
+  )
 }

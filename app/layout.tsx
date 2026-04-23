@@ -1,22 +1,22 @@
-import type { Metadata } from "next";
-import type { ReactElement, ReactNode } from "react";
+import type { Metadata } from 'next'
+import type { ReactElement, ReactNode } from 'react'
 
-import "./globals.css";
-import LayoutBody from "@components/LayoutBody";
-import Providers from "@components/Providers";
-import { auth } from "@root/auth";
+import './globals.css'
+import LayoutBody from '@components/LayoutBody'
+import Providers from '@components/Providers'
+import { auth } from '@root/auth'
 
 export const metadata: Metadata = {
-  title: "CWIS Preservation Pipeline Dashboard",
-  description: "Operational dashboard for CWIS preservation pipeline documents, reviews, and failures.",
-};
+  title: 'CWIS Preservation Pipeline Dashboard',
+  description: 'Operational dashboard for CWIS preservation pipeline documents, reviews, and failures.',
+}
 
 export default async function RootLayout({
   children,
 }: Readonly<{
-  children: ReactNode;
+  children: ReactNode
 }>): Promise<ReactElement> {
-  const session = await auth();
+  const session = await auth()
 
   return (
     <html lang="en">
@@ -32,5 +32,5 @@ export default async function RootLayout({
         </Providers>
       </body>
     </html>
-  );
+  )
 }

@@ -1,47 +1,47 @@
-import type { ReactElement } from "react";
-import Link from "next/link";
+import type { ReactElement } from 'react'
+import Link from 'next/link'
 
-import { FilterPill } from "@atoms/FilterPill";
-import { NoDataState } from "@organisms/NoDataState";
-import { PageHeader } from "@organisms/PageHeader";
-import { Pagination } from "@molecules/Pagination";
-import { formatDateTime } from "@lib/format";
-import { getDistinctReviewFields, getPageSize, getReviewQueue } from "@lib/queries";
+import { FilterPill } from '@atoms/FilterPill'
+import { NoDataState } from '@organisms/NoDataState'
+import { PageHeader } from '@organisms/PageHeader'
+import { Pagination } from '@molecules/Pagination'
+import { formatDateTime } from '@lib/format'
+import { getDistinctReviewFields, getPageSize, getReviewQueue } from '@lib/queries'
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic'
 
 interface ReviewsPageProps {
   searchParams?: Promise<{
-    status?: string;
-    field?: string;
-    page?: string;
-  }>;
+    status?: string
+    field?: string
+    page?: string
+  }>
 }
 
 function buildReviewsHref(status?: string, field?: string, page?: number): string {
-  const params = new URLSearchParams();
+  const params = new URLSearchParams()
 
   if (status) {
-    params.set("status", status);
+    params.set('status', status)
   }
 
   if (field) {
-    params.set("field", field);
+    params.set('field', field)
   }
 
   if (page && page > 1) {
-    params.set("page", String(page));
+    params.set('page', String(page))
   }
 
-  const queryString = params.toString();
-  return queryString ? `/reviews?${queryString}` : "/reviews";
+  const queryString = params.toString()
+  return queryString ? `/reviews?${queryString}` : '/reviews'
 }
 
 export default async function ReviewsPage({ searchParams }: ReviewsPageProps): Promise<ReactElement> {
-  const resolvedSearchParams = (await searchParams) ?? {};
-  const status = resolvedSearchParams.status;
-  const field = resolvedSearchParams.field;
-  const page = Number(resolvedSearchParams.page ?? "1");
+  const resolvedSearchParams = (await searchParams) ?? {}
+  const status = resolvedSearchParams.status
+  const field = resolvedSearchParams.field
+  const page = Number(resolvedSearchParams.page ?? '1')
 
   try {
     const [reviewResult, fieldOptions] = await Promise.all([
@@ -51,9 +51,9 @@ export default async function ReviewsPage({ searchParams }: ReviewsPageProps): P
         page,
       }),
       getDistinctReviewFields(),
-    ]);
+    ])
 
-    const statuses = ["pending", "in_progress", "resolved"];
+    const statuses = ['pending', 'in_progress', 'resolved']
 
     return (
       <div className="space-y-8">
@@ -139,14 +139,16 @@ export default async function ReviewsPage({ searchParams }: ReviewsPageProps): P
                               ) : (
                                 reviewItem.conflicting_values.map((conflictValue, index) => (
                                   <div key={`${reviewItem.id}-${index}`} className="rounded-xl bg-sand/60 p-3">
-                                    <p className="text-xs uppercase tracking-[0.15em] text-ink/60">{conflictValue.source}</p>
-                                    <p className="mt-2 whitespace-pre-wrap text-ink">{conflictValue.value || "—"}</p>
+                                    <p className="text-xs uppercase tracking-[0.15em] text-ink/60">
+                                      {conflictValue.source}
+                                    </p>
+                                    <p className="mt-2 whitespace-pre-wrap text-ink">{conflictValue.value || '—'}</p>
                                   </div>
                                 ))
                               )}
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-ink">{reviewItem.winning_source || "—"}</td>
+                          <td className="px-4 py-3 text-ink">{reviewItem.winning_source || '—'}</td>
                           <td className="px-4 py-3">
                             <span className="rounded-full bg-sky px-3 py-1 text-xs font-medium uppercase tracking-[0.15em] text-ink">
                               {reviewItem.status}
@@ -170,7 +172,7 @@ export default async function ReviewsPage({ searchParams }: ReviewsPageProps): P
           </section>
         )}
       </div>
-    );
+    )
   } catch {
     return (
       <div className="space-y-8">
@@ -181,6 +183,6 @@ export default async function ReviewsPage({ searchParams }: ReviewsPageProps): P
         />
         <NoDataState message="No data is available right now. The database may be empty, unavailable, or still being initialized." />
       </div>
-    );
+    )
   }
 }

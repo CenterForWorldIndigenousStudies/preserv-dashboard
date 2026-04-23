@@ -1,65 +1,65 @@
-import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { Badge } from "@components/atoms/Badge";
+import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { Badge } from '@components/atoms/Badge'
 
 const meta: Meta<typeof Badge> = {
-  title: "Atoms/Badge",
+  title: 'Atoms/Badge',
   component: Badge,
-  tags: ["autodocs"],
+  tags: ['autodocs'],
   argTypes: {
     variant: {
-      control: "select",
-      options: ["clay", "sky", "moss", "sand"],
-      description: "Color variant of the badge",
+      control: 'select',
+      options: ['clay', 'sky', 'moss', 'sand'],
+      description: 'Color variant of the badge',
     },
     children: {
-      control: "text",
-      description: "Badge label text",
+      control: 'text',
+      description: 'Badge label text',
     },
     className: {
       control: false,
     },
   },
   args: {
-    variant: "sky",
-    children: "In Review",
+    variant: 'sky',
+    children: 'In Review',
   },
   parameters: {
     backgrounds: {
-      default: "sand",
+      default: 'sand',
     },
   },
-};
+}
 
-export default meta;
-type Story = StoryObj<typeof Badge>;
+export default meta
+type Story = StoryObj<typeof Badge>
 
 export const Clay: Story = {
   args: {
-    variant: "clay",
-    children: "Needs Review",
+    variant: 'clay',
+    children: 'Needs Review',
   },
-};
+}
 
 export const Sky: Story = {
   args: {
-    variant: "sky",
-    children: "In Review",
+    variant: 'sky',
+    children: 'In Review',
   },
-};
+}
 
 export const Moss: Story = {
   args: {
-    variant: "moss",
-    children: "Approved",
+    variant: 'moss',
+    children: 'Approved',
   },
-};
+}
 
 export const Sand: Story = {
   args: {
-    variant: "sand",
-    children: "Archived",
+    variant: 'sand',
+    children: 'Archived',
   },
-};
+}
 
 export const AllVariants: Story = {
   render: () => (
@@ -70,4 +70,4 @@ export const AllVariants: Story = {
       <Badge variant="sand">Archived</Badge>
     </div>
   ),
-};
+}

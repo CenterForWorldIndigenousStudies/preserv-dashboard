@@ -1,14 +1,14 @@
-import type { ReactNode, CSSProperties } from "react"
-import { IconProps } from "./IconProps";
+import type { ReactNode, CSSProperties } from 'react'
+import { IconProps } from './IconProps'
 
 /**
  * Atom: X (close/remove) icon using SVG.
  * Scales proportionally for any size.
  */
-export function IconX({ size = 20, className = "" }: IconProps): ReactNode {
-  const scale = size / 20;
-  const viewBox = `0 0 ${20 * scale} ${20 * scale}`;
-  const strokeWidth = 1.5 * scale;
+export function IconX({ size = 20, className = '' }: IconProps): ReactNode {
+  const scale = size / 20
+  const viewBox = `0 0 ${20 * scale} ${20 * scale}`
+  const strokeWidth = 1.5 * scale
 
   return (
     <svg
@@ -20,9 +20,11 @@ export function IconX({ size = 20, className = "" }: IconProps): ReactNode {
       strokeWidth={strokeWidth}
       strokeLinecap="round"
       className={className}
-      style={{ "--icon-scale": scale } as CSSProperties}
+      style={{ '--icon-scale': scale } as CSSProperties}
     >
-      <path d={`M${15 * scale} ${5 * scale}L${5 * scale} ${15 * scale}M${5 * scale} ${5 * scale}l${10 * scale} ${10 * scale}`} />
+      <path
+        d={`M${15 * scale} ${5 * scale}L${5 * scale} ${15 * scale}M${5 * scale} ${5 * scale}l${10 * scale} ${10 * scale}`}
+      />
     </svg>
-  );
+  )
 }

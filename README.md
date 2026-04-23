@@ -112,11 +112,11 @@ See `.github/workflows/` for automated testing and deployment to Vercel.
 
 ### GitHub Actions Secrets (set in repo Settings > Secrets)
 
-| Secret | Description |
-|--------|-------------|
-| `VERCEL_TOKEN` | Vercel API token from <https://vercel.com/account/tokens> |
-| `VERCEL_ORG_ID` | Found in Vercel project settings |
-| `VERCEL_PROJECT_ID` | Found in Vercel project settings |
+| Secret              | Description                                               |
+| ------------------- | --------------------------------------------------------- |
+| `VERCEL_TOKEN`      | Vercel API token from <https://vercel.com/account/tokens> |
+| `VERCEL_ORG_ID`     | Found in Vercel project settings                          |
+| `VERCEL_PROJECT_ID` | Found in Vercel project settings                          |
 
 ## What Is NOT Included (deferred to v2)
 
