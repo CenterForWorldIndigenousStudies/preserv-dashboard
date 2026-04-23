@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type MouseEvent, type ReactElement } from "react";
 
+import { Button } from "@components/atoms/Button";
 import { IconX } from "@atoms/IconX";
 import { LoadingSpinner } from "@atoms/LoadingSpinner";
 import { TagPill } from "@molecules/TagPill";
@@ -147,12 +148,12 @@ export function AssignCollectionButton({
             </button>
           </span>
         ) : (
-          <button
+          <Button
             onClick={openModal}
-            className="rounded-full bg-moss px-4 py-2 text-sm font-medium text-white hover:bg-moss/80"
+            variant="primary"
           >
             Assign Collection
-          </button>
+          </Button>
         )}
       </div>
 
@@ -238,17 +239,18 @@ export function AssignCollectionButton({
                     placeholder="Enter collection name..."
                     className="flex-1 rounded-xl border border-moss/20 bg-sand/40 px-3 py-2 text-sm text-ink placeholder:text-ink/30 focus:border-moss focus:outline-none focus:ring-1 focus:ring-moss"
                   />
-                  <button
+                  <Button
                     onClick={() => {
                       if (customTag.trim()) {
                         toggleTag(customTag.trim());
                         setCustomTag("");
                       }
                     }}
-                    className="rounded-xl bg-moss px-3 py-2 text-sm text-white hover:bg-moss/80"
+                    variant="primary"
+                    size="sm"
                   >
                     Add
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -271,21 +273,22 @@ export function AssignCollectionButton({
 
         {/* Modal footer */}
         <div className="flex items-center justify-end gap-3 border-t border-moss/10 px-6 py-4">
-          <button
+          <Button
             onClick={closeModal}
-            className="rounded-full px-4 py-2 text-sm text-ink/70 hover:bg-sand hover:text-ink"
+            variant="ghost"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={(_event: MouseEvent<HTMLButtonElement>) => {
               void handleSave();
             }}
             disabled={isLoading || selectedTags.length === 0}
-            className="rounded-full bg-moss px-5 py-2 text-sm font-medium text-white hover:bg-moss/80 disabled:cursor-not-allowed disabled:opacity-50"
+            variant="primary"
+            loading={isLoading}
           >
-            {isLoading ? "Saving..." : "Save Collection Tags"}
-          </button>
+            Save Collection Tags
+          </Button>
         </div>
       </dialog>
     </>

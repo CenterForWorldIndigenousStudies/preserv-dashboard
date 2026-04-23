@@ -50,13 +50,13 @@ export function ErrorContent() {
         <div className="space-y-3">
           <Link
             href="/auth/signin"
-            className="block w-full bg-moss text-white rounded-md px-4 py-3 text-sm font-medium hover:bg-moss/90 transition-colors text-center"
+            className="block w-full rounded-full bg-moss px-4 py-2 text-sm font-medium text-white hover:bg-moss/80 text-center"
           >
             Try Again
           </Link>
           <Link
             href="/"
-            className="block w-full bg-white border border-ink/20 rounded-md px-4 py-3 text-sm font-medium text-ink hover:bg-ink/5 transition-colors text-center"
+            className="block w-full rounded-full border border-ink/20 bg-sand px-4 py-2 text-sm font-medium text-ink hover:bg-sky text-center"
           >
             Return Home
           </Link>

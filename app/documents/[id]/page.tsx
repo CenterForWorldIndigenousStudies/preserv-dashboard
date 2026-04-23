@@ -4,14 +4,6 @@ import { NoDataState } from "@organisms/NoDataState";
 import { PageHeader } from "@organisms/PageHeader";
 import { formatBytes, formatDateTime, parseMetadataValue } from "@lib/format";
 import { getDocumentDetail } from "@lib/queries";
-import {
-  Table,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
-  Tooltip,
-} from "@mui/material";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +24,12 @@ const documentFieldLabels: Array<{ key: string; label: string }> = [
   { key: "created_at", label: "Created At" },
   { key: "updated_at", label: "Updated At" },
 ];
+
+const detailTableClassName =
+  "min-w-full border-separate border-spacing-0 text-left text-sm text-ink";
+const detailTableHeadCellClassName =
+  "bg-[#f4f1eb] px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-ink";
+const detailTableBodyCellClassName = "border-b border-moss/10 px-3 py-3 align-top";
 
 export default async function DocumentDetailPage({
   params,
@@ -95,56 +93,40 @@ export default async function DocumentDetailPage({
             <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
               <h2 className="text-xl font-semibold text-ink">Metadata</h2>
               {detail.metadata.length > 0 ? (
-                <div className="mt-6">
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell
-                          sx={{
-                            backgroundColor: "#f4f1eb",
-                            borderBottom: "2px solid #5e7a52",
-                            color: "#231f20",
-                            fontWeight: 600,
-                            fontSize: "0.75rem",
-                            textTransform: "uppercase",
-                            letterSpacing: "0.1em",
-                            padding: "0.5rem 0.75rem",
-                          }}
+                <div className="mt-6 overflow-x-auto">
+                  <table className={detailTableClassName}>
+                    <thead>
+                      <tr>
+                        <th
+                          className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`}
+                          scope="col"
                         >
                           Field
-                        </TableCell>
-                        <TableCell
-                          sx={{
-                            backgroundColor: "#f4f1eb",
-                            borderBottom: "2px solid #5e7a52",
-                            color: "#231f20",
-                            fontWeight: 600,
-                            fontSize: "0.75rem",
-                            textTransform: "uppercase",
-                            letterSpacing: "0.1em",
-                            padding: "0.5rem 0.75rem",
-                          }}
+                        </th>
+                        <th
+                          className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`}
+                          scope="col"
                         >
                           Value
-                        </TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
                       {detail.metadata.map((field, i) => (
-                        <TableRow key={i}>
-                          <TableCell sx={{ fontWeight: 500, color: "#231f20" }}>
+                        <tr key={i}>
+                          <td className={`${detailTableBodyCellClassName} font-medium`}>
                             {field.name}
-                          </TableCell>
-                          <TableCell sx={{ color: "#231f20" }}>
+                          </td>
+                          <td className={detailTableBodyCellClassName}>
                             {(() => {
                               const parsed = parseMetadataValue(field.value, field.value_type);
                               return parsed.display;
                             })()}
-                          </TableCell>
-                        </TableRow>
+                          </td>
+                        </tr>
                       ))}
-                    </TableBody>
-                  </Table>
+                    </tbody>
+                  </table>
                 </div>
               ) : (
                 <p className="mt-4 text-sm text-ink/60">No metadata available.</p>
@@ -154,59 +136,43 @@ export default async function DocumentDetailPage({
             <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
               <h2 className="text-xl font-semibold text-ink">Tags</h2>
               {detail.document_to_tags.length > 0 ? (
-                <div className="mt-6">
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell
-                          sx={{
-                            backgroundColor: "#f4f1eb",
-                            borderBottom: "2px solid #5e7a52",
-                            color: "#231f20",
-                            fontWeight: 600,
-                            fontSize: "0.75rem",
-                            textTransform: "uppercase",
-                            letterSpacing: "0.1em",
-                            padding: "0.5rem 0.75rem",
-                          }}
+                <div className="mt-6 overflow-x-auto">
+                  <table className={detailTableClassName}>
+                    <thead>
+                      <tr>
+                        <th
+                          className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`}
+                          scope="col"
                         >
                           Tag
-                        </TableCell>
-                        <TableCell
-                          sx={{
-                            backgroundColor: "#f4f1eb",
-                            borderBottom: "2px solid #5e7a52",
-                            color: "#231f20",
-                            fontWeight: 600,
-                            fontSize: "0.75rem",
-                            textTransform: "uppercase",
-                            letterSpacing: "0.1em",
-                            padding: "0.5rem 0.75rem",
-                          }}
+                        </th>
+                        <th
+                          className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`}
+                          scope="col"
                         >
                           Notes
-                        </TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
                       {detail.document_to_tags.map((dt, i) => (
-                        <TableRow key={i}>
-                          <TableCell sx={{ fontWeight: 500, color: "#231f20" }}>
+                        <tr key={i}>
+                          <td className={`${detailTableBodyCellClassName} font-medium`}>
                             {dt.tags.name ? (
-                              <Tooltip title={dt.tags.notes ?? ""} arrow placement="top">
-                                <span className="cursor-help">{dt.tags.name}</span>
-                              </Tooltip>
+                              <span className="cursor-help" title={dt.tags.notes ?? undefined}>
+                                {dt.tags.name}
+                              </span>
                             ) : (
                               "—"
                             )}
-                          </TableCell>
-                          <TableCell sx={{ color: "#231f20" }}>
+                          </td>
+                          <td className={detailTableBodyCellClassName}>
                             {dt.notes || ""}
-                          </TableCell>
-                        </TableRow>
+                          </td>
+                        </tr>
                       ))}
-                    </TableBody>
-                  </Table>
+                    </tbody>
+                  </table>
                 </div>
               ) : (
                 <p className="mt-4 text-sm text-ink/60">No tags available.</p>
