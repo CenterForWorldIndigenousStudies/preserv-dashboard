@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import type { StoryObj } from '@storybook/nextjs-vite'
 import { IconX } from '@atoms/icons/IconX'
 
 const meta = {
