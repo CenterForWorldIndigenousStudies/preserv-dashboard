@@ -1,19 +1,19 @@
-import { Suspense, type ReactElement } from "react";
-import { PageHeader } from "@organisms/PageHeader";
-import { BatchSummaryTable } from "@organisms/BatchSummaryTable";
-import { NoDataState } from "@organisms/NoDataState";
-import { getBatchSummary } from "@lib/queries";
+import { Suspense, type ReactElement } from 'react'
+import { PageHeader } from '@organisms/PageHeader'
+import { BatchSummaryTable } from '@organisms/BatchSummaryTable'
+import { NoDataState } from '@organisms/NoDataState'
+import { getBatchSummary } from '@lib/queries'
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic'
 
 function SummaryCard({
   totalBatches,
   totalDocuments,
   byStatus,
 }: {
-  totalBatches: number;
-  totalDocuments: number;
-  byStatus: Record<string, number>;
+  totalBatches: number
+  totalDocuments: number
+  byStatus: Record<string, number>
 }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -27,41 +27,37 @@ function SummaryCard({
       </div>
       {Object.entries(byStatus).map(([status, count]) => (
         <div key={status} className="rounded-2xl border border-moss/15 bg-white p-5 shadow-panel">
-          <p className="text-xs uppercase tracking-[0.15em] text-ink/60">{status ?? "unknown"}</p>
+          <p className="text-xs uppercase tracking-[0.15em] text-ink/60">{status ?? 'unknown'}</p>
           <p className="mt-2 text-3xl font-semibold text-ink">{count}</p>
         </div>
       ))}
     </div>
-  );
+  )
 }
 
 async function BatchSummaryContent() {
-  const rows = await getBatchSummary();
+  const rows = await getBatchSummary()
 
   if (rows.length === 0) {
-    return <NoDataState message="No batch data is available yet." />;
+    return <NoDataState message="No batch data is available yet." />
   }
 
   // Aggregate for summary cards
-  const batchIds = new Set(rows.map((r) => r.batch_id));
-  const totalBatches = batchIds.size;
-  const totalDocuments = rows.reduce((sum, r) => sum + r.document_count, 0);
-  const byStatus: Record<string, number> = {};
+  const batchIds = new Set(rows.map((r) => r.batch_id))
+  const totalBatches = batchIds.size
+  const totalDocuments = rows.reduce((sum, r) => sum + r.document_count, 0)
+  const byStatus: Record<string, number> = {}
   for (const row of rows) {
-    const key = row.validation_status ?? "unknown";
-    byStatus[key] = (byStatus[key] ?? 0) + row.document_count;
+    const key = row.validation_status ?? 'unknown'
+    byStatus[key] = (byStatus[key] ?? 0) + row.document_count
   }
 
   return (
     <>
-      <SummaryCard
-        totalBatches={totalBatches}
-        totalDocuments={totalDocuments}
-        byStatus={byStatus}
-      />
+      <SummaryCard totalBatches={totalBatches} totalDocuments={totalDocuments} byStatus={byStatus} />
       <BatchSummaryTable data={rows} />
     </>
-  );
+  )
 }
 
 export default function BatchSummaryPage(): ReactElement {
@@ -77,5 +73,5 @@ export default function BatchSummaryPage(): ReactElement {
         <BatchSummaryContent />
       </Suspense>
     </div>
-  );
+  )
 }

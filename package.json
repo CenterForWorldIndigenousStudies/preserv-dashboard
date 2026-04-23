@@ -10,7 +10,7 @@
     "db:prisma:studio": "prisma studio",
     "dev": "next dev",
     "format:check": "prettier --check .",
-    "format:format": "prettier --write .",
+    "format:fix": "prettier --write .",
     "lint": "run-p lint:project lint:markdown",
     "lint:markdown": "markdownlint-cli2 '**/*.md'",
     "lint:project": "eslint './**/*.{ts,tsx}' --max-warnings=0 --cache --cache-location .eslintcache",

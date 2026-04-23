@@ -1,13 +1,13 @@
-"use client";
+'use client'
 
-import { useState, useEffect, type ReactNode } from "react";
-import Sidebar from "@organisms/Sidebar";
-import SidebarToggle from "@molecules/SidebarToggle";
-import { PanelLeftClose, PanelLeft } from "lucide-react";
+import { useState, useEffect, type ReactNode } from 'react'
+import Sidebar from '@organisms/Sidebar'
+import SidebarToggle from '@molecules/SidebarToggle'
+import { PanelLeftClose, PanelLeft } from 'lucide-react'
 
 interface LayoutBodyProps {
-  children: ReactNode;
-  isAuthenticated?: boolean;
+  children: ReactNode
+  isAuthenticated?: boolean
 }
 
 export default function LayoutBody({ children, isAuthenticated }: LayoutBodyProps) {
@@ -19,33 +19,33 @@ export default function LayoutBody({ children, isAuthenticated }: LayoutBodyProp
           <div className="mx-auto max-w-7xl">{children}</div>
         </main>
       </div>
-    );
+    )
   }
 
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   // Persist collapse preference in localStorage
   useEffect(() => {
-    const stored = localStorage.getItem("sidebar-collapsed");
-    if (stored === "true") {
-      setSidebarCollapsed(true);
+    const stored = localStorage.getItem('sidebar-collapsed')
+    if (stored === 'true') {
+      setSidebarCollapsed(true)
     }
-  }, []);
+  }, [])
 
   const toggleCollapse = () => {
     setSidebarCollapsed((prev) => {
-      const next = !prev;
-      localStorage.setItem("sidebar-collapsed", String(next));
-      return next;
-    });
-  };
+      const next = !prev
+      localStorage.setItem('sidebar-collapsed', String(next))
+      return next
+    })
+  }
 
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Desktop sidebar: fixed, always present */}
       <div
-        className={`hidden h-full flex-col md:flex ${sidebarCollapsed ? "w-0 overflow-hidden" : "w-60 flex-shrink-0"} transition-[width] duration-300 ease-in-out`}
+        className={`hidden h-full flex-col md:flex ${sidebarCollapsed ? 'w-0 overflow-hidden' : 'w-60 flex-shrink-0'} transition-[width] duration-300 ease-in-out`}
       >
         <Sidebar variant="desktop" />
       </div>
@@ -55,24 +55,16 @@ export default function LayoutBody({ children, isAuthenticated }: LayoutBodyProp
         <button
           type="button"
           onClick={toggleCollapse}
-          className={`sticky top-20 z-50 ml-0 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-moss text-white shadow-sm hover:bg-moss/80 transition-all duration-300 ${sidebarCollapsed ? "-ml-6" : "ml-0"}`}
-          title={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+          className={`sticky top-20 z-50 ml-0 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-moss text-white shadow-sm hover:bg-moss/80 transition-all duration-300 ${sidebarCollapsed ? '-ml-6' : 'ml-0'}`}
+          title={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
         >
-          {sidebarCollapsed ? (
-            <PanelLeft size={14} />
-          ) : (
-            <PanelLeftClose size={14} />
-          )}
+          {sidebarCollapsed ? <PanelLeft size={14} /> : <PanelLeftClose size={14} />}
         </button>
       </div>
 
       {/* Mobile sidebar overlay */}
       <div className="md:hidden">
-        <Sidebar
-          variant="mobile"
-          isOpen={mobileOpen}
-          onClose={() => setMobileOpen(false)}
-        />
+        <Sidebar variant="mobile" isOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
       </div>
 
       {/* Main content column */}
@@ -89,5 +81,5 @@ export default function LayoutBody({ children, isAuthenticated }: LayoutBodyProp
         </main>
       </div>
     </div>
-  );
+  )
 }

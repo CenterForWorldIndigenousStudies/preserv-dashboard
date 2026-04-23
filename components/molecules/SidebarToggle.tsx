@@ -1,9 +1,9 @@
-"use client";
+'use client'
 
-import { Menu } from "lucide-react";
+import { Menu } from 'lucide-react'
 
 interface SidebarToggleProps {
-  onClick: () => void;
+  onClick: () => void
 }
 
 export default function SidebarToggle({ onClick }: SidebarToggleProps) {
@@ -15,5 +15,5 @@ export default function SidebarToggle({ onClick }: SidebarToggleProps) {
     >
       <Menu size={24} />
     </button>
-  );
+  )
 }

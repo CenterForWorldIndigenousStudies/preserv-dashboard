@@ -1,125 +1,125 @@
 name: Code Quality
 
 on:
-    pull_request:
-        branches: [main]
-        types: [opened, reopened, synchronize]
-    workflow_dispatch:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+  workflow_dispatch:
 
 jobs:
-    quality:
-        name: Quality
-        timeout-minutes: 15
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v6
-              with:
-                  fetch-depth: 0
+  quality:
+    name: Quality
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
-            - name: Check if PR should skip quality gate
-              id: check-branch
-              run: |
-                  base="${{ github.base_ref }}"
-                  head="${{ github.head_ref }}"
-                  skip=false
-                  if [[ "$base" == "staging" && "$head" == "develop" ]]; then
-                    skip=true
-                  fi
-                  echo "skip=${skip}" >> $GITHUB_OUTPUT
-                  echo "Base: $base | Head: $head | Skip: $skip"
-              shell: bash
+      - name: Check if PR should skip quality gate
+        id: check-branch
+        run: |
+          base="${{ github.base_ref }}"
+          head="${{ github.head_ref }}"
+          skip=false
+          if [[ "$base" == "staging" && "$head" == "develop" ]]; then
+            skip=true
+          fi
+          echo "skip=${skip}" >> $GITHUB_OUTPUT
+          echo "Base: $base | Head: $head | Skip: $skip"
+        shell: bash
 
-            - name: Get changed project files
-              if: steps.check-branch.outputs.skip != 'true'
-              id: changed-files
-              uses: tj-actions/changed-files@v47
-              with:
-                  files: |
-                      **/*
-                  files_ignore: |
-                      **/*.md
-                      .cursorrules
-                      .markdownlint-cli2.json
-                      .prettier*
-                      vercel.json
-                      .next/**
-                      .storybook/**
-                      .vscode/**
-                      documentation/**
-                      lib/prisma/generated/**
-                      public/developers/storybook/**
-                      scripts/**
+      - name: Get changed project files
+        if: steps.check-branch.outputs.skip != 'true'
+        id: changed-files
+        uses: tj-actions/changed-files@v47
+        with:
+          files: |
+            **/*
+          files_ignore: |
+            **/*.md
+            .cursorrules
+            .markdownlint-cli2.json
+            .prettier*
+            vercel.json
+            .next/**
+            .storybook/**
+            .vscode/**
+            documentation/**
+            lib/prisma/generated/**
+            public/developers/storybook/**
+            scripts/**
 
-            - name: Get changed markdown files
-              if: steps.check-branch.outputs.skip != 'true'
-              id: changed-markdown
-              uses: tj-actions/changed-files@v47
-              with:
-                  files: |
-                      **/*.md
-                  files_ignore: |
-                      .next/**
-                      .storybook/**
-                      .vscode/**
-                      lib/prisma/generated/**
-                      public/developers/storybook/**
+      - name: Get changed markdown files
+        if: steps.check-branch.outputs.skip != 'true'
+        id: changed-markdown
+        uses: tj-actions/changed-files@v47
+        with:
+          files: |
+            **/*.md
+          files_ignore: |
+            .next/**
+            .storybook/**
+            .vscode/**
+            lib/prisma/generated/**
+            public/developers/storybook/**
 
-            - name: Should lint docs
-              id: lint-docs
-              if: steps.changed-markdown.outputs.any_modified == 'true' || github.event_name == 'workflow_dispatch'
-              run: echo "run=true" >> $GITHUB_OUTPUT
-              shell: bash
+      - name: Should lint docs
+        id: lint-docs
+        if: steps.changed-markdown.outputs.any_modified == 'true' || github.event_name == 'workflow_dispatch'
+        run: echo "run=true" >> $GITHUB_OUTPUT
+        shell: bash
 
-            - name: Should run build
-              id: check-build
-              if: steps.changed-files.outputs.any_modified == 'true' || github.event_name == 'workflow_dispatch'
-              run: echo "run=true" >> $GITHUB_OUTPUT
-              shell: bash
+      - name: Should run build
+        id: check-build
+        if: steps.changed-files.outputs.any_modified == 'true' || github.event_name == 'workflow_dispatch'
+        run: echo "run=true" >> $GITHUB_OUTPUT
+        shell: bash
 
-            - name: Should lint project
-              id: lint-project
-              if: steps.changed-files.outputs.any_modified == 'true' || github.event_name == 'workflow_dispatch'
-              run: echo "run=true" >> $GITHUB_OUTPUT
-              shell: bash
-            
-            - name: Should run tests
-              id: run-tests
-              if: steps.changed-files.outputs.any_modified == 'true' || github.event_name == 'workflow_dispatch'
-              run: echo "run=true" >> $GITHUB_OUTPUT
-              shell: bash
+      - name: Should lint project
+        id: lint-project
+        if: steps.changed-files.outputs.any_modified == 'true' || github.event_name == 'workflow_dispatch'
+        run: echo "run=true" >> $GITHUB_OUTPUT
+        shell: bash
 
-            - name: Setup Node.js
-              if: steps.check-build.outputs.run == 'true'
-              uses: actions/setup-node@v6
-              with:
-                  node-version-file: '.tool-versions'
-                  cache: "npm"
+      - name: Should run tests
+        id: run-tests
+        if: steps.changed-files.outputs.any_modified == 'true' || github.event_name == 'workflow_dispatch'
+        run: echo "run=true" >> $GITHUB_OUTPUT
+        shell: bash
 
-            - name: Install dependencies
-              if: steps.check-branch.outputs.skip != 'true'
-              run: npm ci
+      - name: Setup Node.js
+        if: steps.check-build.outputs.run == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.tool-versions'
+          cache: 'npm'
 
-            - name: Build
-              if: steps.check-build.outputs.run == 'true'
-              run: npm run build
+      - name: Install dependencies
+        if: steps.check-branch.outputs.skip != 'true'
+        run: npm ci
 
-            - name: Lint all documentation
-              if: steps.lint-docs.outputs.run == 'true'
-              run: npm run lint:markdown
-              shell: bash
-            
-            - name: Lint project
-              if: steps.lint-project.outputs.run == 'true'
-              run: npm run lint:project
-              shell: bash
-            
-            - name: Run tests
-              if: steps.run-tests.outputs.run == 'true'
-              run: npm run test:unit
-              shell: bash
+      - name: Build
+        if: steps.check-build.outputs.run == 'true'
+        run: npm run build
 
-            - name: Default Job Success
-              if: steps.check-build.outputs.run == 'false' && steps.lint-docs.outputs.run == 'false' && steps.lint-project.outputs.run == 'false' && steps.run-tests.outputs.run == 'false'
-              run: exit 0
-              shell: bash
+      - name: Lint all documentation
+        if: steps.lint-docs.outputs.run == 'true'
+        run: npm run lint:markdown
+        shell: bash
+
+      - name: Lint project
+        if: steps.lint-project.outputs.run == 'true'
+        run: npm run lint:project
+        shell: bash
+
+      - name: Run tests
+        if: steps.run-tests.outputs.run == 'true'
+        run: npm run test:unit
+        shell: bash
+
+      - name: Default Job Success
+        if: steps.check-build.outputs.run == 'false' && steps.lint-docs.outputs.run == 'false' && steps.lint-project.outputs.run == 'false' && steps.run-tests.outputs.run == 'false'
+        run: exit 0
+        shell: bash

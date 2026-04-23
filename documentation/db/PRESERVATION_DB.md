@@ -102,7 +102,7 @@ erDiagram
     batch_to_batches_metadata {
         varchar id PK, UK
         varchar batch_id FK
-        varchar metadata_id FK
+        varchar batch_metadata_id FK
         json value
         varchar value_type
         timestamp created_at
@@ -212,11 +212,11 @@ erDiagram
     documents ||--o{ document_versions : "versions"
     documents ||--o{ state_history : "state"
     authors ||--o{ document_to_authors : "document_to_authors"
+    publishers ||--o{ document_to_publishers : "document_to_publishers"
     batches ||--o{ document_to_batches : "document_to_batches"
-    batches ||--o{ batch_to_batches_metadata : "metadata"
+    batches ||--o{ batch_to_batches_metadata : "batch_metadata"
     metadata ||--o{ document_to_metadata : "document_to_metadata"
     batch_metadata ||--o{ batch_to_batches_metadata : "batch_metadata"
-    publishers ||--o{ document_to_publishers : "document_to_publishers"
     tags ||--o{ document_to_tags : "document_to_tags"
     version_groups ||--o{ document_versions : "document_versions"
     access_levels ||--o{ document_quality : "access_levels"
@@ -270,6 +270,7 @@ assessor comments, and the current validation status.
 
 **Key columns:**
 
+- `id` - Primary key (UUID).
 - `document_id` - Foreign key to `documents`. Enforced unique via
   `uk_document_quality_document_id`.
 - `validation_status` - Outcome of the quality check, such as `passed` or `failed`.
@@ -298,6 +299,7 @@ Tracks state transitions for documents over time.
 
 **Key columns:**
 
+- `id` - Primary key (UUID).
 - `document_id` - Foreign key to `documents`.
 - `previous_state` - The state before the transition (free-text string).
 - `new_state` - The state after the transition (free-text string).
@@ -321,6 +323,7 @@ authors from secondary contributors.
 
 **Key columns:**
 
+- `id` - Primary key (UUID).
 - `document_id` / `author_id` - Foreign keys.
 - `contributor_type` - Distinguishes primary authors from co-authors, editors,
   translators, and similar roles.
@@ -340,6 +343,7 @@ identities.
 
 **Key columns:**
 
+- `id` - Primary key (UUID).
 - `name` - The author's name, stored as Text (free-form).
 - `notes` - Internal notes about this author.
 - `name_hash` - MD5 of `name` for deduplication and unique lookups. Constrained unique.
@@ -358,6 +362,7 @@ OCR quality flags.
 
 **Key columns:**
 
+- `id` - Primary key (UUID).
 - `document_id` / `batch_id` - Foreign keys.
 - `cost` - Decimal cost incurred for processing this document in the batch.
 - `processing_time_seconds` - Wall-clock time to process the document.
@@ -380,7 +385,7 @@ attributes now live in `batch_to_batches_metadata`.
 
 **Key columns:**
 
-- `id` - Primary key.
+- `id` - Primary key (UUID).
 - `id_legacy` - Legacy identifier for the batch.
 - `name` / `name_hash` - Batch name and its MD5 hash. The hash is unique via
   `uk_batches_name`.
@@ -409,8 +414,9 @@ applied to a specific batch.
 
 **Key columns:**
 
-- `batch_id` / `metadata_id` - Foreign keys.
-- `value` - The metadata value, stored as JSON.
+- `id` - Primary key (UUID).
+- `batch_id` / `batch_metadata_id` - Foreign keys.
+- `value` - The batch metadata value, stored as JSON.
 - `value_type` - The application-level type hint for the value, such as `string`,
   `number`, or `timestamp`.
 - `created_at` / `updated_at` - Audit timestamps for the metadata assignment.
@@ -428,6 +434,7 @@ Metadata field definitions for batches.
 
 **Key columns:**
 
+- `id` - Primary key (UUID).
 - `name` - Field name (Text).
 - `name_hash` - MD5 of `name` for unique lookups. Constrained unique via
   `uk_batch_metadata_name`.
@@ -447,6 +454,7 @@ table, applied to a document.
 
 **Key columns:**
 
+- `id` - Primary key (UUID).
 - `document_id` / `metadata_id` - Foreign keys.
 - `value` - The metadata value. Stored as LongText so it can hold long extracted
   values, including full OCR text or large JSON blobs.
@@ -467,6 +475,7 @@ Metadata field definitions. Defines the schema of what metadata fields exist.
 
 **Key columns:**
 
+- `id` - Primary key (UUID).
 - `name` - Field name (Text).
 - `name_hash` - MD5 of `name` for unique lookups. Constrained unique via
   `uk_metadata_name`.
@@ -487,6 +496,7 @@ Links documents to their publishers.
 
 **Key columns:**
 
+- `id` - Primary key (UUID).
 - `document_id` / `publisher_id` - Foreign keys.
 - `notes` - Notes about this attribution.
 
@@ -503,6 +513,7 @@ Named publishers referenced by documents.
 
 **Key columns:**
 
+- `id` - Primary key (UUID).
 - `name` - Publisher name (Text, free-form).
 - `name_hash` - MD5 of `name`, constrained unique for deduplication.
 - `notes` - Internal notes.
@@ -520,6 +531,7 @@ Tags (categorization labels) applied to documents.
 
 **Key columns:**
 
+- `id` - Primary key (UUID).
 - `document_id` / `tag_id` - Foreign keys.
 - `notes` - Optional notes about this tag assignment.
 
@@ -537,6 +549,7 @@ Tag definitions. Represents the controlled vocabulary of categorization labels.
 
 **Key columns:**
 
+- `id` - Primary key (UUID).
 - `name` - Tag name (Text).
 - `name_hash` - MD5 of `name`, constrained unique.
 - `notes` - Description or scope notes.
@@ -559,6 +572,7 @@ document itself and to its enclosing version group.
 
 **Key columns:**
 
+- `id` - Primary key (UUID).
 - `document_id` - The version this row describes.
 - `version_group_id` - Foreign key to `version_groups.id`, identifying the related
   version family for this document version.
@@ -582,6 +596,7 @@ summary.
 
 **Key columns:**
 
+- `id` - Primary key (UUID).
 - `entity_table` - The table that was edited.
 - `entity_id` - The primary key of the row that was edited.
 - `previous_value` / `new_value` - The old and new content of the changed field.
@@ -607,6 +622,7 @@ canonical version.
 
 **Key columns:**
 
+- `id` - Primary key (UUID).
 - `group_id` - Groups versions together. All versions with the same `group_id` belong
   to the same logical document family.
 - `canonical_document_id` - Points to the primary or authoritative version in the
@@ -633,6 +649,7 @@ Role-based access level definitions. Controls who can see what.
 
 **Key columns:**
 
+- `id` - Primary key (UUID).
 - `level_name` - Unique name of the access level.
 - `description` - Human-readable description of the level.
 

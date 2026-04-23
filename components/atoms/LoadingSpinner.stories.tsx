@@ -1,73 +1,72 @@
-import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { LoadingSpinner } from "@components/atoms/LoadingSpinner";
+import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { LoadingSpinner } from '@components/atoms/LoadingSpinner'
 
 const meta: Meta<typeof LoadingSpinner> = {
-  title: "Atoms/LoadingSpinner",
+  title: 'Atoms/LoadingSpinner',
   component: LoadingSpinner,
-  tags: ["autodocs"],
+  tags: ['autodocs'],
   argTypes: {
     size: {
-      control: "select",
+      control: 'select',
       options: [12, 16, 20, 24, 32],
-      description: "Pixel size of the spinner (default: 32)",
+      description: 'Pixel size of the spinner (default: 32)',
     },
-    message: { control: "text" },
+    message: { control: 'text' },
     className: { control: false },
   },
   parameters: {
-    backgrounds: { default: "sand" },
+    backgrounds: { default: 'sand' },
   },
-};
+}
 
-export default meta;
-type Story = StoryObj<typeof LoadingSpinner>;
+export default meta
+type Story = StoryObj<typeof LoadingSpinner>
 
 export const Default: Story = {
-
   args: {},
-};
+}
 
 export const Small: Story = {
   args: {
     size: 12,
   },
-};
+}
 
 export const Medium: Story = {
   args: {
     size: 20,
   },
-};
+}
 
 export const Large: Story = {
   args: {
     size: 32,
   },
-};
+}
 
 export const CustomColor: Story = {
   args: {
     size: 20,
-    className: "text-moss",
+    className: 'text-moss',
   },
-};
+}
 
 // Inline / message variants
 
 export const WithMessage: Story = {
   args: {
-    message: "Loading available collections...",
+    message: 'Loading available collections...',
   },
-};
+}
 
 export const Saving: Story = {
   args: {
-    message: "Saving collection tags...",
+    message: 'Saving collection tags...',
   },
-};
+}
 
 export const Fetching: Story = {
   args: {
-    message: "Fetching document metadata...",
+    message: 'Fetching document metadata...',
   },
-};
+}

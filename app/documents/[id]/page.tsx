@@ -1,43 +1,39 @@
-import type { ReactElement } from "react";
-import { StateBadge } from "@atoms/StateBadge";
-import { NoDataState } from "@organisms/NoDataState";
-import { PageHeader } from "@organisms/PageHeader";
-import { formatBytes, formatDateTime, parseMetadataValue } from "@lib/format";
-import { getDocumentDetail } from "@lib/queries";
+import type { ReactElement } from 'react'
+import { StateBadge } from '@atoms/StateBadge'
+import { NoDataState } from '@organisms/NoDataState'
+import { PageHeader } from '@organisms/PageHeader'
+import { formatBytes, formatDateTime, parseMetadataValue } from '@lib/format'
+import { getDocumentDetail } from '@lib/queries'
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic'
 
 interface DocumentDetailPageProps {
   params: Promise<{
-    id: string;
-  }>;
+    id: string
+  }>
 }
 
 const documentFieldLabels: Array<{ key: string; label: string }> = [
-  { key: "id", label: "Document ID" },
-  { key: "name", label: "Name" },
-  { key: "id_legacy", label: "Legacy ID" },
-  { key: "source_id", label: "Source ID" },
-  { key: "filesize", label: "File Size" },
-  { key: "hash_binary", label: "Hash (Binary)" },
-  { key: "hash_content", label: "Hash (Content)" },
-  { key: "created_at", label: "Created At" },
-  { key: "updated_at", label: "Updated At" },
-];
+  { key: 'id', label: 'Document ID' },
+  { key: 'name', label: 'Name' },
+  { key: 'id_legacy', label: 'Legacy ID' },
+  { key: 'source_id', label: 'Source ID' },
+  { key: 'filesize', label: 'File Size' },
+  { key: 'hash_binary', label: 'Hash (Binary)' },
+  { key: 'hash_content', label: 'Hash (Content)' },
+  { key: 'created_at', label: 'Created At' },
+  { key: 'updated_at', label: 'Updated At' },
+]
 
-const detailTableClassName =
-  "min-w-full border-separate border-spacing-0 text-left text-sm text-ink";
-const detailTableHeadCellClassName =
-  "bg-[#f4f1eb] px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-ink";
-const detailTableBodyCellClassName = "border-b border-moss/10 px-3 py-3 align-top";
+const detailTableClassName = 'min-w-full border-separate border-spacing-0 text-left text-sm text-ink'
+const detailTableHeadCellClassName = 'bg-[#f4f1eb] px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-ink'
+const detailTableBodyCellClassName = 'border-b border-moss/10 px-3 py-3 align-top'
 
-export default async function DocumentDetailPage({
-  params,
-}: DocumentDetailPageProps): Promise<ReactElement> {
-  const { id } = await params;
+export default async function DocumentDetailPage({ params }: DocumentDetailPageProps): Promise<ReactElement> {
+  const { id } = await params
 
   try {
-    const detail = await getDocumentDetail(id);
+    const detail = await getDocumentDetail(id)
 
     if (!detail) {
       return (
@@ -49,22 +45,22 @@ export default async function DocumentDetailPage({
           />
           <NoDataState message="No document data is available for this record yet." />
         </div>
-      );
+      )
     }
 
-    const { document, audits, reviews } = detail;
+    const { document, audits, reviews } = detail
 
     const documentFieldValues = {
       id: document.id,
-      name: document.name ?? "—",
-      id_legacy: document.id_legacy ?? "—",
-      source_id: document.source_id ?? "—",
+      name: document.name ?? '—',
+      id_legacy: document.id_legacy ?? '—',
+      source_id: document.source_id ?? '—',
       filesize: formatBytes(document.filesize),
-      hash_binary: document.hash_binary ?? "—",
-      hash_content: document.hash_content ?? "—",
+      hash_binary: document.hash_binary ?? '—',
+      hash_content: document.hash_content ?? '—',
       created_at: formatDateTime(document.created_at),
       updated_at: formatDateTime(document.updated_at),
-    } as Record<string, string>;
+    } as Record<string, string>
 
     return (
       <div className="space-y-8">
@@ -81,9 +77,7 @@ export default async function DocumentDetailPage({
               {documentFieldLabels.map((field) => (
                 <div key={field.key} className="rounded-xl bg-sand/45 p-4">
                   <dt className="text-xs uppercase tracking-[0.15em] text-ink/60">{field.label}</dt>
-                  <dd className="mt-2 break-words text-sm text-ink">
-                    {documentFieldValues[field.key] || "—"}
-                  </dd>
+                  <dd className="mt-2 break-words text-sm text-ink">{documentFieldValues[field.key] || '—'}</dd>
                 </div>
               ))}
             </dl>
@@ -97,16 +91,10 @@ export default async function DocumentDetailPage({
                   <table className={detailTableClassName}>
                     <thead>
                       <tr>
-                        <th
-                          className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`}
-                          scope="col"
-                        >
+                        <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
                           Field
                         </th>
-                        <th
-                          className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`}
-                          scope="col"
-                        >
+                        <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
                           Value
                         </th>
                       </tr>
@@ -114,13 +102,11 @@ export default async function DocumentDetailPage({
                     <tbody>
                       {detail.metadata.map((field, i) => (
                         <tr key={i}>
-                          <td className={`${detailTableBodyCellClassName} font-medium`}>
-                            {field.name}
-                          </td>
+                          <td className={`${detailTableBodyCellClassName} font-medium`}>{field.name}</td>
                           <td className={detailTableBodyCellClassName}>
                             {(() => {
-                              const parsed = parseMetadataValue(field.value, field.value_type);
-                              return parsed.display;
+                              const parsed = parseMetadataValue(field.value, field.value_type)
+                              return parsed.display
                             })()}
                           </td>
                         </tr>
@@ -140,16 +126,10 @@ export default async function DocumentDetailPage({
                   <table className={detailTableClassName}>
                     <thead>
                       <tr>
-                        <th
-                          className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`}
-                          scope="col"
-                        >
+                        <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
                           Tag
                         </th>
-                        <th
-                          className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`}
-                          scope="col"
-                        >
+                        <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
                           Notes
                         </th>
                       </tr>
@@ -163,12 +143,10 @@ export default async function DocumentDetailPage({
                                 {dt.tags.name}
                               </span>
                             ) : (
-                              "—"
+                              '—'
                             )}
                           </td>
-                          <td className={detailTableBodyCellClassName}>
-                            {dt.notes || ""}
-                          </td>
+                          <td className={detailTableBodyCellClassName}>{dt.notes || ''}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -178,7 +156,6 @@ export default async function DocumentDetailPage({
                 <p className="mt-4 text-sm text-ink/60">No tags available.</p>
               )}
             </div>
-
           </div>
         </section>
 
@@ -190,7 +167,10 @@ export default async function DocumentDetailPage({
                 <p className="text-sm text-ink/65">No audit entries found.</p>
               ) : (
                 audits.map((audit, index) => (
-                  <div key={`${audit.document_id}-${audit.field_name}-${index}`} className="rounded-xl border border-moss/10 bg-sand/45 p-4">
+                  <div
+                    key={`${audit.document_id}-${audit.field_name}-${index}`}
+                    className="rounded-xl border border-moss/10 bg-sand/45 p-4"
+                  >
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <p className="text-sm font-semibold text-ink">{audit.field_name}</p>
                       <p className="text-xs uppercase tracking-[0.15em] text-ink/55">
@@ -200,11 +180,11 @@ export default async function DocumentDetailPage({
                     <div className="mt-4 grid gap-4 md:grid-cols-2">
                       <div>
                         <p className="text-xs uppercase tracking-[0.15em] text-ink/55">Before</p>
-                        <p className="mt-2 whitespace-pre-wrap text-sm text-ink">{audit.before_value || "—"}</p>
+                        <p className="mt-2 whitespace-pre-wrap text-sm text-ink">{audit.before_value || '—'}</p>
                       </div>
                       <div>
                         <p className="text-xs uppercase tracking-[0.15em] text-ink/55">After</p>
-                        <p className="mt-2 whitespace-pre-wrap text-sm text-ink">{audit.after_value || "—"}</p>
+                        <p className="mt-2 whitespace-pre-wrap text-sm text-ink">{audit.after_value || '—'}</p>
                       </div>
                     </div>
                   </div>
@@ -226,12 +206,12 @@ export default async function DocumentDetailPage({
                       <StateBadge state={review.status} />
                     </div>
                     <p className="mt-3 text-xs uppercase tracking-[0.15em] text-ink/55">
-                      Winning Source: {review.winning_source || "—"} • {formatDateTime(review.created_at)}
+                      Winning Source: {review.winning_source || '—'} • {formatDateTime(review.created_at)}
                     </p>
                     <div className="mt-4 grid gap-3 md:grid-cols-2">
                       <div className="rounded-xl bg-white/70 p-3">
                         <p className="text-xs uppercase tracking-[0.15em] text-ink/55">Winning Value</p>
-                        <p className="mt-2 whitespace-pre-wrap text-sm text-ink">{review.winning_value || "—"}</p>
+                        <p className="mt-2 whitespace-pre-wrap text-sm text-ink">{review.winning_value || '—'}</p>
                       </div>
                       <div className="rounded-xl bg-white/70 p-3">
                         <p className="text-xs uppercase tracking-[0.15em] text-ink/55">Conflicts</p>
@@ -242,7 +222,7 @@ export default async function DocumentDetailPage({
                             review.conflicting_values.map((conflictValue, index) => (
                               <div key={`${review.id}-${index}`}>
                                 <p className="font-medium">{conflictValue.source}</p>
-                                <p className="whitespace-pre-wrap">{conflictValue.value || "—"}</p>
+                                <p className="whitespace-pre-wrap">{conflictValue.value || '—'}</p>
                               </div>
                             ))
                           )}
@@ -256,7 +236,7 @@ export default async function DocumentDetailPage({
           </div>
         </section>
       </div>
-    );
+    )
   } catch {
     return (
       <div className="space-y-8">
@@ -267,6 +247,6 @@ export default async function DocumentDetailPage({
         />
         <NoDataState message="No data is available right now. The database may be empty, unavailable, or still being initialized." />
       </div>
-    );
+    )
   }
 }

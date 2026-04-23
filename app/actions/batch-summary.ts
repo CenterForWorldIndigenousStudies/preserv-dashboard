@@ -1,7 +1,7 @@
-"use server";
+'use server'
 
-import { getBatchSummary } from "@lib/queries";
+import { getBatchSummary } from '@lib/queries'
 
 export async function getBatchSummaryAction() {
-  return getBatchSummary();
+  return getBatchSummary()
 }

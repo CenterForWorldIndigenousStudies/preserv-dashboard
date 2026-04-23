@@ -1,7 +1,7 @@
-"use server";
+'use server'
 
-import { getReviewQueueDocuments } from "@lib/queries";
+import { getReviewQueueDocuments } from '@lib/queries'
 
 export async function getReviewQueueAction() {
-  return getReviewQueueDocuments();
+  return getReviewQueueDocuments()
 }

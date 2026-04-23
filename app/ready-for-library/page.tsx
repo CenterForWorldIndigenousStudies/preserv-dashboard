@@ -1,18 +1,18 @@
-import { Suspense, type ReactElement } from "react";
-import { PageHeader } from "@organisms/PageHeader";
-import { ReadyForLibraryTable } from "@organisms/ReadyForLibraryTable";
-import { NoDataState } from "@organisms/NoDataState";
-import { getReadyForLibraryDocuments } from "@lib/queries";
+import { Suspense, type ReactElement } from 'react'
+import { PageHeader } from '@organisms/PageHeader'
+import { ReadyForLibraryTable } from '@organisms/ReadyForLibraryTable'
+import { NoDataState } from '@organisms/NoDataState'
+import { getReadyForLibraryDocuments } from '@lib/queries'
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic'
 
 async function ReadyForLibraryContent() {
-  const result = await getReadyForLibraryDocuments();
+  const result = await getReadyForLibraryDocuments()
 
   if (result.total === 0) {
-    return <NoDataState message="No documents are currently ready for library ingest." />;
+    return <NoDataState message="No documents are currently ready for library ingest." />
   }
-  return <ReadyForLibraryTable initialData={result} />;
+  return <ReadyForLibraryTable initialData={result} />
 }
 
 export default function ReadyForLibraryPage(): ReactElement {
@@ -28,5 +28,5 @@ export default function ReadyForLibraryPage(): ReactElement {
         <ReadyForLibraryContent />
       </Suspense>
     </div>
-  );
+  )
 }

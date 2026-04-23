@@ -1,61 +1,61 @@
-import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { StatCard } from "@components/molecules/StatCard";
+import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { StatCard } from '@components/molecules/StatCard'
 
 const meta: Meta<typeof StatCard> = {
-  title: "Molecules/StatCard",
+  title: 'Molecules/StatCard',
   component: StatCard,
-  tags: ["autodocs"],
+  tags: ['autodocs'],
   argTypes: {
     title: {
-      control: "text",
-      description: "Label above the numeric value",
+      control: 'text',
+      description: 'Label above the numeric value',
     },
     value: {
-      control: "number",
-      description: "Numeric value to display",
+      control: 'number',
+      description: 'Numeric value to display',
     },
     href: {
-      control: "text",
-      description: "Optional link URL (omit for static card)",
+      control: 'text',
+      description: 'Optional link URL (omit for static card)',
     },
   },
   args: {
-    title: "Total Documents",
+    title: 'Total Documents',
     value: 12847,
     href: undefined,
   },
   parameters: {
     backgrounds: {
-      default: "sand",
+      default: 'sand',
     },
   },
-};
+}
 
-export default meta;
-type Story = StoryObj<typeof StatCard>;
+export default meta
+type Story = StoryObj<typeof StatCard>
 
 export const Static: Story = {
   args: {
-    title: "Total Documents",
+    title: 'Total Documents',
     value: 12847,
   },
-};
+}
 
 export const Linked: Story = {
   args: {
-    title: "Pending Review",
+    title: 'Pending Review',
     value: 342,
-    href: "/reviews",
+    href: '/reviews',
   },
-};
+}
 
 export const CollectionSize: Story = {
   args: {
-    title: "Collection Size",
+    title: 'Collection Size',
     value: 8754693120,
-    href: "/documents",
+    href: '/documents',
   },
-};
+}
 
 export const AllCards: Story = {
   render: () => (
@@ -65,4 +65,4 @@ export const AllCards: Story = {
       <StatCard title="Failed Pipeline" value={7} href="/failures" />
     </div>
   ),
-};
+}

@@ -1,63 +1,61 @@
-import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { StateBadge } from "@components/atoms/StateBadge";
+import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { StateBadge } from '@components/atoms/StateBadge'
 
 const meta: Meta<typeof StateBadge> = {
-  title: "Atoms/StateBadge",
+  title: 'Atoms/StateBadge',
   component: StateBadge,
-  tags: ["autodocs"],
+  tags: ['autodocs'],
   argTypes: {
     state: {
-      control: "select",
-      options: ["completed", "failed", "under_review", "ingested", "normalized", "pending"],
-      description: "Document pipeline state string",
+      control: 'select',
+      options: ['completed', 'failed', 'under_review', 'ingested', 'normalized', 'pending'],
+      description: 'Document pipeline state string',
     },
     className: { control: false },
   },
   parameters: {
-    backgrounds: { default: "sand" },
+    backgrounds: { default: 'sand' },
   },
-};
+}
 
-export default meta;
-type Story = StoryObj<typeof StateBadge>;
+export default meta
+type Story = StoryObj<typeof StateBadge>
 
 export const Completed: Story = {
   args: {
-    state: "completed",
+    state: 'completed',
   },
-};
+}
 
 export const Failed: Story = {
   args: {
-    state: "failed",
+    state: 'failed',
   },
-};
+}
 
 export const UnderReview: Story = {
-
   args: {
-    state: "under_review",
+    state: 'under_review',
   },
-};
+}
 
 export const Ingested: Story = {
   args: {
-    state: "ingested",
+    state: 'ingested',
   },
-};
+}
 
 export const Normalized: Story = {
   args: {
-    state: "normalized",
+    state: 'normalized',
   },
-};
+}
 
 export const Default: Story = {
-
   args: {
-    state: "pending",
+    state: 'pending',
   },
-};
+}
 
 export const AllStates: Story = {
   render: () => (
@@ -70,4 +68,4 @@ export const AllStates: Story = {
       <StateBadge state="unknown_state" />
     </div>
   ),
-};
+}

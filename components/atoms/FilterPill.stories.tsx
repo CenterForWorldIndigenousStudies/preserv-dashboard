@@ -1,68 +1,63 @@
-import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { FilterPill } from "@components/atoms/FilterPill";
+import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { FilterPill } from '@components/atoms/FilterPill'
 
 const meta: Meta<typeof FilterPill> = {
-  title: "Atoms/FilterPill",
+  title: 'Atoms/FilterPill',
   component: FilterPill,
-  tags: ["autodocs"],
+  tags: ['autodocs'],
   argTypes: {
-    label: { control: "text" },
-    isActive: { control: "boolean" },
-    href: { control: "text" },
+    label: { control: 'text' },
+    isActive: { control: 'boolean' },
+    href: { control: 'text' },
     className: { control: false },
   },
   parameters: {
-    backgrounds: { default: "sand" },
+    backgrounds: { default: 'sand' },
   },
-};
+}
 
-export default meta;
-type Story = StoryObj<typeof FilterPill>;
+export default meta
+type Story = StoryObj<typeof FilterPill>
 
 export const All: Story = {
-
   args: {
-    label: "All",
+    label: 'All',
     isActive: false,
-    href: "/documents",
+    href: '/documents',
   },
-};
+}
 
 export const Active: Story = {
-
   args: {
-    label: "All",
+    label: 'All',
     isActive: true,
-    href: "/documents",
+    href: '/documents',
   },
-};
+}
 
 export const Completed: Story = {
-
   args: {
-    label: "Completed",
+    label: 'Completed',
     isActive: true,
-    href: "/documents?state=completed",
+    href: '/documents?state=completed',
   },
-};
+}
 
 export const Failed: Story = {
-
   args: {
-    label: "Failed",
+    label: 'Failed',
     isActive: false,
-    href: "/documents?state=failed",
+    href: '/documents?state=failed',
   },
-};
+}
 
 export const UnderReview: Story = {
-
   args: {
-    label: "Under Review",
+    label: 'Under Review',
     isActive: false,
-    href: "/documents?state=under_review",
+    href: '/documents?state=under_review',
   },
-};
+}
 
 export const AllFilters: Story = {
   render: () => (
@@ -73,4 +68,4 @@ export const AllFilters: Story = {
       <FilterPill label="Under Review" isActive={false} href="/documents?state=under_review" />
     </div>
   ),
-};
+}

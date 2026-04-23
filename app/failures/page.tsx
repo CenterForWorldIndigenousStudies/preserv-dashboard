@@ -1,16 +1,16 @@
-import type { ReactElement } from "react";
-import Link from "next/link";
+import type { ReactElement } from 'react'
+import Link from 'next/link'
 
-import { NoDataState } from "@organisms/NoDataState";
-import { PageHeader } from "@organisms/PageHeader";
-import { formatDateTime } from "@lib/format";
-import { getFailures } from "@lib/queries";
+import { NoDataState } from '@organisms/NoDataState'
+import { PageHeader } from '@organisms/PageHeader'
+import { formatDateTime } from '@lib/format'
+import { getFailures } from '@lib/queries'
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic'
 
 export default async function FailuresPage(): Promise<ReactElement> {
   try {
-    const failures = await getFailures();
+    const failures = await getFailures()
 
     return (
       <div className="space-y-8">
@@ -43,9 +43,11 @@ export default async function FailuresPage(): Promise<ReactElement> {
                           {failure.id}
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-ink">{failure.name || "—"}</td>
-                      <td className="px-4 py-3 text-ink">{failure.source_id || "—"}</td>
-                      <td className="px-4 py-3 whitespace-pre-wrap text-ink/80">{failure.failure_reason || "Unknown"}</td>
+                      <td className="px-4 py-3 text-ink">{failure.name || '—'}</td>
+                      <td className="px-4 py-3 text-ink">{failure.source_id || '—'}</td>
+                      <td className="px-4 py-3 whitespace-pre-wrap text-ink/80">
+                        {failure.failure_reason || 'Unknown'}
+                      </td>
                       <td className="px-4 py-3 text-ink/70">{formatDateTime(failure.created_at)}</td>
                     </tr>
                   ))}
@@ -55,7 +57,7 @@ export default async function FailuresPage(): Promise<ReactElement> {
           </section>
         )}
       </div>
-    );
+    )
   } catch {
     return (
       <div className="space-y-8">
@@ -66,6 +68,6 @@ export default async function FailuresPage(): Promise<ReactElement> {
         />
         <NoDataState message="No data is available right now. The database may be empty, unavailable, or still being initialized." />
       </div>
-    );
+    )
   }
 }
