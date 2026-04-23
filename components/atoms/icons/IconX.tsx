@@ -1,15 +1,11 @@
-import type { ReactNode, CSSProperties } from "react";
-
-interface IconXProps {
-  size?: number; // default 20
-  className?: string;
-}
+import type { ReactNode, CSSProperties } from "react"
+import { IconProps } from "./IconProps";
 
 /**
  * Atom: X (close/remove) icon using SVG.
  * Scales proportionally for any size.
  */
-export function IconX({ size = 20, className = "" }: IconXProps): ReactNode {
+export function IconX({ size = 20, className = "" }: IconProps): ReactNode {
   const scale = size / 20;
   const viewBox = `0 0 ${20 * scale} ${20 * scale}`;
   const strokeWidth = 1.5 * scale;

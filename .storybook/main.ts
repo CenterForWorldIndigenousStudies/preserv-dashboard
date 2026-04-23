@@ -5,9 +5,10 @@ const config: StorybookConfig = {
     "../components/**/*.stories.@(js|jsx|mjs|ts|tsx)",
   ],
   addons: [
-    "@storybook/addon-essentials",
     "@storybook/addon-a11y",
     "@chromatic-com/storybook",
+    "@storybook/addon-docs",
+    "@storybook/addon-onboarding",
   ],
   framework: {
     name: "@storybook/nextjs-vite",

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type MouseEvent, type ReactElement } from "react";
 
 import { Button } from "@components/atoms/Button";
-import { IconX } from "@atoms/IconX";
+import { IconX } from "@components/atoms/icons/IconX";
 import { LoadingSpinner } from "@atoms/LoadingSpinner";
 import { TagPill } from "@molecules/TagPill";
 
