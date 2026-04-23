@@ -1,58 +1,118 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { ButtonPrimary, ButtonSecondary, ButtonGhost } from "@components/atoms/Button";
+import { Button, sizeMap, variantMap } from "@atoms/Button";
 
-const meta: Meta<typeof ButtonPrimary> = {
+const meta = {
   title: "Atoms/Button",
-  component: ButtonPrimary,
+  component: Button,
   tags: ["autodocs"],
   argTypes: {
-    variant: { control: false },
+    variant: {
+      control: "select",
+      options: Object.keys(variantMap),
+      description: "Visual style of the button",
+    },
+    size: {
+      control: "select",
+      options: Object.keys(sizeMap),
+      description: "Size of the button",
+    },
+    fullWidth: {
+      control: "boolean",
+      description: "Stretch button to fill container width",
+    },
+    loading: {
+      control: "boolean",
+      description: "Show loading spinner and disable button",
+    },
+    disabled: {
+      control: "boolean",
+      description: "Disable the button",
+    },
+    children: {
+      control: "text",
+      description: "Button label text",
+    },
   },
   parameters: {
-    controls: { exclude: ["variant"] },
     backgrounds: { default: "sand" },
   },
-};
+} satisfies Meta<typeof Button>
 
 export default meta;
-type Story = StoryObj<typeof ButtonPrimary>;
+type Story = StoryObj<typeof meta>;
 
 export const Primary: Story = {
-
-  render: () => (
-    <div className="flex flex-wrap gap-4">
-      <ButtonPrimary>Approve Document</ButtonPrimary>
-      <ButtonPrimary disabled>Processing</ButtonPrimary>
-    </div>
-  ),
+  args: {
+    variant: "primary",
+    children: "Approve Document",
+  },
 };
 
 export const Secondary: Story = {
-
-  render: () => (
-    <div className="flex flex-wrap gap-4">
-      <ButtonSecondary>View Schema</ButtonSecondary>
-      <ButtonSecondary disabled>Unavailable</ButtonSecondary>
-    </div>
-  ),
+  args: {
+    variant: "secondary",
+    children: "View Schema",
+  },
 };
 
 export const Ghost: Story = {
-
-  render: () => (
-    <div className="flex flex-wrap gap-4">
-      <ButtonGhost>Cancel</ButtonGhost>
-      <ButtonGhost disabled>Dismissed</ButtonGhost>
-    </div>
-  ),
+  args: {
+    variant: "ghost",
+    children: "Cancel",
+  },
 };
 
 export const AllVariants: Story = {
   render: () => (
     <div className="flex flex-wrap items-center gap-4">
-      <ButtonPrimary>Approve</ButtonPrimary>
-      <ButtonSecondary>View Details</ButtonSecondary>
-      <ButtonGhost>Cancel</ButtonGhost>
+      <Button variant="primary">Approve</Button>
+      <Button variant="secondary">View Details</Button>
+      <Button variant="ghost">Cancel</Button>
     </div>
   ),
+};
+
+export const Sizes: Story = {
+  render: () => (
+    <div className="flex flex-wrap items-center gap-4">
+      <Button variant="primary" size="sm">Small</Button>
+      <Button variant="primary" size="md">Medium</Button>
+      <Button variant="primary" size="lg">Large</Button>
+    </div>
+  ),
+};
+
+export const Loading: Story = {
+  args: {
+    variant: "primary",
+    children: "Save Changes",
+    loading: true,
+  },
+};
+
+export const FullWidth: Story = {
+  args: {
+    variant: "primary",
+    children: "Submit",
+    fullWidth: true,
+  },
+};
+
+export const Disabled: Story = {
+  args: {
+    variant: "secondary",
+    children: "Unavailable",
+    disabled: true,
+  },
+};
+
+export const Interactive: Story = {
+  args: {
+    variant: "primary",
+    size: "md",
+    fullWidth: false,
+    loading: false,
+    disabled: false,
+    children: "Click Me",
+  },
 };

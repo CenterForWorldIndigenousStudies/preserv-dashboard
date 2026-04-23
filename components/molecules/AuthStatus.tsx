@@ -3,6 +3,8 @@
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 
+import { Button } from "@components/atoms/Button";
+
 export default function AuthStatus() {
   const { data: session, status } = useSession();
 
@@ -28,14 +30,14 @@ export default function AuthStatus() {
       <span className="text-xs text-ink/60">
         {session?.user?.email}
       </span>
-      <button
+      <Button
         onClick={() => {
           void signOut({ redirectTo: "/auth/signin" });
         }}
-        className="rounded-full bg-ink/10 px-4 py-2 text-sm text-ink hover:bg-ink/20"
+        variant="ghost"
       >
         Sign Out
-      </button>
+      </Button>
     </div>
   );
 }

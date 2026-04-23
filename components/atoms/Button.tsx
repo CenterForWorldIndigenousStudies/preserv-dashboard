@@ -1,43 +1,62 @@
-import type { ReactElement, ReactNode, ButtonHTMLAttributes } from "react";
+import type { ReactElement, ButtonHTMLAttributes } from "react";
+import MuiButton from "@mui/material/Button";
+import CircularProgress from "@mui/material/CircularProgress";
 
-interface ButtonBaseProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  children: ReactNode;
-  variant?: "primary" | "secondary" | "ghost";
+export const variantMap = {
+  primary: "contained",
+  secondary: "outlined",
+  ghost: "text",
+} as const;
+
+export const sizeMap = {
+  sm: "small",
+  md: "medium",
+  lg: "large",
+} as const;
+
+type ButtonVariant = keyof typeof variantMap
+type ButtonSize = keyof typeof sizeMap;
+
+interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "color" | "variant"> {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  fullWidth?: boolean;
+  loading?: boolean;
+  startIcon?: ReactElement;
   className?: string;
 }
 
-function buttonClasses(variant: ButtonBaseProps["variant"], className: string): string {
-  const base = "rounded-full px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-moss/50";
-  switch (variant) {
-    case "secondary":
-      return `${base} bg-sand text-ink hover:bg-sky ${className}`;
-    case "ghost":
-      return `${base} bg-transparent text-ink/70 hover:bg-sand hover:text-ink ${className}`;
-    default:
-      return `${base} bg-moss text-white hover:bg-moss/80 ${className}`;
-  }
-}
+export function Button({
+  children,
+  variant = "primary",
+  size = "md",
+  fullWidth = false,
+  loading = false,
+  className = "",
+  startIcon,
+  disabled,
+  ...props
+}: ButtonProps): ReactElement {
+  const muiSize = sizeMap[size];
 
-export function ButtonPrimary({ children, className = "", ...props }: ButtonBaseProps): ReactElement {
   return (
-    <button {...props} className={buttonClasses("primary", className)}>
-      {children}
-    </button>
-  );
-}
-
-export function ButtonSecondary({ children, className = "", ...props }: ButtonBaseProps): ReactElement {
-  return (
-    <button {...props} className={buttonClasses("secondary", className)}>
-      {children}
-    </button>
-  );
-}
-
-export function ButtonGhost({ children, className = "", ...props }: ButtonBaseProps): ReactElement {
-  return (
-    <button {...props} className={buttonClasses("ghost", className)}>
-      {children}
-    </button>
+    <MuiButton
+      {...props}
+      variant={variantMap[variant]}
+      size={muiSize}
+      fullWidth={fullWidth}
+      disabled={disabled || loading}
+      startIcon={loading ? undefined : startIcon}
+      className={className}
+    >
+      {loading ? (
+        <>
+          <CircularProgress size="1.25em" sx={{ mr: 1, color: "inherit" }} />
+          {"Loading..."}
+        </>
+      ) : (
+        children
+      )}
+    </MuiButton>
   );
 }

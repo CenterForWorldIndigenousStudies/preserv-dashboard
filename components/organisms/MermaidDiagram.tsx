@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useState, useCallback, type ReactElement } from 'react';
 import mermaid from 'mermaid';
+import { Button } from '@components/atoms/Button';
 
 let mermaidInitialized = false;
 
@@ -57,13 +58,14 @@ export function MermaidDiagram({ source, className = '' }: MermaidDiagramProps):
         className={`relative my-4 rounded-xl border border-moss/20 bg-white w-full max-w-full overflow-hidden ${className}`}
       >
         <div className="absolute right-2 top-2 z-10">
-          <button
+          <Button
             type="button"
             onClick={() => setIsModalOpen(true)}
-            className="rounded-full bg-sand px-3 py-1 text-xs font-medium text-ink shadow-sm transition-colors hover:bg-sky"
+            variant="secondary"
+            size="sm"
           >
             Enlarge
-          </button>
+          </Button>
         </div>
         {error ? (
           <div className="p-4 text-sm text-clay">Diagram error: {error}</div>
@@ -87,13 +89,14 @@ export function MermaidDiagram({ source, className = '' }: MermaidDiagramProps):
             onClick={(e) => e.stopPropagation()}
           >
             <div className="absolute right-2 top-2 z-10">
-              <button
+              <Button
                 type="button"
                 onClick={closeModal}
-                className="rounded-full bg-sand px-3 py-1 text-xs font-medium text-ink shadow-sm transition-colors hover:bg-sky"
+                variant="secondary"
+                size="sm"
               >
                 Close
-              </button>
+              </Button>
             </div>
             {svg ? (
               <div
