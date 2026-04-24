@@ -1,9 +1,10 @@
 import type { ReactElement } from 'react'
 import { DateAtom } from '@atoms/Date'
+import { FileSize } from '@atoms/FileSize'
 import { StateBadge } from '@atoms/StateBadge'
 import { NoDataState } from '@organisms/NoDataState'
 import { PageHeader } from '@organisms/PageHeader'
-import { formatBytes, parseMetadataValue } from '@lib/format'
+import { parseMetadataValue } from '@lib/format'
 import { getDocumentDetail } from '@lib/queries'
 
 export const dynamic = 'force-dynamic'
@@ -54,10 +55,10 @@ export default async function DocumentDetailPage({ params }: DocumentDetailPageP
       id: document.id,
       name: document.name ?? '—',
       id_legacy: document.id_legacy ?? '—',
-      filesize: formatBytes(document.filesize),
+      filesize: document.filesize,
       hash_binary: document.hash_binary ?? '—',
       hash_content: document.hash_content ?? '—',
-    } as Record<string, string>
+    } as Record<string, string | bigint | number | null | undefined>
 
     return (
       <div className="space-y-8">
@@ -74,7 +75,13 @@ export default async function DocumentDetailPage({ params }: DocumentDetailPageP
               {documentFieldLabels.map((field) => (
                 <div key={field.key} className="rounded-xl bg-sand/45 p-4">
                   <dt className="text-xs uppercase tracking-[0.15em] text-ink/60">{field.label}</dt>
-                  <dd className="mt-2 break-words text-sm text-ink">{documentFieldValues[field.key] || '—'}</dd>
+                  <dd className="mt-2 break-words text-sm text-ink">
+                    {field.key === 'filesize' ? (
+                      <FileSize value={documentFieldValues.filesize as bigint | number | null | undefined} />
+                    ) : (
+                      documentFieldValues[field.key] || '—'
+                    )}
+                  </dd>
                 </div>
               ))}
             </dl>

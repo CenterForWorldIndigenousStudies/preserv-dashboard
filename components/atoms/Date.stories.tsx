@@ -31,6 +31,13 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   args: {},
   name: 'Default Date',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Click the displayed date to toggle between the human-readable format and the raw ISO value.',
+      },
+    },
+  },
 }
 
 export const DateOnly: Story = {
@@ -38,11 +45,25 @@ export const DateOnly: Story = {
   args: {
     value: '2026-04-23T00:00:00.000-07:00',
   },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Click the displayed date to toggle between the human-readable format and the raw ISO value.',
+      },
+    },
+  },
 }
 
 export const YearAndMonthOnly: Story = {
   args: {
     value: '2026-04',
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Click the displayed date to toggle between the human-readable format and the raw YYYY-MM value.',
+      },
+    },
   },
 }
 
@@ -50,11 +71,25 @@ export const YearOnly: Story = {
   args: {
     value: '2026',
   },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Click the displayed date to toggle between the human-readable format and the raw YYYY value.',
+      },
+    },
+  },
 }
 
 export const NullValue: Story = {
   args: {
     value: null,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: 'There is no toggle when there is no date value.',
+      },
+    },
   },
 }
 
@@ -63,6 +98,13 @@ export const UnixTimestampSeconds: Story = {
   args: {
     value: 1770097020,
   },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Click the displayed date to toggle between the human-readable format and the raw Unix timestamp value.',
+      },
+    },
+  },
 }
 
 export const UnixTimestampMillis: Story = {
@@ -70,17 +112,10 @@ export const UnixTimestampMillis: Story = {
   args: {
     value: 1770097020000,
   },
-}
-
-export const ToggleInteraction: Story = {
-  name: 'Toggle Interaction (click to see raw)',
-  args: {
-    value: '2026-04-23T21:57:00.000-07:00',
-  },
   parameters: {
     docs: {
       description: {
-        story: 'Click the displayed date to toggle between the human-readable format and the raw ISO value.',
+        story: 'Click the displayed date to toggle between the human-readable format and the raw Unix timestamp value.',
       },
     },
   },
