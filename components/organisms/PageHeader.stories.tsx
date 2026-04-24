@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { PageHeader } from '@components/organisms/PageHeader'
+import { PageHeader } from '@organisms/PageHeader'
 
 const meta: Meta<typeof PageHeader> = {
   title: 'Organisms/PageHeader',

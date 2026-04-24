@@ -66,7 +66,7 @@ See [components/organisms](./components/organisms/)
 1. Determine the layer based on complexity and reusability
 2. Create the file in the appropriate `atoms/`, `molecules/`, or `organisms/` folder
 3. Export as named export: `export function MyComponent() ...`
-4. Import using `@components/atoms/MyAtom`, `@components/molecules/MyMolecule`, `@components/organisms/MyOrganism`
+4. Import using `@atoms/MyAtom`, `@molecules/MyMolecule`, `@organisms/MyOrganism`
 5. Do NOT put new components at the `components/` root unless they are layout-level
 
 ### Component Rules

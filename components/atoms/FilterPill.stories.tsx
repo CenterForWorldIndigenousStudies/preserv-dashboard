@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { FilterPill } from '@components/atoms/FilterPill'
+import { FilterPill } from '@atoms/FilterPill'
 
 const meta = {
   title: 'Atoms/FilterPill',

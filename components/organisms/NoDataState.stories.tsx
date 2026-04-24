@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { NoDataState } from '@components/organisms/NoDataState'
+import { NoDataState } from '@organisms/NoDataState'
 
 const meta: Meta<typeof NoDataState> = {
   title: 'Organisms/NoDataState',

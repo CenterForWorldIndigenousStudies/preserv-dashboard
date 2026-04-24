@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import Sidebar, { type SidebarVariant } from '@components/organisms/Sidebar'
+import Sidebar, { type SidebarVariant } from '@organisms/Sidebar'
 
 const meta: Meta<typeof Sidebar> = {
   title: 'Organisms/Sidebar',

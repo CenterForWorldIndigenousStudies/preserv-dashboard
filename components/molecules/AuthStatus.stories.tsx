@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import AuthStatus from '@components/molecules/AuthStatus'
+import AuthStatus from '@molecules/AuthStatus'
 
 const meta: Meta<typeof AuthStatus> = {
   title: 'Molecules/AuthStatus',

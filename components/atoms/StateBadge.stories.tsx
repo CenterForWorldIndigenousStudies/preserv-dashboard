@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { StateBadge } from '@components/atoms/StateBadge'
+import { StateBadge } from '@atoms/StateBadge'
 
 const meta: Meta<typeof StateBadge> = {
   title: 'Atoms/StateBadge',
