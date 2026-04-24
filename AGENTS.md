@@ -53,26 +53,13 @@ components/
 ### Layers
 
 **Atoms** - Smallest, reusable primitives. No internal state. Examples:
-
-- Badge.tsx - Pill-shaped state indicator
-- Button.tsx - Base button variants (ButtonPrimary, ButtonSecondary, ButtonGhost)
-- LoadingSpinner.tsx - Animated SVG spinner
+See [components/atoms](./components/atoms/)
 
 **Molecules** - Composed from atoms. May have minimal state. Examples:
-
-- StatCard.tsx - KPI card with title and value
-- Pagination.tsx - Previous/Next controls
-- AuthStatus.tsx - Sign in/out display
-- SidebarToggle.tsx - Mobile hamburger button
+See [components/molecules](./components/molecules/)
 
 **Organisms** - Complex components made of atoms and molecules. Own significant logic. Examples:
-
-- PageHeader.tsx - Full page header with eyebrow, title, description
-- NoDataState.tsx - Empty state display
-- DocumentTable.tsx - Data table with rows and columns
-- Sidebar.tsx - Navigation sidebar with links
-- MermaidDiagram.tsx - Mermaid markdown diagram renderer
-- AssignCollectionButton.tsx - Modal for tagging documents
+See [components/organisms](./components/organisms/)
 
 ### Adding Components
 
@@ -109,7 +96,7 @@ lib/
   types.ts                  # TypeScript type definitions
 proxy.ts                   # Auth proxy (redirects unauthenticated requests)
 documentation/db/
-  PRESERVATION_DB.md        # Mermaid ER diagram source for /db
+  PRESERVATION_DB.md        # Mermaid ER diagram source or truth for /db
 ```
 
 ## Key Conventions

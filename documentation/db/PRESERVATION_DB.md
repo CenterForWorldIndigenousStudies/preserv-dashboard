@@ -38,7 +38,7 @@ erDiagram
         varchar metadata_sufficiency
         varchar validation_status
         varchar validation_type
-        timestamp validation_timestamp
+        bigint validation_timestamp
         varchar validator_name
         varchar validator_email
         varchar access_level FK
@@ -178,7 +178,7 @@ erDiagram
         varchar version_group_id FK
         text notes
         text changes_summary
-        timestamp analyzed_at
+        bigint analyzed_at
         timestamp created_at
         timestamp updated_at
     }
@@ -275,7 +275,7 @@ assessor comments, and the current validation status.
   `uk_document_quality_document_id`.
 - `validation_status` - Outcome of the quality check, such as `passed` or `failed`.
 - `validation_type` - The type of validation performed.
-- `validation_timestamp` - When the validation ran.
+- `validation_timestamp` - When the validation ran. (unix timestamp)
 - `validator_name` / `validator_email` - Who performed the validation, for
   accountability.
 - `metadata_sufficiency` - Assessment of whether the document's metadata is complete
@@ -417,8 +417,7 @@ applied to a specific batch.
 - `id` - Primary key (UUID).
 - `batch_id` / `batch_metadata_id` - Foreign keys.
 - `value` - The batch metadata value, stored as JSON.
-- `value_type` - The application-level type hint for the value, such as `string`,
-  `number`, or `timestamp`.
+- `value_type` - The application-level type hint for the value, such as `string`, `int`, `decimal`, `boolean`, `json`, or `unix_timestamp`.
 - `created_at` / `updated_at` - Audit timestamps for the metadata assignment.
 
 **Design notes:**
@@ -443,7 +442,6 @@ Metadata field definitions for batches.
 **Design notes:**
 
 - `name_hash` uniqueness enforces that field names are deduplicated.
-- Seeded with the former wide `batches` columns that were moved into metadata.
 
 ### document_to_metadata
 
@@ -458,8 +456,7 @@ table, applied to a document.
 - `document_id` / `metadata_id` - Foreign keys.
 - `value` - The metadata value. Stored as LongText so it can hold long extracted
   values, including full OCR text or large JSON blobs.
-- `value_type` - The data type of the value, such as `string`, `date`, or `number`,
-  for consumer interpretation.
+- `value_type` - The data type of the value, such as `string`, `int`, `decimal`, `boolean`, `json`, or `unix_timestamp` for consumer interpretation.
 
 **Design notes:**
 
@@ -577,14 +574,14 @@ document itself and to its enclosing version group.
 - `version_group_id` - Foreign key to `version_groups.id`, identifying the related
   version family for this document version.
 - `changes_summary` - Description of what changed from the canonical version.
-- `analyzed_at` - When version analysis was performed.
+- `analyzed_at` - When version analysis was performed. (unix timestamp)
 - `notes` - Free-text notes about this version.
 
 **Design notes:**
 
 - `version_group_id` FK points to `version_groups`, not directly to `documents`.
 - The canonical document is resolved through the related `version_groups` row.
-- `analyzed_at` (Timestamp) differs from `created_at`/`updated_at` (Timestamp). It
+- `analyzed_at` (unix timestamp) differs from `created_at`/`updated_at` (Timestamp). It
   records when analysis ran, not when the row was created.
 
 ### edit_history

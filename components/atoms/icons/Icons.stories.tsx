@@ -1,4 +1,5 @@
 import type { StoryObj } from '@storybook/nextjs-vite'
+import { IconSpinner } from '@atoms/icons/IconSpinner'
 import { IconX } from '@atoms/icons/IconX'
 
 const meta = {
@@ -13,7 +14,10 @@ const meta = {
       options: [12, 16, 20, 24, 32],
       description: 'Icon size in pixels',
     },
-    className: { control: false },
+    className: { 
+      control: 'text',
+      description: 'Additional CSS classes for custom styling',
+    },
   },
   parameters: {
     backgrounds: { default: 'sand' },
@@ -22,6 +26,15 @@ const meta = {
 
 export default meta
 type Story = StoryObj<typeof meta>
+
+export const Spinner: Story = {
+  name: 'Spinner Icon',
+  args: {
+    size: 20,
+    message: 'Loading...',
+  },
+  render: (args) => <IconSpinner {...args} />,
+}
 
 export const X: Story = {
   name: 'X Icon',

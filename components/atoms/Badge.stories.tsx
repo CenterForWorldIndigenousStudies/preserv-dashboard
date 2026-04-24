@@ -1,14 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { Badge } from '@components/atoms/Badge'
+import { Badge, variantMap } from '@components/atoms/Badge'
 
-const meta: Meta<typeof Badge> = {
+const meta = {
   title: 'Atoms/Badge',
   component: Badge,
   tags: ['autodocs'],
   argTypes: {
     variant: {
       control: 'select',
-      options: ['clay', 'sky', 'moss', 'sand'],
+      options: Object.keys(variantMap),
       description: 'Color variant of the badge',
     },
     children: {
@@ -16,7 +16,8 @@ const meta: Meta<typeof Badge> = {
       description: 'Badge label text',
     },
     className: {
-      control: false,
+      control: 'text',
+      description: 'Additional CSS classes for custom styling',
     },
   },
   args: {
@@ -28,46 +29,19 @@ const meta: Meta<typeof Badge> = {
       default: 'sand',
     },
   },
-}
+} satisfies Meta<typeof Badge>
 
 export default meta
-type Story = StoryObj<typeof Badge>
+type Story = StoryObj<typeof meta>
 
-export const Clay: Story = {
-  args: {
-    variant: 'clay',
-    children: 'Needs Review',
-  },
+export const Default: Story = {
+  name: 'Default Badge',
+  args: {},
 }
 
-export const Sky: Story = {
+export const CustomClass: Story = {
   args: {
-    variant: 'sky',
-    children: 'In Review',
+    className: 'custom-class',
+    children: 'Custom Styled',
   },
-}
-
-export const Moss: Story = {
-  args: {
-    variant: 'moss',
-    children: 'Approved',
-  },
-}
-
-export const Sand: Story = {
-  args: {
-    variant: 'sand',
-    children: 'Archived',
-  },
-}
-
-export const AllVariants: Story = {
-  render: () => (
-    <div className="flex flex-wrap gap-3">
-      <Badge variant="clay">Needs Review</Badge>
-      <Badge variant="sky">In Review</Badge>
-      <Badge variant="moss">Approved</Badge>
-      <Badge variant="sand">Archived</Badge>
-    </div>
-  ),
 }

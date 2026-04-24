@@ -1,65 +1,41 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { FilterPill } from '@components/atoms/FilterPill'
 
-const meta: Meta<typeof FilterPill> = {
+const meta = {
   title: 'Atoms/FilterPill',
   component: FilterPill,
   tags: ['autodocs'],
+  args: {
+    isActive: false,
+    href: '/documents',
+    label: 'Filter',
+  },
   argTypes: {
     label: { control: 'text' },
     isActive: { control: 'boolean' },
     href: { control: 'text' },
-    className: { control: false },
+    className: { control: 'text' },
   },
   parameters: {
     backgrounds: { default: 'sand' },
   },
-}
+} satisfies Meta<typeof FilterPill>
 
 export default meta
-type Story = StoryObj<typeof FilterPill>
+type Story = StoryObj<typeof meta>
 
-export const All: Story = {
-  args: {
-    label: 'All',
-    isActive: false,
-    href: '/documents',
-  },
-}
-
-export const Active: Story = {
-  args: {
-    label: 'All',
-    isActive: true,
-    href: '/documents',
-  },
-}
-
-export const Completed: Story = {
-  args: {
-    label: 'Completed',
-    isActive: true,
-    href: '/documents?state=completed',
-  },
-}
-
-export const Failed: Story = {
-  args: {
-    label: 'Failed',
-    isActive: false,
-    href: '/documents?state=failed',
-  },
-}
-
-export const UnderReview: Story = {
-  args: {
-    label: 'Under Review',
-    isActive: false,
-    href: '/documents?state=under_review',
-  },
+export const Default: Story = {
+  name: 'Default FilterPill',
+  args: {},
 }
 
 export const AllFilters: Story = {
+  argTypes: {
+    label: { control: false },
+    isActive: { control: false },
+    href: { control: false },
+    className: { control: false },
+  },
   render: () => (
     <div className="flex flex-wrap gap-3">
       <FilterPill label="All" isActive={true} href="/documents" />

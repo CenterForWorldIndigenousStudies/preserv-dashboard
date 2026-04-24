@@ -5,6 +5,14 @@ const meta = {
   title: 'Atoms/Button',
   component: Button,
   tags: ['autodocs'],
+  args: {
+    variant: 'primary',
+    size: 'md',
+    fullWidth: false,
+    loading: false,
+    disabled: false,
+    children: 'Button Text',
+  },
   argTypes: {
     variant: {
       control: 'select',
@@ -32,6 +40,10 @@ const meta = {
       control: 'text',
       description: 'Button label text',
     },
+    className: { 
+      control: 'text',
+      description: 'Additional CSS classes for custom styling',
+    },
   },
   parameters: {
     backgrounds: { default: 'sand' },
@@ -41,84 +53,70 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Primary: Story = {
+export const Default: Story = {
+  name: 'Default Button',
   args: {
-    variant: 'primary',
-    children: 'Approve Document',
+    children: '',
   },
-}
-
-export const Secondary: Story = {
-  args: {
-    variant: 'secondary',
-    children: 'View Schema',
-  },
-}
-
-export const Ghost: Story = {
-  args: {
-    variant: 'ghost',
-    children: 'Cancel',
-  },
-}
-
-export const AllVariants: Story = {
-  render: () => (
-    <div className="flex flex-wrap items-center gap-4">
-      <Button variant="primary">Approve</Button>
-      <Button variant="secondary">View Details</Button>
-      <Button variant="ghost">Cancel</Button>
+  render: (args) => {
+    const variant = args.variant ? variantMap[args.variant] : 'Default'
+    const buttonText = args.children ? args.children : variant
+    return <div style={{ width: '80vw', textAlign: 'center' }}>
+      <Button {...args}>{buttonText}</Button>
     </div>
-  ),
+  }
 }
 
 export const Sizes: Story = {
-  render: () => (
-    <div className="flex flex-wrap items-center gap-4">
-      <Button variant="primary" size="sm">
-        Small
-      </Button>
-      <Button variant="primary" size="md">
-        Medium
-      </Button>
-      <Button variant="primary" size="lg">
-        Large
-      </Button>
+  name: 'Button Sizes',
+  args: {
+    children: '',
+  },
+  render: (args) => {
+    const buttonSize = args.size ? sizeMap[args.size] : 'Default'
+    const buttonText = args.children ? args.children : `Button Size: ${buttonSize}`
+    return <div style={{ width: '80vw', textAlign: 'center' }}>
+      <Button {...args}>{buttonText}</Button>
     </div>
-  ),
+  }
 }
 
 export const Loading: Story = {
+  name: 'Loading Button',
   args: {
-    variant: 'primary',
-    children: 'Save Changes',
+    children: `Loading...`,
     loading: true,
   },
+  render: (args) => {
+    return <div style={{ width: '80vw', textAlign: 'center' }}>
+      <Button {...args}/>
+    </div>
+  }
 }
 
 export const FullWidth: Story = {
+  name: 'Full Width Button',
   args: {
-    variant: 'primary',
-    children: 'Submit',
     fullWidth: true,
+  },
+  render: (args) => {
+    const buttonText = args.fullWidth ? 'Full Width Button' : 'Normal Button'
+    return <div style={{ width: '80vw', textAlign: 'center' }}>
+      <Button {...args}>{buttonText}</Button>
+    </div>
   },
 }
 
 export const Disabled: Story = {
+  name: 'Disabled Button',
   args: {
-    variant: 'secondary',
-    children: 'Unavailable',
+    children: '',
     disabled: true,
   },
-}
-
-export const Interactive: Story = {
-  args: {
-    variant: 'primary',
-    size: 'md',
-    fullWidth: false,
-    loading: false,
-    disabled: false,
-    children: 'Click Me',
-  },
+  render: (args) => {
+    const buttonText = args.children ? args.children : args.disabled ? 'Disabled' : 'Button Text'
+    return <div style={{ width: '80vw', textAlign: 'center' }}>
+      <Button {...args}>{buttonText}</Button>
+    </div>
+  }
 }
