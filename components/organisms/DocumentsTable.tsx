@@ -10,10 +10,11 @@ import {
 } from 'material-react-table'
 import Link from 'next/link'
 import { DateAtom } from '@atoms/Date'
+import { FileSize } from '@atoms/FileSize'
 import { getDocumentsAction } from '@actions/documents'
 import type { Document } from '@lib/types'
 import type { DocumentsQueryParams } from '@lib/queries'
-import { formatBytes } from '@lib/format'
+
 
 interface DocumentsTableProps {
   initialData?: { data: Document[]; total: number }
@@ -71,7 +72,9 @@ export function DocumentsTable({ initialData }: DocumentsTableProps) {
         accessorKey: 'filesize',
         header: 'Size',
         size: 110,
-        Cell: ({ renderedCellValue }) => formatBytes(renderedCellValue as number | null),
+        Cell: ({ renderedCellValue }) => (
+          <FileSize value={renderedCellValue as bigint | number | null | undefined} />
+        ),
       },
       {
         accessorKey: 'hash_binary',

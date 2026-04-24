@@ -35,21 +35,18 @@ function parseValue(value: string | number | Date | null | undefined): DateTime 
 export function DateAtom({ value, className = '' }: DateProps): ReactNode {
   const [showRaw, setShowRaw] = useState(false)
 
-  if (value === null || value === undefined) {
-    return <span className={className}>—</span>
-  }
-
   const dt = parseValue(value)
   if (!dt || !dt.isValid) {
-    return <span className={className}>—</span>
+    return <span className={className}>{`-`}</span>
   }
 
   const display = formatDisplay(dt)
   const raw = String(value)
+  const computedClass = `cursor-pointer border-b border-dotted border-ink/30 hover:border-ink/70 transition-colors ${className}`.trim()
 
   return (
     <span
-      className={`cursor-pointer border-b border-dotted border-ink/30 hover:border-ink/70 transition-colors ${className}`}
+      className={computedClass}
       title={showRaw ? display : `Raw: ${raw}`}
       onClick={() => setShowRaw((prev) => !prev)}
     >
