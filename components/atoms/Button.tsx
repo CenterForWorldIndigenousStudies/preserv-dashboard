@@ -1,5 +1,6 @@
-import type { ReactElement, ButtonHTMLAttributes } from 'react'
+import type { ReactElement, ReactNode, ButtonHTMLAttributes } from 'react'
 import MuiButton from '@mui/material/Button'
+import type { LinkProps } from 'next/link'
 import {IconSpinner} from '@atoms/icons/IconSpinner'
 
 export const variantMap = {
@@ -30,6 +31,9 @@ interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'col
   loading?: boolean
   startIcon?: ReactElement
   className?: string
+  component?: React.ElementType
+  href?: LinkProps['href']
+  children?: ReactNode
 }
 
 export function Button({
@@ -41,6 +45,8 @@ export function Button({
   className = '',
   startIcon,
   disabled,
+  component,
+  href,
   ...props
 }: ButtonProps): ReactElement {
   const muiSize = sizeMap[size]
@@ -51,9 +57,20 @@ export function Button({
     : ''
   const componentClass = `${className} ${loadingClass}`.trim()
 
+  const resolvedHref: string | undefined = (():
+    string | undefined => {
+      if (href === null || href === undefined) return undefined
+      if (typeof href === 'string') return href
+      // next/link href may be an object; String() converts to a path string
+      // eslint-disable-next-line @typescript-eslint/no-base-to-string
+      return String(href)
+    })()
+
   return (
     <MuiButton
       {...props}
+      {...(component ? { component } : {})}
+      {...(resolvedHref ? { href: resolvedHref } : {})}
       variant={variantMap[variant]}
       size={muiSize}
       fullWidth={fullWidth}

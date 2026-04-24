@@ -7,7 +7,6 @@ export interface Document {
   hash_binary: string | null
   hash_content: string | null
   id_legacy: string | null
-  source_id: string | null
   name: string | null
   created_at: Date | string | null
   updated_at: Date | string | null
@@ -21,13 +20,13 @@ export interface DocumentQuality {
   metadata_sufficiency: string | null
   validation_status: string | null
   validation_type: string | null
-  validation_timestamp: string | null
+  validation_timestamp: string | number | null
   validator_name: string | null
   validator_email: string | null
   access_level: string | null
   current_status: string | null
-  created_at: string | null
-  updated_at: string | null
+  created_at: Date | string | null
+  updated_at: Date | string | null
 }
 
 export interface DocumentVersion {
@@ -36,9 +35,9 @@ export interface DocumentVersion {
   version_group_id: string
   notes: string | null
   changes_summary: string | null
-  created_at: string | null
-  updated_at: string | null
-  analyzed_at: string | null
+  created_at: Date | string | null
+  updated_at: Date | string | null
+  analyzed_at: string | number | null
 }
 
 export interface DocumentMetadataField {
@@ -51,7 +50,7 @@ export interface DocumentToBatch {
   id: string
   document_id: string
   batch_id: string
-  added_at: string | null
+  added_at: Date | string | null
   cost: string | null
   processing_time_seconds: number | null
   ocr_quality_low: boolean | null
@@ -158,7 +157,7 @@ export interface ReadyForLibraryItem {
   id: string
   name: string | null
   validation_status: string | null
-  validation_timestamp: string | null
+  validation_timestamp: string | number | null
   access_level: string | null
   metadata_complete: boolean
 }

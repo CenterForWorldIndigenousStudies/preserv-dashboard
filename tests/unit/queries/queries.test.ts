@@ -80,7 +80,7 @@ describe('buildSearchWhere (via getAllDocuments)', () => {
     expect(call.where).toHaveProperty('OR')
     const orClause = call.where?.OR as Array<Record<string, unknown>>
     const fieldNames = orClause.map((f) => Object.keys(f)[0])
-    expect(fieldNames).toEqual(['name', 'source_id', 'hash_binary', 'hash_content', 'id_legacy'])
+    expect(fieldNames).toEqual(['name', 'hash_binary', 'hash_content', 'id_legacy'])
   })
 
   it('trims search term before applying filter', async () => {

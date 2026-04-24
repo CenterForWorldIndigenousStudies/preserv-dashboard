@@ -36,7 +36,6 @@ describe('documents queries (integration)', () => {
     overrides: {
       id_legacy?: string
       name?: string
-      source_id?: string
       hash_binary?: string
       hash_content?: string
       filesize?: bigint
@@ -55,7 +54,6 @@ describe('documents queries (integration)', () => {
             id,
             id_legacy: overrides.id_legacy ?? idLegacy,
             name: overrides.name ?? `Test ${id}`,
-            source_id: overrides.source_id ?? 'test-source',
             hash_binary: overrides.hash_binary ?? `hb-${id}`,
             hash_content: overrides.hash_content ?? `hc-${id}`,
             filesize: overrides.filesize ?? BigInt(1024),
@@ -96,7 +94,6 @@ describe('documents queries (integration)', () => {
       expect(found).toHaveProperty('hash_binary')
       expect(found).toHaveProperty('hash_content')
       expect(found).toHaveProperty('id_legacy')
-      expect(found).toHaveProperty('source_id')
       expect(found).toHaveProperty('created_at')
       expect(found).toHaveProperty('updated_at')
     })

@@ -1,9 +1,9 @@
 import type { ReactElement } from 'react'
 import Link from 'next/link'
 
+import { DateAtom } from '@atoms/Date'
 import { NoDataState } from '@organisms/NoDataState'
 import { PageHeader } from '@organisms/PageHeader'
-import { formatDateTime } from '@lib/format'
 import { getFailures } from '@lib/queries'
 
 export const dynamic = 'force-dynamic'
@@ -30,7 +30,6 @@ export default async function FailuresPage(): Promise<ReactElement> {
                   <tr>
                     <th className="px-4 py-3">Document ID</th>
                     <th className="px-4 py-3">Name</th>
-                    <th className="px-4 py-3">Source ID</th>
                     <th className="px-4 py-3">Failure Reason</th>
                     <th className="px-4 py-3">Created</th>
                   </tr>
@@ -44,11 +43,10 @@ export default async function FailuresPage(): Promise<ReactElement> {
                         </Link>
                       </td>
                       <td className="px-4 py-3 text-ink">{failure.name || '—'}</td>
-                      <td className="px-4 py-3 text-ink">{failure.source_id || '—'}</td>
                       <td className="px-4 py-3 whitespace-pre-wrap text-ink/80">
                         {failure.failure_reason || 'Unknown'}
                       </td>
-                      <td className="px-4 py-3 text-ink/70">{formatDateTime(failure.created_at)}</td>
+                      <td className="px-4 py-3 text-ink/70"><DateAtom value={failure.created_at} /></td>
                     </tr>
                   ))}
                 </tbody>

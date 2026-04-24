@@ -11,7 +11,7 @@ import {
 import Link from 'next/link'
 import { getReadyForLibraryAction } from '@actions/ready-for-library'
 import type { ReadyForLibraryItem } from '@lib/types'
-import { formatDateTime } from '@lib/format'
+import { DateAtom } from '@atoms/Date'
 
 interface ReadyForLibraryTableProps {
   initialData?: { items: ReadyForLibraryItem[]; total: number }
@@ -63,7 +63,7 @@ export function ReadyForLibraryTable({ initialData }: ReadyForLibraryTableProps)
         accessorKey: 'validation_timestamp',
         header: 'Validation Timestamp',
         size: 180,
-        Cell: ({ renderedCellValue }) => formatDateTime(renderedCellValue as string | Date | null) ?? '—',
+        Cell: ({ renderedCellValue }) => <DateAtom value={renderedCellValue as ReadyForLibraryItem['validation_timestamp']} />,
       },
       {
         accessorKey: 'access_level',

@@ -1,11 +1,11 @@
 import type { ReactElement } from 'react'
 import Link from 'next/link'
 
+import { DateAtom } from '@atoms/Date'
 import { FilterPill } from '@atoms/FilterPill'
 import { NoDataState } from '@organisms/NoDataState'
 import { PageHeader } from '@organisms/PageHeader'
 import { Pagination } from '@molecules/Pagination'
-import { formatDateTime } from '@lib/format'
 import { getDistinctReviewFields, getPageSize, getReviewQueue } from '@lib/queries'
 
 export const dynamic = 'force-dynamic'
@@ -154,7 +154,7 @@ export default async function ReviewsPage({ searchParams }: ReviewsPageProps): P
                               {reviewItem.status}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-ink/70">{formatDateTime(reviewItem.created_at)}</td>
+                          <td className="px-4 py-3 text-ink/70"><DateAtom value={reviewItem.created_at} /></td>
                         </tr>
                       ))
                     )}
