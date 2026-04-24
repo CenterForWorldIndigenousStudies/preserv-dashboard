@@ -1,10 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState, type MouseEvent, type ReactElement } from 'react'
-
-import { Button } from '@components/atoms/Button'
-import { IconX } from '@components/atoms/icons/IconX'
-import { LoadingSpinner } from '@atoms/LoadingSpinner'
+import { Button } from '@atoms/Button'
+import { IconX } from '@atoms/icons/IconX'
 import { TagPill } from '@molecules/TagPill'
 
 interface AssignCollectionButtonProps {
@@ -181,7 +179,7 @@ export function AssignCollectionButton({ documentId, currentTags }: AssignCollec
           )}
 
           {isFetchingTags ? (
-            <LoadingSpinner message="Loading available collections..." className="mt-6" />
+            <Button className="mt-6" loading={true} variant={`ghost`}>{`Loading available collections...`}</Button>
           ) : (
             <>
               {/* Existing tag selections */}
