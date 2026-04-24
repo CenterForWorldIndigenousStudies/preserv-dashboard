@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { FieldRow } from '@components/molecules/FieldRow'
+import { FieldRow } from '@molecules/FieldRow'
 
 const meta: Meta<typeof FieldRow> = {
   title: 'Molecules/FieldRow',

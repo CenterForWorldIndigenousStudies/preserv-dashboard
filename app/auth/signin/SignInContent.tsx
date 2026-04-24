@@ -1,6 +1,6 @@
 'use client'
 
-import { Button } from '@components/atoms/Button'
+import { Button } from '@atoms/Button'
 import { signIn } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
 

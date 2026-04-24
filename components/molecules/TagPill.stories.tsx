@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { TagPill } from '@components/molecules/TagPill'
+import { TagPill } from '@molecules/TagPill'
 
 const meta: Meta<typeof TagPill> = {
   title: 'Molecules/TagPill',

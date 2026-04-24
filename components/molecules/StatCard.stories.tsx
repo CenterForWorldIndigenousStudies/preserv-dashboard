@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { StatCard } from '@components/molecules/StatCard'
+import { StatCard } from '@molecules/StatCard'
 
 const meta: Meta<typeof StatCard> = {
   title: 'Molecules/StatCard',

@@ -2,20 +2,19 @@
 
 import { useSession, signOut } from 'next-auth/react'
 import Link from 'next/link'
-
-import { Button } from '@components/atoms/Button'
+import { Button } from '@atoms/Button'
 
 export default function AuthStatus() {
   const { data: session, status } = useSession()
 
   if (status === 'loading') {
-    return <span className="text-xs text-ink/40 animate-pulse">Loading...</span>
+    return <Button loading={true} variant={`ghost`}>{`Loading...`}</Button>
   }
 
   if (status === 'unauthenticated') {
     return (
       <Link href="/auth/signin" className="rounded-full bg-moss px-4 py-2 text-sm text-white hover:bg-moss/90">
-        Sign In
+        {`Sign In`}
       </Link>
     )
   }
@@ -27,9 +26,9 @@ export default function AuthStatus() {
         onClick={() => {
           void signOut({ redirectTo: '/auth/signin' })
         }}
-        variant="ghost"
+        variant={`ghost`}
       >
-        Sign Out
+        {`Sign Out`}
       </Button>
     </div>
   )

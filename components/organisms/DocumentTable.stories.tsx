@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { DocumentTable } from '@components/organisms/DocumentTable'
+import { DocumentTable } from '@organisms/DocumentTable'
 import type { Document } from '@lib/types'
 
 const meta: Meta<typeof DocumentTable> = {

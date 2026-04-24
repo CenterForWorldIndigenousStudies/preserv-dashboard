@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import SidebarToggle from '@components/molecules/SidebarToggle'
+import SidebarToggle from '@molecules/SidebarToggle'
 
 const meta: Meta<typeof SidebarToggle> = {
   title: 'Molecules/SidebarToggle',

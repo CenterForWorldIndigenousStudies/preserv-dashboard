@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { IconX } from '@components/atoms/icons/IconX'
+import { IconX } from '@atoms/icons/IconX'
 
 interface TagPillProps {
   tag: string

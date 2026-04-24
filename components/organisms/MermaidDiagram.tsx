@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useState, useCallback, type ReactElement } from 'react'
 import mermaid from 'mermaid'
-import { Button } from '@components/atoms/Button'
+import { Button } from '@atoms/Button'
 
 let mermaidInitialized = false
 

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { MermaidDiagram } from '@components/organisms/MermaidDiagram'
+import { MermaidDiagram } from '@organisms/MermaidDiagram'
 
 const meta: Meta<typeof MermaidDiagram> = {
   title: 'Organisms/MermaidDiagram',
