@@ -19,7 +19,6 @@ import { db } from '@lib/db'
 const DOCUMENTS_ORDERABLE_FIELDS = [
   'id',
   'filesize',
-  'source_id',
   'hash_binary',
   'hash_content',
   'id_legacy',
@@ -55,7 +54,6 @@ export async function getAllDocuments(params: DocumentsQueryParams = {}): Promis
     const searchTerm = params.search.trim()
     where.OR = [
       { name: { contains: searchTerm } },
-      { source_id: { contains: searchTerm } },
       { hash_binary: { contains: searchTerm } },
       { hash_content: { contains: searchTerm } },
       { id_legacy: { contains: searchTerm } },
@@ -79,7 +77,6 @@ export async function getAllDocuments(params: DocumentsQueryParams = {}): Promis
       hash_binary: row.hash_binary ?? null,
       hash_content: row.hash_content ?? null,
       id_legacy: row.id_legacy ?? null,
-      source_id: row.source_id ?? null,
       name: row.name ?? null,
       created_at: row.created_at ?? null,
       updated_at: row.updated_at ?? null,
@@ -152,7 +149,6 @@ export async function getDocuments(params: DocumentQueryParams = {}): Promise<Pa
       hash_binary: row.hash_binary ?? null,
       hash_content: row.hash_content ?? null,
       id_legacy: row.id_legacy ?? null,
-      source_id: row.source_id ?? null,
       name: row.name ?? null,
       created_at: row.created_at ?? null,
       updated_at: row.updated_at ?? null,
@@ -210,13 +206,13 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
       metadata_sufficiency: row.metadata_sufficiency ?? null,
       validation_status: row.validation_status ?? null,
       validation_type: row.validation_type ?? null,
-      validation_timestamp: dateToString(row.validation_timestamp),
+      validation_timestamp: row.validation_timestamp !== null && row.validation_timestamp !== undefined ? Number(row.validation_timestamp) : null,
       validator_name: row.validator_name ?? null,
       validator_email: row.validator_email ?? null,
       access_level: row.access_level ?? null,
       current_status: row.current_status ?? null,
-      created_at: dateToString(row.created_at),
-      updated_at: dateToString(row.updated_at),
+      created_at: row.created_at ?? null,
+      updated_at: row.updated_at ?? null,
     }
   }
 
@@ -227,7 +223,6 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
       hash_binary: document.hash_binary ?? null,
       hash_content: document.hash_content ?? null,
       id_legacy: document.id_legacy ?? null,
-      source_id: document.source_id ?? null,
       name: document.name ?? null,
       created_at: document.created_at ?? null,
       updated_at: document.updated_at ?? null,
@@ -239,9 +234,9 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
       version_group_id: String(v.version_group_id),
       notes: v.notes ?? null,
       changes_summary: v.changes_summary ?? null,
-      created_at: dateToString(v.created_at),
-      updated_at: dateToString(v.updated_at),
-      analyzed_at: dateToString(v.analyzed_at),
+      created_at: v.created_at ?? null,
+      updated_at: v.updated_at ?? null,
+      analyzed_at: v.analyzed_at !== null && v.analyzed_at !== undefined ? Number(v.analyzed_at) : null,
     })),
     metadata: metadata.map((m) => ({
       name: m.metadata.name,
@@ -252,7 +247,7 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
       id: String(b.id),
       document_id: String(b.document_id),
       batch_id: String(b.batch_id),
-      added_at: dateToString(b.added_at),
+      added_at: b.added_at ?? null,
       cost: b.cost !== null ? String(b.cost) : null,
       processing_time_seconds: b.processing_time_seconds ?? null,
       ocr_quality_low: b.ocr_quality_low ?? null,
@@ -281,14 +276,8 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
   }
 }
 
-function dateToString(value: Date | string | null | undefined): string | null {
-  if (!value) return null
-  if (value instanceof Date) return value.toISOString()
-  return String(value)
-}
-
 // ---------------------------------------------------------------------------
-// getFailures
+// getBatchSummary
 // Returns an empty array.  The documents table has no `state` column, so
 // there is no reliable way to determine which documents have failed.
 // ---------------------------------------------------------------------------
@@ -494,7 +483,7 @@ export async function getReadyForLibraryDocuments(): Promise<{
       id: qd.document_id,
       name: null, // name loaded separately below if needed
       validation_status: qd.validation_status ?? null,
-      validation_timestamp: dateToString(qd.validation_timestamp),
+      validation_timestamp: qd.validation_timestamp !== null && qd.validation_timestamp !== undefined ? Number(qd.validation_timestamp) : null,
       access_level: qd.access_level ?? null,
       metadata_complete,
     })

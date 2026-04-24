@@ -9,10 +9,11 @@ import {
   type MRT_SortingState,
 } from 'material-react-table'
 import Link from 'next/link'
+import { DateAtom } from '@atoms/Date'
 import { getDocumentsAction } from '@actions/documents'
 import type { Document } from '@lib/types'
 import type { DocumentsQueryParams } from '@lib/queries'
-import { formatBytes, formatDateTime } from '@lib/format'
+import { formatBytes } from '@lib/format'
 
 interface DocumentsTableProps {
   initialData?: { data: Document[]; total: number }
@@ -104,13 +105,13 @@ export function DocumentsTable({ initialData }: DocumentsTableProps) {
         accessorKey: 'created_at',
         header: 'Created',
         size: 160,
-        Cell: ({ renderedCellValue }) => formatDateTime(renderedCellValue as string | Date | null) ?? '—',
+        Cell: ({ renderedCellValue }) => <DateAtom value={renderedCellValue as Document['created_at']} />,
       },
       {
         accessorKey: 'updated_at',
         header: 'Updated',
         size: 160,
-        Cell: ({ renderedCellValue }) => formatDateTime(renderedCellValue as string | Date | null) ?? '—',
+        Cell: ({ renderedCellValue }) => <DateAtom value={renderedCellValue as Document['updated_at']} />,
       },
     ],
     [],

@@ -1,8 +1,9 @@
 import type { ReactElement } from 'react'
+import { DateAtom } from '@atoms/Date'
 import { StateBadge } from '@atoms/StateBadge'
 import { NoDataState } from '@organisms/NoDataState'
 import { PageHeader } from '@organisms/PageHeader'
-import { formatBytes, formatDateTime, parseMetadataValue } from '@lib/format'
+import { formatBytes, parseMetadataValue } from '@lib/format'
 import { getDocumentDetail } from '@lib/queries'
 
 export const dynamic = 'force-dynamic'
@@ -17,7 +18,6 @@ const documentFieldLabels: Array<{ key: string; label: string }> = [
   { key: 'id', label: 'Document ID' },
   { key: 'name', label: 'Name' },
   { key: 'id_legacy', label: 'Legacy ID' },
-  { key: 'source_id', label: 'Source ID' },
   { key: 'filesize', label: 'File Size' },
   { key: 'hash_binary', label: 'Hash (Binary)' },
   { key: 'hash_content', label: 'Hash (Content)' },
@@ -54,12 +54,9 @@ export default async function DocumentDetailPage({ params }: DocumentDetailPageP
       id: document.id,
       name: document.name ?? '—',
       id_legacy: document.id_legacy ?? '—',
-      source_id: document.source_id ?? '—',
       filesize: formatBytes(document.filesize),
       hash_binary: document.hash_binary ?? '—',
       hash_content: document.hash_content ?? '—',
-      created_at: formatDateTime(document.created_at),
-      updated_at: formatDateTime(document.updated_at),
     } as Record<string, string>
 
     return (
@@ -174,7 +171,7 @@ export default async function DocumentDetailPage({ params }: DocumentDetailPageP
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <p className="text-sm font-semibold text-ink">{audit.field_name}</p>
                       <p className="text-xs uppercase tracking-[0.15em] text-ink/55">
-                        {audit.source_name} • {formatDateTime(audit.changed_at)}
+                        {audit.source_name} • <DateAtom value={audit.changed_at} />
                       </p>
                     </div>
                     <div className="mt-4 grid gap-4 md:grid-cols-2">
@@ -206,7 +203,7 @@ export default async function DocumentDetailPage({ params }: DocumentDetailPageP
                       <StateBadge state={review.status} />
                     </div>
                     <p className="mt-3 text-xs uppercase tracking-[0.15em] text-ink/55">
-                      Winning Source: {review.winning_source || '—'} • {formatDateTime(review.created_at)}
+                      Winning Source: {review.winning_source || '—'} • <DateAtom value={review.created_at} />
                     </p>
                     <div className="mt-4 grid gap-3 md:grid-cols-2">
                       <div className="rounded-xl bg-white/70 p-3">

@@ -1,7 +1,8 @@
 import type { ReactElement } from 'react'
 import Link from 'next/link'
 
-import { formatBytes, formatDateTime } from '@lib/format'
+import { DateAtom } from '@atoms/Date'
+import { formatBytes } from '@lib/format'
 import type { Document } from '@lib/types'
 
 interface DocumentTableProps {
@@ -39,7 +40,7 @@ export function DocumentTable({ documents }: DocumentTableProps): ReactElement {
                 </td>
                 <td className="px-4 py-3 text-ink">{document.name || '—'}</td>
                 <td className="px-4 py-3 text-ink/70">{formatBytes(document.filesize)}</td>
-                <td className="px-4 py-3 text-ink/70">{formatDateTime(document.created_at)}</td>
+                <td className="px-4 py-3 text-ink/70"><DateAtom value={document.created_at} /></td>
               </tr>
             ))}
           </tbody>
