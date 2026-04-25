@@ -1,9 +1,10 @@
 import type { ReactElement } from 'react'
 import { DateAtom } from '@atoms/Date'
 import { FileSize } from '@atoms/FileSize'
-import { StateBadge } from '@atoms/StateBadge'
 import { NoDataState } from '@organisms/NoDataState'
 import { PageHeader } from '@organisms/PageHeader'
+import { AuditHistoryTable } from '@organisms/AuditHistoryTable'
+import { ReviewHistoryTable } from '@organisms/ReviewHistoryTable'
 import { parseMetadataValue } from '@lib/format'
 import { getDocumentDetail } from '@lib/queries'
 
@@ -58,6 +59,8 @@ export default async function DocumentDetailPage({ params }: DocumentDetailPageP
       filesize: document.filesize,
       hash_binary: document.hash_binary ?? '—',
       hash_content: document.hash_content ?? '—',
+      created_at: document.created_at,
+      updated_at: document.updated_at,
     } as Record<string, string | bigint | number | null | undefined>
 
     return (
@@ -78,6 +81,8 @@ export default async function DocumentDetailPage({ params }: DocumentDetailPageP
                   <dd className="mt-2 break-words text-sm text-ink">
                     {field.key === 'filesize' ? (
                       <FileSize value={documentFieldValues.filesize as bigint | number | null | undefined} />
+                    ) : field.key === 'created_at' || field.key === 'updated_at' ? (
+                      <DateAtom value={documentFieldValues[field.key] as string | Date | null | undefined} />
                     ) : (
                       documentFieldValues[field.key] || '—'
                     )}
@@ -166,76 +171,15 @@ export default async function DocumentDetailPage({ params }: DocumentDetailPageP
         <section className="grid gap-8 xl:grid-cols-2">
           <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
             <h2 className="text-xl font-semibold text-ink">Audit History</h2>
-            <div className="mt-6 space-y-4">
-              {audits.length === 0 ? (
-                <p className="text-sm text-ink/65">No audit entries found.</p>
-              ) : (
-                audits.map((audit, index) => (
-                  <div
-                    key={`${audit.document_id}-${audit.field_name}-${index}`}
-                    className="rounded-xl border border-moss/10 bg-sand/45 p-4"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <p className="text-sm font-semibold text-ink">{audit.field_name}</p>
-                      <p className="text-xs uppercase tracking-[0.15em] text-ink/55">
-                        {audit.source_name} • <DateAtom value={audit.changed_at} />
-                      </p>
-                    </div>
-                    <div className="mt-4 grid gap-4 md:grid-cols-2">
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.15em] text-ink/55">Before</p>
-                        <p className="mt-2 whitespace-pre-wrap text-sm text-ink">{audit.before_value || '—'}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.15em] text-ink/55">After</p>
-                        <p className="mt-2 whitespace-pre-wrap text-sm text-ink">{audit.after_value || '—'}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
+            <div className="mt-6">
+              <AuditHistoryTable audits={audits} />
             </div>
           </div>
 
           <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
             <h2 className="text-xl font-semibold text-ink">Review History</h2>
-            <div className="mt-6 space-y-4">
-              {reviews.length === 0 ? (
-                <p className="text-sm text-ink/65">No review items found for this document.</p>
-              ) : (
-                reviews.map((review) => (
-                  <div key={review.id} className="rounded-xl border border-moss/10 bg-sand/45 p-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <p className="text-sm font-semibold text-ink">{review.field_name}</p>
-                      <StateBadge state={review.status} />
-                    </div>
-                    <p className="mt-3 text-xs uppercase tracking-[0.15em] text-ink/55">
-                      Winning Source: {review.winning_source || '—'} • <DateAtom value={review.created_at} />
-                    </p>
-                    <div className="mt-4 grid gap-3 md:grid-cols-2">
-                      <div className="rounded-xl bg-white/70 p-3">
-                        <p className="text-xs uppercase tracking-[0.15em] text-ink/55">Winning Value</p>
-                        <p className="mt-2 whitespace-pre-wrap text-sm text-ink">{review.winning_value || '—'}</p>
-                      </div>
-                      <div className="rounded-xl bg-white/70 p-3">
-                        <p className="text-xs uppercase tracking-[0.15em] text-ink/55">Conflicts</p>
-                        <div className="mt-2 space-y-2 text-sm text-ink">
-                          {review.conflicting_values.length === 0 ? (
-                            <p>—</p>
-                          ) : (
-                            review.conflicting_values.map((conflictValue, index) => (
-                              <div key={`${review.id}-${index}`}>
-                                <p className="font-medium">{conflictValue.source}</p>
-                                <p className="whitespace-pre-wrap">{conflictValue.value || '—'}</p>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
+            <div className="mt-6">
+              <ReviewHistoryTable reviews={reviews} />
             </div>
           </div>
         </section>

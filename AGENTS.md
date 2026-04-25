@@ -8,35 +8,56 @@ This is a Next.js dashboard application for the CWIS Digital Preservation system
 
 - **Framework:** Next.js 16 (App Router - see `package.json` for version)
 - **Language:** TypeScript (see `package.json` for version)
-- **Styling:** Tailwind CSS (see `package.json` for version)
+- **Styling:** MUI theme + semantic CSS classes (see Styling section below)
 - **Auth:** Auth.js (`next-auth` v5) with Google OAuth (see `.env.local.example`)
 - **Runtime:** Node.js (see `.tool-versions` for version)
 - **Icons:** Lucide React
 - **Markdown:** react-markdown with remark-gfm
 - **Diagrams:** Mermaid (rendered via mermaid library)
 
-## Design System
+## Styling Architecture
 
-### Color Palette (Tailwind custom colors)
+### Overview
 
-| Token  | Hex       | Use                                |
-| ------ | --------- | ---------------------------------- |
-| ink    | `#231f20` | Primary text, near-black warm      |
-| moss   | `#355834` | Links, accents, success states     |
-| sand   | `#f4f1f0` | Light warm backgrounds             |
-| clay   | `#e96954` | Buttons, highlights, active states |
-| sky    | `#94d9f8` | Subtle accents, hover states       |
-| accent | `#ff7637` | Hover/link emphasis                |
+The dashboard uses a two-layer styling system:
 
-### Typography
+1. **MUI Theme** (`theme.ts`) - All MUI component base styles (Button, Paper, Card, Table, etc.)
+2. **Semantic CSS Classes** - Page structure, layout, and context-specific styling
 
-- **Body:** Work Sans (400-700)
-- **Headings:** Roboto (300-900)
-- **Configured via:** Google Fonts CDN link in `app/layout.tsx`
+### Why
+
+- Design tokens defined once in the theme apply globally
+- Semantic class names describe element purpose, not appearance
+- All styling is cacheable CSS, not inline or scattered
+- Change a token in one place (theme or CSS), it updates everywhere
+
+### MUI Theme
+
+The MUI theme (`theme.ts`) defines all component-level styles. When modifying MUI components (Button, TextField, Paper, etc.), edit the theme - not the JSX. The theme's `components` section is the single source of truth for MUI component styling.
+
+### Semantic Classes
+
+All HTML elements that need styling receive a semantic class name. Class names follow the pattern `<scope>-<specific>`, general to specific.
+
+Examples: `btn-submit`, `h-1`, `panel-detail`, `form-login`, `tbl-data`, `fld-label`
+
+**Read the full convention at:** `documentation/styles/SEMANTIC_CLASSES.md`
+
+Key rules:
+- Never style element selectors or IDs directly
+- Never use inline styles or `sx` on component usage
+- Never use presentational class names (`big`, `dark`, `red`)
+- MUI component classes go in JSX `className`; semantic classes do structural/layout styling
+
+### File Organization
+
+- MUI theme: `theme.ts` (or `lib/theme.ts`)
+- Semantic CSS: `styles/` directory with CSS/SCSS files per page or component area
+- CSS custom properties for design tokens (colors, spacing, radii) - defined once, referenced everywhere
 
 ### Card Style
 
-Cards use `rounded-2xl border border-moss/15 bg-white shadow-panel`. Do not change this pattern.
+Cards use the MUI Paper component styled via the theme. Do not add Tailwind border/shadow utilities to cards. If a card variant is needed, add it to the theme.
 
 ## Component Architecture (Atomic Design)
 
@@ -71,6 +92,7 @@ See [components/organisms](./components/organisms/)
 
 ### Component Rules
 
+- **Styling:** Components receive their base styles from the MUI theme. Do not use Tailwind classes or `sx` props for styling in JSX. Use semantic class names for structural/layout concerns.
 - **Atoms:** No side effects, no API calls, no hooks beyond useId/useCallback
 - **Molecules:** May use hooks, local state, and data-fetching for simple cases
 - **Organisms:** Own their data fetching and complex state; pages import organisms

@@ -1,129 +1,135 @@
-# CWIS Preservation Pipeline Dashboard
+# CWIS Preservation Dashboard
 
-MVP dashboard for the CWIS Preservation Pipeline, built with Next.js + TailwindCSS.
+Next.js dashboard for browsing and reviewing preservation data written by `preserv-data-combiner`.
+
+The app uses:
+
+- Next.js App Router
+- Prisma with the MariaDB adapter
+- Auth.js with Google OAuth
+- Storybook for component development
 
 ## Pages
 
-- `/` - Pipeline overview with document counts per state (ingested, normalized, under_review, completed, failed)
-- `/reviews` - Human review queue for conflict resolution, with filters by status and field
-- `/documents` - Paginated list of all documents, filterable by state
-- `/documents/[id]` - Full document detail: fields, metadata, audit trail, review items, duplicates
-- `/failures` - List of documents in failed state
+- `/` - overview dashboard
+- `/documents` - paginated document list
+- `/documents/[id]` - document detail, metadata, and history
+- `/reviews` - review queue
+- `/failures` - failure-oriented views
 
-## Setup
+## Local Development
+
+Install dependencies:
 
 ```bash
-cd dashboard
 npm install
-cp .env.local.example .env.local
-# Edit .env.local with your MySQL credentials
+```
+
+Start the app:
+
+```bash
 npm run dev
 ```
 
-Open <http://localhost:3000>
+Open <http://localhost:3000>.
+
+Notes:
+
+- `npm run dev` runs `predev`, which builds Storybook assets into `public/developers/storybook`.
+- The app connects directly to MariaDB from the server runtime through Prisma.
 
 ## Environment Variables
 
-```.env
-MYSQL_HOST=your-mysql-host
-MYSQL_PORT=3306
-MYSQL_DATABASE=cwis_preservation
-MYSQL_USER=your-user
-MYSQL_PASSWORD=your-password
+Database connection:
+
+```env
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=cwis_preservation
+DB_USER=mariadb
+DB_PASS=docker
 ```
 
-## What Is Included
-
-- Pipeline stage overview with counts
-- Human review queue with filtering and pagination
-- Document detail view with full metadata, audit history, and review items
-- Processing failures view
-- MySQL connection via mysql2 with connection pooling
-- API routes for all data fetching
-- Google OAuth via Auth.js (`next-auth` v5, sign in required)
-
-## Authentication
-
-The dashboard uses Auth.js (`next-auth` v5) with Google OAuth. Only CWIS team members with Google accounts can sign in.
-
-### Auth Setup
-
-1. Copy `.env.local.example` to `.env.local`
-2. Create a Google OAuth 2.0 Client ID:
-   - Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
-   - Create an OAuth 2.0 Client ID (Web application type)
-   - Add local authorized redirect URI: `http://localhost:3000/api/auth/callback/google`
-   - Add production authorized redirect URI: `https://your-domain.vercel.app/api/auth/callback/google`
-   - Copy Client ID and Client Secret to `.env.local`
-3. Generate an Auth.js secret: `openssl rand -base64 32`
-4. Set `AUTH_URL` to your deployment URL
-5. Run `npm run dev` and navigate to `http://localhost:3000`
-
-### Auth Environment Variables
+Auth.js / Google OAuth:
 
 ```env
 AUTH_GOOGLE_ID=your-client-id
 AUTH_GOOGLE_SECRET=your-client-secret
 AUTH_URL=http://localhost:3000
-AUTH_SECRET=your-secret
+AUTH_SECRET=replace-this-with-a-long-random-secret
 ```
 
-### Vercel Deployment Environment Variables
+For deployed environments, use the host, schema, user, and password for the target MariaDB instance.
 
-Set these in Vercel for the environments you deploy:
+## Database
 
-```env
-AUTH_GOOGLE_ID=your-google-client-id
-AUTH_GOOGLE_SECRET=your-google-client-secret
-AUTH_SECRET=your-auth-secret
-AUTH_URL=https://your-domain.com
-MYSQL_HOST=your-mysql-host
-MYSQL_PORT=3306
-MYSQL_DATABASE=cwis_preservation
-MYSQL_USER=your-user
-MYSQL_PASSWORD=your-password
+The dashboard reads from MariaDB using Prisma and the generated client in [lib/prisma/generated](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/lib/prisma/generated).
+
+Useful Prisma commands:
+
+```bash
+npm run db:prisma:generate
+npm run db:prisma:pull
+npm run db:prisma:studio
 ```
 
-Notes:
+Current Prisma schema:
 
-- Set `AUTH_URL` to the exact production domain users will visit.
-- If you use the Vercel default domain instead of a custom domain, use `https://your-project.vercel.app`.
-- If you want OAuth to work on any additional domains, those domains must also be configured in Google Cloud.
+- [lib/prisma/schema.prisma](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/lib/prisma/schema.prisma)
 
-### Google OAuth Redirect URIs
+Database client setup:
 
-In Google Cloud Console, add an authorized redirect URI for each domain that should support sign-in:
+- [lib/db.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/lib/db.ts)
 
-- `http://localhost:3000/api/auth/callback/google`
-- `https://your-domain.com/api/auth/callback/google`
-- `https://your-project.vercel.app/api/auth/callback/google` if you use the Vercel default domain directly
+## Authentication
 
-If you use Vercel preview deployments, Google OAuth will not work on arbitrary preview URLs unless each preview URL is explicitly registered or you add an OAuth redirect proxy strategy.
+The dashboard uses Auth.js (`next-auth` v5 beta) with Google OAuth.
 
-## CI/CD
+Google OAuth setup:
 
-See `.github/workflows/` for automated testing and deployment to Vercel.
+1. Create an OAuth 2.0 Client ID in Google Cloud Console.
+2. Add `http://localhost:3000/api/auth/callback/google` for local development.
+3. Add the deployed callback URL for the active environment.
+4. Set `AUTH_SECRET` to a strong random value.
 
-### Branch Strategy
+## Scripts
 
-- `develop` - All PRs target `develop`. Quality gate (build + lint) runs on every PR.
-- `main` - Production. Auto-deploys to Vercel production on merge.
-- Staging is managed via Vercel's preview environments.
+- `npm run dev` - start the Next.js development server
+- `npm run build` - generate the Prisma client and build the app
+- `npm run start` - start the production server
+- `npm run storybook` - run Storybook locally
+- `npm run storybook:build` - build Storybook into static assets
+- `npm run storybook:clean` - remove generated Storybook output
+- `npm run lint` - run project linting and Markdown linting
+- `npm run lint:project` - run ESLint
+- `npm run lint:markdown` - lint Markdown files
+- `npm run test` - run unit and integration tests
+- `npm run test:unit` - run unit tests
+- `npm run test:integration` - run integration tests
+- `npm run typecheck` - run TypeScript without emitting files
 
-### GitHub Actions Secrets (set in repo Settings > Secrets)
+## Code Quality
 
-| Secret              | Description                                               |
-| ------------------- | --------------------------------------------------------- |
-| `VERCEL_TOKEN`      | Vercel API token from <https://vercel.com/account/tokens> |
-| `VERCEL_ORG_ID`     | Found in Vercel project settings                          |
-| `VERCEL_PROJECT_ID` | Found in Vercel project settings                          |
+GitHub Actions currently runs:
 
-## What Is NOT Included (deferred to v2)
+- [code-quality.yml](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/.github/workflows/code-quality.yml)
 
-- Real-time updates (refresh to see new data)
-- Historical trends and charts
-- Slack notifications
-- Multi-batch tracking
-- Validator self-service portal
-- OCR preview and metadata diff views
-- Role-based views (admin vs viewer)
+That workflow:
+
+- runs on pull requests to `main`
+- installs dependencies with `npm ci`
+- builds the app when relevant files change
+- lints project files and Markdown when relevant files change
+- runs unit tests when relevant files change
+
+## Deployment
+
+This repository is currently documented for the deployed app/runtime model rather than the earlier Docker/Caddy VPS experiment.
+
+Operationally:
+
+- the dashboard is a standard Next.js app
+- it reads directly from MariaDB
+- deployed environments should provide the same `DB_*` and `AUTH_*` variables described above
+
+If deployment architecture changes again, update this README to match the active production path rather than keeping multiple stale options here.
