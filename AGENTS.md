@@ -44,6 +44,7 @@ Examples: `btn-submit`, `h-1`, `panel-detail`, `form-login`, `tbl-data`, `fld-la
 **Read the full convention at:** `documentation/styles/SEMANTIC_CLASSES.md`
 
 Key rules:
+
 - Never style element selectors or IDs directly
 - Never use inline styles or `sx` on component usage
 - Never use presentational class names (`big`, `dark`, `red`)

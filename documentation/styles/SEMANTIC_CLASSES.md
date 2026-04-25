@@ -16,13 +16,13 @@ Class names follow the pattern `<scope>-<specific>`.
 
 **General first, specific second.** The scope is the broader category; the specific is the refinement.
 
-```
-btn-submit     → a submit button (not a cancel button, not a save button)
-h-1            → primary heading (not h-2, not a paragraph)
+```txt
+btn-submit      → a submit button (not a cancel button, not a save button)
+h-1             → primary heading (not h-2, not a paragraph)
 page-dashboard  → the dashboard page (not the settings page)
 form-login      → the login form (not the signup form)
 panel-detail    → a detail panel (not a list panel)
-tbl-data       → a data table (not a summary table)
+tbl-data        → a data table (not a summary table)
 ```
 
 ### Why this order?
@@ -31,7 +31,7 @@ When you read `btn-submit`, you immediately know: this is a button, and the vari
 
 If the actual scenario calls for styling a document with variants, the same logic applies:
 
-```
+```txt
 document-email    → an email document
 document-essay    → an essay document
 ```
@@ -94,7 +94,7 @@ Class names describe role or function, never appearance. Avoid adjectives like `
 
 A class name can be as specific as it needs to be. There is no penalty for granularity:
 
-```
+```txt
 btn-submit-pymnt-applepay   ← perfectly fine - describes a specific button role
 ```
 
@@ -139,7 +139,8 @@ HTML can carry multiple classes to combine a base role with a specific variant:
 
 The base class (`title`, `heading`) handles broad styling. The specific variant (`heading-subtext`) handles refinements.
 
-Class chains are valid when the element has multiple distinct roles. `class="title heading-subtext"` is fine - two classes, two distinct scopes. But `class="heading heading-subtext"` would be redundant - both share the same scope (`heading`), so the base class is unnecessary. Combine classes only when the element genuinely has multiple independent roles.
+Class chains are valid when the element has multiple distinct roles. `class="title heading-subtext"` is fine - two classes, two distinct scopes. But `class="heading heading-subtext"` would be redundant - both share the same scope (`heading`), so the base class is unnecessary.
+Combine classes only when the element genuinely has multiple independent roles.
 
 Parent context narrows scope when needed:
 
@@ -172,6 +173,7 @@ Sometimes you need to target all variants within a parent scope without adding e
 ```
 
 This matches:
+
 - `.btn` - exact match
 - `[class^="btn-"]` - attribute value starts with "btn-"
 - `[class*=" btn-"]` - attribute value contains " btn-" (word boundary)
