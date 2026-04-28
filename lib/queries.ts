@@ -31,7 +31,7 @@ import {
   type OverviewStatusOption,
 } from '@lib/overview-search'
 import { db } from '@lib/db'
-import { Prisma } from '@lib/prisma/generated/client'
+import { Prisma, PrismaClient } from '@lib/prisma/generated/client'
 
 // Fields on the documents model used for orderBy/filtering
 const DOCUMENTS_ORDERABLE_FIELDS = [
@@ -86,7 +86,12 @@ export interface DocumentsQueryParams extends OverviewAdvancedSearchFilters {
   cursorDirection?: 'next' | 'prev'
 }
 
-export async function getAllDocuments(params: DocumentsQueryParams = {}): Promise<DocumentsPageResult> {
+export type QueryDbClient = PrismaClient | Prisma.TransactionClient
+
+export async function getAllDocuments(
+  params: DocumentsQueryParams = {},
+  client: QueryDbClient = db,
+): Promise<DocumentsPageResult> {
   const page = normalizePageNumber(params.page)
   const pageSize = params.pageSize && params.pageSize > 0 ? Math.min(params.pageSize, 1000) : 25
 
@@ -105,7 +110,7 @@ export async function getAllDocuments(params: DocumentsQueryParams = {}): Promis
     accessLevel: normalizeOverviewAccessLevel(params.accessLevel),
     cursor: params.cursorValue && params.cursorId ? { value: params.cursorValue, id: params.cursorId } : null,
     cursorDirection: params.cursorDirection,
-  })
+  }, client)
 }
 
 const PAGE_SIZE = 20
@@ -152,14 +157,17 @@ export async function getPipelineSummary(): Promise<PipelineSummary> {
 // ---------------------------------------------------------------------------
 // getDocuments
 // ---------------------------------------------------------------------------
-export async function getDocuments(params: DocumentQueryParams = {}): Promise<PagedResult<Document>> {
+export async function getDocuments(
+  params: DocumentQueryParams = {},
+  client: QueryDbClient = db,
+): Promise<PagedResult<Document>> {
   const page = normalizePageNumber(params.page)
   const result = await getOverviewDocumentsPage({
     page,
     pageSize: PAGE_SIZE,
     orderBy: 'created_at',
     sortDirection: 'desc',
-  })
+  }, client)
 
   return {
     items: result.data,
@@ -182,7 +190,7 @@ async function getOverviewDocumentsPage(params: {
   accessLevel?: OverviewAccessLevelOption
   cursor?: DocumentsCursor | null
   cursorDirection?: 'next' | 'prev'
-}): Promise<DocumentsPageResult> {
+}, client: QueryDbClient = db): Promise<DocumentsPageResult> {
   const sortField = params.orderBy && (DOCUMENTS_ORDERABLE_FIELDS as readonly string[]).includes(params.orderBy)
     ? params.orderBy
     : 'created_at'
@@ -229,7 +237,7 @@ async function getOverviewDocumentsPage(params: {
     LEFT JOIN access_levels al ON al.id = dq.access_level
   `
 
-  const items = await db.$queryRaw<OverviewDocumentRow[]>(Prisma.sql`
+  const items = await client.$queryRaw<OverviewDocumentRow[]>(Prisma.sql`
       SELECT
         d.id,
         d.filesize,

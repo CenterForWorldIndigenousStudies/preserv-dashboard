@@ -7,7 +7,7 @@ This document outlines how to run the various tests for the Experity Care Agent 
 The project uses four main types of tests:
 
 1. **Unit Tests** - Using Vitest for testing individual functions and components
-2. **Integration Tests** - Using Vitest, a local MySQL DB and transactions.
+2. **Integration Tests** - Using Vitest against a dedicated local MariaDB test schema.
 3. **End-to-End (E2E) Tests** - TBD
 
 ## Prerequisites
@@ -61,15 +61,20 @@ Feature: Basic Patient Information Collection
 
 ## Running Integration Tests
 
-Run tests against a local DB
+Integration tests load `.env.test` from the dashboard repo and refuse to run against a non-test
+database name.
 
 ```env
 DB_HOST=localhost
 DB_PORT=3306
-DB_NAME=cwis_preservation
+DB_NAME=preservationtest
 DB_USER=mariadb
 DB_PASS=docker
 ```
+
+If your regular MariaDB user cannot create schemas, create `preservationtest` once with an
+admin account. After that, the test harness resets tables inside that schema on each integration
+run.
 
 ```bash
 # Run only integration tests
@@ -86,18 +91,11 @@ npm run test:integration -- tests/integration/something.integration.test.ts
 npm run test:integration something.integration.test.ts
 ```
 
-### Transaction-Based Testing
+### Isolation Model
 
-Integration tests use **transaction-based testing** to prevent data pollution and ensure test isolation. All database operations are wrapped in transactions that are automatically rolled back after each test.
-
-**Key Benefits:**
-
-- **No Data Pollution**: All test data is automatically cleaned up
-- **Test Isolation**: Tests can't interfere with each other
-- **Real Database Testing**: Tests actual database interactions
-- **Automatic Cleanup**: No manual cleanup required
-
-For detailed information about the transaction-based testing approach, see [Integration Test Transactions](./INTEGRATION_TEST_TRANSACTIONS.md).
+Integration tests use a dedicated test schema and reset that schema once at the start of the
+integration run. Each test then executes inside a rollback transaction, so test inserts do not
+persist and tests do not collide with each other.
 
 ## Test Results
 
@@ -133,8 +131,8 @@ TBD
 
 ## Continuous Integration
 
-The default test command includes integration tests. Any environment running
-`npm run test` therefore needs a reachable MariaDB instance with the expected
-local preservation schema and seed data.
+The default test command includes integration tests. Any environment running `npm run test`
+therefore needs a reachable MariaDB instance and a dedicated test schema configured through
+`.env.test`.
 
 ## Resources
