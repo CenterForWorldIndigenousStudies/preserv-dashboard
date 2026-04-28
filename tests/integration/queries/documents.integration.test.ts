@@ -5,26 +5,48 @@ import { getAllDocuments, getDocuments } from '@lib/queries'
 describe('documents queries (integration)', () => {
   // Track IDs for cleanup
   const createdDocIds: string[] = []
+  const createdAuthorIds: string[] = []
+  const createdBatchIds: string[] = []
+  const createdTagIds: string[] = []
   let sourceIdMetadataId: string
   let duplicateTagId: string
+  let restrictedAccessLevelId: string
 
   beforeAll(async () => {
     await db.$connect()
-    const [sourceMetadata, duplicateTag] = await Promise.all([
+    const [sourceMetadata, duplicateTag, accessLevels] = await Promise.all([
       db.metadata.findFirst({ where: { name: 'source_id' }, select: { id: true } }),
       db.tags.findFirst({ where: { name: 'duplicate_document' }, select: { id: true } }),
+      db.access_levels.findMany({ select: { id: true, level_name: true } }),
     ])
-    if (!sourceMetadata || !duplicateTag) {
-      throw new Error('Expected source_id metadata and duplicate_document tag to exist in integration DB')
+    const restrictedAccessLevel = accessLevels.find((accessLevel) => accessLevel.level_name.toLowerCase() === 'restricted')
+    if (!sourceMetadata || !duplicateTag || !restrictedAccessLevel) {
+      throw new Error('Expected source_id metadata, duplicate_document tag, and restricted access level to exist in integration DB')
     }
     sourceIdMetadataId = sourceMetadata.id
     duplicateTagId = duplicateTag.id
+    restrictedAccessLevelId = restrictedAccessLevel.id
   })
 
   afterEach(async () => {
     if (createdDocIds.length > 0) {
       await db.documents.deleteMany({ where: { id: { in: [...createdDocIds] } } })
-      createdDocIds.splice(0) // clear without reassigning the const variable
+      createdDocIds.splice(0)
+    }
+
+    if (createdAuthorIds.length > 0) {
+      await db.authors.deleteMany({ where: { id: { in: [...createdAuthorIds] } } })
+      createdAuthorIds.splice(0)
+    }
+
+    if (createdBatchIds.length > 0) {
+      await db.batches.deleteMany({ where: { id: { in: [...createdBatchIds] } } })
+      createdBatchIds.splice(0)
+    }
+
+    if (createdTagIds.length > 0) {
+      await db.tags.deleteMany({ where: { id: { in: [...createdTagIds] } } })
+      createdTagIds.splice(0)
     }
   })
 
@@ -37,7 +59,7 @@ describe('documents queries (integration)', () => {
   // ---------------------------------------------------------------------------
   const makeIds = () => {
     const ts = Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
-    return { id: `d${ts}`, idLegacy: `l${ts}` }
+    return { id: `d${ts}`, idLegacy: `l${ts}`, token: ts }
   }
 
   // ---------------------------------------------------------------------------
@@ -73,14 +95,63 @@ describe('documents queries (integration)', () => {
           },
         })
         break
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (err: any) {
-        lastErr = err as unknown
+      } catch (err: unknown) {
+        lastErr = err
       }
     }
     if (!doc) throw lastErr
     createdDocIds.push(doc.id)
     return doc
+  }
+
+  const createTestAuthor = async (name: string): Promise<{ id: string }> => {
+    const { token } = makeIds()
+    const author = await db.authors.create({
+      data: {
+        id: `a${token}`,
+        name,
+      },
+      select: { id: true },
+    })
+    createdAuthorIds.push(author.id)
+    return author
+  }
+
+  const createTestBatch = async (name: string): Promise<{ id: string }> => {
+    const { token } = makeIds()
+    const batch = await db.batches.create({
+      data: {
+        id: `b${token}`,
+        id_legacy: `legacy-${token}`,
+        name,
+      },
+      select: { id: true },
+    })
+    createdBatchIds.push(batch.id)
+    return batch
+  }
+
+  const createTestTag = async (name: string): Promise<{ id: string }> => {
+    const { token } = makeIds()
+    const tag = await db.tags.create({
+      data: {
+        id: `g${token}`,
+        name,
+      },
+      select: { id: true },
+    })
+    createdTagIds.push(tag.id)
+    return tag
+  }
+
+  const linkAuthorToDocument = async (documentId: string, authorId: string): Promise<void> => {
+    await db.document_to_authors.create({
+      data: {
+        id: `da-${documentId}-${authorId}`.slice(0, 36),
+        document_id: documentId,
+        author_id: authorId,
+      },
+    })
   }
 
   // ---------------------------------------------------------------------------
@@ -154,18 +225,22 @@ describe('documents queries (integration)', () => {
       }
     })
 
-    it('filters by search term', async () => {
-      await createTestDocument({ name: 'UNIQUE_SEARCH_TERM_123xyz' })
+    it('filters by author search term', async () => {
+      const doc = await createTestDocument({ name: 'UNIQUE_SEARCH_TERM_123xyz' })
+      const author = await createTestAuthor('UNIQUE_SEARCH_TERM_123xyz Author')
+      await linkAuthorToDocument(doc.id, author.id)
 
       const result = await getAllDocuments({ search: 'UNIQUE_SEARCH_TERM_123xyz' })
 
-      const found = result.data.find((d) => d.name === 'UNIQUE_SEARCH_TERM_123xyz')
+      const found = result.data.find((d) => d.id === doc.id)
       expect(found).toBeDefined()
     })
 
     it('sorts by source_id ascending', async () => {
       const docA = await createTestDocument({ name: 'SORT_PAIR_SOURCE A' })
       const docB = await createTestDocument({ name: 'SORT_PAIR_SOURCE B' })
+      const author = await createTestAuthor('SORT_PAIR_SOURCE Author')
+      await Promise.all([linkAuthorToDocument(docA.id, author.id), linkAuthorToDocument(docB.id, author.id)])
 
       await db.document_to_metadata.createMany({
         data: [
@@ -190,7 +265,7 @@ describe('documents queries (integration)', () => {
         orderBy: 'source_id',
         sortDirection: 'asc',
         pageSize: 100,
-        search: 'SORT_PAIR_SOURCE',
+        search: 'SORT_PAIR_SOURCE Author',
       })
 
       const ourDocs = result.data.filter((d) => ['SORT_PAIR_SOURCE A', 'SORT_PAIR_SOURCE B'].includes(d.name ?? ''))
@@ -198,8 +273,10 @@ describe('documents queries (integration)', () => {
     }, 15000)
 
     it('sorts by is_duplicate descending', async () => {
-      await createTestDocument({ name: 'SORT_PAIR_DUP Plain' })
+      const plainDoc = await createTestDocument({ name: 'SORT_PAIR_DUP Plain' })
       const duplicateDoc = await createTestDocument({ name: 'SORT_PAIR_DUP Duplicate' })
+      const author = await createTestAuthor('SORT_PAIR_DUP Author')
+      await Promise.all([linkAuthorToDocument(plainDoc.id, author.id), linkAuthorToDocument(duplicateDoc.id, author.id)])
 
       await db.document_to_tags.create({
         data: {
@@ -213,7 +290,7 @@ describe('documents queries (integration)', () => {
         orderBy: 'is_duplicate',
         sortDirection: 'desc',
         pageSize: 100,
-        search: 'SORT_PAIR_DUP',
+        search: 'SORT_PAIR_DUP Author',
       })
 
       const ourDocs = result.data.filter((d) => ['SORT_PAIR_DUP Plain', 'SORT_PAIR_DUP Duplicate'].includes(d.name ?? ''))
@@ -221,6 +298,68 @@ describe('documents queries (integration)', () => {
       expect(ourDocs[0]?.is_duplicate).toBe(true)
       expect(ourDocs[1]?.name).toBe('SORT_PAIR_DUP Plain')
       expect(ourDocs[1]?.is_duplicate).toBe(false)
+    }, 15000)
+
+    it('applies advanced search filters together', async () => {
+      const matchingDoc = await createTestDocument({ name: 'ADVANCED_SEARCH_MATCH' })
+      const nonMatchingDoc = await createTestDocument({ name: 'ADVANCED_SEARCH_MISS' })
+      const author = await createTestAuthor('Mary Filter Person')
+      const batch = await createTestBatch('Overview Advanced Batch')
+      const collectionTag = await createTestTag('Overview Advanced Collection')
+
+      await linkAuthorToDocument(matchingDoc.id, author.id)
+      await db.document_to_batches.create({
+        data: {
+          id: `ab-${matchingDoc.id}`,
+          document_id: matchingDoc.id,
+          batch_id: batch.id,
+        },
+      })
+      await db.document_quality.create({
+        data: {
+          id: `aq-${matchingDoc.id}`,
+          document_id: matchingDoc.id,
+          validation_status: 'APPROVED',
+          access_level: restrictedAccessLevelId,
+        },
+      })
+      await db.document_to_tags.createMany({
+        data: [
+          {
+            id: `at-${matchingDoc.id}`,
+            document_id: matchingDoc.id,
+            tag_id: collectionTag.id,
+          },
+          {
+            id: `ad-${matchingDoc.id}`,
+            document_id: matchingDoc.id,
+            tag_id: duplicateTagId,
+          },
+        ],
+      })
+
+      await db.document_quality.create({
+        data: {
+          id: `aq-${nonMatchingDoc.id}`,
+          document_id: nonMatchingDoc.id,
+          validation_status: 'FAILED',
+          access_level: restrictedAccessLevelId,
+        },
+      })
+
+      const result = await getAllDocuments({
+        pageSize: 100,
+        search: 'Mary Filter',
+        statuses: ['approved'],
+        documentType: 'duplicate',
+        batch: 'Advanced Batch',
+        collection: 'Overview Advanced Collection',
+        accessLevel: 'restricted',
+      })
+
+      const resultIds = result.data.map((document) => document.id)
+      expect(resultIds).toContain(matchingDoc.id)
+      expect(resultIds).not.toContain(nonMatchingDoc.id)
     }, 15000)
   })
 

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { DocumentsTable } from '@components/organisms/DocumentsTable'
+import type { OverviewFilterOptions } from '@lib/overview-search'
 import type { Document, DocumentsPageResult } from '@lib/types'
 
 /**
@@ -60,6 +61,11 @@ const mockDocuments: Document[] = [
   },
 ]
 
+const filterOptions: OverviewFilterOptions = {
+  collections: ['Plateau', 'Southwest', 'Pacific Northwest'],
+  accessLevels: ['open access', 'restricted', 'internal', 'confidential'],
+}
+
 function buildPageResult(data: Document[]): DocumentsPageResult {
   return {
     data,
@@ -77,16 +83,21 @@ function buildPageResult(data: Document[]): DocumentsPageResult {
 export const Default: Story = {
   args: {
     initialData: buildPageResult(mockDocuments),
+    filterOptions,
   },
 }
 
 export const Empty: Story = {
   args: {
     initialData: buildPageResult([]),
+    filterOptions,
   },
 }
 
 export const ManyResults: Story = {
+  args: {
+    filterOptions,
+  },
   render: () => {
     const many = Array.from({ length: 25 }, (_, i): Document => ({
       id: storyUuid(),
@@ -98,6 +109,6 @@ export const ManyResults: Story = {
       created_at: new Date(Date.now() - i * 86400000),
       updated_at: new Date(Date.now() - i * 86400000),
     }))
-    return <DocumentsTable initialData={buildPageResult(many)} />
+    return <DocumentsTable initialData={buildPageResult(many)} filterOptions={filterOptions} />
   },
 }
