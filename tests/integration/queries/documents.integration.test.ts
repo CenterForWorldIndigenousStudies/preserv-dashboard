@@ -5,9 +5,20 @@ import { getAllDocuments, getDocuments } from '@lib/queries'
 describe('documents queries (integration)', () => {
   // Track IDs for cleanup
   const createdDocIds: string[] = []
+  let sourceIdMetadataId: string
+  let duplicateTagId: string
 
   beforeAll(async () => {
     await db.$connect()
+    const [sourceMetadata, duplicateTag] = await Promise.all([
+      db.metadata.findFirst({ where: { name: 'source_id' }, select: { id: true } }),
+      db.tags.findFirst({ where: { name: 'duplicate_document' }, select: { id: true } }),
+    ])
+    if (!sourceMetadata || !duplicateTag) {
+      throw new Error('Expected source_id metadata and duplicate_document tag to exist in integration DB')
+    }
+    sourceIdMetadataId = sourceMetadata.id
+    duplicateTagId = duplicateTag.id
   })
 
   afterEach(async () => {
@@ -94,6 +105,7 @@ describe('documents queries (integration)', () => {
       expect(found).toHaveProperty('hash_binary')
       expect(found).toHaveProperty('hash_content')
       expect(found).toHaveProperty('id_legacy')
+      expect(found).toHaveProperty('source_id')
       expect(found).toHaveProperty('created_at')
       expect(found).toHaveProperty('updated_at')
     })
@@ -145,6 +157,66 @@ describe('documents queries (integration)', () => {
       const found = result.data.find((d) => d.name === 'UNIQUE_SEARCH_TERM_123xyz')
       expect(found).toBeDefined()
     })
+
+    it('sorts by source_id ascending', async () => {
+      const docA = await createTestDocument({ name: 'SORT_PAIR_SOURCE A' })
+      const docB = await createTestDocument({ name: 'SORT_PAIR_SOURCE B' })
+
+      await db.document_to_metadata.createMany({
+        data: [
+          {
+            id: `m-${docA.id}`,
+            document_id: docA.id,
+            metadata_id: sourceIdMetadataId,
+            value: JSON.stringify({ value: 'ZZZ' }),
+            value_type: 'string',
+          },
+          {
+            id: `m-${docB.id}`,
+            document_id: docB.id,
+            metadata_id: sourceIdMetadataId,
+            value: JSON.stringify({ value: 'AAA' }),
+            value_type: 'string',
+          },
+        ],
+      })
+
+      const result = await getAllDocuments({
+        orderBy: 'source_id',
+        sortDirection: 'asc',
+        pageSize: 100,
+        search: 'SORT_PAIR_SOURCE',
+      })
+
+      const ourDocs = result.data.filter((d) => ['SORT_PAIR_SOURCE A', 'SORT_PAIR_SOURCE B'].includes(d.name ?? ''))
+      expect(ourDocs.map((d) => d.source_id)).toEqual(['AAA', 'ZZZ'])
+    }, 15000)
+
+    it('sorts by is_duplicate descending', async () => {
+      await createTestDocument({ name: 'SORT_PAIR_DUP Plain' })
+      const duplicateDoc = await createTestDocument({ name: 'SORT_PAIR_DUP Duplicate' })
+
+      await db.document_to_tags.create({
+        data: {
+          id: `t-${duplicateDoc.id}`,
+          document_id: duplicateDoc.id,
+          tag_id: duplicateTagId,
+        },
+      })
+
+      const result = await getAllDocuments({
+        orderBy: 'is_duplicate',
+        sortDirection: 'desc',
+        pageSize: 100,
+        search: 'SORT_PAIR_DUP',
+      })
+
+      const ourDocs = result.data.filter((d) => ['SORT_PAIR_DUP Plain', 'SORT_PAIR_DUP Duplicate'].includes(d.name ?? ''))
+      expect(ourDocs[0]?.name).toBe('SORT_PAIR_DUP Duplicate')
+      expect(ourDocs[0]?.is_duplicate).toBe(true)
+      expect(ourDocs[1]?.name).toBe('SORT_PAIR_DUP Plain')
+      expect(ourDocs[1]?.is_duplicate).toBe(false)
+    }, 15000)
   })
 
   // ---------------------------------------------------------------------------

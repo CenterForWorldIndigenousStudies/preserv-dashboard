@@ -116,6 +116,12 @@ export function DocumentsTable({ initialData }: DocumentsTableProps) {
         size: 160,
         Cell: ({ renderedCellValue }) => <DateAtom value={renderedCellValue as Document['updated_at']} />,
       },
+      {
+        accessorKey: 'is_duplicate',
+        header: 'Is Duplicate',
+        size: 120,
+        Cell: ({ row }) => (row.original.is_duplicate ? 'True' : 'False'),
+      },
     ],
     [],
   )
@@ -188,12 +194,6 @@ export function DocumentsTable({ initialData }: DocumentsTableProps) {
     muiTableBodyCellProps: {
       sx: { color: '#231f20', fontSize: '0.875rem' },
     },
-    muiTableBodyProps: {
-      sx: {
-        '& tr:nth-of-type(even)': { backgroundColor: 'rgba(244,241,240,0.3)' },
-        '& tr:hover': { backgroundColor: 'rgba(53,88,52,0.06)' },
-      },
-    },
     muiTableContainerProps: {
       sx: { borderRadius: '0.75rem', border: '1px solid rgba(53,88,52,0.125)' },
     },
@@ -211,6 +211,19 @@ export function DocumentsTable({ initialData }: DocumentsTableProps) {
       rowsPerPage: 'Rows per page',
     },
     getRowId: (row) => row.id,
+    muiTableBodyRowProps: ({ row, staticRowIndex }) => ({
+      sx: row.original.is_duplicate
+        ? {
+            '& td': { backgroundColor: 'rgba(184, 96, 80, 0.12)' },
+            '&:hover td': { backgroundColor: 'rgba(184, 96, 80, 0.18)' },
+          }
+        : {
+            '& td': {
+              backgroundColor: staticRowIndex % 2 === 1 ? 'rgba(244,241,240,0.3)' : undefined,
+            },
+            '&:hover td': { backgroundColor: 'rgba(53,88,52,0.06)' },
+          },
+    }),
   })
 
   return <MaterialReactTable table={table} />

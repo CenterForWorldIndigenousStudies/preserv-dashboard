@@ -7,9 +7,11 @@ export interface Document {
   hash_binary: string | null
   hash_content: string | null
   id_legacy: string | null
+  source_id?: string | null
   name: string | null
   created_at: Date | string | null
   updated_at: Date | string | null
+  is_duplicate?: boolean
 }
 
 export interface DocumentQuality {
@@ -40,6 +42,17 @@ export interface DocumentVersion {
   analyzed_at: string | number | null
 }
 
+export interface VersionFamilyDocument extends Document {
+  is_canonical: boolean
+  is_duplicate: boolean
+}
+
+export interface VersionFamily {
+  version_group_id: string
+  canonical_document_id: string
+  documents: VersionFamilyDocument[]
+}
+
 export interface DocumentMetadataField {
   name: string
   value: string
@@ -51,10 +64,13 @@ export interface DocumentToBatch {
   document_id: string
   batch_id: string
   added_at: Date | string | null
+  batch_origin: string | null
   cost: string | null
   processing_time_seconds: number | null
   ocr_quality_low: boolean | null
   ocr_quality_medium: boolean | null
+  batch_legacy_id: string | null
+  batch_name: string | null
 }
 
 export interface DocumentToAuthor {
@@ -83,6 +99,7 @@ export interface DocumentDetail {
   document: Document
   quality: DocumentQuality | null
   versions: DocumentVersion[]
+  version_family: VersionFamily | null
   metadata: DocumentMetadataField[]
   document_to_batches: DocumentToBatch[]
   document_to_authors: DocumentToAuthor[]
