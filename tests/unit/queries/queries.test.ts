@@ -37,7 +37,7 @@ function queryText(index = 0): string {
 // ---------------------------------------------------------------------------
 describe('buildSearchWhere (via getAllDocuments)', () => {
   beforeAll(() => {
-    mockQueryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([{ total: 0 }])
+    mockQueryRaw.mockResolvedValueOnce([])
   })
 
   afterAll(() => {
@@ -51,14 +51,14 @@ describe('buildSearchWhere (via getAllDocuments)', () => {
 
   it('returns empty where when search is only whitespace', async () => {
     mockQueryRaw.mockReset()
-    mockQueryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([{ total: 0 }])
+    mockQueryRaw.mockResolvedValueOnce([])
     await getAllDocuments({ search: '   ' })
     expect(queryText(0)).not.toContain('WHERE (')
   })
 
   it('applies OR clause with all searchable fields', async () => {
     mockQueryRaw.mockReset()
-    mockQueryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([{ total: 0 }])
+    mockQueryRaw.mockResolvedValueOnce([])
 
     await getAllDocuments({ search: 'test' })
 
@@ -71,7 +71,7 @@ describe('buildSearchWhere (via getAllDocuments)', () => {
 
   it('trims search term before applying filter', async () => {
     mockQueryRaw.mockReset()
-    mockQueryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([{ total: 0 }])
+    mockQueryRaw.mockResolvedValueOnce([])
 
     await getAllDocuments({ search: '  trimmed  ' })
 
@@ -98,7 +98,7 @@ describe('getAllDocuments', () => {
   }
 
   beforeAll(() => {
-    mockQueryRaw.mockResolvedValueOnce([defaultRow]).mockResolvedValueOnce([{ total: 1 }])
+    mockQueryRaw.mockResolvedValueOnce([defaultRow])
   })
 
   afterEach(() => {
@@ -109,37 +109,35 @@ describe('getAllDocuments', () => {
     vi.restoreAllMocks()
   })
 
-  it('uses default pagination (page 1, pageSize 25)', async () => {
-    mockQueryRaw.mockResolvedValueOnce([defaultRow]).mockResolvedValueOnce([{ total: 1 }])
+  it('uses default pageSize of 25', async () => {
+    mockQueryRaw.mockResolvedValueOnce([defaultRow])
 
     await getAllDocuments()
 
     const call = queryCall(0)
-    expect(call.values.at(-2)).toBe(25)
-    expect(call.values.at(-1)).toBe(0)
+    expect(call.values.at(-1)).toBe(26)
   })
 
-  it('respects custom page and pageSize', async () => {
-    mockQueryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([{ total: 0 }])
+  it('respects custom pageSize', async () => {
+    mockQueryRaw.mockResolvedValueOnce([])
 
     await getAllDocuments({ page: 3, pageSize: 10 })
 
     const call = queryCall(0)
-    expect(call.values.at(-2)).toBe(10)
-    expect(call.values.at(-1)).toBe(20)
+    expect(call.values.at(-1)).toBe(11)
   })
 
   it('caps pageSize at 1000', async () => {
-    mockQueryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([{ total: 0 }])
+    mockQueryRaw.mockResolvedValueOnce([])
 
     await getAllDocuments({ pageSize: 5000 })
 
     const call = queryCall(0)
-    expect(call.values.at(-2)).toBe(1000)
+    expect(call.values.at(-1)).toBe(1001)
   })
 
   it('orders by created_at desc by default', async () => {
-    mockQueryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([{ total: 0 }])
+    mockQueryRaw.mockResolvedValueOnce([])
 
     await getAllDocuments()
 
@@ -147,7 +145,7 @@ describe('getAllDocuments', () => {
   })
 
   it('respects orderBy and sortDirection', async () => {
-    mockQueryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([{ total: 0 }])
+    mockQueryRaw.mockResolvedValueOnce([])
 
     await getAllDocuments({ orderBy: 'name', sortDirection: 'asc' })
 
@@ -155,7 +153,7 @@ describe('getAllDocuments', () => {
   })
 
   it('supports sorting by source_id', async () => {
-    mockQueryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([{ total: 0 }])
+    mockQueryRaw.mockResolvedValueOnce([])
 
     await getAllDocuments({ orderBy: 'source_id', sortDirection: 'asc' })
 
@@ -163,23 +161,23 @@ describe('getAllDocuments', () => {
   })
 
   it('supports sorting by is_duplicate', async () => {
-    mockQueryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([{ total: 0 }])
+    mockQueryRaw.mockResolvedValueOnce([])
 
     await getAllDocuments({ orderBy: 'is_duplicate', sortDirection: 'desc' })
 
     expect(queryText(0)).toContain('ORDER BY CASE WHEN dup.document_id IS NULL THEN 0 ELSE 1 END DESC')
   })
 
-  it('returns data array and total count', async () => {
+  it('returns data array and pageInfo', async () => {
     const row = { ...defaultRow, id: 'doc-1', name: 'Test Document' }
-    mockQueryRaw.mockResolvedValueOnce([row]).mockResolvedValueOnce([{ total: 1 }])
+    mockQueryRaw.mockResolvedValueOnce([row])
 
     const result = await getAllDocuments()
 
     expect(result).toHaveProperty('data')
-    expect(result).toHaveProperty('total')
+    expect(result).toHaveProperty('pageInfo')
     expect(result.data).toHaveLength(1)
-    expect(result.total).toBe(1)
+    expect(result.pageInfo.page).toBe(1)
   })
 
   it('maps filesize BigInt to number', async () => {
@@ -189,7 +187,7 @@ describe('getAllDocuments', () => {
       filesize: BigInt(2048),
       name: 'File.pdf',
     }
-    mockQueryRaw.mockResolvedValueOnce([row]).mockResolvedValueOnce([{ total: 1 }])
+    mockQueryRaw.mockResolvedValueOnce([row])
 
     const result = await getAllDocuments()
 
@@ -198,7 +196,7 @@ describe('getAllDocuments', () => {
 
   it('handles null filesize', async () => {
     const row = { ...defaultRow, id: 'doc-3', filesize: null }
-    mockQueryRaw.mockResolvedValueOnce([row]).mockResolvedValueOnce([{ total: 1 }])
+    mockQueryRaw.mockResolvedValueOnce([row])
 
     const result = await getAllDocuments()
 
@@ -207,7 +205,7 @@ describe('getAllDocuments', () => {
 
   it('maps source_id and duplicate flag', async () => {
     const row = { ...defaultRow, source_id: 'SRC-42', is_duplicate: 1 }
-    mockQueryRaw.mockResolvedValueOnce([row]).mockResolvedValueOnce([{ total: 1 }])
+    mockQueryRaw.mockResolvedValueOnce([row])
 
     const result = await getAllDocuments()
 
@@ -234,7 +232,7 @@ describe('getDocuments', () => {
   }
 
   beforeAll(() => {
-    mockQueryRaw.mockResolvedValueOnce([defaultRow]).mockResolvedValueOnce([{ total: 1 }])
+    mockQueryRaw.mockResolvedValueOnce([defaultRow])
   })
 
   afterEach(() => {
@@ -245,18 +243,17 @@ describe('getDocuments', () => {
     vi.restoreAllMocks()
   })
 
-  it('uses PAGE_SIZE of 20 with offset pagination', async () => {
-    mockQueryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([{ total: 0 }])
+  it('uses PAGE_SIZE of 20', async () => {
+    mockQueryRaw.mockResolvedValueOnce([])
 
     await getDocuments({ page: 2 })
 
     const call = queryCall(0)
-    expect(call.values.at(-2)).toBe(20)
-    expect(call.values.at(-1)).toBe(20)
+    expect(call.values.at(-1)).toBe(21)
   })
 
   it('orders by created_at desc', async () => {
-    mockQueryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([{ total: 0 }])
+    mockQueryRaw.mockResolvedValueOnce([])
 
     await getDocuments()
 
@@ -264,7 +261,7 @@ describe('getDocuments', () => {
   })
 
   it('returns items array and total count', async () => {
-    mockQueryRaw.mockResolvedValueOnce([defaultRow]).mockResolvedValueOnce([{ total: 1 }])
+    mockQueryRaw.mockResolvedValueOnce([defaultRow])
 
     const result = await getDocuments()
 
@@ -279,7 +276,7 @@ describe('getDocuments', () => {
 // ---------------------------------------------------------------------------
 describe('page number normalization', () => {
   beforeAll(() => {
-    mockQueryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([{ total: 0 }])
+    mockQueryRaw.mockResolvedValueOnce([])
   })
 
   afterAll(() => {
@@ -288,25 +285,25 @@ describe('page number normalization', () => {
 
   it('normalizes page < 1 to 1', async () => {
     mockQueryRaw.mockReset()
-    mockQueryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([{ total: 0 }])
+    mockQueryRaw.mockResolvedValueOnce([])
     await getAllDocuments({ page: 0 })
     const call = queryCall(0)
-    expect(call.values.at(-1)).toBe(0)
+    expect(call.values.at(-1)).toBe(26)
   })
 
   it('normalizes negative page to 1', async () => {
     mockQueryRaw.mockReset()
-    mockQueryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([{ total: 0 }])
+    mockQueryRaw.mockResolvedValueOnce([])
     await getAllDocuments({ page: -5 })
     const call = queryCall(0)
-    expect(call.values.at(-1)).toBe(0)
+    expect(call.values.at(-1)).toBe(26)
   })
 
   it('normalizes NaN page to 1', async () => {
     mockQueryRaw.mockReset()
-    mockQueryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([{ total: 0 }])
+    mockQueryRaw.mockResolvedValueOnce([])
     await getAllDocuments({ page: NaN })
     const call = queryCall(0)
-    expect(call.values.at(-1)).toBe(0)
+    expect(call.values.at(-1)).toBe(26)
   })
 })

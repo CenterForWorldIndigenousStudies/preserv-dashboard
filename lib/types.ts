@@ -14,6 +14,25 @@ export interface Document {
   is_duplicate?: boolean
 }
 
+export interface DocumentsCursor {
+  id: string
+  value: string
+}
+
+export interface DocumentsPageInfo {
+  page: number
+  pageSize: number
+  hasNextPage: boolean
+  hasPreviousPage: boolean
+  startCursor: DocumentsCursor | null
+  endCursor: DocumentsCursor | null
+}
+
+export interface DocumentsPageResult {
+  data: Document[]
+  pageInfo: DocumentsPageInfo
+}
+
 export interface DocumentQuality {
   id: string
   document_id: string

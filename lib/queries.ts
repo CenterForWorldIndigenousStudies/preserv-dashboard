@@ -2,6 +2,8 @@ import type {
   AuditEntry,
   Document,
   DocumentDetail,
+  DocumentsCursor,
+  DocumentsPageResult,
   DocumentQueryParams,
   DocumentQuality,
   FailureItem,
@@ -43,23 +45,20 @@ interface OverviewDocumentRow {
   created_at: Date | string | null
   updated_at: Date | string | null
   is_duplicate: boolean | number | bigint | string | null
-}
-
-interface CountRow {
-  total: bigint | number | string
+  sort_value: string | number | bigint | Date | null
 }
 
 const OVERVIEW_SORT_EXPRESSIONS: Record<(typeof DOCUMENTS_ORDERABLE_FIELDS)[number], string> = {
-  id: 'd.id',
-  filesize: 'd.filesize',
-  hash_binary: 'd.hash_binary',
-  hash_content: 'd.hash_content',
-  id_legacy: 'd.id_legacy',
+  id: 'COALESCE(d.id, \'\')',
+  filesize: 'COALESCE(d.filesize, -1)',
+  hash_binary: 'COALESCE(d.hash_binary, \'\')',
+  hash_content: 'COALESCE(d.hash_content, \'\')',
+  id_legacy: 'COALESCE(d.id_legacy, \'\')',
   source_id:
-    "COALESCE(JSON_UNQUOTE(JSON_EXTRACT(source_meta.value, '$.value')), JSON_UNQUOTE(JSON_EXTRACT(source_meta.value, '$')), source_meta.value)",
-  name: 'd.name',
-  created_at: 'd.created_at',
-  updated_at: 'd.updated_at',
+    "COALESCE(JSON_UNQUOTE(JSON_EXTRACT(source_meta.value, '$.value')), JSON_UNQUOTE(JSON_EXTRACT(source_meta.value, '$')), source_meta.value, '')",
+  name: 'COALESCE(d.name, \'\')',
+  created_at: "COALESCE(d.created_at, TIMESTAMP('1000-01-01 00:00:00'))",
+  updated_at: "COALESCE(d.updated_at, TIMESTAMP('1000-01-01 00:00:00'))",
   is_duplicate: 'CASE WHEN dup.document_id IS NULL THEN 0 ELSE 1 END',
 }
 
@@ -69,9 +68,12 @@ export interface DocumentsQueryParams {
   orderBy?: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
   sortDirection?: 'asc' | 'desc'
   search?: string
+  cursorValue?: string
+  cursorId?: string
+  cursorDirection?: 'next' | 'prev'
 }
 
-export async function getAllDocuments(params: DocumentsQueryParams = {}): Promise<{ data: Document[]; total: number }> {
+export async function getAllDocuments(params: DocumentsQueryParams = {}): Promise<DocumentsPageResult> {
   const page = normalizePageNumber(params.page)
   const pageSize = params.pageSize && params.pageSize > 0 ? Math.min(params.pageSize, 1000) : 25
   return getOverviewDocumentsPage({
@@ -80,6 +82,8 @@ export async function getAllDocuments(params: DocumentsQueryParams = {}): Promis
     orderBy: params.orderBy,
     sortDirection: params.sortDirection,
     search: params.search,
+    cursor: params.cursorValue && params.cursorId ? { value: params.cursorValue, id: params.cursorId } : null,
+    cursorDirection: params.cursorDirection,
   })
 }
 
@@ -138,7 +142,7 @@ export async function getDocuments(params: DocumentQueryParams = {}): Promise<Pa
 
   return {
     items: result.data,
-    total: result.total,
+    total: result.data.length,
   }
 }
 
@@ -148,16 +152,29 @@ async function getOverviewDocumentsPage(params: {
   orderBy?: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
   sortDirection?: 'asc' | 'desc'
   search?: string
-}): Promise<{ data: Document[]; total: number }> {
-  const skip = (params.page - 1) * params.pageSize
+  cursor?: DocumentsCursor | null
+  cursorDirection?: 'next' | 'prev'
+}): Promise<DocumentsPageResult> {
   const sortField = params.orderBy && (DOCUMENTS_ORDERABLE_FIELDS as readonly string[]).includes(params.orderBy)
     ? params.orderBy
     : 'created_at'
-  const sortDirection = params.sortDirection === 'asc' ? 'ASC' : 'DESC'
+  const sortDirection = params.sortDirection === 'asc' ? 'asc' : 'desc'
+  const cursorDirection = params.cursorDirection === 'prev' ? 'prev' : 'next'
   const searchTerm = params.search?.trim()
-  const whereSql = buildOverviewDocumentsWhereSql(searchTerm)
   const sortExpression = Prisma.raw(OVERVIEW_SORT_EXPRESSIONS[sortField])
-  const directionSql = Prisma.raw(sortDirection)
+  const whereSql = buildOverviewDocumentsWhereSql({
+    cursor: params.cursor,
+    cursorDirection,
+    searchTerm,
+    sortDirection,
+    sortExpression,
+    sortField,
+  })
+  const orderBySql = buildOverviewDocumentsOrderBySql({
+    cursorDirection,
+    sortDirection,
+    sortExpression,
+  })
 
   const baseFromSql = Prisma.sql`
     FROM documents d
@@ -175,8 +192,7 @@ async function getOverviewDocumentsPage(params: {
     ) AS dup ON dup.document_id = d.id
   `
 
-  const [items, totals] = await Promise.all([
-    db.$queryRaw<OverviewDocumentRow[]>(Prisma.sql`
+  const items = await db.$queryRaw<OverviewDocumentRow[]>(Prisma.sql`
       SELECT
         d.id,
         d.filesize,
@@ -191,40 +207,162 @@ async function getOverviewDocumentsPage(params: {
         d.name,
         d.created_at,
         d.updated_at,
-        CASE WHEN dup.document_id IS NULL THEN 0 ELSE 1 END AS is_duplicate
+        CASE WHEN dup.document_id IS NULL THEN 0 ELSE 1 END AS is_duplicate,
+        ${sortExpression} AS sort_value
       ${baseFromSql}
       ${whereSql}
-      ORDER BY ${sortExpression} ${directionSql}, d.id ASC
-      LIMIT ${params.pageSize}
-      OFFSET ${skip}
-    `),
-    db.$queryRaw<CountRow[]>(Prisma.sql`
-      SELECT COUNT(*) AS total
-      ${baseFromSql}
-      ${whereSql}
-    `),
-  ])
+      ${orderBySql}
+      LIMIT ${params.pageSize + 1}
+    `)
+
+  const hasMore = items.length > params.pageSize
+  const slicedItems = hasMore ? items.slice(0, params.pageSize) : items
+  const orderedItems = cursorDirection === 'prev' ? [...slicedItems].reverse() : slicedItems
+  const normalizedItems = orderedItems.map(normalizeOverviewDocumentRow)
+  const startCursor = buildDocumentsCursor(orderedItems[0], sortField)
+  const endCursor = buildDocumentsCursor(orderedItems.at(-1), sortField)
 
   return {
-    data: items.map(normalizeOverviewDocumentRow),
-    total: Number(totals[0]?.total ?? 0),
+    data: normalizedItems,
+    pageInfo: {
+      page: params.page,
+      pageSize: params.pageSize,
+      hasNextPage: cursorDirection === 'prev' ? Boolean(params.cursor) : hasMore,
+      hasPreviousPage: params.page > 1,
+      startCursor,
+      endCursor,
+    },
   }
 }
 
-function buildOverviewDocumentsWhereSql(searchTerm?: string): Prisma.Sql {
-  if (!searchTerm) {
+function buildOverviewDocumentsWhereSql(params: {
+  searchTerm?: string
+  cursor?: DocumentsCursor | null
+  cursorDirection: 'next' | 'prev'
+  sortDirection: 'asc' | 'desc'
+  sortExpression: Prisma.Sql
+  sortField: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
+}): Prisma.Sql {
+  const conditions: Prisma.Sql[] = []
+
+  if (params.searchTerm) {
+    const likeValue = `%${params.searchTerm}%`
+    conditions.push(Prisma.sql`
+      (
+        d.name LIKE ${likeValue}
+        OR d.hash_binary LIKE ${likeValue}
+        OR d.hash_content LIKE ${likeValue}
+        OR d.id_legacy LIKE ${likeValue}
+      )
+    `)
+  }
+
+  if (params.cursor) {
+    conditions.push(
+      buildOverviewDocumentsCursorConditionSql({
+        cursor: params.cursor,
+        cursorDirection: params.cursorDirection,
+        sortDirection: params.sortDirection,
+        sortExpression: params.sortExpression,
+        sortField: params.sortField,
+      }),
+    )
+  }
+
+  if (!conditions.length) {
     return Prisma.empty
   }
 
-  const likeValue = `%${searchTerm}%`
+  return Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`
+}
+
+function buildOverviewDocumentsCursorConditionSql(params: {
+  cursor: DocumentsCursor
+  cursorDirection: 'next' | 'prev'
+  sortDirection: 'asc' | 'desc'
+  sortExpression: Prisma.Sql
+  sortField: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
+}): Prisma.Sql {
+  const movesForward = params.cursorDirection === 'next'
+  const usesAscendingPrimary =
+    (params.sortDirection === 'asc' && movesForward) ||
+    (params.sortDirection === 'desc' && !movesForward)
+  const primaryComparator = Prisma.raw(usesAscendingPrimary ? '>' : '<')
+  const secondaryComparator = Prisma.raw(movesForward ? '>' : '<')
+  const cursorValue = coerceDocumentsCursorValue(params.sortField, params.cursor.value)
+
   return Prisma.sql`
-    WHERE (
-      d.name LIKE ${likeValue}
-      OR d.hash_binary LIKE ${likeValue}
-      OR d.hash_content LIKE ${likeValue}
-      OR d.id_legacy LIKE ${likeValue}
+    (
+      ${params.sortExpression} ${primaryComparator} ${cursorValue}
+      OR (
+        ${params.sortExpression} = ${cursorValue}
+        AND d.id ${secondaryComparator} ${params.cursor.id}
+      )
     )
   `
+}
+
+function buildOverviewDocumentsOrderBySql(params: {
+  cursorDirection: 'next' | 'prev'
+  sortDirection: 'asc' | 'desc'
+  sortExpression: Prisma.Sql
+}): Prisma.Sql {
+  const primaryDirection = params.cursorDirection === 'prev'
+    ? params.sortDirection === 'asc'
+      ? 'DESC'
+      : 'ASC'
+    : params.sortDirection === 'asc'
+      ? 'ASC'
+      : 'DESC'
+  const secondaryDirection = params.cursorDirection === 'prev' ? 'DESC' : 'ASC'
+
+  return Prisma.sql`
+    ORDER BY ${params.sortExpression} ${Prisma.raw(primaryDirection)}, d.id ${Prisma.raw(secondaryDirection)}
+  `
+}
+
+function buildDocumentsCursor(
+  row: OverviewDocumentRow | undefined,
+  sortField: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number],
+): DocumentsCursor | null {
+  if (!row) {
+    return null
+  }
+  return {
+    id: String(row.id),
+    value: serializeDocumentsCursorValue(sortField, row.sort_value),
+  }
+}
+
+function serializeDocumentsCursorValue(
+  sortField: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number],
+  value: OverviewDocumentRow['sort_value'],
+): string {
+  if (value === null || value === undefined) {
+    return ''
+  }
+
+  if (sortField === 'created_at' || sortField === 'updated_at') {
+    const dateValue = value instanceof Date ? value : new Date(String(value))
+    return dateValue.toISOString()
+  }
+
+  return String(value)
+}
+
+function coerceDocumentsCursorValue(
+  sortField: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number],
+  value: string,
+): string | number | Date {
+  if (sortField === 'filesize' || sortField === 'is_duplicate') {
+    return Number(value)
+  }
+
+  if (sortField === 'created_at' || sortField === 'updated_at') {
+    return new Date(value)
+  }
+
+  return value
 }
 
 function normalizeOverviewDocumentRow(row: OverviewDocumentRow): Document {

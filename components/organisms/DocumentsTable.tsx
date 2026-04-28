@@ -1,31 +1,217 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   MaterialReactTable,
   useMaterialReactTable,
   type MRT_ColumnDef,
-  type MRT_PaginationState,
   type MRT_SortingState,
 } from 'material-react-table'
 import Link from 'next/link'
+import { Button } from '@atoms/Button'
 import { DateAtom } from '@atoms/Date'
 import { FileSize } from '@atoms/FileSize'
 import { getDocumentsAction } from '@actions/documents'
-import type { Document } from '@lib/types'
+import type { Document, DocumentsPageResult } from '@lib/types'
 import type { DocumentsQueryParams } from '@lib/queries'
 
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100]
 
 interface DocumentsTableProps {
-  initialData?: { data: Document[]; total: number }
+  initialData?: DocumentsPageResult
+  initialQuery?: DocumentsQueryParams
 }
 
-export function DocumentsTable({ initialData }: DocumentsTableProps) {
-  const [pagination, setPagination] = useState<MRT_PaginationState>({ pageIndex: 0, pageSize: 25 })
-  const [sorting, setSorting] = useState<MRT_SortingState>([])
-  const [globalFilter, setGlobalFilter] = useState('')
-  const [rowCount, setRowCount] = useState(initialData?.total ?? 0)
+function buildInitialSorting(initialQuery?: DocumentsQueryParams): MRT_SortingState {
+  if (!initialQuery?.orderBy) {
+    return []
+  }
+
+  return [
+    {
+      id: initialQuery.orderBy,
+      desc: initialQuery.sortDirection !== 'asc',
+    },
+  ]
+}
+
+function normalizePageNumber(page?: number): number {
+  if (!page || page < 1 || Number.isNaN(page)) {
+    return 1
+  }
+
+  return Math.floor(page)
+}
+
+function canReuseInitialData(
+  initialData: DocumentsTableProps['initialData'],
+  initialQuery: DocumentsQueryParams | undefined,
+  queryParams: DocumentsQueryParams,
+): boolean {
+  if (!initialData) {
+    return false
+  }
+
+  const comparisons = [
+    normalizePageNumber(initialQuery?.page) === normalizePageNumber(queryParams.page),
+    (initialQuery?.pageSize ?? 25) === queryParams.pageSize,
+    (initialQuery?.orderBy ?? undefined) === queryParams.orderBy,
+    (initialQuery?.sortDirection ?? undefined) === queryParams.sortDirection,
+    (initialQuery?.search ?? undefined) === queryParams.search,
+    (initialQuery?.cursorValue ?? undefined) === queryParams.cursorValue,
+    (initialQuery?.cursorId ?? undefined) === queryParams.cursorId,
+    (initialQuery?.cursorDirection ?? undefined) === queryParams.cursorDirection,
+  ]
+
+  return comparisons.every(Boolean)
+}
+
+function useOverviewTableState(initialQuery?: DocumentsQueryParams) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const [page, setPage] = useState(normalizePageNumber(initialQuery?.page))
+  const [pageSize, setPageSize] = useState(initialQuery?.pageSize ?? 25)
+  const [sorting, setSorting] = useState<MRT_SortingState>(buildInitialSorting(initialQuery))
+  const [globalFilter, setGlobalFilter] = useState(initialQuery?.search ?? '')
+  const [cursorValue, setCursorValue] = useState(initialQuery?.cursorValue)
+  const [cursorId, setCursorId] = useState(initialQuery?.cursorId)
+  const [cursorDirection, setCursorDirection] = useState<DocumentsQueryParams['cursorDirection']>(
+    initialQuery?.cursorDirection,
+  )
+
+  const queryParams: DocumentsQueryParams = useMemo(
+    () => ({
+      page,
+      pageSize,
+      orderBy: sorting[0]?.id as DocumentsQueryParams['orderBy'],
+      sortDirection: sorting[0] ? (sorting[0].desc ? 'desc' : 'asc') : undefined,
+      search: globalFilter || undefined,
+      cursorValue,
+      cursorId,
+      cursorDirection,
+    }),
+    [cursorDirection, cursorId, cursorValue, globalFilter, page, pageSize, sorting],
+  )
+
+  useEffect(() => {
+    const nextParams = new URLSearchParams(searchParams.toString())
+
+    nextParams.set('page', String(queryParams.page ?? 1))
+    nextParams.set('pageSize', String(queryParams.pageSize ?? 25))
+
+    if (queryParams.orderBy) {
+      nextParams.set('orderBy', queryParams.orderBy)
+    } else {
+      nextParams.delete('orderBy')
+    }
+
+    if (queryParams.sortDirection) {
+      nextParams.set('sortDirection', queryParams.sortDirection)
+    } else {
+      nextParams.delete('sortDirection')
+    }
+
+    if (queryParams.search) {
+      nextParams.set('search', queryParams.search)
+    } else {
+      nextParams.delete('search')
+    }
+
+    if (queryParams.cursorValue && queryParams.cursorId && queryParams.cursorDirection) {
+      nextParams.set('cursorValue', queryParams.cursorValue)
+      nextParams.set('cursorId', queryParams.cursorId)
+      nextParams.set('cursorDirection', queryParams.cursorDirection)
+    } else {
+      nextParams.delete('cursorValue')
+      nextParams.delete('cursorId')
+      nextParams.delete('cursorDirection')
+    }
+
+    const nextSearch = nextParams.toString()
+    const currentSearch = searchParams.toString()
+    if (nextSearch !== currentSearch) {
+      router.replace(nextSearch ? `${pathname}?${nextSearch}` : pathname, { scroll: false })
+    }
+  }, [pathname, queryParams, router, searchParams])
+
+  const resetToFirstPage = () => {
+    setPage(1)
+    setCursorValue(undefined)
+    setCursorId(undefined)
+    setCursorDirection(undefined)
+  }
+
+  return {
+    globalFilter,
+    pathname,
+    page,
+    pageSize,
+    queryParams,
+    searchParams,
+    setGlobalFilter: (nextValue: string) => {
+      setGlobalFilter(nextValue)
+      resetToFirstPage()
+    },
+    setPageSize: (nextPageSize: number) => {
+      setPageSize(nextPageSize)
+      resetToFirstPage()
+    },
+    setSorting: (updater: MRT_SortingState | ((prev: MRT_SortingState) => MRT_SortingState)) => {
+      setSorting((prev) => (typeof updater === 'function' ? updater(prev) : updater))
+      resetToFirstPage()
+    },
+    sorting,
+    goToNextPage: (endCursor: DocumentsPageResult['pageInfo']['endCursor']) => {
+      if (!endCursor) return
+      setPage((prev) => prev + 1)
+      setCursorValue(endCursor.value)
+      setCursorId(endCursor.id)
+      setCursorDirection('next')
+    },
+    goToPreviousPage: (startCursor: DocumentsPageResult['pageInfo']['startCursor']) => {
+      if (!startCursor) return
+      setPage((prev) => Math.max(1, prev - 1))
+      setCursorValue(startCursor.value)
+      setCursorId(startCursor.id)
+      setCursorDirection('prev')
+    },
+  }
+}
+
+export function DocumentsTable({ initialData, initialQuery }: DocumentsTableProps) {
+  const {
+    globalFilter,
+    pathname,
+    page,
+    pageSize,
+    queryParams,
+    searchParams,
+    setGlobalFilter,
+    setPageSize,
+    setSorting,
+    sorting,
+    goToNextPage,
+    goToPreviousPage,
+  } = useOverviewTableState(initialQuery)
   const [data, setData] = useState<Document[]>(initialData?.data ?? [])
+  const [pageInfo, setPageInfo] = useState<DocumentsPageResult['pageInfo']>(
+    initialData?.pageInfo ?? {
+      page,
+      pageSize,
+      hasNextPage: false,
+      hasPreviousPage: false,
+      startCursor: null,
+      endCursor: null,
+    },
+  )
+  const [isLoading, setIsLoading] = useState(false)
+
+  const preservedOverviewHref = useMemo(() => {
+    const currentSearch = searchParams.toString()
+    return currentSearch ? `${pathname}?${currentSearch}` : pathname
+  }, [pathname, searchParams])
 
   const columns = useMemo<MRT_ColumnDef<Document>[]>(
     () => [
@@ -46,7 +232,13 @@ export function DocumentsTable({ initialData }: DocumentsTableProps) {
           const val = row.original.name
           if (!val) return '—'
           return (
-            <Link href={`/documents/${row.original.id}`} style={{ color: '#355834' }}>
+            <Link
+              href={{
+                pathname: `/documents/${row.original.id}`,
+                query: { from: preservedOverviewHref },
+              }}
+              style={{ color: '#355834' }}
+            >
               {val}
             </Link>
           )
@@ -123,63 +315,58 @@ export function DocumentsTable({ initialData }: DocumentsTableProps) {
         Cell: ({ row }) => (row.original.is_duplicate ? 'True' : 'False'),
       },
     ],
-    [],
+    [preservedOverviewHref],
   )
 
-  const queryParams: DocumentsQueryParams = useMemo(
-    () => ({
-      page: pagination.pageIndex + 1,
-      pageSize: pagination.pageSize,
-      orderBy: sorting[0]?.id as DocumentsQueryParams['orderBy'],
-      sortDirection: sorting[0]?.desc ? ('desc' as const) : ('asc' as const),
-      search: globalFilter || undefined,
-    }),
-    [pagination, sorting, globalFilter],
-  )
-
-  const shouldUseInitialData = initialData && pagination.pageIndex === 0 && !sorting.length && !globalFilter
+  const shouldUseInitialData = canReuseInitialData(initialData, initialQuery, queryParams)
 
   useEffect(() => {
-    if (shouldUseInitialData) {
+    if (shouldUseInitialData && initialData) {
+      setIsLoading(false)
       setData(initialData.data)
-      setRowCount(initialData.total)
+      setPageInfo(initialData.pageInfo)
       return
     }
 
     let cancelled = false
+    setIsLoading(true)
     getDocumentsAction(queryParams)
-      .then((result: { data: Document[]; total: number }) => {
+      .then((result: DocumentsPageResult) => {
         if (!cancelled) {
           setData(result.data)
-          setRowCount(result.total)
+          setPageInfo(result.pageInfo)
+          setIsLoading(false)
         }
       })
       .catch(() => {
         if (!cancelled) {
           setData([])
-          setRowCount(0)
+          setPageInfo({
+            page,
+            pageSize,
+            hasNextPage: false,
+            hasPreviousPage: page > 1,
+            startCursor: null,
+            endCursor: null,
+          })
+          setIsLoading(false)
         }
       })
+
     return () => {
       cancelled = true
     }
-  }, [queryParams, shouldUseInitialData, initialData])
+  }, [initialData, initialQuery, page, pageSize, queryParams, shouldUseInitialData])
 
   const table = useMaterialReactTable({
     columns,
     data,
-    rowCount,
-    manualPagination: true,
+    enablePagination: false,
     manualSorting: true,
     manualFiltering: true,
-    onPaginationChange: setPagination,
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
-    state: { pagination, sorting, globalFilter },
-    muiPaginationProps: {
-      rowsPerPageOptions: [10, 25, 50, 100],
-      variant: 'outlined',
-    },
+    state: { sorting, globalFilter },
     muiTableHeadCellProps: {
       sx: {
         backgroundColor: '#f4f1f0',
@@ -207,8 +394,6 @@ export function DocumentsTable({ initialData }: DocumentsTableProps) {
     localization: {
       noRecordsToDisplay: 'No documents found.',
       search: 'Search',
-      of: 'of',
-      rowsPerPage: 'Rows per page',
     },
     getRowId: (row) => row.id,
     muiTableBodyRowProps: ({ row, staticRowIndex }) => ({
@@ -226,5 +411,61 @@ export function DocumentsTable({ initialData }: DocumentsTableProps) {
     }),
   })
 
-  return <MaterialReactTable table={table} />
+  return (
+    <div className="space-y-3">
+      {isLoading ? (
+        <div aria-live="polite" className="flex justify-center">
+          <Button loading variant="secondary">
+            Refreshing data
+          </Button>
+        </div>
+      ) : null}
+      <MaterialReactTable table={table} />
+      <div className="flex flex-col gap-3 rounded-xl border border-[rgba(53,88,52,0.125)] bg-[rgba(244,241,240,0.35)] px-4 py-3 text-sm text-[#231f20] sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <span className="font-medium">Page {pageInfo.page}</span>
+          <span>{data.length} document{data.length === 1 ? '' : 's'} shown</span>
+        </div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <label className="flex items-center gap-2">
+            <span className="text-xs uppercase tracking-[0.1em] text-[#5b5654]">Rows</span>
+            <select
+              aria-label="Rows per page"
+              className="rounded-md border border-[rgba(53,88,52,0.25)] bg-white px-2 py-1"
+              value={pageSize}
+              onChange={(event) => {
+                setPageSize(Number(event.target.value))
+              }}
+            >
+              {PAGE_SIZE_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              disabled={isLoading || !pageInfo.hasPreviousPage || !pageInfo.startCursor}
+              onClick={() => {
+                goToPreviousPage(pageInfo.startCursor)
+              }}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={isLoading || !pageInfo.hasNextPage || !pageInfo.endCursor}
+              onClick={() => {
+                goToNextPage(pageInfo.endCursor)
+              }}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }

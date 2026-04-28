@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { DocumentsTable } from '@components/organisms/DocumentsTable'
-import type { Document } from '@lib/types'
+import type { Document, DocumentsPageResult } from '@lib/types'
 
 /**
  * Browser-safe UUID replacement for Storybook stories.
@@ -60,21 +60,29 @@ const mockDocuments: Document[] = [
   },
 ]
 
+function buildPageResult(data: Document[]): DocumentsPageResult {
+  return {
+    data,
+    pageInfo: {
+      page: 1,
+      pageSize: data.length || 25,
+      hasNextPage: false,
+      hasPreviousPage: false,
+      startCursor: null,
+      endCursor: null,
+    },
+  }
+}
+
 export const Default: Story = {
   args: {
-    initialData: {
-      data: mockDocuments,
-      total: mockDocuments.length,
-    },
+    initialData: buildPageResult(mockDocuments),
   },
 }
 
 export const Empty: Story = {
   args: {
-    initialData: {
-      data: [],
-      total: 0,
-    },
+    initialData: buildPageResult([]),
   },
 }
 
@@ -90,6 +98,6 @@ export const ManyResults: Story = {
       created_at: new Date(Date.now() - i * 86400000),
       updated_at: new Date(Date.now() - i * 86400000),
     }))
-    return <DocumentsTable initialData={{ data: many, total: many.length }} />
+    return <DocumentsTable initialData={buildPageResult(many)} />
   },
 }

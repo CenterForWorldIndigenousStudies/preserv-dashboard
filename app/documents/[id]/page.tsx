@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import type { ReactElement } from 'react'
 import { DateAtom } from '@atoms/Date'
 import { FileSize } from '@atoms/FileSize'
@@ -15,6 +16,19 @@ interface DocumentDetailPageProps {
   params: Promise<{
     id: string
   }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}
+
+function firstSearchParam(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value
+}
+
+function resolveOverviewHref(searchParams: Record<string, string | string[] | undefined>): string {
+  const from = firstSearchParam(searchParams.from)
+  if (from && from.startsWith('/')) {
+    return from
+  }
+  return '/'
 }
 
 const documentFieldLabels: Array<{ key: string; label: string }> = [
@@ -32,8 +46,13 @@ const detailTableClassName = 'min-w-full border-separate border-spacing-0 text-l
 const detailTableHeadCellClassName = 'bg-[#f4f1eb] px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-ink'
 const detailTableBodyCellClassName = 'border-b border-moss/10 px-3 py-3 align-top'
 
-export default async function DocumentDetailPage({ params }: DocumentDetailPageProps): Promise<ReactElement> {
+export default async function DocumentDetailPage({
+  params,
+  searchParams,
+}: DocumentDetailPageProps): Promise<ReactElement> {
   const { id } = await params
+  const resolvedSearchParams = await searchParams
+  const overviewHref = resolveOverviewHref(resolvedSearchParams)
 
   try {
     const detail = await getDocumentDetail(id)
@@ -46,6 +65,12 @@ export default async function DocumentDetailPage({ params }: DocumentDetailPageP
             title="No Data"
             description="Inspect the full document record, metadata payload, audit trail, review history, and duplicate relationships."
           />
+          <Link
+            href={overviewHref}
+            className="inline-flex text-sm font-medium text-moss transition hover:text-moss/80"
+          >
+            ← Back to Overview
+          </Link>
           <NoDataState message="No document data is available for this record yet." />
         </div>
       )
@@ -66,6 +91,12 @@ export default async function DocumentDetailPage({ params }: DocumentDetailPageP
 
     return (
       <div className="space-y-8">
+        <Link
+          href={overviewHref}
+          className="inline-flex text-sm font-medium text-moss transition hover:text-moss/80"
+        >
+          ← Back to Overview
+        </Link>
         <PageHeader
           eyebrow="Document Detail"
           title={document.name || document.id}

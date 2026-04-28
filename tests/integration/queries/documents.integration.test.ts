@@ -93,9 +93,9 @@ describe('documents queries (integration)', () => {
       const result = await getAllDocuments()
 
       expect(result).toHaveProperty('data')
-      expect(result).toHaveProperty('total')
+      expect(result).toHaveProperty('pageInfo')
       expect(Array.isArray(result.data)).toBe(true)
-      expect(typeof result.total).toBe('number')
+      expect(typeof result.pageInfo.page).toBe('number')
 
       const found = result.data.find((d) => d.id === doc.id)
       expect(found).toBeDefined()
@@ -110,13 +110,19 @@ describe('documents queries (integration)', () => {
       expect(found).toHaveProperty('updated_at')
     })
 
-    it('paginates correctly', async () => {
+    it('paginates correctly with cursors', async () => {
       await createTestDocument({ name: 'Page Test 1' })
       await createTestDocument({ name: 'Page Test 2' })
       await createTestDocument({ name: 'Page Test 3' })
 
       const page1 = await getAllDocuments({ page: 1, pageSize: 2 })
-      const page2 = await getAllDocuments({ page: 2, pageSize: 2 })
+      const page2 = await getAllDocuments({
+        page: 2,
+        pageSize: 2,
+        cursorValue: page1.pageInfo.endCursor?.value,
+        cursorId: page1.pageInfo.endCursor?.id,
+        cursorDirection: 'next',
+      })
 
       expect(page1.data.length).toBeLessThanOrEqual(2)
       expect(page2.data.length).toBeLessThanOrEqual(2)
@@ -153,7 +159,6 @@ describe('documents queries (integration)', () => {
 
       const result = await getAllDocuments({ search: 'UNIQUE_SEARCH_TERM_123xyz' })
 
-      expect(result.total).toBeGreaterThanOrEqual(1)
       const found = result.data.find((d) => d.name === 'UNIQUE_SEARCH_TERM_123xyz')
       expect(found).toBeDefined()
     })
