@@ -11,6 +11,8 @@ export const metadata: Metadata = {
   description: 'Operational dashboard for CWIS preservation pipeline documents, reviews, and failures.',
 }
 
+export const preferredRegion = 'sfo1'
+
 export default async function RootLayout({
   children,
 }: Readonly<{

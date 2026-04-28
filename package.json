@@ -14,7 +14,6 @@
     "lint": "run-p lint:project lint:markdown",
     "lint:markdown": "markdownlint-cli2 '**/*.md'",
     "lint:project": "eslint './**/*.{ts,tsx}' --max-warnings=0 --cache --cache-location .eslintcache",
-    "prebuild": "npm run storybook:build",
     "predev": "npm run storybook:build && rm -rf public/storybook",
     "start": "next start",
     "storybook": "storybook dev -p 6006",

@@ -35,7 +35,8 @@ Open <http://localhost:3000>.
 
 Notes:
 
-- `npm run dev` runs `predev`, which builds Storybook assets into `public/developers/storybook`.
+- `npm run dev` runs `predev`, which builds local Storybook assets into
+  `public/developers/storybook` for development fallback.
 - The app connects directly to MariaDB from the server runtime through Prisma.
 
 ## Environment Variables
@@ -58,6 +59,23 @@ AUTH_GOOGLE_SECRET=your-client-secret
 AUTH_URL=http://localhost:3000
 AUTH_SECRET=replace-this-with-a-long-random-secret
 ```
+
+Storybook integration:
+
+```env
+STORYBOOK_URL=https://your-storybook-host.example.com
+```
+
+If `STORYBOOK_URL` is set, the dashboard proxies Storybook through
+`/developers/storybook/*` after checking the user's session. If it is unset, the
+dashboard falls back to locally built assets in `public/developers/storybook`.
+
+In Vercel, set `STORYBOOK_URL` per environment so the dashboard points at the
+matching Storybook deployment:
+
+- Production: `https://storybook.your-domain.example`
+- Preview: the Storybook preview URL or branch-specific preview domain for the
+  same branch/environment
 
 For deployed environments, use the host, schema, user, and password for the target MariaDB instance.
 
@@ -131,5 +149,9 @@ Operationally:
 - the dashboard is a standard Next.js app
 - it reads directly from MariaDB
 - deployed environments should provide the same `DB_*` and `AUTH_*` variables described above
+- the dashboard can proxy a separately deployed Storybook through
+  `/developers/storybook/*` when `STORYBOOK_URL` is configured
+- Vercel project settings now own build/install/output configuration; the repo
+  root intentionally does not carry a shared `vercel.json`
 
 If deployment architecture changes again, update this README to match the active production path rather than keeping multiple stale options here.
