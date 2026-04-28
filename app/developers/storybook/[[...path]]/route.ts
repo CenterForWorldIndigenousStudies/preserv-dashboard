@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@root/auth'
 
 const LOCAL_STORYBOOK_ROOT = resolve(process.cwd(), 'public/developers/storybook')
-const SIGN_IN_CALLBACK = '/developers/component-library'
+const SIGN_IN_CALLBACK = '/component-library'
 
 export const preferredRegion = 'sfo1'
 
