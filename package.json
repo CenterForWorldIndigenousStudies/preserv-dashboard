@@ -20,11 +20,13 @@
     "storybook:build": "storybook build --quiet --output-dir ./storybook-static && cp -r node_modules/storybook/dist/_browser-chunks storybook-static/ && mkdir -p public/developers/storybook && cp -r storybook-static/. public/developers/storybook/ && rm -rf public/developers/storybook/developers",
     "storybook:clean": "rm -rf storybook-static public/developers/storybook",
     "storybook:preview": "storybook preview -p 6006 --storybook-dir ../public/storybook",
-    "test": "run-p test:unit test:integration",
-    "test:unit": "vitest run tests/unit",
-    "test:unit:watch": "vitest tests/unit",
-    "test:coverage": "vitest run tests/unit --coverage",
-    "test:integration": "vitest run tests/integration",
+    "test": "run-s test:unit test:integration",
+    "test:all": "npm run test",
+    "test:unit": "vitest run --project unit tests/unit",
+    "test:unit:watch": "vitest --project unit tests/unit",
+    "test:coverage": "vitest run --project unit tests/unit --coverage",
+    "test:integration": "vitest run --project integration tests/integration",
+    "test:storybook": "vitest run --project storybook",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

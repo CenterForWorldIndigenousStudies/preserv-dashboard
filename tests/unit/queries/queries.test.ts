@@ -141,7 +141,7 @@ describe('getAllDocuments', () => {
 
     await getAllDocuments()
 
-    expect(queryText(0)).toContain('ORDER BY d.created_at DESC')
+    expect(queryText(0)).toContain("ORDER BY COALESCE(d.created_at, TIMESTAMP('1000-01-01 00:00:00')) DESC, d.id ASC")
   })
 
   it('respects orderBy and sortDirection', async () => {
@@ -149,7 +149,7 @@ describe('getAllDocuments', () => {
 
     await getAllDocuments({ orderBy: 'name', sortDirection: 'asc' })
 
-    expect(queryText(0)).toContain('ORDER BY d.name ASC')
+    expect(queryText(0)).toContain("ORDER BY COALESCE(d.name, '') ASC, d.id ASC")
   })
 
   it('supports sorting by source_id', async () => {
@@ -157,7 +157,7 @@ describe('getAllDocuments', () => {
 
     await getAllDocuments({ orderBy: 'source_id', sortDirection: 'asc' })
 
-    expect(queryText(0)).toContain("ORDER BY COALESCE(JSON_UNQUOTE(JSON_EXTRACT(source_meta.value, '$.value')), JSON_UNQUOTE(JSON_EXTRACT(source_meta.value, '$')), source_meta.value) ASC")
+    expect(queryText(0)).toContain("ORDER BY COALESCE(JSON_UNQUOTE(JSON_EXTRACT(source_meta.value, '$.value')), JSON_UNQUOTE(JSON_EXTRACT(source_meta.value, '$')), source_meta.value, '') ASC, d.id ASC")
   })
 
   it('supports sorting by is_duplicate', async () => {
@@ -257,7 +257,7 @@ describe('getDocuments', () => {
 
     await getDocuments()
 
-    expect(queryText(0)).toContain('ORDER BY d.created_at DESC')
+    expect(queryText(0)).toContain("ORDER BY COALESCE(d.created_at, TIMESTAMP('1000-01-01 00:00:00')) DESC, d.id ASC")
   })
 
   it('returns items array and total count', async () => {

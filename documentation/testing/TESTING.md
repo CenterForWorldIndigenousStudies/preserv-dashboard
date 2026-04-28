@@ -22,7 +22,10 @@ Before running tests, ensure:
 Unit tests use ViTest and are located in the `tests/unit` and other test directories.
 
 ```bash
-# Run all unit tests
+# Run the full test suite
+npm run test
+
+# Run all unit tests directly
 npm run test:unit
 
 # Run unit tests in watch mode (good for development)
@@ -71,6 +74,9 @@ DB_PASS=docker
 ```bash
 # Run only integration tests
 npm run test:integration
+
+# Run unit + integration together
+npm run test:all
 
 # Run a specific integration test file
 npm run test:integration -- tests/integration/something.integration.test.ts
@@ -127,6 +133,8 @@ TBD
 
 ## Continuous Integration
 
-Tests are run automatically during CI/CD pipeline execution.
+The default test command includes integration tests. Any environment running
+`npm run test` therefore needs a reachable MariaDB instance with the expected
+local preservation schema and seed data.
 
 ## Resources

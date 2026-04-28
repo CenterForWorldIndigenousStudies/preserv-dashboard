@@ -121,7 +121,8 @@ Google OAuth setup:
 - `npm run lint` - run project linting and Markdown linting
 - `npm run lint:project` - run ESLint
 - `npm run lint:markdown` - lint Markdown files
-- `npm run test` - run unit and integration tests
+- `npm run test` - run unit tests and DB-backed integration tests
+- `npm run test:all` - alias for `npm run test`
 - `npm run test:unit` - run unit tests
 - `npm run test:integration` - run integration tests
 - `npm run typecheck` - run TypeScript without emitting files
