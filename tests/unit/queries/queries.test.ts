@@ -33,7 +33,7 @@ function queryText(index = 0): string {
 }
 
 // ---------------------------------------------------------------------------
-// buildSearchWhere — verify search logic via getAllDocuments OR clause
+// buildSearchWhere — verify author-only search logic via getAllDocuments
 // ---------------------------------------------------------------------------
 describe('buildSearchWhere (via getAllDocuments)', () => {
   beforeAll(() => {
@@ -56,27 +56,30 @@ describe('buildSearchWhere (via getAllDocuments)', () => {
     expect(queryText(0)).not.toContain('WHERE (')
   })
 
-  it('applies OR clause with all searchable fields', async () => {
+  it('applies an author-only EXISTS clause', async () => {
     mockQueryRaw.mockReset()
     mockQueryRaw.mockResolvedValueOnce([])
 
     await getAllDocuments({ search: 'test' })
 
     const sql = queryText(0)
-    expect(sql).toContain('d.name LIKE')
-    expect(sql).toContain('d.hash_binary LIKE')
-    expect(sql).toContain('d.hash_content LIKE')
-    expect(sql).toContain('d.id_legacy LIKE')
+    expect(sql).toContain('EXISTS (')
+    expect(sql).toContain('FROM document_to_authors dta')
+    expect(sql).toContain('INNER JOIN authors a ON a.id = dta.author_id')
+    expect(sql).toContain('LOWER(a.name COLLATE utf8mb4_unicode_ci)')
+    expect(sql).not.toContain('d.hash_binary LIKE')
+    expect(sql).not.toContain('d.hash_content LIKE')
+    expect(sql).not.toContain('d.id_legacy LIKE')
   })
 
-  it('trims search term before applying filter', async () => {
+  it('tokenizes and trims the author search term before applying the filter', async () => {
     mockQueryRaw.mockReset()
     mockQueryRaw.mockResolvedValueOnce([])
 
-    await getAllDocuments({ search: '  trimmed  ' })
+    await getAllDocuments({ search: '  Rudy, Rÿser  ' })
 
     const call = queryCall(0)
-    expect(call.values.slice(0, 4)).toEqual(['%trimmed%', '%trimmed%', '%trimmed%', '%trimmed%'])
+    expect(call.values.slice(0, 2)).toEqual(['%rudy%', '%ryser%'])
   })
 })
 
