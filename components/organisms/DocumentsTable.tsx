@@ -385,7 +385,7 @@ export function DocumentsTable({ initialData, initialQuery }: DocumentsTableProp
       sx: { borderRadius: '0.75rem', border: '1px solid rgba(53,88,52,0.125)' },
     },
     muiSearchTextFieldProps: {
-      placeholder: 'Search documents...',
+      placeholder: 'Search authors...',
       sx: {
         '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(53,88,52,0.25)' },
         '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#355834' },
@@ -393,7 +393,7 @@ export function DocumentsTable({ initialData, initialQuery }: DocumentsTableProp
     },
     localization: {
       noRecordsToDisplay: 'No documents found.',
-      search: 'Search',
+      search: 'Author filter',
     },
     getRowId: (row) => row.id,
     muiTableBodyRowProps: ({ row, staticRowIndex }) => ({

@@ -246,15 +246,7 @@ function buildOverviewDocumentsWhereSql(params: {
   const conditions: Prisma.Sql[] = []
 
   if (params.searchTerm) {
-    const likeValue = `%${params.searchTerm}%`
-    conditions.push(Prisma.sql`
-      (
-        d.name LIKE ${likeValue}
-        OR d.hash_binary LIKE ${likeValue}
-        OR d.hash_content LIKE ${likeValue}
-        OR d.id_legacy LIKE ${likeValue}
-      )
-    `)
+    conditions.push(buildOverviewAuthorSearchConditionSql(params.searchTerm))
   }
 
   if (params.cursor) {
@@ -274,6 +266,53 @@ function buildOverviewDocumentsWhereSql(params: {
   }
 
   return Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`
+}
+
+function buildOverviewAuthorSearchConditionSql(searchTerm: string): Prisma.Sql {
+  const rawTokens = searchTerm
+    .trim()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+    .split(/[^\p{L}\p{N}]+/u)
+    .map((token) => token.trim())
+    .filter(Boolean)
+
+  const tokens = Array.from(new Set(rawTokens))
+  if (!tokens.length) {
+    return Prisma.sql`1 = 1`
+  }
+
+  const normalizedAuthorNameSql = Prisma.sql`
+    REPLACE(
+      REPLACE(
+        REPLACE(
+          REPLACE(LOWER(a.name COLLATE utf8mb4_unicode_ci), ' ', ''),
+          ',',
+          ''
+        ),
+        '.',
+        ''
+      ),
+      '-',
+      ''
+    )
+  `
+
+  const tokenConditions = tokens.map((token) => {
+    const likeValue = `%${token}%`
+    return Prisma.sql`${normalizedAuthorNameSql} LIKE ${likeValue}`
+  })
+
+  return Prisma.sql`
+    EXISTS (
+      SELECT 1
+      FROM document_to_authors dta
+      INNER JOIN authors a ON a.id = dta.author_id
+      WHERE dta.document_id = d.id
+        AND (${Prisma.join(tokenConditions, ' OR ')})
+    )
+  `
 }
 
 function buildOverviewDocumentsCursorConditionSql(params: {
