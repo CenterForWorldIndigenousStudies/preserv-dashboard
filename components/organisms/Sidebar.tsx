@@ -20,7 +20,7 @@ const navItems = [
   { href: '/ready-for-library', label: 'Ready for Library', icon: BookOpen },
   { href: '/batch-summary', label: 'Batch Summary', icon: Database },
   { href: '/db', label: 'DB Schema', icon: Database },
-  { href: '/developers/component-library', label: 'Components', icon: BookOpen },
+  { href: '/component-library', label: 'Components', icon: BookOpen },
 ]
 
 export default function Sidebar({ variant, isOpen, onClose }: SidebarProps) {
