@@ -215,6 +215,30 @@ describe('getAllDocuments', () => {
     expect(result.data[0].source_id).toBe('SRC-42')
     expect(result.data[0].is_duplicate).toBe(true)
   })
+
+  it('applies advanced search filters with AND logic', async () => {
+    mockQueryRaw.mockResolvedValueOnce([])
+
+    await getAllDocuments({
+      search: 'Mary Ross',
+      statuses: ['approved', 'failed'],
+      documentType: 'duplicate',
+      batch: 'April batch',
+      createdFrom: '2026-04-01',
+      createdTo: '2026-04-30',
+      collection: 'Plateau',
+      accessLevel: 'restricted',
+    })
+
+    const sql = queryText(0)
+    expect(sql).toContain('LOWER(COALESCE(dq.validation_status, \'\')) IN')
+    expect(sql).toContain('dup.document_id IS NOT NULL')
+    expect(sql).toContain('FROM document_to_batches dtb')
+    expect(sql).toContain('FROM document_to_tags dtt')
+    expect(sql).toContain('LOWER(al.level_name) =')
+    expect(sql).toContain('d.created_at >=')
+    expect(sql).toContain('DATE_ADD(')
+  })
 })
 
 // ---------------------------------------------------------------------------

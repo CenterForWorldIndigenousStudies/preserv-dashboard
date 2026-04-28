@@ -1,5 +1,6 @@
 import type {
   AuditEntry,
+  BatchSummary,
   Document,
   DocumentDetail,
   DocumentsCursor,
@@ -9,14 +10,26 @@ import type {
   FailureItem,
   PagedResult,
   PipelineSummary,
+  ReadyForLibraryItem,
   ReviewItem,
   ReviewQueryParams,
   ReviewQueueItem,
-  ReadyForLibraryItem,
   VersionFamily,
   VersionFamilyDocument,
-  BatchSummary,
 } from '@lib/types'
+import {
+  normalizeOverviewAccessLevel,
+  normalizeOverviewDateFilter,
+  normalizeOverviewDocumentType,
+  normalizeOverviewStatuses,
+  normalizeOverviewTextFilter,
+  OVERVIEW_ACCESS_LEVEL_OPTIONS,
+  type OverviewAccessLevelOption,
+  type OverviewAdvancedSearchFilters,
+  type OverviewDocumentTypeOption,
+  type OverviewFilterOptions,
+  type OverviewStatusOption,
+} from '@lib/overview-search'
 import { db } from '@lib/db'
 import { Prisma } from '@lib/prisma/generated/client'
 
@@ -62,7 +75,7 @@ const OVERVIEW_SORT_EXPRESSIONS: Record<(typeof DOCUMENTS_ORDERABLE_FIELDS)[numb
   is_duplicate: 'CASE WHEN dup.document_id IS NULL THEN 0 ELSE 1 END',
 }
 
-export interface DocumentsQueryParams {
+export interface DocumentsQueryParams extends OverviewAdvancedSearchFilters {
   page?: number
   pageSize?: number
   orderBy?: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
@@ -76,12 +89,20 @@ export interface DocumentsQueryParams {
 export async function getAllDocuments(params: DocumentsQueryParams = {}): Promise<DocumentsPageResult> {
   const page = normalizePageNumber(params.page)
   const pageSize = params.pageSize && params.pageSize > 0 ? Math.min(params.pageSize, 1000) : 25
+
   return getOverviewDocumentsPage({
     page,
     pageSize,
     orderBy: params.orderBy,
     sortDirection: params.sortDirection,
-    search: params.search,
+    search: normalizeOverviewTextFilter(params.search ?? params.author),
+    statuses: normalizeOverviewStatuses(params.statuses),
+    documentType: normalizeOverviewDocumentType(params.documentType),
+    batch: normalizeOverviewTextFilter(params.batch),
+    createdFrom: normalizeOverviewDateFilter(params.createdFrom),
+    createdTo: normalizeOverviewDateFilter(params.createdTo),
+    collection: normalizeOverviewTextFilter(params.collection),
+    accessLevel: normalizeOverviewAccessLevel(params.accessLevel),
     cursor: params.cursorValue && params.cursorId ? { value: params.cursorValue, id: params.cursorId } : null,
     cursorDirection: params.cursorDirection,
   })
@@ -152,6 +173,13 @@ async function getOverviewDocumentsPage(params: {
   orderBy?: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
   sortDirection?: 'asc' | 'desc'
   search?: string
+  statuses?: OverviewStatusOption[]
+  documentType?: OverviewDocumentTypeOption
+  batch?: string
+  createdFrom?: string
+  createdTo?: string
+  collection?: string
+  accessLevel?: OverviewAccessLevelOption
   cursor?: DocumentsCursor | null
   cursorDirection?: 'next' | 'prev'
 }): Promise<DocumentsPageResult> {
@@ -163,12 +191,19 @@ async function getOverviewDocumentsPage(params: {
   const searchTerm = params.search?.trim()
   const sortExpression = Prisma.raw(OVERVIEW_SORT_EXPRESSIONS[sortField])
   const whereSql = buildOverviewDocumentsWhereSql({
+    accessLevel: params.accessLevel,
+    batch: params.batch,
+    collection: params.collection,
+    createdFrom: params.createdFrom,
+    createdTo: params.createdTo,
     cursor: params.cursor,
     cursorDirection,
+    documentType: params.documentType,
     searchTerm,
     sortDirection,
     sortExpression,
     sortField,
+    statuses: params.statuses,
   })
   const orderBySql = buildOverviewDocumentsOrderBySql({
     cursorDirection,
@@ -190,6 +225,8 @@ async function getOverviewDocumentsPage(params: {
       INNER JOIN tags t ON t.id = dtt.tag_id
       WHERE t.name = 'duplicate_document'
     ) AS dup ON dup.document_id = d.id
+    LEFT JOIN document_quality dq ON dq.document_id = d.id
+    LEFT JOIN access_levels al ON al.id = dq.access_level
   `
 
   const items = await db.$queryRaw<OverviewDocumentRow[]>(Prisma.sql`
@@ -237,6 +274,13 @@ async function getOverviewDocumentsPage(params: {
 
 function buildOverviewDocumentsWhereSql(params: {
   searchTerm?: string
+  statuses?: OverviewStatusOption[]
+  documentType?: OverviewDocumentTypeOption
+  batch?: string
+  createdFrom?: string
+  createdTo?: string
+  collection?: string
+  accessLevel?: OverviewAccessLevelOption
   cursor?: DocumentsCursor | null
   cursorDirection: 'next' | 'prev'
   sortDirection: 'asc' | 'desc'
@@ -247,6 +291,38 @@ function buildOverviewDocumentsWhereSql(params: {
 
   if (params.searchTerm) {
     conditions.push(buildOverviewAuthorSearchConditionSql(params.searchTerm))
+  }
+
+  if (params.statuses?.length) {
+    conditions.push(buildOverviewStatusConditionSql(params.statuses))
+  }
+
+  if (params.documentType === 'unique') {
+    conditions.push(Prisma.sql`dup.document_id IS NULL`)
+  }
+
+  if (params.documentType === 'duplicate') {
+    conditions.push(Prisma.sql`dup.document_id IS NOT NULL`)
+  }
+
+  if (params.batch) {
+    conditions.push(buildOverviewBatchConditionSql(params.batch))
+  }
+
+  if (params.createdFrom) {
+    conditions.push(Prisma.sql`d.created_at >= ${new Date(`${params.createdFrom}T00:00:00.000Z`)}`)
+  }
+
+  if (params.createdTo) {
+    conditions.push(Prisma.sql`d.created_at < DATE_ADD(${new Date(`${params.createdTo}T00:00:00.000Z`)}, INTERVAL 1 DAY)`)
+  }
+
+  if (params.collection) {
+    conditions.push(buildOverviewCollectionConditionSql(params.collection))
+  }
+
+  if (params.accessLevel) {
+    conditions.push(Prisma.sql`LOWER(al.level_name) = ${params.accessLevel}`)
   }
 
   if (params.cursor) {
@@ -266,6 +342,11 @@ function buildOverviewDocumentsWhereSql(params: {
   }
 
   return Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`
+}
+
+function buildOverviewStatusConditionSql(statuses: OverviewStatusOption[]): Prisma.Sql {
+  const normalizedStatuses = Array.from(new Set(statuses.map((status) => status.toLowerCase())))
+  return Prisma.sql`LOWER(COALESCE(dq.validation_status, '')) IN (${Prisma.join(normalizedStatuses)})`
 }
 
 function buildOverviewAuthorSearchConditionSql(searchTerm: string): Prisma.Sql {
@@ -311,6 +392,34 @@ function buildOverviewAuthorSearchConditionSql(searchTerm: string): Prisma.Sql {
       INNER JOIN authors a ON a.id = dta.author_id
       WHERE dta.document_id = d.id
         AND (${Prisma.join(tokenConditions, ' OR ')})
+    )
+  `
+}
+
+function buildOverviewBatchConditionSql(batchTerm: string): Prisma.Sql {
+  const likeValue = `%${batchTerm.toLowerCase()}%`
+
+  return Prisma.sql`
+    EXISTS (
+      SELECT 1
+      FROM document_to_batches dtb
+      INNER JOIN batches b ON b.id = dtb.batch_id
+      WHERE dtb.document_id = d.id
+        AND LOWER(COALESCE(b.name, '')) LIKE ${likeValue}
+    )
+  `
+}
+
+function buildOverviewCollectionConditionSql(collection: string): Prisma.Sql {
+  const normalizedCollection = collection.toLowerCase()
+
+  return Prisma.sql`
+    EXISTS (
+      SELECT 1
+      FROM document_to_tags dtt
+      INNER JOIN tags t ON t.id = dtt.tag_id
+      WHERE dtt.document_id = d.id
+        AND LOWER(t.name) = ${normalizedCollection}
     )
   `
 }
@@ -651,6 +760,15 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
 export async function getFailures(): Promise<FailureItem[]> {
   // documents table has no state column — cannot determine failures
   return await Promise.resolve([])
+}
+
+export async function getOverviewFilterOptions(): Promise<OverviewFilterOptions> {
+  const collections = await getDistinctCollectionTags()
+
+  return {
+    collections: collections.filter((collection) => collection !== 'duplicate_document'),
+    accessLevels: [...OVERVIEW_ACCESS_LEVEL_OPTIONS],
+  }
 }
 
 // ---------------------------------------------------------------------------

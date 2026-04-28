@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactElement } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   MaterialReactTable,
@@ -13,14 +13,21 @@ import { Button } from '@atoms/Button'
 import { DateAtom } from '@atoms/Date'
 import { FileSize } from '@atoms/FileSize'
 import { getDocumentsAction } from '@actions/documents'
-import type { Document, DocumentsPageResult } from '@lib/types'
+import { OverviewAdvancedSearchModal } from '@organisms/OverviewAdvancedSearchModal'
+import {
+  serializeOverviewStatusesParam,
+  type OverviewAdvancedSearchFilters,
+  type OverviewFilterOptions,
+} from '@lib/overview-search'
 import type { DocumentsQueryParams } from '@lib/queries'
+import type { Document, DocumentsPageResult } from '@lib/types'
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100]
 
 interface DocumentsTableProps {
   initialData?: DocumentsPageResult
   initialQuery?: DocumentsQueryParams
+  filterOptions: OverviewFilterOptions
 }
 
 function buildInitialSorting(initialQuery?: DocumentsQueryParams): MRT_SortingState {
@@ -44,6 +51,50 @@ function normalizePageNumber(page?: number): number {
   return Math.floor(page)
 }
 
+function defaultQueryValue<T>(value: T | undefined, fallback: T): T {
+  return value === undefined ? fallback : value
+}
+
+function buildComparableQueryShape(queryParams: DocumentsQueryParams | undefined): string {
+  return JSON.stringify([
+    normalizePageNumber(queryParams?.page),
+    defaultQueryValue(queryParams?.pageSize, 25),
+    queryParams?.orderBy,
+    queryParams?.sortDirection,
+    queryParams?.search,
+    serializeOverviewStatusesParam(queryParams?.statuses),
+    queryParams?.documentType,
+    queryParams?.batch,
+    queryParams?.createdFrom,
+    queryParams?.createdTo,
+    queryParams?.collection,
+    queryParams?.accessLevel,
+    queryParams?.cursorValue,
+    queryParams?.cursorId,
+    queryParams?.cursorDirection,
+  ])
+}
+
+function syncSearchParam(nextParams: URLSearchParams, key: string, value: string | undefined): void {
+  if (value) {
+    nextParams.set(key, value)
+    return
+  }
+
+  nextParams.delete(key)
+}
+
+function syncOverviewFilterSearchParams(nextParams: URLSearchParams, queryParams: DocumentsQueryParams): void {
+  syncSearchParam(nextParams, 'search', queryParams.search)
+  syncSearchParam(nextParams, 'statuses', serializeOverviewStatusesParam(queryParams.statuses))
+  syncSearchParam(nextParams, 'documentType', queryParams.documentType && queryParams.documentType !== 'all' ? queryParams.documentType : undefined)
+  syncSearchParam(nextParams, 'batch', queryParams.batch)
+  syncSearchParam(nextParams, 'createdFrom', queryParams.createdFrom)
+  syncSearchParam(nextParams, 'createdTo', queryParams.createdTo)
+  syncSearchParam(nextParams, 'collection', queryParams.collection)
+  syncSearchParam(nextParams, 'accessLevel', queryParams.accessLevel)
+}
+
 function canReuseInitialData(
   initialData: DocumentsTableProps['initialData'],
   initialQuery: DocumentsQueryParams | undefined,
@@ -53,18 +104,7 @@ function canReuseInitialData(
     return false
   }
 
-  const comparisons = [
-    normalizePageNumber(initialQuery?.page) === normalizePageNumber(queryParams.page),
-    (initialQuery?.pageSize ?? 25) === queryParams.pageSize,
-    (initialQuery?.orderBy ?? undefined) === queryParams.orderBy,
-    (initialQuery?.sortDirection ?? undefined) === queryParams.sortDirection,
-    (initialQuery?.search ?? undefined) === queryParams.search,
-    (initialQuery?.cursorValue ?? undefined) === queryParams.cursorValue,
-    (initialQuery?.cursorId ?? undefined) === queryParams.cursorId,
-    (initialQuery?.cursorDirection ?? undefined) === queryParams.cursorDirection,
-  ]
-
-  return comparisons.every(Boolean)
+  return buildComparableQueryShape(initialQuery) === buildComparableQueryShape(queryParams)
 }
 
 function useOverviewTableState(initialQuery?: DocumentsQueryParams) {
@@ -75,6 +115,13 @@ function useOverviewTableState(initialQuery?: DocumentsQueryParams) {
   const [pageSize, setPageSize] = useState(initialQuery?.pageSize ?? 25)
   const [sorting, setSorting] = useState<MRT_SortingState>(buildInitialSorting(initialQuery))
   const [globalFilter, setGlobalFilter] = useState(initialQuery?.search ?? '')
+  const [statuses, setStatuses] = useState(initialQuery?.statuses)
+  const [documentType, setDocumentType] = useState(initialQuery?.documentType ?? 'all')
+  const [batch, setBatch] = useState(initialQuery?.batch)
+  const [createdFrom, setCreatedFrom] = useState(initialQuery?.createdFrom)
+  const [createdTo, setCreatedTo] = useState(initialQuery?.createdTo)
+  const [collection, setCollection] = useState(initialQuery?.collection)
+  const [accessLevel, setAccessLevel] = useState(initialQuery?.accessLevel)
   const [cursorValue, setCursorValue] = useState(initialQuery?.cursorValue)
   const [cursorId, setCursorId] = useState(initialQuery?.cursorId)
   const [cursorDirection, setCursorDirection] = useState<DocumentsQueryParams['cursorDirection']>(
@@ -88,11 +135,19 @@ function useOverviewTableState(initialQuery?: DocumentsQueryParams) {
       orderBy: sorting[0]?.id as DocumentsQueryParams['orderBy'],
       sortDirection: sorting[0] ? (sorting[0].desc ? 'desc' : 'asc') : undefined,
       search: globalFilter || undefined,
+      author: globalFilter || undefined,
+      statuses,
+      documentType,
+      batch,
+      createdFrom,
+      createdTo,
+      collection,
+      accessLevel,
       cursorValue,
       cursorId,
       cursorDirection,
     }),
-    [cursorDirection, cursorId, cursorValue, globalFilter, page, pageSize, sorting],
+    [accessLevel, batch, collection, createdFrom, createdTo, cursorDirection, cursorId, cursorValue, documentType, globalFilter, page, pageSize, sorting, statuses],
   )
 
   useEffect(() => {
@@ -113,11 +168,7 @@ function useOverviewTableState(initialQuery?: DocumentsQueryParams) {
       nextParams.delete('sortDirection')
     }
 
-    if (queryParams.search) {
-      nextParams.set('search', queryParams.search)
-    } else {
-      nextParams.delete('search')
-    }
+    syncOverviewFilterSearchParams(nextParams, queryParams)
 
     if (queryParams.cursorValue && queryParams.cursorId && queryParams.cursorDirection) {
       nextParams.set('cursorValue', queryParams.cursorValue)
@@ -144,14 +195,32 @@ function useOverviewTableState(initialQuery?: DocumentsQueryParams) {
   }
 
   return {
+    accessLevel,
+    batch,
+    collection,
+    createdFrom,
+    createdTo,
+    documentType,
     globalFilter,
     pathname,
     page,
     pageSize,
     queryParams,
     searchParams,
+    statuses,
     setGlobalFilter: (nextValue: string) => {
       setGlobalFilter(nextValue)
+      resetToFirstPage()
+    },
+    setOverviewFilters: (filters: OverviewAdvancedSearchFilters) => {
+      setGlobalFilter(filters.author ?? '')
+      setStatuses(filters.statuses)
+      setDocumentType(filters.documentType ?? 'all')
+      setBatch(filters.batch)
+      setCreatedFrom(filters.createdFrom)
+      setCreatedTo(filters.createdTo)
+      setCollection(filters.collection)
+      setAccessLevel(filters.accessLevel)
       resetToFirstPage()
     },
     setPageSize: (nextPageSize: number) => {
@@ -180,8 +249,14 @@ function useOverviewTableState(initialQuery?: DocumentsQueryParams) {
   }
 }
 
-export function DocumentsTable({ initialData, initialQuery }: DocumentsTableProps) {
+export function DocumentsTable({ initialData, initialQuery, filterOptions }: DocumentsTableProps): ReactElement {
   const {
+    accessLevel,
+    batch,
+    collection,
+    createdFrom,
+    createdTo,
+    documentType,
     globalFilter,
     pathname,
     page,
@@ -189,9 +264,11 @@ export function DocumentsTable({ initialData, initialQuery }: DocumentsTableProp
     queryParams,
     searchParams,
     setGlobalFilter,
+    setOverviewFilters,
     setPageSize,
     setSorting,
     sorting,
+    statuses,
     goToNextPage,
     goToPreviousPage,
   } = useOverviewTableState(initialQuery)
@@ -319,6 +396,19 @@ export function DocumentsTable({ initialData, initialQuery }: DocumentsTableProp
   )
 
   const shouldUseInitialData = canReuseInitialData(initialData, initialQuery, queryParams)
+  const currentFilters: OverviewAdvancedSearchFilters = useMemo(
+    () => ({
+      author: globalFilter || undefined,
+      statuses,
+      documentType,
+      batch,
+      createdFrom,
+      createdTo,
+      collection,
+      accessLevel,
+    }),
+    [accessLevel, batch, collection, createdFrom, createdTo, documentType, globalFilter, statuses],
+  )
 
   useEffect(() => {
     if (shouldUseInitialData && initialData) {
@@ -395,6 +485,13 @@ export function DocumentsTable({ initialData, initialQuery }: DocumentsTableProp
       noRecordsToDisplay: 'No documents found.',
       search: 'Author filter',
     },
+    renderTopToolbarCustomActions: () => (
+      <OverviewAdvancedSearchModal
+        filters={currentFilters}
+        filterOptions={filterOptions}
+        onApply={setOverviewFilters}
+      />
+    ),
     getRowId: (row) => row.id,
     muiTableBodyRowProps: ({ row, staticRowIndex }) => ({
       sx: row.original.is_duplicate
