@@ -32,6 +32,9 @@ const config: StorybookConfig = {
         ...config.resolve,
         alias: {
           ...config.resolve?.alias,
+          // Client components used in stories should not pull server actions
+          // into the browser bundle.
+          '@actions/documents': path.resolve(__dirname, '../app/actions/documents.storybook.ts'),
           // Stub @lib/db with a browser-safe no-op so Prisma (Node.js-only)
           // never enters the Storybook browser bundle.  The stories pass
           // initialData directly and never call any db function at runtime.
