@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { DocumentsTable } from '@components/organisms/DocumentsTable'
-import type { Document } from '@lib/types'
+import type { OverviewFilterOptions } from '@lib/overview-search'
+import type { Document, DocumentsPageResult } from '@lib/types'
 
 /**
  * Browser-safe UUID replacement for Storybook stories.
@@ -60,25 +61,43 @@ const mockDocuments: Document[] = [
   },
 ]
 
+const filterOptions: OverviewFilterOptions = {
+  collections: ['Plateau', 'Southwest', 'Pacific Northwest'],
+  accessLevels: ['open access', 'restricted', 'internal', 'confidential'],
+}
+
+function buildPageResult(data: Document[]): DocumentsPageResult {
+  return {
+    data,
+    pageInfo: {
+      page: 1,
+      pageSize: data.length || 25,
+      hasNextPage: false,
+      hasPreviousPage: false,
+      startCursor: null,
+      endCursor: null,
+    },
+  }
+}
+
 export const Default: Story = {
   args: {
-    initialData: {
-      data: mockDocuments,
-      total: mockDocuments.length,
-    },
+    initialData: buildPageResult(mockDocuments),
+    filterOptions,
   },
 }
 
 export const Empty: Story = {
   args: {
-    initialData: {
-      data: [],
-      total: 0,
-    },
+    initialData: buildPageResult([]),
+    filterOptions,
   },
 }
 
 export const ManyResults: Story = {
+  args: {
+    filterOptions,
+  },
   render: () => {
     const many = Array.from({ length: 25 }, (_, i): Document => ({
       id: storyUuid(),
@@ -90,6 +109,6 @@ export const ManyResults: Story = {
       created_at: new Date(Date.now() - i * 86400000),
       updated_at: new Date(Date.now() - i * 86400000),
     }))
-    return <DocumentsTable initialData={{ data: many, total: many.length }} />
+    return <DocumentsTable initialData={buildPageResult(many)} filterOptions={filterOptions} />
   },
 }

@@ -14,18 +14,19 @@
     "lint": "run-p lint:project lint:markdown",
     "lint:markdown": "markdownlint-cli2 '**/*.md'",
     "lint:project": "eslint './**/*.{ts,tsx}' --max-warnings=0 --cache --cache-location .eslintcache",
-    "prebuild": "npm run storybook:build",
     "predev": "npm run storybook:build && rm -rf public/storybook",
     "start": "next start",
     "storybook": "storybook dev -p 6006",
     "storybook:build": "storybook build --quiet --output-dir ./storybook-static && cp -r node_modules/storybook/dist/_browser-chunks storybook-static/ && mkdir -p public/developers/storybook && cp -r storybook-static/. public/developers/storybook/ && rm -rf public/developers/storybook/developers",
     "storybook:clean": "rm -rf storybook-static public/developers/storybook",
     "storybook:preview": "storybook preview -p 6006 --storybook-dir ../public/storybook",
-    "test": "run-p test:unit test:integration",
-    "test:unit": "vitest run tests/unit",
-    "test:unit:watch": "vitest tests/unit",
-    "test:coverage": "vitest run tests/unit --coverage",
-    "test:integration": "vitest run tests/integration",
+    "test": "run-s test:unit test:integration",
+    "test:all": "npm run test",
+    "test:unit": "vitest run --project unit tests/unit",
+    "test:unit:watch": "vitest --project unit tests/unit",
+    "test:coverage": "vitest run --project unit tests/unit --coverage",
+    "test:integration": "vitest run --project integration tests/integration",
+    "test:storybook": "vitest run --project storybook",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -81,6 +82,6 @@
     "vitest": "^4.1.4"
   },
   "engines": {
-    "node": "24.14.1"
+    "node": "24"
   }
 }

@@ -1,4 +1,5 @@
 import path from 'node:path'
+import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import { defineConfig } from 'vitest/config'
@@ -8,6 +9,11 @@ import { storybookTest } from '@storybook/addon-vitest/vitest-plugin'
 import { playwright } from '@vitest/browser-playwright'
 
 const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url))
+const testEnvPath = path.join(dirname, '.env.test')
+
+if (fs.existsSync(testEnvPath)) {
+  process.loadEnvFile(testEnvPath)
+}
 
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
@@ -62,6 +68,8 @@ export default defineConfig({
           globals: true,
           setupFiles: [],
           environment: 'node',
+          hookTimeout: 30000,
+          testTimeout: 30000,
           include: ['tests/integration/**/*.test.ts'],
         },
       },

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 
 import { getPipelineSummary } from '@lib/queries'
 
+export const preferredRegion = 'sfo1'
+
 export async function GET(): Promise<NextResponse> {
   try {
     const summary = await getPipelineSummary()

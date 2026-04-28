@@ -4,17 +4,13 @@ import { afterAll, afterEach, beforeAll, describe, it, expect, vi } from 'vitest
 // Mock the Prisma client via vi.hoisted() — ensures mocks are available at
 // module scope before vi.mock() hoists the factory
 // ---------------------------------------------------------------------------
-const { mockFindMany, mockCount } = vi.hoisted(() => ({
-  mockFindMany: vi.fn(),
-  mockCount: vi.fn(),
+const { mockQueryRaw } = vi.hoisted(() => ({
+  mockQueryRaw: vi.fn(),
 }))
 
 vi.mock('@lib/db', () => ({
   db: {
-    documents: {
-      findMany: mockFindMany,
-      count: mockCount,
-    },
+    $queryRaw: mockQueryRaw,
   },
 }))
 
@@ -23,32 +19,25 @@ import { getAllDocuments, getDocuments } from '@lib/queries'
 // ---------------------------------------------------------------------------
 // Shared call inspection helpers
 // ---------------------------------------------------------------------------
-interface PrismaCall {
-  where?: { OR?: Array<Record<string, { contains: string }>> }
-  skip?: number
-  take?: number
-  orderBy?: Record<string, 'asc' | 'desc'>
+interface PrismaSqlCall {
+  strings: string[]
+  values: unknown[]
 }
 
-function findOrCall(): PrismaCall {
-  return mockFindMany.mock.calls[0][0] as PrismaCall
+function queryCall(index = 0): PrismaSqlCall {
+  return mockQueryRaw.mock.calls[index][0] as PrismaSqlCall
 }
 
-function findOrCallWith(): PrismaCall {
-  for (const c of mockFindMany.mock.calls) {
-    const call = c[0] as PrismaCall
-    if (call?.where?.OR) return call
-  }
-  return mockFindMany.mock.calls[0][0] as PrismaCall
+function queryText(index = 0): string {
+  return queryCall(index).strings.join(' ')
 }
 
 // ---------------------------------------------------------------------------
-// buildSearchWhere — verify search logic via getAllDocuments OR clause
+// buildSearchWhere — verify author-only search logic via getAllDocuments
 // ---------------------------------------------------------------------------
 describe('buildSearchWhere (via getAllDocuments)', () => {
   beforeAll(() => {
-    mockFindMany.mockResolvedValue([])
-    mockCount.mockResolvedValue(0)
+    mockQueryRaw.mockResolvedValueOnce([])
   })
 
   afterAll(() => {
@@ -57,46 +46,40 @@ describe('buildSearchWhere (via getAllDocuments)', () => {
 
   it('returns empty where when search is undefined', async () => {
     await getAllDocuments({ search: undefined })
-    const call = findOrCall()
-    expect(call.where).toEqual({})
+    expect(queryText(0)).not.toContain('WHERE (')
   })
 
   it('returns empty where when search is only whitespace', async () => {
-    mockFindMany.mockClear()
+    mockQueryRaw.mockReset()
+    mockQueryRaw.mockResolvedValueOnce([])
     await getAllDocuments({ search: '   ' })
-    const call = findOrCall()
-    expect(call.where).toEqual({})
+    expect(queryText(0)).not.toContain('WHERE (')
   })
 
-  it('applies OR clause with all searchable fields', async () => {
-    mockFindMany.mockClear()
-    mockCount.mockClear()
-    mockFindMany.mockResolvedValue([])
-    mockCount.mockResolvedValue(0)
+  it('applies an author-only EXISTS clause', async () => {
+    mockQueryRaw.mockReset()
+    mockQueryRaw.mockResolvedValueOnce([])
 
     await getAllDocuments({ search: 'test' })
 
-    const call = findOrCallWith()
-    expect(call.where).toHaveProperty('OR')
-    const orClause = call.where?.OR as Array<Record<string, unknown>>
-    const fieldNames = orClause.map((f) => Object.keys(f)[0])
-    expect(fieldNames).toEqual(['name', 'hash_binary', 'hash_content', 'id_legacy'])
+    const sql = queryText(0)
+    expect(sql).toContain('EXISTS (')
+    expect(sql).toContain('FROM document_to_authors dta')
+    expect(sql).toContain('INNER JOIN authors a ON a.id = dta.author_id')
+    expect(sql).toContain('LOWER(a.name COLLATE utf8mb4_unicode_ci)')
+    expect(sql).not.toContain('d.hash_binary LIKE')
+    expect(sql).not.toContain('d.hash_content LIKE')
+    expect(sql).not.toContain('d.id_legacy LIKE')
   })
 
-  it('trims search term before applying filter', async () => {
-    mockFindMany.mockClear()
-    mockCount.mockClear()
-    mockFindMany.mockResolvedValue([])
-    mockCount.mockResolvedValue(0)
+  it('tokenizes and trims the author search term before applying the filter', async () => {
+    mockQueryRaw.mockReset()
+    mockQueryRaw.mockResolvedValueOnce([])
 
-    await getAllDocuments({ search: '  trimmed  ' })
+    await getAllDocuments({ search: '  Rudy, Rÿser  ' })
 
-    const call = findOrCallWith()
-    const orClause = call.where?.OR as Array<Record<string, { contains: string }>>
-    orClause.forEach((clause) => {
-      const field = Object.values(clause)[0] as { contains: string }
-      expect(field.contains).toBe('trimmed')
-    })
+    const call = queryCall(0)
+    expect(call.values.slice(0, 2)).toEqual(['%rudy%', '%ryser%'])
   })
 })
 
@@ -114,105 +97,90 @@ describe('getAllDocuments', () => {
     name: null,
     created_at: null,
     updated_at: null,
+    is_duplicate: 0,
   }
 
   beforeAll(() => {
-    mockFindMany.mockResolvedValue([defaultRow])
-    mockCount.mockResolvedValue(1)
+    mockQueryRaw.mockResolvedValueOnce([defaultRow])
   })
 
   afterEach(() => {
-    mockFindMany.mockClear()
-    mockCount.mockClear()
+    mockQueryRaw.mockReset()
   })
 
   afterAll(() => {
     vi.restoreAllMocks()
   })
 
-  it('uses default pagination (page 1, pageSize 25)', async () => {
-    mockFindMany.mockResolvedValue([defaultRow])
-    mockCount.mockResolvedValue(1)
+  it('uses default pageSize of 25', async () => {
+    mockQueryRaw.mockResolvedValueOnce([defaultRow])
 
     await getAllDocuments()
 
-    const call = findOrCall()
-    expect(call.skip).toBe(0)
-    expect(call.take).toBe(25)
+    const call = queryCall(0)
+    expect(call.values.at(-1)).toBe(26)
   })
 
-  it('respects custom page and pageSize', async () => {
-    mockFindMany.mockResolvedValue([])
-    mockCount.mockResolvedValue(0)
+  it('respects custom pageSize', async () => {
+    mockQueryRaw.mockResolvedValueOnce([])
 
     await getAllDocuments({ page: 3, pageSize: 10 })
 
-    const call = findOrCall()
-    expect(call.skip).toBe(20) // (3-1) * 10
-    expect(call.take).toBe(10)
+    const call = queryCall(0)
+    expect(call.values.at(-1)).toBe(11)
   })
 
   it('caps pageSize at 1000', async () => {
-    mockFindMany.mockResolvedValue([])
-    mockCount.mockResolvedValue(0)
+    mockQueryRaw.mockResolvedValueOnce([])
 
     await getAllDocuments({ pageSize: 5000 })
 
-    const call = findOrCall()
-    expect(call.take).toBe(1000)
+    const call = queryCall(0)
+    expect(call.values.at(-1)).toBe(1001)
   })
 
   it('orders by created_at desc by default', async () => {
-    mockFindMany.mockResolvedValue([])
-    mockCount.mockResolvedValue(0)
+    mockQueryRaw.mockResolvedValueOnce([])
 
     await getAllDocuments()
 
-    const call = findOrCall()
-    expect(call.orderBy).toEqual({ created_at: 'desc' })
+    expect(queryText(0)).toContain("ORDER BY COALESCE(d.created_at, TIMESTAMP('1000-01-01 00:00:00')) DESC, d.id ASC")
   })
 
   it('respects orderBy and sortDirection', async () => {
-    mockFindMany.mockResolvedValue([])
-    mockCount.mockResolvedValue(0)
+    mockQueryRaw.mockResolvedValueOnce([])
 
     await getAllDocuments({ orderBy: 'name', sortDirection: 'asc' })
 
-    const call = findOrCall()
-    expect(call.orderBy).toEqual({ name: 'asc' })
+    expect(queryText(0)).toContain("ORDER BY COALESCE(d.name, '') ASC, d.id ASC")
   })
 
-  it('respects sortDirection desc', async () => {
-    mockFindMany.mockResolvedValue([])
-    mockCount.mockResolvedValue(0)
+  it('supports sorting by source_id', async () => {
+    mockQueryRaw.mockResolvedValueOnce([])
 
-    await getAllDocuments({ orderBy: 'filesize', sortDirection: 'desc' })
+    await getAllDocuments({ orderBy: 'source_id', sortDirection: 'asc' })
 
-    const call = findOrCall()
-    expect(call.orderBy).toEqual({ filesize: 'desc' })
+    expect(queryText(0)).toContain("ORDER BY COALESCE(JSON_UNQUOTE(JSON_EXTRACT(source_meta.value, '$.value')), JSON_UNQUOTE(JSON_EXTRACT(source_meta.value, '$')), source_meta.value, '') ASC, d.id ASC")
   })
 
-  it('applies search filter via OR clause', async () => {
-    mockFindMany.mockResolvedValue([])
-    mockCount.mockResolvedValue(0)
+  it('supports sorting by is_duplicate', async () => {
+    mockQueryRaw.mockResolvedValueOnce([])
 
-    await getAllDocuments({ search: 'test' })
+    await getAllDocuments({ orderBy: 'is_duplicate', sortDirection: 'desc' })
 
-    const call = findOrCall()
-    expect(call.where).toHaveProperty('OR')
+    expect(queryText(0)).toContain('ORDER BY CASE WHEN dup.document_id IS NULL THEN 0 ELSE 1 END DESC')
   })
 
-  it('returns data array and total count', async () => {
+  it('returns data array and pageInfo', async () => {
     const row = { ...defaultRow, id: 'doc-1', name: 'Test Document' }
-    mockFindMany.mockResolvedValue([row])
-    mockCount.mockResolvedValue(1)
+    mockQueryRaw.mockResolvedValueOnce([row])
 
     const result = await getAllDocuments()
 
     expect(result).toHaveProperty('data')
-    expect(result).toHaveProperty('total')
+    expect(result).toHaveProperty('pageInfo')
     expect(result.data).toHaveLength(1)
-    expect(result.total).toBe(1)
+    expect(result.pageInfo.page).toBe(1)
   })
 
   it('maps filesize BigInt to number', async () => {
@@ -222,8 +190,7 @@ describe('getAllDocuments', () => {
       filesize: BigInt(2048),
       name: 'File.pdf',
     }
-    mockFindMany.mockResolvedValue([row])
-    mockCount.mockResolvedValue(1)
+    mockQueryRaw.mockResolvedValueOnce([row])
 
     const result = await getAllDocuments()
 
@@ -232,12 +199,45 @@ describe('getAllDocuments', () => {
 
   it('handles null filesize', async () => {
     const row = { ...defaultRow, id: 'doc-3', filesize: null }
-    mockFindMany.mockResolvedValue([row])
-    mockCount.mockResolvedValue(1)
+    mockQueryRaw.mockResolvedValueOnce([row])
 
     const result = await getAllDocuments()
 
     expect(result.data[0].filesize).toBeNull()
+  })
+
+  it('maps source_id and duplicate flag', async () => {
+    const row = { ...defaultRow, source_id: 'SRC-42', is_duplicate: 1 }
+    mockQueryRaw.mockResolvedValueOnce([row])
+
+    const result = await getAllDocuments()
+
+    expect(result.data[0].source_id).toBe('SRC-42')
+    expect(result.data[0].is_duplicate).toBe(true)
+  })
+
+  it('applies advanced search filters with AND logic', async () => {
+    mockQueryRaw.mockResolvedValueOnce([])
+
+    await getAllDocuments({
+      search: 'Mary Ross',
+      statuses: ['approved', 'failed'],
+      documentType: 'duplicate',
+      batch: 'April batch',
+      createdFrom: '2026-04-01',
+      createdTo: '2026-04-30',
+      collection: 'Plateau',
+      accessLevel: 'restricted',
+    })
+
+    const sql = queryText(0)
+    expect(sql).toContain('LOWER(COALESCE(dq.validation_status, \'\')) IN')
+    expect(sql).toContain('dup.document_id IS NOT NULL')
+    expect(sql).toContain('FROM document_to_batches dtb')
+    expect(sql).toContain('FROM document_to_tags dtt')
+    expect(sql).toContain('LOWER(al.level_name) =')
+    expect(sql).toContain('d.created_at >=')
+    expect(sql).toContain('DATE_ADD(')
   })
 })
 
@@ -255,44 +255,41 @@ describe('getDocuments', () => {
     name: null,
     created_at: new Date('2024-01-01T00:00:00Z'),
     updated_at: null,
+    is_duplicate: 0,
   }
 
   beforeAll(() => {
-    mockFindMany.mockResolvedValue([defaultRow])
-    mockCount.mockResolvedValue(1)
+    mockQueryRaw.mockResolvedValueOnce([defaultRow])
   })
 
   afterEach(() => {
-    mockFindMany.mockClear()
-    mockCount.mockClear()
+    mockQueryRaw.mockReset()
   })
 
   afterAll(() => {
     vi.restoreAllMocks()
   })
 
-  it('uses PAGE_SIZE of 20 with offset pagination', async () => {
-    mockFindMany.mockResolvedValue([])
-    mockCount.mockResolvedValue(0)
+  it('uses PAGE_SIZE of 20', async () => {
+    mockQueryRaw.mockResolvedValueOnce([])
 
     await getDocuments({ page: 2 })
 
-    const call = findOrCall()
-    expect(call.skip).toBe(20) // (2-1) * 20
-    expect(call.take).toBe(20)
+    const call = queryCall(0)
+    expect(call.values.at(-1)).toBe(21)
   })
 
   it('orders by created_at desc', async () => {
-    mockFindMany.mockResolvedValue([])
-    mockCount.mockResolvedValue(0)
+    mockQueryRaw.mockResolvedValueOnce([])
 
     await getDocuments()
 
-    const call = findOrCall()
-    expect(call.orderBy).toEqual({ created_at: 'desc' })
+    expect(queryText(0)).toContain("ORDER BY COALESCE(d.created_at, TIMESTAMP('1000-01-01 00:00:00')) DESC, d.id ASC")
   })
 
   it('returns items array and total count', async () => {
+    mockQueryRaw.mockResolvedValueOnce([defaultRow])
+
     const result = await getDocuments()
 
     expect(result).toHaveProperty('items')
@@ -306,8 +303,7 @@ describe('getDocuments', () => {
 // ---------------------------------------------------------------------------
 describe('page number normalization', () => {
   beforeAll(() => {
-    mockFindMany.mockResolvedValue([])
-    mockCount.mockResolvedValue(0)
+    mockQueryRaw.mockResolvedValueOnce([])
   })
 
   afterAll(() => {
@@ -315,23 +311,26 @@ describe('page number normalization', () => {
   })
 
   it('normalizes page < 1 to 1', async () => {
-    mockFindMany.mockClear()
+    mockQueryRaw.mockReset()
+    mockQueryRaw.mockResolvedValueOnce([])
     await getAllDocuments({ page: 0 })
-    const call = findOrCall()
-    expect(call.skip).toBe(0)
+    const call = queryCall(0)
+    expect(call.values.at(-1)).toBe(26)
   })
 
   it('normalizes negative page to 1', async () => {
-    mockFindMany.mockClear()
+    mockQueryRaw.mockReset()
+    mockQueryRaw.mockResolvedValueOnce([])
     await getAllDocuments({ page: -5 })
-    const call = findOrCall()
-    expect(call.skip).toBe(0)
+    const call = queryCall(0)
+    expect(call.values.at(-1)).toBe(26)
   })
 
   it('normalizes NaN page to 1', async () => {
-    mockFindMany.mockClear()
+    mockQueryRaw.mockReset()
+    mockQueryRaw.mockResolvedValueOnce([])
     await getAllDocuments({ page: NaN })
-    const call = findOrCall()
-    expect(call.skip).toBe(0)
+    const call = queryCall(0)
+    expect(call.values.at(-1)).toBe(26)
   })
 })
