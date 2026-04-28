@@ -68,9 +68,7 @@ function copyRemoteHeaders(source: Headers): Headers {
   const headers = new Headers()
   const allowedHeaders = [
     'cache-control',
-    'content-encoding',
     'content-language',
-    'content-length',
     'content-type',
     'etag',
     'last-modified',
