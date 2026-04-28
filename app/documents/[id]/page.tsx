@@ -1,9 +1,11 @@
+import Link from 'next/link'
 import type { ReactElement } from 'react'
 import { DateAtom } from '@atoms/Date'
 import { FileSize } from '@atoms/FileSize'
 import { NoDataState } from '@organisms/NoDataState'
 import { PageHeader } from '@organisms/PageHeader'
 import { AuditHistoryTable } from '@organisms/AuditHistoryTable'
+import { DocumentVersionsButton } from '@organisms/DocumentVersionsButton'
 import { ReviewHistoryTable } from '@organisms/ReviewHistoryTable'
 import { parseMetadataValue } from '@lib/format'
 import { getDocumentDetail } from '@lib/queries'
@@ -14,6 +16,19 @@ interface DocumentDetailPageProps {
   params: Promise<{
     id: string
   }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}
+
+function firstSearchParam(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value
+}
+
+function resolveOverviewHref(searchParams: Record<string, string | string[] | undefined>): string {
+  const from = firstSearchParam(searchParams.from)
+  if (from && from.startsWith('/')) {
+    return from
+  }
+  return '/'
 }
 
 const documentFieldLabels: Array<{ key: string; label: string }> = [
@@ -31,8 +46,13 @@ const detailTableClassName = 'min-w-full border-separate border-spacing-0 text-l
 const detailTableHeadCellClassName = 'bg-[#f4f1eb] px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-ink'
 const detailTableBodyCellClassName = 'border-b border-moss/10 px-3 py-3 align-top'
 
-export default async function DocumentDetailPage({ params }: DocumentDetailPageProps): Promise<ReactElement> {
+export default async function DocumentDetailPage({
+  params,
+  searchParams,
+}: DocumentDetailPageProps): Promise<ReactElement> {
   const { id } = await params
+  const resolvedSearchParams = await searchParams
+  const overviewHref = resolveOverviewHref(resolvedSearchParams)
 
   try {
     const detail = await getDocumentDetail(id)
@@ -45,6 +65,12 @@ export default async function DocumentDetailPage({ params }: DocumentDetailPageP
             title="No Data"
             description="Inspect the full document record, metadata payload, audit trail, review history, and duplicate relationships."
           />
+          <Link
+            href={overviewHref}
+            className="inline-flex text-sm font-medium text-moss transition hover:text-moss/80"
+          >
+            ← Back to Overview
+          </Link>
           <NoDataState message="No document data is available for this record yet." />
         </div>
       )
@@ -65,6 +91,12 @@ export default async function DocumentDetailPage({ params }: DocumentDetailPageP
 
     return (
       <div className="space-y-8">
+        <Link
+          href={overviewHref}
+          className="inline-flex text-sm font-medium text-moss transition hover:text-moss/80"
+        >
+          ← Back to Overview
+        </Link>
         <PageHeader
           eyebrow="Document Detail"
           title={document.name || document.id}
@@ -93,6 +125,28 @@ export default async function DocumentDetailPage({ params }: DocumentDetailPageP
           </div>
 
           <div className="space-y-8">
+            <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-semibold text-ink">Versions</h2>
+                  <p className="mt-2 text-sm text-ink/60">
+                    Open the related document versions and duplicates for this record.
+                  </p>
+                </div>
+                {detail.version_family ? <DocumentVersionsButton versionFamily={detail.version_family} /> : null}
+              </div>
+              {!detail.version_family && detail.document.is_duplicate ? (
+                <p className="mt-4 text-sm text-ink/60">
+                  This document is tagged as a duplicate, but the current registry data did not include a version
+                  group or duplicate family for it. The overview can flag it as duplicate, but the related duplicate
+                  set is not available to display here yet.
+                </p>
+              ) : null}
+              {!detail.version_family && !detail.document.is_duplicate ? (
+                <p className="mt-4 text-sm text-ink/60">No related versions available.</p>
+              ) : null}
+            </div>
+
             <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
               <h2 className="text-xl font-semibold text-ink">Metadata</h2>
               {detail.metadata.length > 0 ? (
@@ -163,6 +217,56 @@ export default async function DocumentDetailPage({ params }: DocumentDetailPageP
                 </div>
               ) : (
                 <p className="mt-4 text-sm text-ink/60">No tags available.</p>
+              )}
+            </div>
+
+            <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
+              <h2 className="text-xl font-semibold text-ink">Batches</h2>
+              {detail.document_to_batches.length > 0 ? (
+                <div className="mt-6 overflow-x-auto">
+                  <table className={detailTableClassName}>
+                    <thead>
+                      <tr>
+                        <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
+                          Batch ID
+                        </th>
+                        <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
+                          Batch Origin
+                        </th>
+                        <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
+                          Processing Time
+                        </th>
+                        <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
+                          OCR Low
+                        </th>
+                        <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
+                          OCR Medium
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {detail.document_to_batches.map((batchLink) => (
+                        <tr key={batchLink.id}>
+                          <td className={`${detailTableBodyCellClassName} font-medium`}>
+                            {batchLink.batch_legacy_id ?? batchLink.batch_id}
+                          </td>
+                          <td className={detailTableBodyCellClassName}>{batchLink.batch_origin ?? '—'}</td>
+                          <td className={detailTableBodyCellClassName}>
+                            {batchLink.processing_time_seconds ?? '—'}
+                          </td>
+                          <td className={detailTableBodyCellClassName}>
+                            {batchLink.ocr_quality_low ? 'True' : 'False'}
+                          </td>
+                          <td className={detailTableBodyCellClassName}>
+                            {batchLink.ocr_quality_medium ? 'True' : 'False'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="mt-4 text-sm text-ink/60">No batch links available.</p>
               )}
             </div>
           </div>

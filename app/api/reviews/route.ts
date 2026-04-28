@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { getReviewQueue } from '@lib/queries'
 
+export const preferredRegion = 'sfo1'
+
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const searchParams = request.nextUrl.searchParams

@@ -2,6 +2,8 @@ import type {
   AuditEntry,
   Document,
   DocumentDetail,
+  DocumentsCursor,
+  DocumentsPageResult,
   DocumentQueryParams,
   DocumentQuality,
   FailureItem,
@@ -11,9 +13,12 @@ import type {
   ReviewQueryParams,
   ReviewQueueItem,
   ReadyForLibraryItem,
+  VersionFamily,
+  VersionFamilyDocument,
   BatchSummary,
 } from '@lib/types'
 import { db } from '@lib/db'
+import { Prisma } from '@lib/prisma/generated/client'
 
 // Fields on the documents model used for orderBy/filtering
 const DOCUMENTS_ORDERABLE_FIELDS = [
@@ -22,10 +27,40 @@ const DOCUMENTS_ORDERABLE_FIELDS = [
   'hash_binary',
   'hash_content',
   'id_legacy',
+  'source_id',
   'name',
   'created_at',
   'updated_at',
+  'is_duplicate',
 ] as const
+
+interface OverviewDocumentRow {
+  id: string
+  filesize: bigint | number | string | null
+  hash_binary: string | null
+  hash_content: string | null
+  id_legacy: string | null
+  source_id: string | null
+  name: string | null
+  created_at: Date | string | null
+  updated_at: Date | string | null
+  is_duplicate: boolean | number | bigint | string | null
+  sort_value: string | number | bigint | Date | null
+}
+
+const OVERVIEW_SORT_EXPRESSIONS: Record<(typeof DOCUMENTS_ORDERABLE_FIELDS)[number], string> = {
+  id: 'COALESCE(d.id, \'\')',
+  filesize: 'COALESCE(d.filesize, -1)',
+  hash_binary: 'COALESCE(d.hash_binary, \'\')',
+  hash_content: 'COALESCE(d.hash_content, \'\')',
+  id_legacy: 'COALESCE(d.id_legacy, \'\')',
+  source_id:
+    "COALESCE(JSON_UNQUOTE(JSON_EXTRACT(source_meta.value, '$.value')), JSON_UNQUOTE(JSON_EXTRACT(source_meta.value, '$')), source_meta.value, '')",
+  name: 'COALESCE(d.name, \'\')',
+  created_at: "COALESCE(d.created_at, TIMESTAMP('1000-01-01 00:00:00'))",
+  updated_at: "COALESCE(d.updated_at, TIMESTAMP('1000-01-01 00:00:00'))",
+  is_duplicate: 'CASE WHEN dup.document_id IS NULL THEN 0 ELSE 1 END',
+}
 
 export interface DocumentsQueryParams {
   page?: number
@@ -33,56 +68,23 @@ export interface DocumentsQueryParams {
   orderBy?: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
   sortDirection?: 'asc' | 'desc'
   search?: string
+  cursorValue?: string
+  cursorId?: string
+  cursorDirection?: 'next' | 'prev'
 }
 
-export async function getAllDocuments(params: DocumentsQueryParams = {}): Promise<{ data: Document[]; total: number }> {
+export async function getAllDocuments(params: DocumentsQueryParams = {}): Promise<DocumentsPageResult> {
   const page = normalizePageNumber(params.page)
   const pageSize = params.pageSize && params.pageSize > 0 ? Math.min(params.pageSize, 1000) : 25
-  const skip = (page - 1) * pageSize
-
-  // Build orderBy
-  let orderBy: Record<string, 'asc' | 'desc'> | undefined
-  if (params.orderBy && (DOCUMENTS_ORDERABLE_FIELDS as readonly string[]).includes(params.orderBy)) {
-    orderBy = { [params.orderBy]: params.sortDirection === 'desc' ? 'desc' : 'asc' }
-  } else {
-    orderBy = { created_at: 'desc' }
-  }
-
-  // Build where clause for global search
-  const where: Record<string, unknown> = {}
-  if (params.search && params.search.trim()) {
-    const searchTerm = params.search.trim()
-    where.OR = [
-      { name: { contains: searchTerm } },
-      { hash_binary: { contains: searchTerm } },
-      { hash_content: { contains: searchTerm } },
-      { id_legacy: { contains: searchTerm } },
-    ]
-  }
-
-  const [items, total] = await Promise.all([
-    db.documents.findMany({
-      where,
-      orderBy,
-      skip,
-      take: pageSize,
-    }),
-    db.documents.count({ where }),
-  ])
-
-  return {
-    data: items.map((row) => ({
-      id: String(row.id),
-      filesize: row.filesize !== null && row.filesize !== undefined ? Number(row.filesize) : null,
-      hash_binary: row.hash_binary ?? null,
-      hash_content: row.hash_content ?? null,
-      id_legacy: row.id_legacy ?? null,
-      name: row.name ?? null,
-      created_at: row.created_at ?? null,
-      updated_at: row.updated_at ?? null,
-    })),
-    total,
-  }
+  return getOverviewDocumentsPage({
+    page,
+    pageSize,
+    orderBy: params.orderBy,
+    sortDirection: params.sortDirection,
+    search: params.search,
+    cursor: params.cursorValue && params.cursorId ? { value: params.cursorValue, id: params.cursorId } : null,
+    cursorDirection: params.cursorDirection,
+  })
 }
 
 const PAGE_SIZE = 20
@@ -131,29 +133,250 @@ export async function getPipelineSummary(): Promise<PipelineSummary> {
 // ---------------------------------------------------------------------------
 export async function getDocuments(params: DocumentQueryParams = {}): Promise<PagedResult<Document>> {
   const page = normalizePageNumber(params.page)
-  const offset = (page - 1) * PAGE_SIZE
-
-  const [items, total] = await Promise.all([
-    db.documents.findMany({
-      orderBy: { created_at: 'desc' },
-      skip: offset,
-      take: PAGE_SIZE,
-    }),
-    db.documents.count(),
-  ])
+  const result = await getOverviewDocumentsPage({
+    page,
+    pageSize: PAGE_SIZE,
+    orderBy: 'created_at',
+    sortDirection: 'desc',
+  })
 
   return {
-    items: items.map((row) => ({
-      id: String(row.id),
-      filesize: row.filesize !== null && row.filesize !== undefined ? Number(row.filesize) : null,
-      hash_binary: row.hash_binary ?? null,
-      hash_content: row.hash_content ?? null,
-      id_legacy: row.id_legacy ?? null,
-      name: row.name ?? null,
-      created_at: row.created_at ?? null,
-      updated_at: row.updated_at ?? null,
-    })),
-    total,
+    items: result.data,
+    total: result.data.length,
+  }
+}
+
+async function getOverviewDocumentsPage(params: {
+  page: number
+  pageSize: number
+  orderBy?: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
+  sortDirection?: 'asc' | 'desc'
+  search?: string
+  cursor?: DocumentsCursor | null
+  cursorDirection?: 'next' | 'prev'
+}): Promise<DocumentsPageResult> {
+  const sortField = params.orderBy && (DOCUMENTS_ORDERABLE_FIELDS as readonly string[]).includes(params.orderBy)
+    ? params.orderBy
+    : 'created_at'
+  const sortDirection = params.sortDirection === 'asc' ? 'asc' : 'desc'
+  const cursorDirection = params.cursorDirection === 'prev' ? 'prev' : 'next'
+  const searchTerm = params.search?.trim()
+  const sortExpression = Prisma.raw(OVERVIEW_SORT_EXPRESSIONS[sortField])
+  const whereSql = buildOverviewDocumentsWhereSql({
+    cursor: params.cursor,
+    cursorDirection,
+    searchTerm,
+    sortDirection,
+    sortExpression,
+    sortField,
+  })
+  const orderBySql = buildOverviewDocumentsOrderBySql({
+    cursorDirection,
+    sortDirection,
+    sortExpression,
+  })
+
+  const baseFromSql = Prisma.sql`
+    FROM documents d
+    LEFT JOIN (
+      SELECT dtm.document_id, dtm.value
+      FROM document_to_metadata dtm
+      INNER JOIN metadata m ON m.id = dtm.metadata_id
+      WHERE m.name = 'source_id'
+    ) AS source_meta ON source_meta.document_id = d.id
+    LEFT JOIN (
+      SELECT DISTINCT dtt.document_id
+      FROM document_to_tags dtt
+      INNER JOIN tags t ON t.id = dtt.tag_id
+      WHERE t.name = 'duplicate_document'
+    ) AS dup ON dup.document_id = d.id
+  `
+
+  const items = await db.$queryRaw<OverviewDocumentRow[]>(Prisma.sql`
+      SELECT
+        d.id,
+        d.filesize,
+        d.hash_binary,
+        d.hash_content,
+        d.id_legacy,
+        COALESCE(
+          JSON_UNQUOTE(JSON_EXTRACT(source_meta.value, '$.value')),
+          JSON_UNQUOTE(JSON_EXTRACT(source_meta.value, '$')),
+          source_meta.value
+        ) AS source_id,
+        d.name,
+        d.created_at,
+        d.updated_at,
+        CASE WHEN dup.document_id IS NULL THEN 0 ELSE 1 END AS is_duplicate,
+        ${sortExpression} AS sort_value
+      ${baseFromSql}
+      ${whereSql}
+      ${orderBySql}
+      LIMIT ${params.pageSize + 1}
+    `)
+
+  const hasMore = items.length > params.pageSize
+  const slicedItems = hasMore ? items.slice(0, params.pageSize) : items
+  const orderedItems = cursorDirection === 'prev' ? [...slicedItems].reverse() : slicedItems
+  const normalizedItems = orderedItems.map(normalizeOverviewDocumentRow)
+  const startCursor = buildDocumentsCursor(orderedItems[0], sortField)
+  const endCursor = buildDocumentsCursor(orderedItems.at(-1), sortField)
+
+  return {
+    data: normalizedItems,
+    pageInfo: {
+      page: params.page,
+      pageSize: params.pageSize,
+      hasNextPage: cursorDirection === 'prev' ? Boolean(params.cursor) : hasMore,
+      hasPreviousPage: params.page > 1,
+      startCursor,
+      endCursor,
+    },
+  }
+}
+
+function buildOverviewDocumentsWhereSql(params: {
+  searchTerm?: string
+  cursor?: DocumentsCursor | null
+  cursorDirection: 'next' | 'prev'
+  sortDirection: 'asc' | 'desc'
+  sortExpression: Prisma.Sql
+  sortField: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
+}): Prisma.Sql {
+  const conditions: Prisma.Sql[] = []
+
+  if (params.searchTerm) {
+    const likeValue = `%${params.searchTerm}%`
+    conditions.push(Prisma.sql`
+      (
+        d.name LIKE ${likeValue}
+        OR d.hash_binary LIKE ${likeValue}
+        OR d.hash_content LIKE ${likeValue}
+        OR d.id_legacy LIKE ${likeValue}
+      )
+    `)
+  }
+
+  if (params.cursor) {
+    conditions.push(
+      buildOverviewDocumentsCursorConditionSql({
+        cursor: params.cursor,
+        cursorDirection: params.cursorDirection,
+        sortDirection: params.sortDirection,
+        sortExpression: params.sortExpression,
+        sortField: params.sortField,
+      }),
+    )
+  }
+
+  if (!conditions.length) {
+    return Prisma.empty
+  }
+
+  return Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`
+}
+
+function buildOverviewDocumentsCursorConditionSql(params: {
+  cursor: DocumentsCursor
+  cursorDirection: 'next' | 'prev'
+  sortDirection: 'asc' | 'desc'
+  sortExpression: Prisma.Sql
+  sortField: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
+}): Prisma.Sql {
+  const movesForward = params.cursorDirection === 'next'
+  const usesAscendingPrimary =
+    (params.sortDirection === 'asc' && movesForward) ||
+    (params.sortDirection === 'desc' && !movesForward)
+  const primaryComparator = Prisma.raw(usesAscendingPrimary ? '>' : '<')
+  const secondaryComparator = Prisma.raw(movesForward ? '>' : '<')
+  const cursorValue = coerceDocumentsCursorValue(params.sortField, params.cursor.value)
+
+  return Prisma.sql`
+    (
+      ${params.sortExpression} ${primaryComparator} ${cursorValue}
+      OR (
+        ${params.sortExpression} = ${cursorValue}
+        AND d.id ${secondaryComparator} ${params.cursor.id}
+      )
+    )
+  `
+}
+
+function buildOverviewDocumentsOrderBySql(params: {
+  cursorDirection: 'next' | 'prev'
+  sortDirection: 'asc' | 'desc'
+  sortExpression: Prisma.Sql
+}): Prisma.Sql {
+  const primaryDirection = params.cursorDirection === 'prev'
+    ? params.sortDirection === 'asc'
+      ? 'DESC'
+      : 'ASC'
+    : params.sortDirection === 'asc'
+      ? 'ASC'
+      : 'DESC'
+  const secondaryDirection = params.cursorDirection === 'prev' ? 'DESC' : 'ASC'
+
+  return Prisma.sql`
+    ORDER BY ${params.sortExpression} ${Prisma.raw(primaryDirection)}, d.id ${Prisma.raw(secondaryDirection)}
+  `
+}
+
+function buildDocumentsCursor(
+  row: OverviewDocumentRow | undefined,
+  sortField: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number],
+): DocumentsCursor | null {
+  if (!row) {
+    return null
+  }
+  return {
+    id: String(row.id),
+    value: serializeDocumentsCursorValue(sortField, row.sort_value),
+  }
+}
+
+function serializeDocumentsCursorValue(
+  sortField: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number],
+  value: OverviewDocumentRow['sort_value'],
+): string {
+  if (value === null || value === undefined) {
+    return ''
+  }
+
+  if (sortField === 'created_at' || sortField === 'updated_at') {
+    const dateValue = value instanceof Date ? value : new Date(String(value))
+    return dateValue.toISOString()
+  }
+
+  return String(value)
+}
+
+function coerceDocumentsCursorValue(
+  sortField: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number],
+  value: string,
+): string | number | Date {
+  if (sortField === 'filesize' || sortField === 'is_duplicate') {
+    return Number(value)
+  }
+
+  if (sortField === 'created_at' || sortField === 'updated_at') {
+    return new Date(value)
+  }
+
+  return value
+}
+
+function normalizeOverviewDocumentRow(row: OverviewDocumentRow): Document {
+  return {
+    id: String(row.id),
+    filesize: row.filesize !== null && row.filesize !== undefined ? Number(row.filesize) : null,
+    hash_binary: row.hash_binary ?? null,
+    hash_content: row.hash_content ?? null,
+    id_legacy: row.id_legacy ?? null,
+    source_id: row.source_id ?? null,
+    name: row.name ?? null,
+    created_at: row.created_at ?? null,
+    updated_at: row.updated_at ?? null,
+    is_duplicate: Boolean(Number(row.is_duplicate ?? 0)),
   }
 }
 
@@ -171,7 +394,7 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
     return null
   }
 
-  const [quality, versions, metadata, batches, authors, tags] = await Promise.all([
+  const [quality, versions, metadata, batches, authors, tags, canonicalGroup, variantMemberships] = await Promise.all([
     db.document_quality.findUnique({
       where: { document_id: documentId },
     }),
@@ -186,6 +409,7 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
     }),
     db.document_to_batches.findMany({
       where: { document_id: documentId },
+      include: { batches: true },
     }),
     db.document_to_authors.findMany({
       where: { document_id: documentId },
@@ -193,6 +417,57 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
     db.document_to_tags.findMany({
       where: { document_id: documentId },
       include: { tags: true },
+    }),
+    db.version_groups.findUnique({
+      where: { canonical_document_id: documentId },
+      include: {
+        documents: {
+          include: {
+            document_to_tags: {
+              include: { tags: true },
+            },
+          },
+        },
+        document_versions: {
+          include: {
+            documents: {
+              include: {
+                document_to_tags: {
+                  include: { tags: true },
+                },
+              },
+            },
+          },
+        },
+      },
+    }),
+    db.document_versions.findMany({
+      where: { document_id: documentId },
+      include: {
+        version_groups: {
+          include: {
+            documents: {
+              include: {
+                document_to_tags: {
+                  include: { tags: true },
+                },
+              },
+            },
+            document_versions: {
+              include: {
+                documents: {
+                  include: {
+                    document_to_tags: {
+                      include: { tags: true },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { created_at: 'desc' },
     }),
   ])
 
@@ -216,6 +491,54 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
     }
   }
 
+  const mapVersionFamilyDocument = (
+    row: {
+      id: string
+      filesize: bigint | number | null
+      hash_binary: string | null
+      hash_content: string | null
+      id_legacy: string
+      name: string | null
+      created_at: Date | null
+      updated_at: Date | null
+      document_to_tags: Array<{ tags: { name: string } }>
+    },
+    isCanonical: boolean,
+  ): VersionFamilyDocument => ({
+    id: String(row.id),
+    filesize: row.filesize !== null && row.filesize !== undefined ? Number(row.filesize) : null,
+    hash_binary: row.hash_binary ?? null,
+    hash_content: row.hash_content ?? null,
+    id_legacy: row.id_legacy ?? null,
+    name: row.name ?? null,
+    created_at: row.created_at ?? null,
+    updated_at: row.updated_at ?? null,
+    is_canonical: isCanonical,
+    is_duplicate: row.document_to_tags.some((tagLink) => tagLink.tags.name === 'duplicate_document'),
+  })
+
+  const mapVersionFamily = (): VersionFamily | null => {
+    const group = canonicalGroup ?? variantMemberships[0]?.version_groups ?? null
+    if (!group || group.document_versions.length === 0) {
+      return null
+    }
+
+    const familyDocuments: VersionFamilyDocument[] = [
+      mapVersionFamilyDocument(group.documents, true),
+      ...group.document_versions.map((versionRow) =>
+        mapVersionFamilyDocument(versionRow.documents, false),
+      ),
+    ]
+
+    return {
+      version_group_id: String(group.id),
+      canonical_document_id: String(group.canonical_document_id),
+      documents: familyDocuments,
+    }
+  }
+
+  const hasDuplicateTag = tags.some((tagLink) => tagLink.tags.name === 'duplicate_document')
+
   return {
     document: {
       id: String(document.id),
@@ -226,6 +549,7 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
       name: document.name ?? null,
       created_at: document.created_at ?? null,
       updated_at: document.updated_at ?? null,
+      is_duplicate: hasDuplicateTag,
     },
     quality: mapQuality(quality),
     versions: versions.map((v) => ({
@@ -238,6 +562,7 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
       updated_at: v.updated_at ?? null,
       analyzed_at: v.analyzed_at !== null && v.analyzed_at !== undefined ? Number(v.analyzed_at) : null,
     })),
+    version_family: mapVersionFamily(),
     metadata: metadata.map((m) => ({
       name: m.metadata.name,
       value: String(m.value ?? ''),
@@ -248,10 +573,13 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
       document_id: String(b.document_id),
       batch_id: String(b.batch_id),
       added_at: b.added_at ?? null,
+      batch_origin: b.batch_origin ?? null,
       cost: b.cost !== null ? String(b.cost) : null,
       processing_time_seconds: b.processing_time_seconds ?? null,
       ocr_quality_low: b.ocr_quality_low ?? null,
       ocr_quality_medium: b.ocr_quality_medium ?? null,
+      batch_legacy_id: b.batches.id_legacy ?? null,
+      batch_name: b.batches.name ?? null,
     })),
     document_to_authors: authors.map((a) => ({
       id: String(a.id),

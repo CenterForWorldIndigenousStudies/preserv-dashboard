@@ -16,9 +16,8 @@ export default function ComponentLibraryPage() {
     }
     if (status !== 'authenticated') return
 
-    // Point iframe directly to the static Storybook index
-    // The page route /developers/component-library/ takes precedence over public/ static files,
-    // so Storybook is served from a separate path with no page route
+    // Storybook is served through an authenticated app route. That route can
+    // proxy a separately deployed static Storybook or fall back to local assets.
     setSrc('/developers/storybook/index.html')
   }, [status, router])
 
