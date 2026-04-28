@@ -212,6 +212,7 @@ erDiagram
     documents ||--o{ document_to_tags : "tags"
     documents ||--o{ document_versions : "versions"
     documents ||--o{ state_history : "state"
+    documents ||--o| version_groups : "canonical_for"
     authors ||--o{ document_to_authors : "document_to_authors"
     publishers ||--o{ document_to_publishers : "document_to_publishers"
     batches ||--o{ document_to_batches : "document_to_batches"
@@ -220,6 +221,8 @@ erDiagram
     batch_metadata ||--o{ batch_to_batches_metadata : "batch_metadata"
     tags ||--o{ document_to_tags : "document_to_tags"
     version_groups ||--o{ document_versions : "document_versions"
+    state_history ||--o{ document_quality : "current_status"
+    access_levels ||--o{ document_access : "document_access"
     access_levels ||--o{ document_quality : "access_levels"
 
 %% Composite Indexes:
@@ -233,413 +236,362 @@ erDiagram
 
 ---
 
+## How To Read This Schema
+
+- `documents` is the anchor table. Most queries start there and join outward.
+- `batches` is the anchor table for processing runs and registry-derived batch context.
+- `document_to_*` tables and `batch_to_batches_metadata` are association tables. They connect a
+  core entity to a lookup table or to typed metadata values.
+- `metadata` and `batch_metadata` define field names. The actual values live in
+  `document_to_metadata` and `batch_to_batches_metadata`.
+- Several lookup tables use a generated `name_hash` column. This is primarily for deduplication and
+  indexing, not for human-facing querying.
+- JSON values are stored in MariaDB `JSON` columns. For analysis, expect to use JSON extraction
+  functions when reading structured values.
+
+## Query-Oriented Notes
+
+- Use `documents.id` and `batches.id` for joins.
+- Use `documents.id_legacy` and `batches.id_legacy` when you need to match back to source-system
+  identifiers.
+- `document_quality.validation_timestamp` and `document_versions.analyzed_at` are `BIGINT` unix
+  timestamps. Most other temporal columns are SQL `TIMESTAMP`.
+- `document_to_metadata.value_type` and `batch_to_batches_metadata.value_type` are hints about the
+  logical type of the JSON payload in `value`.
+- `state_history` is an append-only event table. `document_quality.current_status` points to one row
+  in that history.
+
+## Index Highlights
+
+- `documents` is indexed on `created_at`, `updated_at`, `name`, `filesize`, `hash_binary`, and
+  `hash_content`.
+- `state_history` is indexed on `document_id` and `(document_id, changed_at)`.
+- `edit_history` is indexed on `(entity_table, entity_id)` and
+  `(entity_table, entity_id, edited_at)`.
+- `document_to_metadata` supports both document-first and metadata-first access patterns.
+- `document_to_tags` supports both document-first and tag-first access patterns.
+- Association tables use composite unique constraints to prevent duplicate links.
+
 ## Table Reference
 
 ### documents
 
-The central entity table.
-Stores core information about each preserved document.
-
-**What it stores:** The primary record for every document in the system.
-This is the anchor entity that all other tables relate to.
-
-**Key columns:**
-
-- `id` - Primary key (UUID).
-- `id_legacy` - Human-readable unique identifier.
-    This is the stable identifier surfaced to users.
-- `name` - Document name. Not a path; the name only.
-- `hash_binary` - SHA-256 hash of the raw file bytes.
-    Used to detect binary-level duplicates across all sources.
-    Indexed for fast lookups.
-- `hash_content` - SHA-256 hash of the extracted text or content.
-    Used to detect content-level duplicates independent of file format.
-    Indexed.
-- `filesize` - Size of the file in bytes, stored as BigInt.
-
-**Design notes:**
-
-- There are no columns for file path, URL, or MIME type.
-    Those are managed by the storage layer outside this database.
-- `hash_binary` and `hash_content` are the two pillars of the deduplication strategy.
-    A match on either hash signals a potential duplicate.
-- `id_legacy` has a unique constraint; it is the business-facing identifier.
-
-### document_quality
-
-Quality assessment and metadata sufficiency validation for each document.
-
-**What it stores:** A single quality record per document covering validation results, assessor comments, and the current validation status.
-
-**Key columns:**
-
-- `id` - Primary key (UUID).
-- `document_id` - Foreign key to `documents`. Enforced unique via
-  `uk_document_quality_document_id`.
-- `validation_status` - Outcome of the quality check, such as `passed` or `failed`.
-- `validation_type` - The type of validation performed.
-- `validation_timestamp` - When the validation ran. (unix timestamp)
-- `validator_name` / `validator_email` - Who performed the validation, for
-  accountability.
-- `metadata_sufficiency` - Assessment of whether the document's metadata is complete enough to be useful.
-- `comment` / `comment_additional` - Free-text assessment notes.
-- `current_status` - References `state_history.id`, linking the quality record to the document's current state entry.
-- `access_level` - Suggested or assigned access level from the quality review.
-
-**Design notes:**
-
-- One-to-one with `documents` (enforced by unique constraint on `document_id`).
-- `current_status` is the FK to `state_history.id`; through this relation the quality record is tied to the document's latest state transition.
-
-### state_history
-
-Tracks state transitions for documents over time.
-
-**What it stores:** An append-only log of every state change a document goes through.
-
-**Key columns:**
-
-- `id` - Primary key (UUID).
-- `document_id` - Foreign key to `documents`.
-- `previous_state` - The state before the transition (free-text string).
-- `new_state` - The state after the transition (free-text string).
-- `changed_at` - When the transition occurred.
-
-**Design notes:**
-
-- `previous_state` and `new_state` are free-text strings.
-    The schema does not prescribe a fixed vocabulary; applications enforce that convention.
-- A single document can have many state transitions recorded (one-to-many from `documents`).
-- Referenced by `document_quality.current_status` to expose the current state within the quality record.
-
-### document_to_authors
-
-Many-to-many join table linking documents to their authors.
-
-**What it stores:** Author attributions for documents.
-Supports distinguishing primary authors from secondary contributors.
-
-**Key columns:**
-
-- `id` - Primary key (UUID).
-- `document_id` / `author_id` - Foreign keys.
-- `contributor_type` - Distinguishes primary authors from co-authors, editors,
-  translators, and similar roles.
-- `notes` - Free-text notes about this attribution, such as `confirmed via email`.
-
-**Design notes:**
-
-- Composite unique constraint on `(document_id, author_id)` prevents duplicate attributions.
-- Cascades deletes.
-    Removing an author or document removes the association automatically.
-
-### authors
-
-Named authors referenced by documents.
-
-**What it stores:** Author name directory.
-Used as the authoritative lookup for author identities.
-
-**Key columns:**
-
-- `id` - Primary key (UUID).
-- `name` - The author's name, stored as Text (free-form).
-- `notes` - Internal notes about this author.
-- `name_hash` - MD5 of `name` for deduplication and unique lookups.
-    Constrained unique.
-
-**Design notes:**
-
-- `name` has no unique constraint itself; deduplication uses `name_hash`.
-- Cascades from `document_to_authors`.
-    Deleting an author removes all attributions.
-
-### document_to_batches
-
-Links documents to the processing batches they were included in.
-
-**What it stores:** Per-document processing record within a batch: cost, duration, and OCR quality flags.
-
-**Key columns:**
-
-- `id` - Primary key (UUID).
-- `document_id` / `batch_id` - Foreign keys.
-- `batch_origin` - The General Inventory `Batch_Origin` value for this specific document-batch relationship.
-    This is link-level context, not a property of the batch row itself.
-- `cost` - Decimal cost incurred for processing this document in the batch.
-- `processing_time_seconds` - Wall-clock time to process the document.
-- `ocr_quality_low` / `ocr_quality_medium` - Boolean flags indicating OCR quality issues detected.
-- `added_at` - When the document was added to the batch.
-
-**Design notes:**
-
-- Composite unique constraint on `(document_id, batch_id)`.
-    A document can be in the same batch only once.
-- Allows granular cost, timing, OCR quality, and inventory-origin tracking per document within a batch.
-- `batch_origin` intentionally lives here because one registry-defined batch can contain documents from many different General Inventory origins.
-
-### batches
-
-Processing batch records.
-Each batch represents one ingestion or processing run.
-
-**What it stores:** The lean core record for a processing batch.
-Extended batch attributes now live in `batch_to_batches_metadata`.
-
-**Key columns:**
-
-- `id` - Primary key (UUID).
-- `id_legacy` - Legacy identifier for the batch.
-- `name` / `name_hash` - Batch name and its MD5 hash.
-    The hash is unique via `uk_batches_name`.
-- `processing_details` - JSON for free-form processing details that still belong on the core batch row.
-- `created_at` / `updated_at` - Audit timestamps for the row itself.
-- `started_at` / `completed_at` / `last_processed` - Timing fields for the batch lifecycle.
-- `started_by` - Who or what initiated the batch.
-
-**Design notes:**
-
-- `name_hash` is unique.
-    Used for idempotent batch creation - the same name implies the same batch identity.
-- `name` is a true batch-level label only.
-    It should not be populated from General Inventory `Batch_Origin`, because `Batch_Origin` can vary across documents linked to the same batch.
-- Batch-specific attributes that used to live directly on `batches` now use the `batch_metadata` catalog plus `batch_to_batches_metadata` values.
-- Cascades to `document_to_batches` and `batch_to_batches_metadata`.
-    Deleting a batch removes its join rows.
-
-### batch_to_batches_metadata
-
-Key-value metadata values attached to batches.
-
-**What it stores:** Instance values for metadata fields defined in `batch_metadata`, applied to a specific batch.
-
-**Key columns:**
-
-- `id` - Primary key (UUID).
-- `batch_id` / `batch_metadata_id` - Foreign keys.
-- `value` - The batch metadata value, stored as JSON.
-- `value_type` - The application-level type hint for the value, such as `string`, `int`, `decimal`, `boolean`, `json`, or `unix_timestamp`.
-- `created_at` / `updated_at` - Audit timestamps for the metadata assignment.
-
-**Design notes:**
-
-- Mirrors the `document_to_metadata` pattern for batches.
-- Cascades from both `batches` and `batch_metadata`.
-
-### batch_metadata
-
-Metadata field definitions for batches.
-
-**What it stores:** The catalog of recognized batch metadata field names.
-
-**Key columns:**
-
-- `id` - Primary key (UUID).
-- `name` - Field name (Text).
-- `name_hash` - MD5 of `name` for unique lookups. Constrained unique via
-  `uk_batch_metadata_name`.
-- `notes` - Description or usage notes for the field.
-
-**Design notes:**
-
-- `name_hash` uniqueness enforces that field names are deduplicated.
-
-### document_to_metadata
-
-Key-value metadata values attached to documents.
-
-**What it stores:** Instance values for metadata fields defined in the `metadata` table, applied to a document.
-
-**Key columns:**
-
-- `id` - Primary key (UUID).
-- `document_id` / `metadata_id` - Foreign keys.
-- `value` - The metadata value. Stored as LongText so it can hold long extracted values, including full OCR text or large JSON blobs.
-- `value_type` - The data type of the value, such as `string`, `int`, `decimal`, `boolean`, `json`, or `unix_timestamp` for consumer interpretation.
-
-**Design notes:**
-
-- Composite unique constraint on `(document_id, metadata_id)`.
-    A given metadata field can be assigned to a document only once.
-- `value` is LongText specifically to support long extracted values.
-
-### metadata
-
-Metadata field definitions.
-Defines the schema of what metadata fields exist.
-
-**What it stores:** The catalog of recognized metadata field names.
-
-**Key columns:**
-
-- `id` - Primary key (UUID).
-- `name` - Field name (Text).
-- `name_hash` - MD5 of `name` for unique lookups. Constrained unique via
-  `uk_metadata_name`.
-- `notes` - Description or usage notes for the field.
-
-**Design notes:**
-
-- `name_hash` uniqueness enforces that field names are deduplicated.
-    The raw `name` column has no unique constraint.
-- Consumers use `metadata.name` to look up the field definition, then `document_to_metadata.value` for the instance value.
-
-### document_to_publishers
-
-Links documents to their publishers.
-
-**What it stores:** Publisher attributions for documents.
-
-**Key columns:**
-
-- `id` - Primary key (UUID).
-- `document_id` / `publisher_id` - Foreign keys.
-- `notes` - Notes about this attribution.
-
-**Design notes:**
-
-- Composite unique constraint on `(document_id, publisher_id)`.
-- Mirrors the pattern of `document_to_authors` and `document_to_tags`.
-
-### publishers
-
-Named publishers referenced by documents.
-
-**What it stores:** Publisher name directory.
-
-**Key columns:**
-
-- `id` - Primary key (UUID).
-- `name` - Publisher name (Text, free-form).
-- `name_hash` - MD5 of `name`, constrained unique for deduplication.
-- `notes` - Internal notes.
-
-**Design notes:**
-
-- Same pattern as `authors` and `tags`.
-    Deduplication uses `name_hash`, not the raw `name` column.
-
-### document_to_tags
-
-Tags (categorization labels) applied to documents.
-
-**What it stores:** Tag assignments.
-
-**Key columns:**
-
-- `id` - Primary key (UUID).
-- `document_id` / `tag_id` - Foreign keys.
-- `notes` - Optional notes about this tag assignment.
-
-**Design notes:**
-
-- Composite unique constraint on `(document_id, tag_id)` prevents the same tag from being applied twice to a document.
-- Same join-table pattern as the other `document_to_*` tables.
-
-### tags
-
-Tag definitions. Represents the controlled vocabulary of categorization labels.
-
-**What it stores:** Tag name directory.
-
-**Key columns:**
-
-- `id` - Primary key (UUID).
-- `name` - Tag name (Text).
-- `name_hash` - MD5 of `name`, constrained unique.
-- `notes` - Description or scope notes.
-- `created_at` - When the tag was created.
-- `updated_at` - When the tag row was last updated.
-
-**Design notes:**
-
-- `name_hash` uniqueness ensures tag names are deduplicated.
-- Tag names are stored as Text and deduplicated via `name_hash`, matching the same general pattern used by other controlled-vocabulary tables.
-
-### document_versions
-
-Tracks document version history.
-Records non-canonical versions and their relationship to a version group.
-
-**What it stores:** Each row represents a single version of a document, linked to the document itself and to its enclosing version group.
-
-**Key columns:**
-
-- `id` - Primary key (UUID).
-- `document_id` - The version this row describes.
-- `version_group_id` - Foreign key to `version_groups.id`, identifying the related
-  version family for this document version.
-- `changes_summary` - Description of what changed from the canonical version.
-- `analyzed_at` - When version analysis was performed. (unix timestamp)
-- `notes` - Free-text notes about this version.
-
-**Design notes:**
-
-- `version_group_id` FK points to `version_groups`, not directly to `documents`.
-- The canonical document is resolved through the related `version_groups` row.
-- `analyzed_at` (unix timestamp) differs from `created_at`/`updated_at` (Timestamp).
-    It records when analysis ran, not when the row was created.
-
-### edit_history
-
-General-purpose audit trail for changes to any entity in the database.
-
-**What it stores:** Before/after snapshots of edited values, tied to an editor and a summary.
-
-**Key columns:**
-
-- `id` - Primary key (UUID).
-- `entity_table` - The table that was edited.
-- `entity_id` - The primary key of the row that was edited.
-- `previous_value` / `new_value` - The old and new content of the changed field.
-- `editor_email` - Who made the edit.
-- `edit_summary` - Human-readable description of the change.
-- `edited_at` - When the edit occurred.
-
-**Design notes:**
-
-- Generic (`entity_table` + `entity_id`) design allows auditing any table without a per-table history table.
-- No FK constraints on `entity_table` or `entity_id`.
-    This is intentional - the table operates independently of schema changes.
-- Indexed on `(entity_table, entity_id)` for efficient retrieval of history for a given row.
-
-### version_groups
-
-Groups related document versions together and identifies the canonical version of each group.
-
-**What it stores:** One row per group of related document versions, designating the canonical version.
-
-**Key columns:**
-
-- `id` - Primary key (UUID).
-- `group_id` - Groups versions together.
-    All versions with the same `group_id` belong to the same logical document family.
-- `canonical_document_id` - Points to the primary or authoritative version in the group.
-    Constrained unique via `uk_version_groups_canonical_document_id`.
-- `notes` - Group-level notes.
-
-**Design notes:**
-
-- `canonical_document_id` FK points to `documents`. The canonical is itself a document.
-- `canonical_document_id` is unique, so a document can be canonical for at most one version group.
-- Multiple rows can share the same `group_id` (one per version in the group).
-- Indexed on both `group_id` and `canonical_document_id` for flexible lookups.
-- A lighter-weight sibling to `document_versions` for grouping without the full version-analysis overhead.
+Primary document records.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `VARCHAR(36)` | Primary key. UUID string. |
+| `filesize` | `BIGINT` | File size in bytes. |
+| `hash_binary` | `VARCHAR(255)` | Binary/file-level hash. Indexed. |
+| `hash_content` | `VARCHAR(255)` | Content/text-level hash. Indexed. |
+| `id_legacy` | `VARCHAR(255)` | Unique source-system document identifier. |
+| `name` | `VARCHAR(255)` | Document name. |
+| `created_at` | `TIMESTAMP` | Row creation time. |
+| `updated_at` | `TIMESTAMP` | Row update time. |
+
+Common joins: `document_quality`, `state_history`, `document_access`, `document_to_metadata`,
+`document_to_tags`, `document_to_authors`, `document_to_publishers`, `document_to_batches`,
+`document_versions`.
+
+### document_access
+
+Access-level assignments for documents.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `VARCHAR(36)` | Primary key. |
+| `document_id` | `VARCHAR(36)` | FK to `documents.id`. |
+| `access_level_id` | `VARCHAR(36)` | FK to `access_levels.id`. |
+| `granted_by_name` | `VARCHAR(255)` | Grantor/display name. |
+| `granted_by_email` | `VARCHAR(255)` | Grantor email. |
+| `granted_at` | `TIMESTAMP` | Assignment timestamp. |
+
+Constraint notes: unique on `(document_id, access_level_id)`.
 
 ### access_levels
 
-Role-based access level definitions. Controls who can see what.
+Lookup table for access vocabulary.
 
-**What it stores:** The catalog of access levels, such as `public`, `restricted`, and `internal`.
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `VARCHAR(36)` | Primary key. |
+| `level_name` | `VARCHAR(255)` | Unique access level name. |
+| `description` | `TEXT` | Human-readable description. |
+| `created_at` | `TIMESTAMP` | Row creation time. |
+| `updated_at` | `TIMESTAMP` | Row update time. |
 
-**Key columns:**
+Typical values include `public`, `restricted`, `internal`, `admin`, and `confidential`.
 
-- `id` - Primary key (UUID).
-- `level_name` - Unique name of the access level.
-- `description` - Human-readable description of the level.
+### document_quality
 
-**Design notes:**
+One quality/validation record per document.
 
-- `level_name` is unique. Access levels are identified by name, not a numeric rank.
-- Referenced by `document_access` to assign a level to a document for a specific person.
-- Cascades to `document_access` on delete.
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `VARCHAR(36)` | Primary key. |
+| `document_id` | `VARCHAR(36)` | FK to `documents.id`. Unique. |
+| `comment` | `TEXT` | Primary quality note. |
+| `comment_additional` | `TEXT` | Additional quality note. |
+| `metadata_sufficiency` | `VARCHAR(255)` | Sufficiency assessment. |
+| `validation_status` | `VARCHAR(255)` | Validation outcome/status. |
+| `validation_type` | `VARCHAR(255)` | Type of validation performed. |
+| `validation_timestamp` | `BIGINT` | Unix timestamp. |
+| `validator_name` | `VARCHAR(255)` | Validator display name. |
+| `validator_email` | `VARCHAR(255)` | Validator email. |
+| `access_level` | `VARCHAR(36)` | FK to `access_levels.id`. |
+| `current_status` | `VARCHAR(36)` | FK to `state_history.id`. |
+| `created_at` | `TIMESTAMP` | Row creation time. |
+| `updated_at` | `TIMESTAMP` | Row update time. |
+
+Query note: this is a one-to-one extension of `documents`.
+
+### state_history
+
+Document state transitions over time.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `VARCHAR(36)` | Primary key. |
+| `document_id` | `VARCHAR(36)` | FK to `documents.id`. |
+| `previous_state` | `VARCHAR(255)` | Prior state label. |
+| `new_state` | `VARCHAR(255)` | New state label. |
+| `changed_at` | `TIMESTAMP` | Transition time. |
+
+Query note: use this table for status history; `document_quality.current_status` points to one row
+here.
+
+### authors
+
+Author lookup table.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `VARCHAR(36)` | Primary key. |
+| `name` | `TEXT` | Author name. |
+| `name_hash` | `VARCHAR(64)` | Generated stored SHA-256 hash of normalized `name`. Unique. |
+| `notes` | `TEXT` | Internal notes. |
+| `created_at` | `TIMESTAMP` | Row creation time. |
+| `updated_at` | `TIMESTAMP` | Row update time. |
+
+### document_to_authors
+
+Document-to-author association table.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `VARCHAR(36)` | Primary key. |
+| `document_id` | `VARCHAR(36)` | FK to `documents.id`. |
+| `author_id` | `VARCHAR(36)` | FK to `authors.id`. |
+| `contributor_type` | `VARCHAR(255)` | Role such as author, editor, translator. |
+| `notes` | `TEXT` | Attribution notes. |
+| `created_at` | `TIMESTAMP` | Row creation time. |
+| `updated_at` | `TIMESTAMP` | Row update time. |
+
+Constraint notes: unique on `(document_id, author_id)`.
+
+### publishers
+
+Publisher lookup table.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `VARCHAR(36)` | Primary key. |
+| `name` | `TEXT` | Publisher name. |
+| `name_hash` | `VARCHAR(64)` | Generated stored SHA-256 hash of normalized `name`. Unique. |
+| `notes` | `TEXT` | Internal notes. |
+| `created_at` | `TIMESTAMP` | Row creation time. |
+| `updated_at` | `TIMESTAMP` | Row update time. |
+
+### document_to_publishers
+
+Document-to-publisher association table.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `VARCHAR(36)` | Primary key. |
+| `document_id` | `VARCHAR(36)` | FK to `documents.id`. |
+| `publisher_id` | `VARCHAR(36)` | FK to `publishers.id`. |
+| `notes` | `TEXT` | Attribution notes. |
+| `created_at` | `TIMESTAMP` | Row creation time. |
+| `updated_at` | `TIMESTAMP` | Row update time. |
+
+Constraint notes: unique on `(document_id, publisher_id)`.
+
+### tags
+
+Tag lookup table.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `VARCHAR(36)` | Primary key. |
+| `name` | `TEXT` | Tag name. |
+| `name_hash` | `VARCHAR(64)` | Generated stored SHA-256 hash of normalized `name`. Unique. |
+| `notes` | `TEXT` | Scope or descriptive notes. |
+| `created_at` | `TIMESTAMP` | Row creation time. |
+| `updated_at` | `TIMESTAMP` | Row update time. |
+
+Query note: indexed on `name(191)` for name lookups.
+
+### document_to_tags
+
+Document-to-tag association table.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `VARCHAR(36)` | Primary key. |
+| `document_id` | `VARCHAR(36)` | FK to `documents.id`. |
+| `tag_id` | `VARCHAR(36)` | FK to `tags.id`. |
+| `notes` | `TEXT` | Assignment note. |
+| `created_at` | `TIMESTAMP` | Row creation time. |
+
+Constraint notes: unique on `(document_id, tag_id)`.
+
+### metadata
+
+Lookup table for document metadata field names.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `VARCHAR(36)` | Primary key. |
+| `name` | `TEXT` | Metadata field name. |
+| `name_hash` | `VARCHAR(64)` | Generated stored SHA-256 hash of normalized `name`. Unique. |
+| `notes` | `TEXT` | Field notes/description. |
+| `created_at` | `TIMESTAMP` | Row creation time. |
+| `updated_at` | `TIMESTAMP` | Row update time. |
+
+Query note: indexed on `name(191)` for direct metadata-name lookup.
+
+### document_to_metadata
+
+Document metadata values.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `VARCHAR(36)` | Primary key. |
+| `document_id` | `VARCHAR(36)` | FK to `documents.id`. |
+| `metadata_id` | `VARCHAR(36)` | FK to `metadata.id`. |
+| `value` | `JSON` | Metadata payload. |
+| `value_type` | `VARCHAR(50)` | Logical type hint for `value`. |
+| `created_at` | `TIMESTAMP` | Row creation time. |
+| `updated_at` | `TIMESTAMP` | Row update time. |
+
+Constraint notes: unique on `(document_id, metadata_id)`.
+
+Query note: this table is the main source for file path, URL, MIME type, rights, descriptive
+metadata, and many enrichment outputs that are not first-class columns on `documents`.
+
+### batch_metadata
+
+Lookup table for batch metadata field names.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `VARCHAR(36)` | Primary key. |
+| `name` | `TEXT` | Batch metadata field name. |
+| `name_hash` | `VARCHAR(64)` | Generated stored SHA-256 hash of normalized `name`. Unique. |
+| `notes` | `TEXT` | Field notes/description. |
+| `created_at` | `TIMESTAMP` | Row creation time. |
+| `updated_at` | `TIMESTAMP` | Row update time. |
+
+### batches
+
+Core batch/process-run records.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `VARCHAR(36)` | Primary key. |
+| `id_legacy` | `VARCHAR(255)` | Source-system batch identifier. Indexed. |
+| `name` | `TEXT` | Optional batch label. |
+| `name_hash` | `VARCHAR(64)` | Generated stored SHA-256 hash of normalized `name`. Unique when present. |
+| `processing_details` | `JSON` | Core processing details stored directly on the batch row. |
+| `created_at` | `TIMESTAMP` | Row creation time. |
+| `updated_at` | `TIMESTAMP` | Row update time. |
+| `started_at` | `TIMESTAMP` | Batch start time. |
+| `completed_at` | `TIMESTAMP` | Batch completion time. |
+| `last_processed` | `TIMESTAMP` | Last processing timestamp. |
+| `started_by` | `VARCHAR(255)` | Initiator name/process label. |
+
+Query note: batch-specific metrics and registry-derived attributes often live in
+`batch_to_batches_metadata`, not as top-level columns here.
+
+### batch_to_batches_metadata
+
+Batch metadata values.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `VARCHAR(36)` | Primary key. |
+| `batch_id` | `VARCHAR(36)` | FK to `batches.id`. |
+| `batch_metadata_id` | `VARCHAR(36)` | FK to `batch_metadata.id`. |
+| `value` | `JSON` | Metadata payload. |
+| `value_type` | `VARCHAR(50)` | Logical type hint for `value`. |
+| `created_at` | `TIMESTAMP` | Row creation time. |
+| `updated_at` | `TIMESTAMP` | Row update time. |
+
+Constraint notes: unique on `(batch_id, batch_metadata_id)`.
+
+### document_to_batches
+
+Document-to-batch association table with per-document batch metrics.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `VARCHAR(36)` | Primary key. |
+| `document_id` | `VARCHAR(36)` | FK to `documents.id`. |
+| `batch_id` | `VARCHAR(36)` | FK to `batches.id`. |
+| `added_at` | `TIMESTAMP` | Association creation time. |
+| `batch_origin` | `TEXT` | Source-side batch/origin value for this document. |
+| `cost` | `DECIMAL(12,2)` | Per-document cost within the batch. |
+| `processing_time_seconds` | `INT` | Per-document processing time. |
+| `ocr_quality_low` | `BOOLEAN` | Low-quality OCR flag. |
+| `ocr_quality_medium` | `BOOLEAN` | Medium-quality OCR flag. |
+
+Constraint notes: unique on `(document_id, batch_id)`.
+
+### version_groups
+
+Version families, one row per canonical group.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `VARCHAR(36)` | Primary key. |
+| `canonical_document_id` | `VARCHAR(36)` | FK to `documents.id`. Unique. |
+| `notes` | `TEXT` | Group-level note. |
+| `created_at` | `TIMESTAMP` | Row creation time. |
+| `updated_at` | `TIMESTAMP` | Row update time. |
+
+Query note: this table defines the family; the member documents live in `document_versions`.
+
+### document_versions
+
+Document membership in a version family.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `VARCHAR(36)` | Primary key. |
+| `document_id` | `VARCHAR(36)` | FK to `documents.id`. |
+| `version_group_id` | `VARCHAR(36)` | FK to `version_groups.id`. |
+| `notes` | `TEXT` | Version note. |
+| `changes_summary` | `TEXT` | Summary of changes relative to canonical. |
+| `analyzed_at` | `BIGINT` | Unix timestamp. |
+| `created_at` | `TIMESTAMP` | Row creation time. |
+| `updated_at` | `TIMESTAMP` | Row update time. |
+
+Constraint notes: unique on `(document_id, version_group_id)`.
+
+### edit_history
+
+Generic audit log for edited entities.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `VARCHAR(36)` | Primary key. |
+| `entity_id` | `VARCHAR(36)` | Identifier of the edited row. No FK. |
+| `entity_table` | `VARCHAR(255)` | Name of the edited table. |
+| `previous_value` | `TEXT` | Prior value snapshot. |
+| `new_value` | `TEXT` | New value snapshot. |
+| `editor_email` | `VARCHAR(255)` | Editor identifier. |
+| `edit_summary` | `VARCHAR(255)` | Summary of the edit. |
+| `edited_at` | `TIMESTAMP` | Edit timestamp. |
+
+Query note: because this table is generic, analysts typically filter by `entity_table` first.
