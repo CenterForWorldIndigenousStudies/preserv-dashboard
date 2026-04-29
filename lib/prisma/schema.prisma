@@ -291,6 +291,7 @@ model state_history {
   document_quality document_quality[]
   documents        documents          @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_state_history_document_id")
 
+  @@unique([document_id, previous_state, new_state, changed_at], map: "uk_state_history_document_transition")
   @@index([document_id, changed_at], map: "idx_state_history_document_changed_at")
   @@index([document_id], map: "idx_state_history_document_id")
 }

@@ -269,12 +269,15 @@ erDiagram
   logical type of the JSON payload in `value`.
 - `state_history` is an append-only event table. `document_quality.current_status` points to one row
   in that history.
+- `state_history` prevents exact duplicate transitions with a composite unique constraint on
+  `(document_id, previous_state, new_state, changed_at)`.
 
 ## Index Highlights
 
 - `documents` is indexed on `created_at`, `updated_at`, `name`, `filesize`, `hash_binary`, and
   `hash_content`.
 - `state_history` is indexed on `document_id` and `(document_id, changed_at)`.
+- `state_history` is also unique on `(document_id, previous_state, new_state, changed_at)`.
 - `edit_history` is indexed on `(entity_table, entity_id)` and
   `(entity_table, entity_id, edited_at)`.
 - `document_to_metadata` supports both document-first and metadata-first access patterns.
@@ -368,7 +371,8 @@ Document state transitions over time.
 | `changed_at` | `TIMESTAMP` | Transition time. |
 
 Query note: use this table for status history; `document_quality.current_status` points to one row
-here.
+here. The table also enforces a composite unique constraint on
+`(document_id, previous_state, new_state, changed_at)`.
 
 ### authors
 
