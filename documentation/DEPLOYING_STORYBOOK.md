@@ -1,7 +1,6 @@
 # Deploying Storybook
 
-Storybook does not need to be bundled into the Next.js app deployment.
-Instead:
+Storybook is hosted as a separate static site, and the dashboard loads it through the authenticated proxy route. The deployment model is:
 
 - build and host Storybook as a separate static site
 - set `STORYBOOK_URL` in the dashboard deployment
@@ -18,9 +17,7 @@ Use two Vercel projects pointed at the same repository root:
 - `preserv-dashboard`: the Next.js app
 - `preserv-dashboard-storybook`: the static Storybook build
 
-The repository root intentionally does not define a shared `vercel.json`, so
-each Vercel project can keep its own build and output settings in the Vercel
-dashboard.
+The repository root keeps `vercel.json` out of the shared config surface, so each Vercel project can keep its own build and output settings in the Vercel dashboard.
 
 ### Dashboard Project Settings
 

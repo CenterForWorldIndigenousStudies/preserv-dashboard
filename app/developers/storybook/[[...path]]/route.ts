@@ -1,34 +1,10 @@
-import { readFile } from 'node:fs/promises'
-import { extname, resolve } from 'node:path'
 import { NextRequest, NextResponse } from 'next/server'
 
 import { auth } from '@root/auth'
 
-const LOCAL_STORYBOOK_ROOT = resolve(process.cwd(), 'public/developers/storybook')
 const SIGN_IN_CALLBACK = '/component-library'
 
 export const preferredRegion = 'sfo1'
-
-const CONTENT_TYPES: Record<string, string> = {
-  '.avif': 'image/avif',
-  '.css': 'text/css; charset=utf-8',
-  '.gif': 'image/gif',
-  '.html': 'text/html; charset=utf-8',
-  '.ico': 'image/x-icon',
-  '.jpeg': 'image/jpeg',
-  '.jpg': 'image/jpeg',
-  '.js': 'application/javascript; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.map': 'application/json; charset=utf-8',
-  '.mjs': 'application/javascript; charset=utf-8',
-  '.png': 'image/png',
-  '.svg': 'image/svg+xml; charset=utf-8',
-  '.txt': 'text/plain; charset=utf-8',
-  '.wasm': 'application/wasm',
-  '.webp': 'image/webp',
-  '.woff': 'font/woff',
-  '.woff2': 'font/woff2',
-}
 
 function resolveStorybookPath(pathSegments: string[] | undefined): string {
   if (!pathSegments || pathSegments.length === 0) return 'index.html'
@@ -105,31 +81,6 @@ async function proxyRemoteStorybook(request: NextRequest, assetPath: string): Pr
   })
 }
 
-async function serveLocalStorybook(assetPath: string): Promise<NextResponse> {
-  const absolutePath = resolve(LOCAL_STORYBOOK_ROOT, assetPath)
-  if (!absolutePath.startsWith(LOCAL_STORYBOOK_ROOT)) {
-    return new NextResponse('Not found', { status: 404 })
-  }
-
-  try {
-    const file = await readFile(absolutePath)
-    const extension = extname(absolutePath).toLowerCase()
-    const headers = new Headers({
-      'content-type': CONTENT_TYPES[extension] ?? 'application/octet-stream',
-    })
-
-    if (extension === '.html') {
-      headers.set('cache-control', 'no-cache')
-    } else {
-      headers.set('cache-control', 'public, max-age=31536000, immutable')
-    }
-
-    return new NextResponse(file, { headers })
-  } catch {
-    return new NextResponse('Not found', { status: 404 })
-  }
-}
-
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ path?: string[] }> },
@@ -142,9 +93,5 @@ export async function GET(
     return unauthorizedResponse(request, assetPath)
   }
 
-  if (process.env.STORYBOOK_URL) {
-    return proxyRemoteStorybook(request, assetPath)
-  }
-
-  return serveLocalStorybook(assetPath)
+  return proxyRemoteStorybook(request, assetPath)
 }
