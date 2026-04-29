@@ -250,8 +250,8 @@ model edit_history {
   id             String    @id @db.VarChar(36)
   entity_id      String?   @db.VarChar(36)
   entity_table   String?   @db.VarChar(255)
-  previous_value String?   @db.Text
-  new_value      String?   @db.Text
+  previous_value String?   @db.LongText
+  new_value      String?   @db.LongText
   editor_email   String?   @db.VarChar(255)
   edit_summary   String?   @db.VarChar(255)
   edited_at      DateTime? @default(now()) @db.Timestamp(0)

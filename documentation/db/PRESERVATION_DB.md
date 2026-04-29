@@ -204,8 +204,8 @@ erDiagram
         varchar id PK, UK
         varchar entity_id
         varchar entity_table
-        text previous_value
-        text new_value
+        json previous_value
+        json new_value
         varchar editor_email
         varchar edit_summary
         timestamp edited_at
@@ -616,8 +616,8 @@ Generic audit log for edited entities.
 | `id` | `VARCHAR(36)` | Primary key. |
 | `entity_id` | `VARCHAR(36)` | Identifier of the edited row. No FK. |
 | `entity_table` | `VARCHAR(255)` | Name of the edited table. |
-| `previous_value` | `TEXT` | Prior value snapshot. |
-| `new_value` | `TEXT` | New value snapshot. |
+| `previous_value` | `JSON` | Prior value snapshot. |
+| `new_value` | `JSON` | New value snapshot. |
 | `editor_email` | `VARCHAR(255)` | Editor identifier. |
 | `edit_summary` | `VARCHAR(255)` | Summary of the edit. |
 | `edited_at` | `TIMESTAMP` | Edit timestamp. |
