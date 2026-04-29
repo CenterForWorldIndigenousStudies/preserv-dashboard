@@ -9,6 +9,13 @@ The app uses:
 - Auth.js with Google OAuth
 - Storybook for component development
 
+## Documentation
+
+- [documentation/db/CONNECTING_TO_DB.md](./documentation/db/CONNECTING_TO_DB.md)
+- [documentation/db/PRESERVATION_DB.md](./documentation/db/PRESERVATION_DB.md)
+- [documentation/testing/TESTING.md](./documentation/testing/TESTING.md)
+- [documentation/DEPLOYING_STORYBOOK.md](./documentation/DEPLOYING_STORYBOOK.md)
+
 ## Pages
 
 - `/` - overview dashboard
@@ -35,11 +42,12 @@ Open <http://localhost:3000>.
 
 Notes:
 
-- `npm run dev` runs `predev`, which builds local Storybook assets into
-  `public/developers/storybook` for development fallback.
+- `npm run dev` runs the Next.js app and the Storybook dev server together.
 - The app connects directly to MariaDB from the server runtime through Prisma.
 
 ## Environment Variables
+
+For dashboard-specific database connection guidance, including remote DB caveats, pool tuning, and troubleshooting, see [documentation/db/CONNECTING_TO_DB.md](./documentation/db/CONNECTING_TO_DB.md).
 
 Database connection:
 
@@ -66,9 +74,14 @@ Storybook integration:
 STORYBOOK_URL=https://your-storybook-host.example.com
 ```
 
-If `STORYBOOK_URL` is set, the dashboard proxies Storybook through
-`/developers/storybook/*` after checking the user's session. If it is unset, the
-dashboard falls back to locally built assets in `public/developers/storybook`.
+`STORYBOOK_URL` is required. The dashboard proxies Storybook through
+`/developers/storybook/*` after checking the user's session.
+
+For local development, point `STORYBOOK_URL` at the local Storybook server:
+
+```env
+STORYBOOK_URL=http://127.0.0.1:6006
+```
 
 In Vercel, set `STORYBOOK_URL` per environment so the dashboard points at the
 matching Storybook deployment:
@@ -112,11 +125,12 @@ Google OAuth setup:
 
 ## Scripts
 
-- `npm run dev` - start the Next.js development server
+- `npm run dev` - start the Next.js app and Storybook together for local development
+- `npm run dev:next` - start only the Next.js development server
 - `npm run build` - generate the Prisma client and build the app
 - `npm run start` - start the production server
 - `npm run storybook` - run Storybook locally
-- `npm run storybook:build` - build Storybook into static assets
+- `npm run storybook:build` - build Storybook as a standalone static site
 - `npm run storybook:clean` - remove generated Storybook output
 - `npm run lint` - run project linting and Markdown linting
 - `npm run lint:project` - run ESLint
@@ -150,8 +164,8 @@ Operationally:
 - the dashboard is a standard Next.js app
 - it reads directly from MariaDB
 - deployed environments should provide the same `DB_*` and `AUTH_*` variables described above
-- the dashboard can proxy a separately deployed Storybook through
-  `/developers/storybook/*` when `STORYBOOK_URL` is configured
+- the dashboard proxies a separately hosted Storybook through `/developers/storybook/*`
+- `STORYBOOK_URL` is required in every environment
 - Vercel project settings now own build/install/output configuration; the repo
   root intentionally does not carry a shared `vercel.json`
 

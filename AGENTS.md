@@ -135,19 +135,21 @@ documentation/db/
 
 ## Component Library (Storybook)
 
-Storybook provides an interactive component library for development and documentation. The static build is served by Next.js at `/storybook` (output goes to `public/storybook/`).
+Storybook provides an interactive component library for development and documentation. The dashboard exposes it through `/developers/storybook/*` after auth using `STORYBOOK_URL`.
 
 ### Running Storybook
 
 ```bash
-npm run storybook       # Dev server on http://localhost:6006
-npm run build-storybook # Production static build → public/storybook/
-npm run storybook-preview  # Preview production build on port 6006
+npm run dev               # Next.js app on :3000 plus Storybook on :6006
+npm run dev:next          # Next.js only
+npm run storybook         # Storybook dev server on http://localhost:6006
+npm run storybook:build   # Standalone static Storybook build → storybook-static/
+npm run storybook:preview # Preview the static build on port 6006
 ```
 
 ### Dev Workflow
 
-Run `npm run dev` (Next.js on :3000) and `npm run storybook` (:6006) side by side. Storybook's dev server proxies to Next.js for component rendering.
+Set `STORYBOOK_URL=http://127.0.0.1:6006` in local development. `npm run dev` starts both the Next.js app and the Storybook dev server so `/component-library` can load Storybook through the authenticated proxy route.
 
 ### Story Files
 
@@ -163,22 +165,27 @@ components/
 
 ### Component Library Page
 
-The `/developers/component-library` page (behind Google OAuth) is the entry point and developer hub. It links to `/storybook` where the static build is served.
+The `/developers/component-library` page (behind Google OAuth) is the entry point and developer hub. It loads `/developers/storybook/index.html`, which the dashboard proxies to the configured Storybook host after auth.
 
 ### Architecture
 
-- Storybook builds to `public/storybook/` so Next.js serves it as static files at `/storybook`
-- No iframe needed in production -- the page links directly to `/storybook`
-- In dev mode, the page shows the dev Storybook URL (`localhost:6006`)
+- `STORYBOOK_URL` is required in local, preview, and production environments
+- The authenticated proxy route is `app/developers/storybook/[[...path]]/route.ts`
+- Standalone Storybook builds are emitted to `storybook-static/`
 - `staticDirs: ['../public']` in `.storybook/main.ts` ensures Storybook can access public assets
 
 ## Environment Notes
 
+- Database connection guidance for this app lives in `documentation/db/CONNECTING_TO_DB.md`.
+- Use that document for dashboard-specific DB setup, remote DB caveats, pool tuning, and troubleshooting.
+- Do not infer dashboard connection behavior from `preserv-data-combiner`; the dashboard uses Next.js + Prisma + `@prisma/adapter-mariadb`, which behaves differently from CLI and Python tooling.
 - Auth.js uses v5-style env names:
   - `AUTH_GOOGLE_ID`
   - `AUTH_GOOGLE_SECRET`
   - `AUTH_URL`
   - `AUTH_SECRET`
+- Storybook deployment guidance lives in `documentation/DEPLOYING_STORYBOOK.md`.
+- Set `STORYBOOK_URL` for local, preview, and production environments.
 - Local development DB uses the `cwis_preservation` schema name
 - Copy `.env.local.example` to `.env.local` and keep local/dev values separate from DreamHost production values
 - Google OAuth redirect URIs must exactly match the domains in use:
@@ -206,7 +213,7 @@ Only `code-quality.yml` runs on PRs to `develop`. It checks:
 
 ```bash
 npm install
-npm run dev    # Start dev server on localhost:3000
+npm run dev    # Start Next.js on localhost:3000 and Storybook on localhost:6006
 npm run typecheck
 npm run lint:project
 npm run build  # Production build
