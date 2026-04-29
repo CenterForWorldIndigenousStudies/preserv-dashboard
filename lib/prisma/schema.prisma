@@ -71,6 +71,17 @@ model batches {
   @@index([id_legacy], map: "idx_batches_id_legacy")
 }
 
+model collections {
+  id         String    @id @db.VarChar(36)
+  tag_id     String    @unique(map: "uk_collections_tag_id") @db.VarChar(36)
+  notes      String?   @db.Text
+  created_at DateTime? @default(now()) @db.Timestamp(0)
+  updated_at DateTime? @default(now()) @db.Timestamp(0)
+  tags       tags      @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_collections_tag_id")
+
+  @@index([tag_id], map: "idx_collections_tag_id")
+}
+
 model document_access {
   id               String        @id @db.VarChar(36)
   document_id      String        @db.VarChar(36)
@@ -156,6 +167,7 @@ model document_to_metadata {
 
   @@unique([document_id, metadata_id], map: "uk_document_to_metadata_document_metadata")
   @@index([document_id], map: "idx_document_to_metadata_document_id")
+  @@index([metadata_id, document_id], map: "idx_document_to_metadata_metadata_document")
   @@index([metadata_id], map: "idx_document_to_metadata_metadata_id")
 }
 
@@ -185,6 +197,7 @@ model document_to_tags {
 
   @@unique([document_id, tag_id], map: "uk_document_to_tags_document_tag")
   @@index([document_id], map: "idx_document_to_tags_document_id")
+  @@index([tag_id, document_id], map: "idx_document_to_tags_tag_document")
   @@index([tag_id], map: "idx_document_to_tags_tag_id")
 }
 
@@ -225,9 +238,12 @@ model documents {
   state_history          state_history[]
   version_groups         version_groups?
 
+  @@index([created_at, id], map: "idx_documents_created_at_id")
   @@index([filesize], map: "idx_documents_filesize")
   @@index([hash_binary], map: "idx_documents_hash_binary")
   @@index([hash_content], map: "idx_documents_hash_content")
+  @@index([name, id], map: "idx_documents_name_id")
+  @@index([updated_at, id], map: "idx_documents_updated_at_id")
 }
 
 model edit_history {
@@ -252,6 +268,8 @@ model metadata {
   created_at           DateTime?              @default(now()) @db.Timestamp(0)
   updated_at           DateTime?              @default(now()) @db.Timestamp(0)
   document_to_metadata document_to_metadata[]
+
+  @@index([name(length: 191)], map: "idx_metadata_name")
 }
 
 model publishers {
@@ -284,7 +302,10 @@ model tags {
   notes            String?            @db.Text
   created_at       DateTime?          @default(now()) @db.Timestamp(0)
   updated_at       DateTime?          @default(now()) @db.Timestamp(0)
+  collections      collections?
   document_to_tags document_to_tags[]
+
+  @@index([name(length: 191)], map: "idx_tags_name")
 }
 
 model version_groups {
