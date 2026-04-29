@@ -173,6 +173,14 @@ erDiagram
         timestamp updated_at
     }
 
+    collections {
+        varchar id PK, UK
+        varchar tag_id FK, UK
+        text notes
+        timestamp created_at
+        timestamp updated_at
+    }
+
     document_versions {
         varchar id PK, UK
         varchar document_id FK
@@ -220,6 +228,7 @@ erDiagram
     metadata ||--o{ document_to_metadata : "document_to_metadata"
     batch_metadata ||--o{ batch_to_batches_metadata : "batch_metadata"
     tags ||--o{ document_to_tags : "document_to_tags"
+    tags ||--o| collections : "collection"
     version_groups ||--o{ document_versions : "document_versions"
     state_history ||--o{ document_quality : "current_status"
     access_levels ||--o{ document_access : "document_access"
@@ -270,6 +279,7 @@ erDiagram
   `(entity_table, entity_id, edited_at)`.
 - `document_to_metadata` supports both document-first and metadata-first access patterns.
 - `document_to_tags` supports both document-first and tag-first access patterns.
+- `collections` is indexed and unique on `tag_id`.
 - Association tables use composite unique constraints to prevent duplicate links.
 
 ## Table Reference
@@ -431,6 +441,20 @@ Tag lookup table.
 | `updated_at` | `TIMESTAMP` | Row update time. |
 
 Query note: indexed on `name(191)` for name lookups.
+
+### collections
+
+Collection records keyed to a single tag.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `VARCHAR(36)` | Primary key. UUID string. |
+| `tag_id` | `VARCHAR(36)` | FK to `tags.id`. Unique. |
+| `notes` | `TEXT` | Optional collection note. |
+| `created_at` | `TIMESTAMP` | Row creation time. |
+| `updated_at` | `TIMESTAMP` | Row update time. |
+
+Constraint notes: unique on `tag_id`; deleting the referenced tag cascades to this row.
 
 ### document_to_tags
 
