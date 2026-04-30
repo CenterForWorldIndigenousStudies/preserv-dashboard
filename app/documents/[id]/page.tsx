@@ -5,6 +5,7 @@ import { FileSize } from '@atoms/FileSize'
 import { NoDataState } from '@organisms/NoDataState'
 import { PageHeader } from '@organisms/PageHeader'
 import { AuditHistoryTable } from '@organisms/AuditHistoryTable'
+import { DocumentTagsEditor } from '@organisms/DocumentTagsEditor'
 import { DocumentVersionsButton } from '@organisms/DocumentVersionsButton'
 import { ReviewHistoryTable } from '@organisms/ReviewHistoryTable'
 import { parseMetadataValue } from '@lib/format'
@@ -184,40 +185,9 @@ export default async function DocumentDetailPage({
 
             <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
               <h2 className="text-xl font-semibold text-ink">Tags</h2>
-              {detail.document_to_tags.length > 0 ? (
-                <div className="mt-6 overflow-x-auto">
-                  <table className={detailTableClassName}>
-                    <thead>
-                      <tr>
-                        <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
-                          Tag
-                        </th>
-                        <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
-                          Notes
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {detail.document_to_tags.map((dt, i) => (
-                        <tr key={i}>
-                          <td className={`${detailTableBodyCellClassName} font-medium`}>
-                            {dt.tags.name ? (
-                              <span className="cursor-help" title={dt.tags.notes ?? undefined}>
-                                {dt.tags.name}
-                              </span>
-                            ) : (
-                              '—'
-                            )}
-                          </td>
-                          <td className={detailTableBodyCellClassName}>{dt.notes || ''}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="mt-4 text-sm text-ink/60">No tags available.</p>
-              )}
+              <div className="mt-6">
+                <DocumentTagsEditor documentId={document.id} initialTags={detail.document_to_tags} />
+              </div>
             </div>
 
             <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
