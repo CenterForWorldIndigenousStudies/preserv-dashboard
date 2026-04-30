@@ -1,10 +1,16 @@
-import type { Preview, Decorator } from '@storybook/nextjs-vite'
+import { createElement } from 'react'
+import type { Decorator, Preview } from '@storybook/nextjs-vite'
+import { SessionProvider } from 'next-auth/react'
 import '../app/globals.css'
 
-const withRootLayout: Decorator = (story, context) => {
-  // Minimal decorator that ensures Tailwind is applied
-  // The actual root layout is applied per-story via nextjs-vite framework
+const withRootLayout: Decorator = (story) => {
+  // Minimal decorator that ensures Tailwind is applied.
+  // The actual root layout is applied per-story via nextjs-vite framework.
   return story()
+}
+
+const withSessionProvider: Decorator = (story) => {
+  return createElement(SessionProvider, { session: null }, story())
 }
 
 const preview: Preview = {
@@ -33,7 +39,7 @@ const preview: Preview = {
       },
     },
   },
-  decorators: [withRootLayout],
+  decorators: [withRootLayout, withSessionProvider],
   tags: ['autodocs'],
 }
 
