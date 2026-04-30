@@ -104,7 +104,7 @@ export default async function DocumentDetailPage({
           description="Inspect the full document record, metadata payload, audit trail, review history, and duplicate relationships."
         />
 
-        <section className="grid gap-8 xl:grid-cols-[1.2fr,0.8fr]">
+        <section>
           <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
             <h2 className="text-xl font-semibold text-ink">Document Fields</h2>
             <dl className="mt-6 grid gap-x-6 gap-y-4 md:grid-cols-2">
@@ -124,121 +124,117 @@ export default async function DocumentDetailPage({
               ))}
             </dl>
           </div>
+        </section>
 
-          <div className="space-y-8">
-            <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-xl font-semibold text-ink">Versions</h2>
-                  <p className="mt-2 text-sm text-ink/60">
-                    Open the related document versions and duplicates for this record.
-                  </p>
-                </div>
-                {detail.version_family ? <DocumentVersionsButton versionFamily={detail.version_family} /> : null}
-              </div>
-              {!detail.version_family && detail.document.is_duplicate ? (
-                <p className="mt-4 text-sm text-ink/60">
-                  This document is tagged as a duplicate, but the current registry data did not include a version
-                  group or duplicate family for it. The overview can flag it as duplicate, but the related duplicate
-                  set is not available to display here yet.
+        <section className="space-y-8">
+          <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-semibold text-ink">Versions</h2>
+                <p className="mt-2 text-sm text-ink/60">
+                  Open the related document versions and duplicates for this record.
                 </p>
-              ) : null}
-              {!detail.version_family && !detail.document.is_duplicate ? (
-                <p className="mt-4 text-sm text-ink/60">No related versions available.</p>
-              ) : null}
-            </div>
-
-            <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
-              <h2 className="text-xl font-semibold text-ink">Metadata</h2>
-              {detail.metadata.length > 0 ? (
-                <div className="mt-6 overflow-x-auto">
-                  <table className={detailTableClassName}>
-                    <thead>
-                      <tr>
-                        <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
-                          Field
-                        </th>
-                        <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
-                          Value
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {detail.metadata.map((field, i) => (
-                        <tr key={i}>
-                          <td className={`${detailTableBodyCellClassName} font-medium`}>{field.name}</td>
-                          <td className={detailTableBodyCellClassName}>
-                            {(() => {
-                              const parsed = parseMetadataValue(field.value, field.value_type)
-                              return parsed.display
-                            })()}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="mt-4 text-sm text-ink/60">No metadata available.</p>
-              )}
-            </div>
-
-            <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
-              <h2 className="text-xl font-semibold text-ink">Tags</h2>
-              <div className="mt-6">
-                <DocumentTagsEditor documentId={document.id} initialTags={detail.document_to_tags} />
               </div>
+              {detail.version_family ? <DocumentVersionsButton versionFamily={detail.version_family} /> : null}
             </div>
+            {!detail.version_family && detail.document.is_duplicate ? (
+              <p className="mt-4 text-sm text-ink/60">
+                This document is tagged as a duplicate, but the current registry data did not include a version group
+                or duplicate family for it. The overview can flag it as duplicate, but the related duplicate set is
+                not available to display here yet.
+              </p>
+            ) : null}
+            {!detail.version_family && !detail.document.is_duplicate ? (
+              <p className="mt-4 text-sm text-ink/60">No related versions available.</p>
+            ) : null}
+          </div>
 
-            <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
-              <h2 className="text-xl font-semibold text-ink">Batches</h2>
-              {detail.document_to_batches.length > 0 ? (
-                <div className="mt-6 overflow-x-auto">
-                  <table className={detailTableClassName}>
-                    <thead>
-                      <tr>
-                        <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
-                          Batch ID
-                        </th>
-                        <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
-                          Batch Origin
-                        </th>
-                        <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
-                          Processing Time
-                        </th>
-                        <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
-                          OCR Low
-                        </th>
-                        <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
-                          OCR Medium
-                        </th>
+          <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
+            <h2 className="text-xl font-semibold text-ink">Metadata</h2>
+            {detail.metadata.length > 0 ? (
+              <div className="mt-6 overflow-x-auto">
+                <table className={detailTableClassName}>
+                  <thead>
+                    <tr>
+                      <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
+                        Field
+                      </th>
+                      <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
+                        Value
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {detail.metadata.map((field, i) => (
+                      <tr key={i}>
+                        <td className={`${detailTableBodyCellClassName} font-medium`}>{field.name}</td>
+                        <td className={detailTableBodyCellClassName}>
+                          {(() => {
+                            const parsed = parseMetadataValue(field.value, field.value_type)
+                            return parsed.display
+                          })()}
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {detail.document_to_batches.map((batchLink) => (
-                        <tr key={batchLink.id}>
-                          <td className={`${detailTableBodyCellClassName} font-medium`}>
-                            {batchLink.batch_legacy_id ?? batchLink.batch_id}
-                          </td>
-                          <td className={detailTableBodyCellClassName}>{batchLink.batch_origin ?? '—'}</td>
-                          <td className={detailTableBodyCellClassName}>
-                            {batchLink.processing_time_seconds ?? '—'}
-                          </td>
-                          <td className={detailTableBodyCellClassName}>
-                            {batchLink.ocr_quality_low ? 'True' : 'False'}
-                          </td>
-                          <td className={detailTableBodyCellClassName}>
-                            {batchLink.ocr_quality_medium ? 'True' : 'False'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="mt-4 text-sm text-ink/60">No batch links available.</p>
-              )}
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="mt-4 text-sm text-ink/60">No metadata available.</p>
+            )}
+          </div>
+
+          <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
+            <h2 className="text-xl font-semibold text-ink">Tags</h2>
+            <div className="mt-6">
+              <DocumentTagsEditor documentId={document.id} initialTags={detail.document_to_tags} />
             </div>
+          </div>
+
+          <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
+            <h2 className="text-xl font-semibold text-ink">Batches</h2>
+            {detail.document_to_batches.length > 0 ? (
+              <div className="mt-6 overflow-x-auto">
+                <table className={detailTableClassName}>
+                  <thead>
+                    <tr>
+                      <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
+                        Batch ID
+                      </th>
+                      <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
+                        Batch Origin
+                      </th>
+                      <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
+                        Processing Time
+                      </th>
+                      <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
+                        OCR Low
+                      </th>
+                      <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
+                        OCR Medium
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {detail.document_to_batches.map((batchLink) => (
+                      <tr key={batchLink.id}>
+                        <td className={`${detailTableBodyCellClassName} font-medium`}>
+                          {batchLink.batch_legacy_id ?? batchLink.batch_id}
+                        </td>
+                        <td className={detailTableBodyCellClassName}>{batchLink.batch_origin ?? '—'}</td>
+                        <td className={detailTableBodyCellClassName}>{batchLink.processing_time_seconds ?? '—'}</td>
+                        <td className={detailTableBodyCellClassName}>{batchLink.ocr_quality_low ? 'True' : 'False'}</td>
+                        <td className={detailTableBodyCellClassName}>
+                          {batchLink.ocr_quality_medium ? 'True' : 'False'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="mt-4 text-sm text-ink/60">No batch links available.</p>
+            )}
           </div>
         </section>
 
