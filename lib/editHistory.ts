@@ -14,8 +14,17 @@ export type EditHistoryClient = PrismaClient | Prisma.TransactionClient
 
 export async function createEditHistoryEntry(
   params: CreateEditHistoryEntryParams,
-  client: EditHistoryClient = db,
+): Promise<void>
+export async function createEditHistoryEntry(
+  client: EditHistoryClient,
+  params: CreateEditHistoryEntryParams,
+): Promise<void>
+export async function createEditHistoryEntry(
+  clientOrParams: EditHistoryClient | CreateEditHistoryEntryParams,
+  maybeParams?: CreateEditHistoryEntryParams,
 ): Promise<void> {
+  const client = maybeParams ? (clientOrParams as EditHistoryClient) : db
+  const params = maybeParams ?? (clientOrParams as CreateEditHistoryEntryParams)
   const session = await auth()
   const editorEmail = session?.user?.email ?? 'unknown@system.local'
 
