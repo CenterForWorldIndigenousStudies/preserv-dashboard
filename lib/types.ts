@@ -198,10 +198,10 @@ export interface ReadyForLibraryItem {
   metadata_complete: boolean
 }
 
-// BatchSummary kept as-is below
 export interface BatchSummary {
   batch_id: string
   batch_name: string | null
-  validation_status: string | null
-  document_count: number
+  batch_id_legacy: string | null
+  property_key: string
+  property_value: string | number | boolean | null
 }

@@ -35,7 +35,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         data: {
           id: crypto.randomUUID(),
           name,
-          name_hash: nameHash,
           notes: notes || null,
         },
       })
