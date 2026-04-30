@@ -54,7 +54,6 @@ export async function POST(request: NextRequest, context: RouteContext): Promise
             data: {
               id: crypto.randomUUID(),
               name: tagName,
-              name_hash: nameHash,
               notes: notes || null,
             },
           })

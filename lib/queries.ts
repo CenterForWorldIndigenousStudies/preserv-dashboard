@@ -996,23 +996,48 @@ export async function getReadyForLibraryDocuments(): Promise<{
   return { items, total: items.length }
 }
 
+function parseBatchProcessingDetails(
+  rawDetails: string | null,
+): Record<string, string | number | boolean | null> {
+  if (!rawDetails?.trim()) {
+    return {}
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(rawDetails)
+
+    if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object') {
+      return {}
+    }
+
+    const normalizedEntries = Object.entries(parsed).map(([key, value]) => {
+      if (value === null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+        return [key, value] as const
+      }
+
+      return [key, JSON.stringify(value)] as const
+    })
+
+    return Object.fromEntries(normalizedEntries)
+  } catch {
+    return {}
+  }
+}
+
 // ---------------------------------------------------------------------------
 // getBatchSummary
-// Returns pipeline summary grouped by batch — counts of documents per
-// validation_status per batch.
+// Returns processing details flattened into property rows per batch.
 // ---------------------------------------------------------------------------
 export async function getBatchSummary(): Promise<BatchSummary[]> {
   const rows = await db.batches.findMany({
-    include: {
+    select: {
+      id: true,
+      id_legacy: true,
+      name: true,
+      processing_details: true,
       document_to_batches: {
-        include: {
-          documents: {
-            include: {
-              document_quality: {
-                select: { validation_status: true },
-              },
-            },
-          },
+        select: {
+          processing_time_seconds: true,
         },
       },
     },
@@ -1021,20 +1046,30 @@ export async function getBatchSummary(): Promise<BatchSummary[]> {
   const result: BatchSummary[] = []
 
   for (const batch of rows) {
-    const byStatus = new Map<string, number>()
-    for (const dtb of batch.document_to_batches) {
-      const status = dtb.documents.document_quality?.validation_status ?? null
-      const key = status ?? 'unknown'
-      byStatus.set(key, (byStatus.get(key) ?? 0) + 1)
-    }
-    for (const [validation_status, document_count] of byStatus) {
+    const details = parseBatchProcessingDetails(batch.processing_details)
+
+    for (const [property_key, property_value] of Object.entries(details)) {
       result.push({
         batch_id: batch.id,
         batch_name: batch.name ?? null,
-        validation_status,
-        document_count,
+        batch_id_legacy: batch.id_legacy ?? null,
+        property_key,
+        property_value,
       })
     }
+
+    const totalProcessingTime = batch.document_to_batches.reduce(
+      (sum, dtb) => sum + (dtb.processing_time_seconds ?? 0),
+      0,
+    )
+
+    result.push({
+      batch_id: batch.id,
+      batch_name: batch.name ?? null,
+      batch_id_legacy: batch.id_legacy ?? null,
+      property_key: 'processing_time_seconds',
+      property_value: totalProcessingTime,
+    })
   }
 
   return result
