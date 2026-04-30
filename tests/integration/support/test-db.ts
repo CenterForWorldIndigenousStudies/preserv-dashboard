@@ -6,9 +6,6 @@ import mysql, { type RowDataPacket } from 'mysql2/promise'
 
 const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url))
 const PROJECT_ROOT = path.resolve(dirname, '../../..')
-const DATA_COMBINER_ROOT = path.resolve(PROJECT_ROOT, '../preserv-data-combiner')
-const INIT_DB_SQL = path.join(DATA_COMBINER_ROOT, 'scripts', 'init_db.sql')
-const DASHBOARD_TABLES_SQL = path.join(PROJECT_ROOT, 'scripts', 'dashboard_tables.sql')
 const TEST_ENV_FILE = path.join(PROJECT_ROOT, '.env.test')
 
 const DEFAULT_TEST_DB_ENV = {
@@ -27,8 +24,9 @@ type TestDbConfig = {
   database: string
 }
 
-interface TableNameRow extends RowDataPacket {
+interface SchemaObjectRow extends RowDataPacket {
   TABLE_NAME: string
+  TABLE_TYPE: string
 }
 
 function escapeIdentifier(value: string): string {
@@ -39,37 +37,6 @@ function assertSafeTestDatabase(database: string): void {
   if (!/test/i.test(database)) {
     throw new Error(`Refusing to manage non-test database "${database}". Use a dedicated test schema.`)
   }
-}
-
-function iterSqlStatements(script: string): string[] {
-  const statements: string[] = []
-  let statementLines: string[] = []
-
-  for (const rawLine of script.split(/\r?\n/u)) {
-    const line = rawLine.trim()
-    if (!line || line.startsWith('--')) {
-      continue
-    }
-
-    statementLines.push(rawLine)
-    if (line.endsWith(';')) {
-      let statement = statementLines.join('\n').trim()
-      if (statement.endsWith(';')) {
-        statement = statement.slice(0, -1)
-      }
-      if (statement) {
-        statements.push(statement)
-      }
-      statementLines = []
-    }
-  }
-
-  const trailing = statementLines.join('\n').trim()
-  if (trailing) {
-    statements.push(trailing)
-  }
-
-  return statements
 }
 
 function loadTestEnv(): void {
@@ -90,15 +57,6 @@ export function getTestDbConfig(): TestDbConfig {
     user: process.env.DB_USER ?? DEFAULT_TEST_DB_ENV.DB_USER,
     password: process.env.DB_PASS ?? DEFAULT_TEST_DB_ENV.DB_PASS,
     database,
-  }
-}
-
-async function applySqlFile(connection: mysql.Connection, filename: string): Promise<void> {
-  const script = fs.readFileSync(filename, 'utf8')
-  for (const statement of iterSqlStatements(script)) {
-    // The schema files are trusted repo inputs; execute sequentially for clearer failures.
-    // eslint-disable-next-line no-await-in-loop
-    await connection.query(statement)
   }
 }
 
@@ -138,10 +96,10 @@ async function ensureTestDatabaseExists(config: TestDbConfig): Promise<void> {
   }
 }
 
-async function clearTestDatabase(connection: mysql.Connection, database: string): Promise<void> {
-  const [rows] = await connection.query<TableNameRow[]>(
+async function getSchemaObjects(connection: mysql.Connection, database: string): Promise<SchemaObjectRow[]> {
+  const [rows] = await connection.query<SchemaObjectRow[]>(
     `
-      SELECT TABLE_NAME
+      SELECT TABLE_NAME, TABLE_TYPE
       FROM information_schema.tables
       WHERE table_schema = ?
       ORDER BY TABLE_NAME ASC
@@ -149,15 +107,7 @@ async function clearTestDatabase(connection: mysql.Connection, database: string)
     [database],
   )
 
-  await connection.query('SET FOREIGN_KEY_CHECKS = 0')
-  try {
-    for (const row of rows) {
-      // eslint-disable-next-line no-await-in-loop
-      await connection.query(`DROP TABLE IF EXISTS ${escapeIdentifier(row.TABLE_NAME)}`)
-    }
-  } finally {
-    await connection.query('SET FOREIGN_KEY_CHECKS = 1')
-  }
+  return rows
 }
 
 export async function resetTestDatabase(): Promise<void> {
@@ -166,9 +116,18 @@ export async function resetTestDatabase(): Promise<void> {
 
   const databaseConnection = await mysql.createConnection(config)
   try {
-    await clearTestDatabase(databaseConnection, config.database)
-    await applySqlFile(databaseConnection, INIT_DB_SQL)
-    await applySqlFile(databaseConnection, DASHBOARD_TABLES_SQL)
+    // Verify required schema objects exist — do NOT drop/recreate.
+    // The test DB schema is maintained independently of the test runner.
+    const required = ['documents', 'tags', 'edit_history']
+    const rows = await getSchemaObjects(databaseConnection, config.database)
+    const existing = new Set(rows.map((r) => r.TABLE_NAME))
+    const missing = required.filter((t) => !existing.has(t))
+    if (missing.length > 0) {
+      throw new Error(
+        `Test DB schema is not ready. Missing tables: ${missing.join(', ')}. ` +
+          `Run the SQL setup scripts to initialize the test DB first.`,
+      )
+    }
   } finally {
     await databaseConnection.end()
   }

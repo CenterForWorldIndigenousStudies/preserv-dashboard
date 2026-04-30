@@ -13,6 +13,12 @@ const meta: Meta<typeof Sidebar> = {
   parameters: {
     backgrounds: { default: 'sand' },
     layout: 'fullscreen',
+    nextjs: {
+      appDirectory: true,
+      navigation: {
+        pathname: '/component-library',
+      },
+    },
   },
 }
 

@@ -32,13 +32,16 @@ const config: StorybookConfig = {
         ...config.resolve,
         alias: {
           ...config.resolve?.alias,
+          'next/router': 'next-router-mock',
           // Client components used in stories should not pull server actions
           // into the browser bundle.
           '@actions/documents': path.resolve(__dirname, '../app/actions/documents.storybook.ts'),
           // Stub @lib/db with a browser-safe no-op so Prisma (Node.js-only)
-          // never enters the Storybook browser bundle.  The stories pass
+          // never enters the Storybook browser bundle. The stories pass
           // initialData directly and never call any db function at runtime.
           '@lib/db': path.resolve(__dirname, '../lib/db.storybook.ts'),
+          // Client stories only need the browser-safe utilities from this module.
+          '@lib/tag-utils': path.resolve(__dirname, '../lib/tag-utils.storybook.ts'),
         },
       },
       define: {

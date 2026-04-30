@@ -22,6 +22,16 @@ const meta = {
   parameters: {
     layout: 'fullscreen',
     backgrounds: { default: 'sand' },
+    nextjs: {
+      appDirectory: true,
+      navigation: {
+        pathname: '/documents',
+        query: {
+          page: '1',
+          pageSize: '25',
+        },
+      },
+    },
   },
 } satisfies Meta<typeof DocumentsTable>
 

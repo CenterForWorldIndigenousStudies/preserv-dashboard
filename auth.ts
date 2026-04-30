@@ -10,7 +10,8 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
   },
   callbacks: {
     authorized({ auth }) {
-      return !!auth
+      const email = auth?.user?.email ?? ''
+      return !!auth && (email.endsWith('@cwis.org') || email.endsWith('@gmail.com'))
     },
     session({ session }) {
       return {
