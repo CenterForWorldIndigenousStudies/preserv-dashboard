@@ -1,6 +1,7 @@
 import type {
   AuditEntry,
   BatchSummary,
+  CollectionWithMeta,
   Document,
   DocumentDetail,
   DocumentsCursor,
@@ -62,14 +63,14 @@ interface OverviewDocumentRow {
 }
 
 const OVERVIEW_SORT_EXPRESSIONS: Record<(typeof DOCUMENTS_ORDERABLE_FIELDS)[number], string> = {
-  id: 'COALESCE(d.id, \'\')',
+  id: "COALESCE(d.id, '')",
   filesize: 'COALESCE(d.filesize, -1)',
-  hash_binary: 'COALESCE(d.hash_binary, \'\')',
-  hash_content: 'COALESCE(d.hash_content, \'\')',
-  id_legacy: 'COALESCE(d.id_legacy, \'\')',
+  hash_binary: "COALESCE(d.hash_binary, '')",
+  hash_content: "COALESCE(d.hash_content, '')",
+  id_legacy: "COALESCE(d.id_legacy, '')",
   source_id:
     "COALESCE(JSON_UNQUOTE(JSON_EXTRACT(source_meta.value, '$.value')), JSON_UNQUOTE(JSON_EXTRACT(source_meta.value, '$')), source_meta.value, '')",
-  name: 'COALESCE(d.name, \'\')',
+  name: "COALESCE(d.name, '')",
   created_at: "COALESCE(d.created_at, TIMESTAMP('1000-01-01 00:00:00'))",
   updated_at: "COALESCE(d.updated_at, TIMESTAMP('1000-01-01 00:00:00'))",
   is_duplicate: 'CASE WHEN dup.document_id IS NULL THEN 0 ELSE 1 END',
@@ -95,22 +96,25 @@ export async function getAllDocuments(
   const page = normalizePageNumber(params.page)
   const pageSize = params.pageSize && params.pageSize > 0 ? Math.min(params.pageSize, 1000) : 25
 
-  return getOverviewDocumentsPage({
-    page,
-    pageSize,
-    orderBy: params.orderBy,
-    sortDirection: params.sortDirection,
-    search: normalizeOverviewTextFilter(params.search ?? params.author),
-    statuses: normalizeOverviewStatuses(params.statuses),
-    documentType: normalizeOverviewDocumentType(params.documentType),
-    batch: normalizeOverviewTextFilter(params.batch),
-    createdFrom: normalizeOverviewDateFilter(params.createdFrom),
-    createdTo: normalizeOverviewDateFilter(params.createdTo),
-    collection: normalizeOverviewTextFilter(params.collection),
-    accessLevel: normalizeOverviewAccessLevel(params.accessLevel),
-    cursor: params.cursorValue && params.cursorId ? { value: params.cursorValue, id: params.cursorId } : null,
-    cursorDirection: params.cursorDirection,
-  }, client)
+  return getOverviewDocumentsPage(
+    {
+      page,
+      pageSize,
+      orderBy: params.orderBy,
+      sortDirection: params.sortDirection,
+      search: normalizeOverviewTextFilter(params.search ?? params.author),
+      statuses: normalizeOverviewStatuses(params.statuses),
+      documentType: normalizeOverviewDocumentType(params.documentType),
+      batch: normalizeOverviewTextFilter(params.batch),
+      createdFrom: normalizeOverviewDateFilter(params.createdFrom),
+      createdTo: normalizeOverviewDateFilter(params.createdTo),
+      collection: normalizeOverviewTextFilter(params.collection),
+      accessLevel: normalizeOverviewAccessLevel(params.accessLevel),
+      cursor: params.cursorValue && params.cursorId ? { value: params.cursorValue, id: params.cursorId } : null,
+      cursorDirection: params.cursorDirection,
+    },
+    client,
+  )
 }
 
 const PAGE_SIZE = 20
@@ -124,6 +128,29 @@ function normalizePageNumber(page?: number): number {
 
 export function getPageSize(): number {
   return PAGE_SIZE
+}
+
+interface CollectionRow {
+  id: string
+  tag_id: string
+  notes: string | null
+  created_at: Date | string | null
+  updated_at: Date | string | null
+  collection_name: string | null
+  document_count: bigint | number | string
+}
+
+interface CollectionDocumentRow {
+  id: string
+  filesize: bigint | number | string | null
+  hash_binary: string | null
+  hash_content: string | null
+  id_legacy: string | null
+  source_id: string | null
+  name: string | null
+  created_at: Date | string | null
+  updated_at: Date | string | null
+  is_duplicate: boolean | number | bigint | string | null
 }
 
 // ---------------------------------------------------------------------------
@@ -154,6 +181,144 @@ export async function getPipelineSummary(): Promise<PipelineSummary> {
   }
 }
 
+/**
+ * Returns all collections with their linked tag name and distinct document count.
+ */
+export async function getCollections(): Promise<CollectionWithMeta[]> {
+  const rows = await db.$queryRaw<CollectionRow[]>(Prisma.sql`
+    SELECT
+      c.id,
+      c.tag_id,
+      c.notes,
+      c.created_at,
+      c.updated_at,
+      t.name AS collection_name,
+      COUNT(DISTINCT dtt.document_id) AS document_count
+    FROM collections c
+    INNER JOIN tags t ON t.id = c.tag_id
+    LEFT JOIN document_to_tags dtt ON dtt.tag_id = t.id
+    GROUP BY c.id, c.tag_id, c.notes, c.created_at, c.updated_at, t.name
+    ORDER BY t.name ASC
+  `)
+
+  return rows.map((row) => ({
+    id: String(row.id),
+    tag_id: String(row.tag_id),
+    collection_name: row.collection_name ?? 'Untitled collection',
+    notes: row.notes ?? null,
+    created_at: row.created_at ?? null,
+    updated_at: row.updated_at ?? null,
+    document_count: Number(row.document_count ?? 0),
+  }))
+}
+
+/**
+ * Returns all distinct documents associated with a collection through its tag.
+ */
+export async function getCollectionDocuments(collectionId: string): Promise<Document[]> {
+  const rows = await db.$queryRaw<CollectionDocumentRow[]>(Prisma.sql`
+    SELECT DISTINCT
+      d.id,
+      d.filesize,
+      d.hash_binary,
+      d.hash_content,
+      d.id_legacy,
+      NULL AS source_id,
+      d.name,
+      d.created_at,
+      d.updated_at,
+      0 AS is_duplicate
+    FROM documents d
+    INNER JOIN document_to_tags dtt ON dtt.document_id = d.id
+    INNER JOIN collections c ON c.tag_id = dtt.tag_id
+    WHERE c.id = ${collectionId}
+    ORDER BY d.name ASC, d.id ASC
+  `)
+
+  return rows.map(normalizeCollectionDocumentRow)
+}
+
+export async function getDocumentsForCollection(collectionId: string): Promise<Document[]> {
+  return getCollectionDocuments(collectionId)
+}
+
+export async function getDocumentsNotInCollection(collectionId: string): Promise<Document[]> {
+  const rows = await db.$queryRaw<CollectionDocumentRow[]>(Prisma.sql`
+    SELECT DISTINCT
+      d.id,
+      d.filesize,
+      d.hash_binary,
+      d.hash_content,
+      d.id_legacy,
+      NULL AS source_id,
+      d.name,
+      d.created_at,
+      d.updated_at,
+      0 AS is_duplicate
+    FROM documents d
+    LEFT JOIN document_to_tags dtt ON dtt.document_id = d.id
+      AND dtt.tag_id = (SELECT tag_id FROM collections WHERE id = ${collectionId})
+    WHERE dtt.document_id IS NULL
+    ORDER BY d.name ASC, d.id ASC
+  `)
+
+  return rows.map(normalizeCollectionDocumentRow)
+}
+
+export async function addDocumentsToCollection(collectionId: string, documentIds: string[]): Promise<void> {
+  if (documentIds.length === 0) {
+    return
+  }
+
+  const collection = await db.collections.findUnique({ where: { id: collectionId } })
+
+  if (!collection) {
+    throw new Error('Collection not found')
+  }
+
+  await db.$transaction(async (tx) => {
+    await Promise.all(
+      documentIds.map(async (documentId) =>
+        tx.document_to_tags.upsert({
+          where: {
+            document_id_tag_id: {
+              document_id: documentId,
+              tag_id: collection.tag_id,
+            },
+          },
+          update: {},
+          create: {
+            id: crypto.randomUUID(),
+            document_id: documentId,
+            tag_id: collection.tag_id,
+          },
+        }),
+      ),
+    )
+  })
+}
+
+export async function removeDocumentsFromCollection(collectionId: string, documentIds: string[]): Promise<void> {
+  if (documentIds.length === 0) {
+    return
+  }
+
+  const collection = await db.collections.findUnique({ where: { id: collectionId } })
+
+  if (!collection) {
+    throw new Error('Collection not found')
+  }
+
+  await db.$transaction(async (tx) => {
+    await tx.document_to_tags.deleteMany({
+      where: {
+        document_id: { in: documentIds },
+        tag_id: collection.tag_id,
+      },
+    })
+  })
+}
+
 // ---------------------------------------------------------------------------
 // getDocuments
 // ---------------------------------------------------------------------------
@@ -162,12 +327,15 @@ export async function getDocuments(
   client: QueryDbClient = db,
 ): Promise<PagedResult<Document>> {
   const page = normalizePageNumber(params.page)
-  const result = await getOverviewDocumentsPage({
-    page,
-    pageSize: PAGE_SIZE,
-    orderBy: 'created_at',
-    sortDirection: 'desc',
-  }, client)
+  const result = await getOverviewDocumentsPage(
+    {
+      page,
+      pageSize: PAGE_SIZE,
+      orderBy: 'created_at',
+      sortDirection: 'desc',
+    },
+    client,
+  )
 
   return {
     items: result.data,
@@ -175,25 +343,29 @@ export async function getDocuments(
   }
 }
 
-async function getOverviewDocumentsPage(params: {
-  page: number
-  pageSize: number
-  orderBy?: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
-  sortDirection?: 'asc' | 'desc'
-  search?: string
-  statuses?: OverviewStatusOption[]
-  documentType?: OverviewDocumentTypeOption
-  batch?: string
-  createdFrom?: string
-  createdTo?: string
-  collection?: string
-  accessLevel?: OverviewAccessLevelOption
-  cursor?: DocumentsCursor | null
-  cursorDirection?: 'next' | 'prev'
-}, client: QueryDbClient = db): Promise<DocumentsPageResult> {
-  const sortField = params.orderBy && (DOCUMENTS_ORDERABLE_FIELDS as readonly string[]).includes(params.orderBy)
-    ? params.orderBy
-    : 'created_at'
+async function getOverviewDocumentsPage(
+  params: {
+    page: number
+    pageSize: number
+    orderBy?: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
+    sortDirection?: 'asc' | 'desc'
+    search?: string
+    statuses?: OverviewStatusOption[]
+    documentType?: OverviewDocumentTypeOption
+    batch?: string
+    createdFrom?: string
+    createdTo?: string
+    collection?: string
+    accessLevel?: OverviewAccessLevelOption
+    cursor?: DocumentsCursor | null
+    cursorDirection?: 'next' | 'prev'
+  },
+  client: QueryDbClient = db,
+): Promise<DocumentsPageResult> {
+  const sortField =
+    params.orderBy && (DOCUMENTS_ORDERABLE_FIELDS as readonly string[]).includes(params.orderBy)
+      ? params.orderBy
+      : 'created_at'
   const sortDirection = params.sortDirection === 'asc' ? 'asc' : 'desc'
   const cursorDirection = params.cursorDirection === 'prev' ? 'prev' : 'next'
   const searchTerm = params.search?.trim()
@@ -234,7 +406,8 @@ async function getOverviewDocumentsPage(params: {
       WHERE t.name = 'duplicate_document'
     ) AS dup ON dup.document_id = d.id
     LEFT JOIN document_quality dq ON dq.document_id = d.id
-    LEFT JOIN access_levels al ON al.id = dq.access_level
+    LEFT JOIN document_access da ON da.document_id = d.id
+    LEFT JOIN access_levels al ON al.id = da.access_level_id
   `
 
   const items = await client.$queryRaw<OverviewDocumentRow[]>(Prisma.sql`
@@ -322,7 +495,9 @@ function buildOverviewDocumentsWhereSql(params: {
   }
 
   if (params.createdTo) {
-    conditions.push(Prisma.sql`d.created_at < DATE_ADD(${new Date(`${params.createdTo}T00:00:00.000Z`)}, INTERVAL 1 DAY)`)
+    conditions.push(
+      Prisma.sql`d.created_at < DATE_ADD(${new Date(`${params.createdTo}T00:00:00.000Z`)}, INTERVAL 1 DAY)`,
+    )
   }
 
   if (params.collection) {
@@ -441,8 +616,7 @@ function buildOverviewDocumentsCursorConditionSql(params: {
 }): Prisma.Sql {
   const movesForward = params.cursorDirection === 'next'
   const usesAscendingPrimary =
-    (params.sortDirection === 'asc' && movesForward) ||
-    (params.sortDirection === 'desc' && !movesForward)
+    (params.sortDirection === 'asc' && movesForward) || (params.sortDirection === 'desc' && !movesForward)
   const primaryComparator = Prisma.raw(usesAscendingPrimary ? '>' : '<')
   const secondaryComparator = Prisma.raw(movesForward ? '>' : '<')
   const cursorValue = coerceDocumentsCursorValue(params.sortField, params.cursor.value)
@@ -463,13 +637,14 @@ function buildOverviewDocumentsOrderBySql(params: {
   sortDirection: 'asc' | 'desc'
   sortExpression: Prisma.Sql
 }): Prisma.Sql {
-  const primaryDirection = params.cursorDirection === 'prev'
-    ? params.sortDirection === 'asc'
-      ? 'DESC'
-      : 'ASC'
-    : params.sortDirection === 'asc'
-      ? 'ASC'
-      : 'DESC'
+  const primaryDirection =
+    params.cursorDirection === 'prev'
+      ? params.sortDirection === 'asc'
+        ? 'DESC'
+        : 'ASC'
+      : params.sortDirection === 'asc'
+        ? 'ASC'
+        : 'DESC'
   const secondaryDirection = params.cursorDirection === 'prev' ? 'DESC' : 'ASC'
 
   return Prisma.sql`
@@ -522,6 +697,21 @@ function coerceDocumentsCursorValue(
 }
 
 function normalizeOverviewDocumentRow(row: OverviewDocumentRow): Document {
+  return {
+    id: String(row.id),
+    filesize: row.filesize !== null && row.filesize !== undefined ? Number(row.filesize) : null,
+    hash_binary: row.hash_binary ?? null,
+    hash_content: row.hash_content ?? null,
+    id_legacy: row.id_legacy ?? null,
+    source_id: row.source_id ?? null,
+    name: row.name ?? null,
+    created_at: row.created_at ?? null,
+    updated_at: row.updated_at ?? null,
+    is_duplicate: Boolean(Number(row.is_duplicate ?? 0)),
+  }
+}
+
+function normalizeCollectionDocumentRow(row: CollectionDocumentRow): Document {
   return {
     id: String(row.id),
     filesize: row.filesize !== null && row.filesize !== undefined ? Number(row.filesize) : null,
@@ -637,10 +827,12 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
       metadata_sufficiency: row.metadata_sufficiency ?? null,
       validation_status: row.validation_status ?? null,
       validation_type: row.validation_type ?? null,
-      validation_timestamp: row.validation_timestamp !== null && row.validation_timestamp !== undefined ? Number(row.validation_timestamp) : null,
+      validation_timestamp:
+        row.validation_timestamp !== null && row.validation_timestamp !== undefined
+          ? Number(row.validation_timestamp)
+          : null,
       validator_name: row.validator_name ?? null,
       validator_email: row.validator_email ?? null,
-      access_level: row.access_level ?? null,
       current_status: row.current_status ?? null,
       created_at: row.created_at ?? null,
       updated_at: row.updated_at ?? null,
@@ -681,9 +873,7 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
 
     const familyDocuments: VersionFamilyDocument[] = [
       mapVersionFamilyDocument(group.documents, true),
-      ...group.document_versions.map((versionRow) =>
-        mapVersionFamilyDocument(versionRow.documents, false),
-      ),
+      ...group.document_versions.map((versionRow) => mapVersionFamilyDocument(versionRow.documents, false)),
     ]
 
     return {
@@ -848,15 +1038,13 @@ export async function getReviewQueueDocuments(): Promise<{
   const needsReviewMetaId = needsReviewMeta?.id
   const sensitiveMetaId = sensitiveMeta?.id
 
-  // Get documents with IN_PROGRESS or NEEDS_REVISION validation_status
-  const qualityDocs = await db.document_quality.findMany({
-    where: {
-      validation_status: {
-        in: ['IN_PROGRESS', 'NEEDS_REVISION'],
-      },
-    },
-    select: { document_id: true },
-  })
+  // Get documents with IN_PROGRESS or NEEDS_REVISION validation_status.
+  // Use raw SQL because the generated Prisma enum does not include these legacy values.
+  const qualityDocs = await db.$queryRaw<Array<{ document_id: string }>>(Prisma.sql`
+    SELECT document_id
+    FROM document_quality
+    WHERE validation_status IN ('IN_PROGRESS', 'NEEDS_REVISION')
+  `)
 
   const qualityDocIds = new Set(qualityDocs.map((d) => d.document_id))
 
@@ -918,7 +1106,7 @@ export async function getReviewQueueDocuments(): Promise<{
 
 // ---------------------------------------------------------------------------
 // getReadyForLibraryDocuments
-// Returns documents with validation_status = 'APPROVED', access_level set,
+// Returns documents with validation_status = 'APPROVED', has access_level via document_access,
 // and required Dublin Core metadata fields present.
 // ---------------------------------------------------------------------------
 export async function getReadyForLibraryDocuments(): Promise<{
@@ -938,20 +1126,33 @@ export async function getReadyForLibraryDocuments(): Promise<{
   const qualityDocs = await db.document_quality.findMany({
     where: {
       validation_status: 'APPROVED',
-      access_level: { not: null },
     },
-    select: { document_id: true, validation_status: true, validation_timestamp: true, access_level: true },
+    select: { document_id: true, validation_status: true, validation_timestamp: true },
   })
 
   if (qualityDocs.length === 0) {
     return { items: [], total: 0 }
   }
 
-  const approvedDocIds = new Set(qualityDocs.map((d) => d.document_id))
+  const approvedDocIds = [...new Set(qualityDocs.map((d) => d.document_id))]
+
+  // Get documents that have at least one access_level set via document_access
+  const accessRows = await db.document_access.findMany({
+    where: { document_id: { in: approvedDocIds } },
+    select: { document_id: true, access_level_id: true },
+  })
+  const docAccessMap = new Map<string, string>()
+  for (const row of accessRows) {
+    if (!docAccessMap.has(row.document_id)) {
+      docAccessMap.set(row.document_id, row.access_level_id)
+    }
+  }
+
+  const approvedWithAccess = approvedDocIds.filter((id) => docAccessMap.has(id))
 
   const metadataRows = await db.document_to_metadata.findMany({
     where: {
-      document_id: { in: [...approvedDocIds] },
+      document_id: { in: approvedWithAccess },
       metadata_id: { in: [...dcMetaIds] },
     },
     select: { document_id: true, metadata_id: true },
@@ -970,21 +1171,24 @@ export async function getReadyForLibraryDocuments(): Promise<{
 
   const items: ReadyForLibraryItem[] = []
   for (const qd of qualityDocs) {
+    if (!docAccessMap.has(qd.document_id)) continue
     const dcFieldsPresent = docDcFields.get(qd.document_id)
     const metadata_complete = dcFieldsPresent !== undefined && requiredDcFields.every((f) => dcFieldsPresent.has(f))
     items.push({
       id: qd.document_id,
       name: null, // name loaded separately below if needed
       validation_status: qd.validation_status ?? null,
-      validation_timestamp: qd.validation_timestamp !== null && qd.validation_timestamp !== undefined ? Number(qd.validation_timestamp) : null,
-      access_level: qd.access_level ?? null,
+      validation_timestamp:
+        qd.validation_timestamp !== null && qd.validation_timestamp !== undefined
+          ? Number(qd.validation_timestamp)
+          : null,
       metadata_complete,
     })
   }
 
   // Hydrate names from documents table
   const docRows = await db.documents.findMany({
-    where: { id: { in: [...approvedDocIds] } },
+    where: { id: { in: approvedWithAccess } },
     select: { id: true, name: true },
   })
   const nameMap = new Map(docRows.map((d) => [d.id, d.name ?? null]))
@@ -996,9 +1200,7 @@ export async function getReadyForLibraryDocuments(): Promise<{
   return { items, total: items.length }
 }
 
-function parseBatchProcessingDetails(
-  rawDetails: string | null,
-): Record<string, string | number | boolean | null> {
+function parseBatchProcessingDetails(rawDetails: string | null): Record<string, string | number | boolean | null> {
   if (!rawDetails?.trim()) {
     return {}
   }

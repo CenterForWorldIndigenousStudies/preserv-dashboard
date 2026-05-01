@@ -44,7 +44,6 @@ export interface DocumentQuality {
   validation_timestamp: string | number | null
   validator_name: string | null
   validator_email: string | null
-  access_level: string | null
   current_status: string | null
   created_at: Date | string | null
   updated_at: Date | string | null
@@ -112,6 +111,16 @@ export interface DocumentToTag {
   tag_id: string
   notes: string | null
   tags: Tag
+}
+
+export interface CollectionWithMeta {
+  id: string
+  tag_id: string
+  collection_name: string
+  notes: string | null
+  created_at: Date | string | null
+  updated_at: Date | string | null
+  document_count: number
 }
 
 export interface DocumentDetail {
@@ -194,7 +203,6 @@ export interface ReadyForLibraryItem {
   name: string | null
   validation_status: string | null
   validation_timestamp: string | number | null
-  access_level: string | null
   metadata_complete: boolean
 }
 

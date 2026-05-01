@@ -316,7 +316,6 @@ describe('documents queries (integration)', () => {
             id: `aq-${matchingDoc.id}`,
             document_id: matchingDoc.id,
             validation_status: 'APPROVED',
-            access_level: restrictedAccessLevelId,
           },
         })
         await tx.document_to_tags.createMany({
@@ -334,12 +333,19 @@ describe('documents queries (integration)', () => {
           ],
         })
 
+        await tx.document_access.create({
+          data: {
+            id: `da-${matchingDoc.id}`,
+            document_id: matchingDoc.id,
+            access_level_id: restrictedAccessLevelId,
+          },
+        })
+
         await tx.document_quality.create({
           data: {
             id: `aq-${nonMatchingDoc.id}`,
             document_id: nonMatchingDoc.id,
-            validation_status: 'FAILED',
-            access_level: restrictedAccessLevelId,
+            validation_status: 'REJECTED',
           },
         })
 

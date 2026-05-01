@@ -19,6 +19,7 @@ const navItems = [
   { href: '/review-queue', label: 'Review Queue', icon: ClipboardList },
   { href: '/ready-for-library', label: 'Ready for Library', icon: BookOpen },
   { href: '/batch-summary', label: 'Batch Summary', icon: Database },
+  { href: '/collections', label: 'Collections', icon: BookOpen },
   { href: '/db', label: 'DB Schema', icon: Database },
   { href: '/component-library', label: 'Components', icon: BookOpen },
 ]

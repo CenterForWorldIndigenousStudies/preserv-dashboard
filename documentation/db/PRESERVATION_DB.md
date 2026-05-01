@@ -41,7 +41,6 @@ erDiagram
         bigint validation_timestamp
         varchar validator_name
         varchar validator_email
-        varchar access_level FK
         varchar current_status FK
         timestamp created_at
         timestamp updated_at
@@ -232,7 +231,6 @@ erDiagram
     version_groups ||--o{ document_versions : "document_versions"
     state_history ||--o{ document_quality : "current_status"
     access_levels ||--o{ document_access : "document_access"
-    access_levels ||--o{ document_quality : "access_levels"
 
 %% Composite Indexes:
 %%   document_to_authors.(document_id, author_id) (composite unique)
@@ -351,7 +349,6 @@ One quality/validation record per document.
 | `validation_timestamp` | `BIGINT` | Unix timestamp. |
 | `validator_name` | `VARCHAR(255)` | Validator display name. |
 | `validator_email` | `VARCHAR(255)` | Validator email. |
-| `access_level` | `VARCHAR(36)` | FK to `access_levels.id`. |
 | `current_status` | `VARCHAR(36)` | FK to `state_history.id`. |
 | `created_at` | `TIMESTAMP` | Row creation time. |
 | `updated_at` | `TIMESTAMP` | Row update time. |
