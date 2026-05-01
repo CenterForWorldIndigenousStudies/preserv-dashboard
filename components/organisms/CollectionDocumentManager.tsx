@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, type ReactElement } from 'react'
+import { type ReactElement } from 'react'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Dialog from '@mui/material/Dialog'
@@ -8,29 +8,16 @@ import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 
-import {
-  addDocumentsToCollectionAction,
-  getDocumentsForCollectionAction,
-  getDocumentsNotInCollectionAction,
-  removeDocumentsFromCollectionAction,
-} from '@actions/collections'
 import { Button } from '@atoms/Button'
-import { SelectionTable, sortDocuments, DEFAULT_SELECTION_SORT, type SelectionSortField, type SelectionSortState } from '@molecules/SelectionTable'
+import { SelectionTable, type SelectionSortField, type SelectionSortState } from '@molecules/SelectionTable'
 import { ConfirmationDialog } from '@molecules/ConfirmationDialog'
-import type { Document } from '@lib/types'
+import { useCollectionManager, type UseCollectionManagerOptions, type CollectionManagerAction } from '@hooks/useCollectionManager'
 
-type CollectionManagerAction = 'add' | 'remove'
-
-interface CollectionDocumentManagerProps {
+interface CollectionDocumentManagerProps extends UseCollectionManagerOptions {
   collectionId: string
   collectionName: string
   open: boolean
   onClose: () => void
-  initialAction?: CollectionManagerAction
-  loadInCollection?: (collectionId: string) => Promise<Document[]>
-  loadOutOfCollection?: (collectionId: string) => Promise<Document[]>
-  addDocuments?: (collectionId: string, documentIds: string[]) => Promise<void>
-  removeDocuments?: (collectionId: string, documentIds: string[]) => Promise<void>
 }
 
 function buildActionLabel(action: CollectionManagerAction, count: number): string {
@@ -51,82 +38,50 @@ function buildConfirmationMessage(action: CollectionManagerAction, collectionNam
   return `Remove ${count} ${noun} from ${collectionName}?`
 }
 
-function sortDocumentsByName(documents: Document[]): Document[] {
-  return sortDocuments(documents, DEFAULT_SELECTION_SORT)
-}
-
 export function CollectionDocumentManager({
   collectionId,
   collectionName,
   open,
   onClose,
-  initialAction = 'add',
-  loadInCollection = getDocumentsForCollectionAction,
-  loadOutOfCollection = getDocumentsNotInCollectionAction,
-  addDocuments = addDocumentsToCollectionAction,
-  removeDocuments = removeDocumentsFromCollectionAction,
+  initialAction,
+  loadInCollection,
+  loadOutOfCollection,
+  addDocuments,
+  removeDocuments,
 }: CollectionDocumentManagerProps): ReactElement {
-  const [inCollection, setInCollection] = useState<Document[]>([])
-  const [outOfCollection, setOutOfCollection] = useState<Document[]>([])
-  const [selectedIn, setSelectedIn] = useState<Set<string>>(new Set())
-  const [selectedOut, setSelectedOut] = useState<Set<string>>(new Set())
-  const [showConfirm, setShowConfirm] = useState(false)
-  const [pendingAction, setPendingAction] = useState<CollectionManagerAction | null>(null)
-  const [activeAction, setActiveAction] = useState<CollectionManagerAction>(initialAction)
-  const [isLoading, setIsLoading] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [inSearch, setInSearch] = useState('')
-  const [outSearch, setOutSearch] = useState('')
-  const [inSort, setInSort] = useState<SelectionSortState>(DEFAULT_SELECTION_SORT)
-  const [outSort, setOutSort] = useState<SelectionSortState>(DEFAULT_SELECTION_SORT)
+  const {
+    inCollection,
+    outOfCollection,
+    selectedIn,
+    selectedOut,
+    activeAction,
+    isLoading,
+    isSubmitting,
+    error,
+    inSearch,
+    outSearch,
+    inSort,
+    outSort,
+    setInSearch,
+    setOutSearch,
+    setInSort,
+    setOutSort,
+    toggleIn,
+    toggleOut,
+    handleConfirm,
+    pendingAction,
+    setPendingAction,
+    showConfirm,
+    setShowConfirm,
+  } = useCollectionManager(collectionId, collectionName, {
+    initialAction,
+    loadInCollection,
+    loadOutOfCollection,
+    addDocuments,
+    removeDocuments,
+  })
 
   const selectedCount = activeAction === 'add' ? selectedOut.size : selectedIn.size
-
-  useEffect(() => {
-    if (!open) {
-      return
-    }
-
-    let cancelled = false
-
-    setActiveAction(initialAction)
-    setSelectedIn(new Set())
-    setSelectedOut(new Set())
-    setInSearch('')
-    setOutSearch('')
-    setInSort(DEFAULT_SELECTION_SORT)
-    setOutSort(DEFAULT_SELECTION_SORT)
-    setShowConfirm(false)
-    setPendingAction(null)
-    setError(null)
-    setIsLoading(true)
-
-    Promise.all([loadInCollection(collectionId), loadOutOfCollection(collectionId)])
-      .then(([nextInCollection, nextOutOfCollection]) => {
-        if (cancelled) {
-          return
-        }
-
-        setInCollection(sortDocumentsByName(nextInCollection))
-        setOutOfCollection(sortDocumentsByName(nextOutOfCollection))
-        setIsLoading(false)
-      })
-      .catch((loadError: unknown) => {
-        if (cancelled) {
-          return
-        }
-
-        setError(loadError instanceof Error ? loadError.message : 'Unable to load collection documents.')
-        setInCollection([])
-        setOutOfCollection([])
-        setIsLoading(false)
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [collectionId, initialAction, loadInCollection, loadOutOfCollection, open])
 
   function handleSortChange(current: SelectionSortState, setSortState: (state: SelectionSortState) => void, field: SelectionSortField): void {
     if (current.field === field) {
@@ -148,48 +103,6 @@ export function CollectionDocumentManager({
     setShowConfirm(false)
     setPendingAction(null)
     onClose()
-  }
-
-  async function handleConfirm(): Promise<void> {
-    if (!pendingAction || isSubmitting) {
-      return
-    }
-
-    const selectedIds = pendingAction === 'add' ? [...selectedOut] : [...selectedIn]
-
-    if (selectedIds.length === 0) {
-      setShowConfirm(false)
-      setPendingAction(null)
-      return
-    }
-
-    setIsSubmitting(true)
-    setError(null)
-
-    try {
-      if (pendingAction === 'add') {
-        await addDocuments(collectionId, selectedIds)
-        const movedDocuments = outOfCollection.filter((document) => selectedOut.has(document.id))
-
-        setInCollection((current) => sortDocumentsByName([...current, ...movedDocuments]))
-        setOutOfCollection((current) => current.filter((document) => !selectedOut.has(document.id)))
-        setSelectedOut(new Set())
-      } else {
-        await removeDocuments(collectionId, selectedIds)
-        const movedDocuments = inCollection.filter((document) => selectedIn.has(document.id))
-
-        setOutOfCollection((current) => sortDocumentsByName([...current, ...movedDocuments]))
-        setInCollection((current) => current.filter((document) => !selectedIn.has(document.id)))
-        setSelectedIn(new Set())
-      }
-
-      setShowConfirm(false)
-      setPendingAction(null)
-    } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : 'Unable to update this collection right now.')
-    } finally {
-      setIsSubmitting(false)
-    }
   }
 
   return (
@@ -228,17 +141,7 @@ export function CollectionDocumentManager({
                 searchValue={inSearch}
                 onSearchChange={setInSearch}
                 isChecked={(documentId) => !selectedIn.has(documentId)}
-                onToggle={(documentId, checked) => {
-                  setSelectedIn((current) => {
-                    const next = new Set(current)
-                    if (checked) {
-                      next.delete(documentId)
-                    } else {
-                      next.add(documentId)
-                    }
-                    return next
-                  })
-                }}
+                onToggle={toggleIn}
                 sortState={inSort}
                 onSortChange={(field) => handleSortChange(inSort, setInSort, field)}
                 emptyMessage="No documents associated with this collection."
@@ -250,17 +153,7 @@ export function CollectionDocumentManager({
                 searchValue={outSearch}
                 onSearchChange={setOutSearch}
                 isChecked={(documentId) => selectedOut.has(documentId)}
-                onToggle={(documentId, checked) => {
-                  setSelectedOut((current) => {
-                    const next = new Set(current)
-                    if (checked) {
-                      next.add(documentId)
-                    } else {
-                      next.delete(documentId)
-                    }
-                    return next
-                  })
-                }}
+                onToggle={toggleOut}
                 sortState={outSort}
                 onSortChange={(field) => handleSortChange(outSort, setOutSort, field)}
                 emptyMessage="No other documents available."
@@ -276,7 +169,6 @@ export function CollectionDocumentManager({
             variant="secondary"
             disabled={isLoading || isSubmitting || selectedOut.size === 0}
             onClick={() => {
-              setActiveAction('add')
               setPendingAction('add')
               setShowConfirm(true)
             }}
@@ -287,7 +179,6 @@ export function CollectionDocumentManager({
             variant="secondary"
             disabled={isLoading || isSubmitting || selectedIn.size === 0}
             onClick={() => {
-              setActiveAction('remove')
               setPendingAction('remove')
               setShowConfirm(true)
             }}
@@ -302,9 +193,7 @@ export function CollectionDocumentManager({
         message={buildConfirmationMessage(pendingAction ?? activeAction, collectionName, selectedCount)}
         confirmLabel={pendingAction === 'add' ? 'Yes, add' : 'Yes, remove'}
         cancelLabel="No"
-        onConfirm={() => {
-          void handleConfirm()
-        }}
+        onConfirm={() => { void handleConfirm() }}
         onCancel={() => {
           if (isSubmitting) {
             return

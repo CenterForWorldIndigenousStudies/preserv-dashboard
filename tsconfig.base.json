@@ -34,7 +34,9 @@
       "@lib": ["./lib"],
       "@lib/*": ["./lib/*"],
       "@actions": ["./app/actions"],
-      "@actions/*": ["./app/actions/*"]
+      "@actions/*": ["./app/actions/*"],
+      "@hooks": ["./hooks"],
+      "@hooks/*": ["./hooks/*"]
     }
   }
 }

@@ -122,7 +122,7 @@ utilities, and workflows into one file.
 |---|---|---|---|
 | `BatchSummaryTable` | 489 | NEEDS MAJOR REFACTOR | Extract `KeyValueRow` as a molecule, `NestedValueRenderer` as a molecule, and `BatchDetailPanel` as an organism. Multiple exportable concerns and helper logic are mixed in one file. |
 | `DocumentsTable` | 568 | NEEDS MAJOR REFACTOR | Move `useOverviewTableState` into `hooks/`; move search, sort, and filter logic into separate modules. |
-| `CollectionDocumentManager` | 307 | NEEDS WORK | Import `SelectionTable` from `@molecules/SelectionTable`. Remaining work: pull `useCollectionManager` hook out of the component body. |
+| `CollectionDocumentManager` | 162 | GOOD | Imports `SelectionTable` from `@molecules/SelectionTable` and `useCollectionManager` hook from `@hooks/useCollectionManager`. Thin UI wrapper. |
 
 ### Organism-layer findings
 
@@ -313,8 +313,8 @@ components/
 molecules/
     SelectionTable.tsx      ← extracted from CollectionDocumentManager
 hooks/
+  useCollectionManager.ts    ← extracted from CollectionDocumentManager
   useOverviewTableState.ts
-  useCollectionManager.ts  ← extract from CollectionDocumentManager
 ```
 
 ### End-state goals
