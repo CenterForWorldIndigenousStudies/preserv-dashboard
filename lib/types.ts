@@ -204,6 +204,7 @@ export interface ReadyForLibraryItem {
   validation_status: string | null
   validation_timestamp: string | number | null
   metadata_complete: boolean
+  access_level: string | null
 }
 
 export interface BatchSummary {

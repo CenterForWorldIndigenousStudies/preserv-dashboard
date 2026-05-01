@@ -121,7 +121,7 @@ utilities, and workflows into one file.
 | Component | Lines | Status | Extract |
 |---|---|---|---|
 | `BatchSummaryTable` | 489 | NEEDS MAJOR REFACTOR | Extract `KeyValueRow` as a molecule, `NestedValueRenderer` as a molecule, and `BatchDetailPanel` as an organism. Multiple exportable concerns and helper logic are mixed in one file. |
-| `DocumentsTable` | 568 | NEEDS MAJOR REFACTOR | Move `useOverviewTableState` into `hooks/`; move search, sort, and filter logic into separate modules. |
+| `DocumentsTable` | 318 | GOOD | State logic moved to `useOverviewTableState` hook in `@hooks/`. Thin wrapper around MRT. |
 | `CollectionDocumentManager` | 162 | GOOD | Imports `SelectionTable` from `@molecules/SelectionTable` and `useCollectionManager` hook from `@hooks/useCollectionManager`. Thin UI wrapper. |
 
 ### Organism-layer findings
@@ -174,16 +174,16 @@ It should be extracted into a reusable molecule and shared with both
 
 > ✅ DONE: `DocumentSelectionTable` extracted as `SelectionTable` molecule (`@molecules/SelectionTable`) with full stories and exported sort/filter utilities. `CollectionDocumentManager` now imports from it.
 
-### 2. `useOverviewTableState` is not a true shared hook
+### 2. `useOverviewTableState` extracted to `hooks/`
 
-`useOverviewTableState` is currently a module-level function inside `DocumentsTable.tsx` around line
-110. It should be moved into a `hooks/` directory as a named custom hook.
+`useOverviewTableState` has been moved to `hooks/useOverviewTableState.ts`. The hook manages all table state for the overview documents table: pagination, sorting, filtering, cursor-based pagination, and URL sync.
 
-#### Impact of keeping `useOverviewTableState` local
+`DocumentsTable` is now a thin wrapper that imports the hook and delegates state management to it.
 
-- It hides reusable state logic inside a large organism.
-- It reduces discoverability and reuse.
-- It tightly couples table behavior to one component file.
+#### Benefits of the extraction
+
+- State logic is reusable and testable in isolation.
+- `DocumentsTable` reduced from 568 to 318 lines.
 
 ### 3. `sortDocuments` and `filterDocuments` should be shared utilities
 
@@ -245,15 +245,12 @@ The main Atomic Design violations are structural rather than stylistic.
      - Move all `useEffect` data-loading, `handleConfirm`, and state into `hooks/useCollectionManager.ts`
      - `CollectionDocumentManager` becomes a thin UI wrapper around the hook
 
-3. **Extract `useOverviewTableState` into `hooks/`**
-   - Promoting table state logic into a true shared hook improves reuse, clarity, and testability.
+3. ~~**Extract `useOverviewTableState` into `hooks/`**~~ DONE - hook moved to `hooks/useOverviewTableState.ts`
 
 4. **Reclassify `CreateTagDialog`** - Move out of the atom tier; its responsibilities are organism-level.
 5. **Reclassify `TagSearchCombobox`** - Its autocomplete behavior and statefulness place it above molecule complexity.
 6. **Decompose `BatchSummaryTable`** - Multiple exportable concerns already identifiable and separable.
-7. **Decompose `DocumentsTable`**
-   - Extract subcomponents, move hook logic, and split search, sort, and filter responsibilities
-     into dedicated modules.
+7. ~~**Decompose `DocumentsTable`**~~ DONE - hook extracted
 
 8. **Create shared table infrastructure**
    - After the first wave of extractions, standardize the common scaffolding used by audit, review,

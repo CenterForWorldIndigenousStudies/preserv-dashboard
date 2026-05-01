@@ -58,7 +58,7 @@ lib/prisma/generated
 !.yarn/sdks
 !.yarn/versions
 
-# IDE Stuff
+# IDE Stu
 .code-workspace
 .idea
 .project

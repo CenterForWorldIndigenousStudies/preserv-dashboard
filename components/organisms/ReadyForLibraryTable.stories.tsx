@@ -25,6 +25,7 @@ const sampleItems: ReadyForLibraryItem[] = [
     validation_status: 'APPROVED',
     validation_timestamp: '2026-04-28T10:00:00Z',
     metadata_complete: true,
+    access_level: 'open access',
   },
   {
     id: UUIDS.doc2,
@@ -32,6 +33,7 @@ const sampleItems: ReadyForLibraryItem[] = [
     validation_status: 'APPROVED',
     validation_timestamp: '2026-04-27T15:30:00Z',
     metadata_complete: true,
+    access_level: 'restricted',
   },
   {
     id: UUIDS.doc3,
@@ -39,6 +41,7 @@ const sampleItems: ReadyForLibraryItem[] = [
     validation_status: 'APPROVED',
     validation_timestamp: '2026-04-26T09:15:00Z',
     metadata_complete: false,
+    access_level: null,
   },
   {
     id: UUIDS.doc4,
@@ -46,6 +49,7 @@ const sampleItems: ReadyForLibraryItem[] = [
     validation_status: 'APPROVED',
     validation_timestamp: '2026-04-25T14:00:00Z',
     metadata_complete: true,
+    access_level: 'open access',
   },
 ]
 
@@ -78,6 +82,7 @@ export const SomeIncomplete: Story = {
           validation_status: 'APPROVED',
           validation_timestamp: '2026-04-24T11:00:00Z',
           metadata_complete: false,
+          access_level: null,
         },
       ],
       total: 5,

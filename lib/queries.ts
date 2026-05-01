@@ -1139,12 +1139,12 @@ export async function getReadyForLibraryDocuments(): Promise<{
   // Get documents that have at least one access_level set via document_access
   const accessRows = await db.document_access.findMany({
     where: { document_id: { in: approvedDocIds } },
-    select: { document_id: true, access_level_id: true },
+    select: { document_id: true, access_level_id: true, access_levels: { select: { level_name: true } } },
   })
   const docAccessMap = new Map<string, string>()
   for (const row of accessRows) {
     if (!docAccessMap.has(row.document_id)) {
-      docAccessMap.set(row.document_id, row.access_level_id)
+      docAccessMap.set(row.document_id, row.access_levels.level_name)
     }
   }
 
@@ -1183,6 +1183,7 @@ export async function getReadyForLibraryDocuments(): Promise<{
           ? Number(qd.validation_timestamp)
           : null,
       metadata_complete,
+      access_level: docAccessMap.get(qd.document_id) ?? null,
     })
   }
 
