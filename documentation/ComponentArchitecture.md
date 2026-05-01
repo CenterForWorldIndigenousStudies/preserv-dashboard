@@ -121,8 +121,8 @@ utilities, and workflows into one file.
 | Component | Lines | Status | Extract |
 |---|---|---|---|
 | `BatchSummaryTable` | 489 | NEEDS MAJOR REFACTOR | Extract `KeyValueRow` as a molecule, `NestedValueRenderer` as a molecule, and `BatchDetailPanel` as an organism. Multiple exportable concerns and helper logic are mixed in one file. |
-| `DocumentsTable` | 568 | NEEDS MAJOR REFACTOR | Move `useOverviewTableState` into `hooks/`; extract `DocumentSelectionTable` as a reusable molecule; move search, sort, and filter logic into separate modules. |
-| `CollectionDocumentManager` | 523 | NEEDS MAJOR REFACTOR | Extract internal `DocumentSelectionTable` (lines 146-260, about 116 lines) into a shared molecule. Consolidate duplicate column, sort, and filter logic shared with `DocumentsTable`. |
+| `DocumentsTable` | 568 | NEEDS MAJOR REFACTOR | Move `useOverviewTableState` into `hooks/`; move search, sort, and filter logic into separate modules. |
+| `CollectionDocumentManager` | 307 | NEEDS WORK | Import `SelectionTable` from `@molecules/SelectionTable`. Remaining work: pull `useCollectionManager` hook out of the component body. |
 
 ### Organism-layer findings
 
@@ -139,7 +139,7 @@ utilities, and workflows into one file.
 | Tier | Components |
 |---|---|
 | atoms | `Badge`, `Button`, `CreateTagDialog`, `Date`, `FileSize`, `FilterPill`, `StateBadge`, `icons` |
-| molecules | `AuthStatus`, `ConfirmationDialog`, `FieldRow`, `Pagination`, `SidebarToggle`, `StatCard`, `TagPill`, `TagSearchCombobox` |
+| molecules | `AuthStatus`, `ConfirmationDialog`, `FieldRow`, `Pagination`, `SelectionTable`, `SidebarToggle`, `StatCard`, `TagPill`, `TagSearchCombobox` |
 | organisms | `AssignCollectionButton`, `CollectionDocumentManager`, `DocumentsTable`, `MermaidDiagram`, `NoDataState`, `PageHeader`, `RemoveTagDialog`, `Sidebar`, `DocumentTagsEditor` |
 
 ### Missing organism stories - must add
@@ -172,9 +172,7 @@ It should be extracted into a reusable molecule and shared with both
 
 #### Impact of leaving `DocumentSelectionTable` embedded
 
-- It duplicates table infrastructure that already exists elsewhere.
-- It prevents independent testing and Storybook coverage.
-- It makes table behavior harder to standardize across workflows.
+> ✅ DONE: `DocumentSelectionTable` extracted as `SelectionTable` molecule (`@molecules/SelectionTable`) with full stories and exported sort/filter utilities. `CollectionDocumentManager` now imports from it.
 
 ### 2. `useOverviewTableState` is not a true shared hook
 
@@ -239,26 +237,20 @@ The main Atomic Design violations are structural rather than stylistic.
    - This is the best first step because it improves visibility and safety before structural
      changes. It enables isolated development, visual review, and regression detection.
 
-2. **Extract `DocumentSelectionTable`**
-   - This is the clearest reuse win. It removes duplication between `DocumentsTable` and
-     `CollectionDocumentManager` and establishes a stronger molecule boundary.
+2. **Extract `useCollectionManager` hook** (from `CollectionDocumentManager`)
+
+     Currently the data-loading and selection logic lives directly in the component body.
+     Pulling it into a hook makes the logic reusable and easier to test.
+
+     - Move all `useEffect` data-loading, `handleConfirm`, and state into `hooks/useCollectionManager.ts`
+     - `CollectionDocumentManager` becomes a thin UI wrapper around the hook
 
 3. **Extract `useOverviewTableState` into `hooks/`**
    - Promoting table state logic into a true shared hook improves reuse, clarity, and testability.
 
-4. **Reclassify `CreateTagDialog`**
-   - It should move out of the atom tier because its responsibilities are clearly organism-level.
-   - If simplified significantly, molecule placement could be reconsidered, but not in its current
-     form.
-
-5. **Reclassify `TagSearchCombobox`**
-   - Its autocomplete behavior and statefulness place it above molecule complexity. Reclassification
-     will make the directory structure more honest.
-
-6. **Decompose `BatchSummaryTable`**
-   - This is the highest-value large-file refactor because multiple exportable concerns are already
-     identifiable and separable.
-
+4. **Reclassify `CreateTagDialog`** - Move out of the atom tier; its responsibilities are organism-level.
+5. **Reclassify `TagSearchCombobox`** - Its autocomplete behavior and statefulness place it above molecule complexity.
+6. **Decompose `BatchSummaryTable`** - Multiple exportable concerns already identifiable and separable.
 7. **Decompose `DocumentsTable`**
    - Extract subcomponents, move hook logic, and split search, sort, and filter responsibilities
      into dedicated modules.
@@ -276,7 +268,7 @@ The target state should preserve Atomic Design while making reuse and ownership 
 | Area | Target structure |
 |---|---|
 | atoms | Keep only tiny display primitives and wrappers such as `Badge`, `Button`, `Date`, `FileSize`, `FilterPill`, `StateBadge`, `icons`, and atom-sized cards like `StatCard` if desired. |
-| molecules | Add reusable composed units such as `DocumentSelectionTable`, `CollectionDocumentsTable`, `KeyValueRow`, `NestedValueRenderer`, and other compact table or form subcomponents. |
+| molecules | Add reusable composed units such as `SelectionTable`, `KeyValueRow`, `NestedValueRenderer`, and other compact table or form subcomponents. |
 | organisms | Keep feature-level dialogs, editors, accordions, and workflow-oriented tables such as `CreateTagDialog`, `TagSearchCombobox`, `BatchDetailPanel`, and the refactored page-level table components. |
 | hooks | Move shared state orchestration such as `useOverviewTableState` into `hooks/`. |
 | utilities | Move shared domain operations such as `sortDocuments`, `filterDocuments`, and compare helpers into dedicated utility modules. |
@@ -301,7 +293,7 @@ components/
     Pagination.tsx
     SidebarToggle.tsx
     TagPill.tsx
-    DocumentSelectionTable.tsx
+    SelectionTable.tsx
     CollectionDocumentsTable.tsx
     KeyValueRow.tsx
     NestedValueRenderer.tsx
@@ -315,24 +307,14 @@ components/
     CollectionsAccordion.tsx
     DocumentsTable.tsx
     DocumentTagsEditor.tsx
-    DocumentVersionsButton.tsx
-    OverviewAdvancedSearchModal.tsx
-    ReadyForLibraryTable.tsx
-    ReviewQueueTable.tsx
-    ReviewHistoryTable.tsx
-    AuditHistoryTable.tsx
-    Sidebar.tsx
-    RemoveTagDialog.tsx
     MermaidDiagram.tsx
     NoDataState.tsx
     PageHeader.tsx
+molecules/
+    SelectionTable.tsx      ← extracted from CollectionDocumentManager
 hooks/
   useOverviewTableState.ts
-utils/
-  documents/
-    sortDocuments.ts
-    filterDocuments.ts
-    compareNullable.ts
+  useCollectionManager.ts  ← extract from CollectionDocumentManager
 ```
 
 ### End-state goals
