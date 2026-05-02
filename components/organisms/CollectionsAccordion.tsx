@@ -158,12 +158,14 @@ export function CollectionsAccordion({ collections }: CollectionsAccordionProps)
       const next = new Set(prev)
       if (expanded) {
         next.add(collectionId)
-        loadCollectionDocuments(collectionId)
       } else {
         next.delete(collectionId)
       }
       return next
     })
+    if (expanded) {
+      loadCollectionDocuments(collectionId)
+    }
   }
 
   if (collections.length === 0) {
