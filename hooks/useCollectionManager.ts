@@ -14,6 +14,7 @@ export interface UseCollectionManagerOptions {
   loadOutOfCollection?: (collectionId: string) => Promise<Document[]>
   addDocuments?: (collectionId: string, documentIds: string[]) => Promise<void>
   removeDocuments?: (collectionId: string, documentIds: string[]) => Promise<void>
+  open?: boolean
 }
 
 export interface UseCollectionManagerReturn {
@@ -57,6 +58,7 @@ export function useCollectionManager(
     loadOutOfCollection = getDocumentsNotInCollectionAction,
     addDocuments = addDocumentsToCollectionAction,
     removeDocuments = removeDocumentsFromCollectionAction,
+    open = false,
   }: UseCollectionManagerOptions = {},
 ): UseCollectionManagerReturn {
   const [inCollection, setInCollection] = useState<Document[]>([])
@@ -66,7 +68,7 @@ export function useCollectionManager(
   const [showConfirm, setShowConfirm] = useState(false)
   const [pendingAction, setPendingAction] = useState<CollectionManagerAction | null>(null)
   const [activeAction, setActiveAction] = useState<CollectionManagerAction>(initialAction)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(!open)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [inSearch, setInSearch] = useState('')
@@ -76,7 +78,7 @@ export function useCollectionManager(
 
   // Load documents when the modal opens
   useEffect(() => {
-    if (!collectionId) {
+    if (!collectionId || !open) {
       return
     }
 
@@ -118,7 +120,7 @@ export function useCollectionManager(
     return () => {
       cancelled = true
     }
-  }, [collectionId, initialAction, loadInCollection, loadOutOfCollection])
+  }, [collectionId, open, initialAction, loadInCollection, loadOutOfCollection])
 
   const toggleIn = useCallback((documentId: string, checked: boolean) => {
     setSelectedIn((current) => {
