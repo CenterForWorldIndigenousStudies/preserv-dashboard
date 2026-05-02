@@ -311,7 +311,7 @@ export function CollectionsAccordion({ collections }: CollectionsAccordionProps)
           collectionId={managerState.collectionId}
           collectionName={managerState.collectionName}
           initialAction={managerState.initialAction}
-          open
+          open={true}
           onClose={() => setManagerState(null)}
         />
       ) : null}
