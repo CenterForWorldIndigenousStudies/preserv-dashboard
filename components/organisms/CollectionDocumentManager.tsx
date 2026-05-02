@@ -79,6 +79,7 @@ export function CollectionDocumentManager({
     loadOutOfCollection,
     addDocuments,
     removeDocuments,
+    open,
   })
 
   const selectedCount = activeAction === 'add' ? selectedOut.size : selectedIn.size

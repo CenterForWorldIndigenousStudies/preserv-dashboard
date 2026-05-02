@@ -39,7 +39,7 @@ export default function ComponentLibraryPage() {
 
   return (
     <div className="-m-6 -mt-4 h-[calc(100vh-8rem)]">
-      <iframe src={src} title="Storybook Component Library" className="h-full w-full border-0" />
+      <iframe src={src} id="storybook-iframe" title="Storybook Component Library" className="h-full w-full border-0" />
     </div>
   )
 }

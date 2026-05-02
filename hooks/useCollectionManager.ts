@@ -83,6 +83,7 @@ export function useCollectionManager(
     }
 
     let cancelled = false
+    let timeoutId: ReturnType<typeof setTimeout> | undefined
 
     setActiveAction(initialAction)
     setSelectedIn(new Set())
@@ -96,12 +97,23 @@ export function useCollectionManager(
     setError(null)
     setIsLoading(true)
 
+    // Defensive 15-second timeout so the modal never hangs silently
+    timeoutId = setTimeout(() => {
+      if (!cancelled) {
+        setError('Timed out loading documents. Please try again.')
+        setInCollection([])
+        setOutOfCollection([])
+        setIsLoading(false)
+      }
+    }, 15_000)
+
     Promise.all([loadInCollection(collectionId), loadOutOfCollection(collectionId)])
       .then(([nextInCollection, nextOutOfCollection]) => {
         if (cancelled) {
           return
         }
 
+        clearTimeout(timeoutId)
         setInCollection(sortDocumentsByName(nextInCollection))
         setOutOfCollection(sortDocumentsByName(nextOutOfCollection))
         setIsLoading(false)
@@ -111,6 +123,7 @@ export function useCollectionManager(
           return
         }
 
+        clearTimeout(timeoutId)
         setError(loadError instanceof Error ? loadError.message : 'Unable to load collection documents.')
         setInCollection([])
         setOutOfCollection([])
@@ -119,6 +132,7 @@ export function useCollectionManager(
 
     return () => {
       cancelled = true
+      clearTimeout(timeoutId)
     }
   }, [collectionId, open, initialAction, loadInCollection, loadOutOfCollection])
 
