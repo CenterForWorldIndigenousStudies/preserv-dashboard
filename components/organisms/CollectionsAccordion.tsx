@@ -2,21 +2,18 @@
 
 import { useMemo, useState, type ReactElement } from 'react'
 import Link from 'next/link'
-import { Accordion, AccordionDetails, AccordionSummary, Box, Chip, Typography } from '@mui/material'
+import { Accordion, AccordionDetails, AccordionSummary, Box, Chip, CircularProgress, Typography } from '@mui/material'
 
 import { Button } from '@atoms/Button'
 import { CollectionDocumentManager } from '@organisms/CollectionDocumentManager'
 import { MaterialReactTable, useMaterialReactTable, type MRT_ColumnDef } from 'material-react-table'
 
 import { DateAtom } from '@atoms/Date'
+import { getDocumentsForCollectionAction } from '@actions/collections'
 import type { CollectionWithMeta, Document } from '@lib/types'
 
-interface CollectionWithDocuments extends CollectionWithMeta {
-  documents: Document[]
-}
-
 interface CollectionsAccordionProps {
-  collections: CollectionWithDocuments[]
+  collections: CollectionWithMeta[]
 }
 
 interface CollectionManagerState {
@@ -121,6 +118,53 @@ function CollectionDocumentsTable({ documents }: { documents: Document[] }): Rea
 
 export function CollectionsAccordion({ collections }: CollectionsAccordionProps): ReactElement {
   const [managerState, setManagerState] = useState<CollectionManagerState | null>(null)
+  const [expandedCollections, setExpandedCollections] = useState<Set<string>>(new Set())
+  const [collectionDocuments, setCollectionDocuments] = useState<Map<string, Document[]>>(new Map())
+  const [loadingCollections, setLoadingCollections] = useState<Set<string>>(new Set())
+  const [errorCollections, setErrorCollections] = useState<Map<string, string>>(new Map())
+
+  const loadCollectionDocuments = useMemo(
+    () =>
+      async (collectionId: string) => {
+        if (collectionDocuments.has(collectionId) || loadingCollections.has(collectionId)) {
+          return
+        }
+
+        setLoadingCollections((prev) => new Set(prev).add(collectionId))
+        setErrorCollections((prev) => {
+          const next = new Map(prev)
+          next.delete(collectionId)
+          return next
+        })
+
+        try {
+          const docs = await getDocumentsForCollectionAction(collectionId)
+          setCollectionDocuments((prev) => new Map(prev).set(collectionId, docs))
+        } catch {
+          setErrorCollections((prev) => new Map(prev).set(collectionId, 'Unable to load documents.'))
+        } finally {
+          setLoadingCollections((prev) => {
+            const next = new Set(prev)
+            next.delete(collectionId)
+            return next
+          })
+        }
+      },
+    [collectionDocuments, loadingCollections],
+  )
+
+  const handleAccordionChange = (collectionId: string) => (_event: React.SyntheticEvent, expanded: boolean) => {
+    setExpandedCollections((prev) => {
+      const next = new Set(prev)
+      if (expanded) {
+        next.add(collectionId)
+        loadCollectionDocuments(collectionId)
+      } else {
+        next.delete(collectionId)
+      }
+      return next
+    })
+  }
 
   if (collections.length === 0) {
     return (
@@ -133,68 +177,61 @@ export function CollectionsAccordion({ collections }: CollectionsAccordionProps)
   return (
     <>
       <div className="space-y-4">
-        {collections.map((collection) => (
-          <Accordion
-            key={collection.id}
-            disableGutters
-            sx={{
-              border: '1px solid rgba(53,88,52,0.125)',
-              borderRadius: '1rem',
-              boxShadow: '0 12px 32px rgba(35,31,32,0.08)',
-              '&::before': { display: 'none' },
-              overflow: 'hidden',
-            }}
-          >
-            <AccordionSummary
-              expandIcon={<span aria-hidden="true">▾</span>}
+        {collections.map((collection) => {
+          const isExpanded = expandedCollections.has(collection.id)
+          const isLoading = loadingCollections.has(collection.id)
+          const docs = collectionDocuments.get(collection.id)
+          const error = errorCollections.get(collection.id)
+
+          return (
+            <Accordion
+              key={collection.id}
+              disableGutters
+              expanded={isExpanded}
+              onChange={handleAccordionChange(collection.id)}
               sx={{
-                backgroundColor: 'white',
-                px: 3,
-                py: 1,
-                '& .MuiAccordionSummary-content': {
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 16,
-                  marginY: 1,
-                },
+                border: '1px solid rgba(53,88,52,0.125)',
+                borderRadius: '1rem',
+                boxShadow: '0 12px 32px rgba(35,31,32,0.08)',
+                '&::before': { display: 'none' },
+                overflow: 'hidden',
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Typography sx={{ color: '#231f20', fontSize: '1rem', fontWeight: 600 }}>
-                  {collection.collection_name}
-                </Typography>
-                <Chip
-                  label={`${collection.document_count} document${collection.document_count === 1 ? '' : 's'}`}
-                  sx={{
-                    backgroundColor: 'rgba(53,88,52,0.1)',
-                    color: '#355834',
-                    fontWeight: 600,
-                  }}
-                />
-              </Box>
-            </AccordionSummary>
-            <AccordionDetails sx={{ backgroundColor: 'rgba(244,241,240,0.25)', px: 3, py: 2 }}>
-              {collection.notes ? (
-                <Typography sx={{ color: 'rgba(35,31,32,0.7)', fontSize: '0.875rem', mb: 1.5 }}>
-                  {collection.notes}
-                </Typography>
-              ) : null}
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 2 }}>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={(event) => {
-                    event.preventDefault()
-                    setManagerState({
-                      collectionId: collection.id,
-                      collectionName: collection.collection_name,
-                      initialAction: 'add',
-                    })
-                  }}
-                >
-                  Add documents
-                </Button>
-                {collection.document_count > 0 ? (
+              <AccordionSummary
+                expandIcon={<span aria-hidden="true">▾</span>}
+                sx={{
+                  backgroundColor: 'white',
+                  px: 3,
+                  py: 1,
+                  '& .MuiAccordionSummary-content': {
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 16,
+                    marginY: 1,
+                  },
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Typography sx={{ color: '#231f20', fontSize: '1rem', fontWeight: 600 }}>
+                    {collection.collection_name}
+                  </Typography>
+                  <Chip
+                    label={`${collection.document_count} document${collection.document_count === 1 ? '' : 's'}`}
+                    sx={{
+                      backgroundColor: 'rgba(53,88,52,0.1)',
+                      color: '#355834',
+                      fontWeight: 600,
+                    }}
+                  />
+                </Box>
+              </AccordionSummary>
+              <AccordionDetails sx={{ backgroundColor: 'rgba(244,241,240,0.25)', px: 3, py: 2 }}>
+                {collection.notes ? (
+                  <Typography sx={{ color: 'rgba(35,31,32,0.7)', fontSize: '0.875rem', mb: 1.5 }}>
+                    {collection.notes}
+                  </Typography>
+                ) : null}
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 2 }}>
                   <Button
                     variant="secondary"
                     size="sm"
@@ -203,24 +240,69 @@ export function CollectionsAccordion({ collections }: CollectionsAccordionProps)
                       setManagerState({
                         collectionId: collection.id,
                         collectionName: collection.collection_name,
-                        initialAction: 'remove',
+                        initialAction: 'add',
                       })
                     }}
                   >
-                    Remove documents
+                    Add documents
                   </Button>
-                ) : null}
-              </Box>
-              {collection.documents.length === 0 ? (
-                <Typography sx={{ color: 'rgba(35,31,32,0.7)', fontSize: '0.95rem' }}>
-                  No documents associated with this collection.
-                </Typography>
-              ) : (
-                <CollectionDocumentsTable documents={collection.documents} />
-              )}
-            </AccordionDetails>
-          </Accordion>
-        ))}
+                  {collection.document_count > 0 ? (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={(event) => {
+                        event.preventDefault()
+                        setManagerState({
+                          collectionId: collection.id,
+                          collectionName: collection.collection_name,
+                          initialAction: 'remove',
+                        })
+                      }}
+                    >
+                      Remove documents
+                    </Button>
+                  ) : null}
+                </Box>
+                {isLoading ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 2 }}>
+                    <CircularProgress size={16} sx={{ color: '#355834' }} />
+                    <Typography sx={{ color: 'rgba(35,31,32,0.6)', fontSize: '0.875rem' }}>
+                      Loading documents…
+                    </Typography>
+                  </Box>
+                ) : error ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 1 }}>
+                    <Typography sx={{ color: '#b71c1c', fontSize: '0.875rem' }}>{error}</Typography>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        setErrorCollections((prev) => {
+                          const next = new Map(prev)
+                          next.delete(collection.id)
+                          return next
+                        })
+                        loadCollectionDocuments(collection.id)
+                      }}
+                    >
+                      Retry
+                    </Button>
+                  </Box>
+                ) : !isExpanded && collection.document_count === 0 ? (
+                  <Typography sx={{ color: 'rgba(35,31,32,0.7)', fontSize: '0.95rem' }}>
+                    No documents associated with this collection.
+                  </Typography>
+                ) : !isExpanded ? null : docs == null || docs.length === 0 ? (
+                  <Typography sx={{ color: 'rgba(35,31,32,0.7)', fontSize: '0.95rem' }}>
+                    No documents associated with this collection.
+                  </Typography>
+                ) : (
+                  <CollectionDocumentsTable documents={docs} />
+                )}
+              </AccordionDetails>
+            </Accordion>
+          )
+        })}
       </div>
       {managerState ? (
         <CollectionDocumentManager
