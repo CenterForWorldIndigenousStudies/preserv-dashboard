@@ -109,17 +109,23 @@ export function useCollectionManager(
 
     Promise.all([loadInCollection(collectionId), loadOutOfCollection(collectionId)])
       .then(([nextInCollection, nextOutOfCollection]) => {
+        console.log("[CM] .then() reached, nextInCollection:", nextInCollection.length, "nextOutOfCollection:", nextOutOfCollection.length)
         if (cancelled) {
+          console.log("[CM] .then() bailing out - cancelled = true")
           return
         }
 
         clearTimeout(timeoutId)
+        console.log("[CM] About to set state and setIsLoading(false)")
         setInCollection(sortDocumentsByName(nextInCollection))
         setOutOfCollection(sortDocumentsByName(nextOutOfCollection))
         setIsLoading(false)
+        console.log("[CM] setIsLoading(false) called successfully")
       })
       .catch((loadError: unknown) => {
+        console.error("[CM] .catch() error:", loadError)
         if (cancelled) {
+          console.log("[CM] .catch() bailing out - cancelled = true")
           return
         }
 
@@ -128,6 +134,7 @@ export function useCollectionManager(
         setInCollection([])
         setOutOfCollection([])
         setIsLoading(false)
+        console.log("[CM] .catch() completed")
       })
 
     return () => {
