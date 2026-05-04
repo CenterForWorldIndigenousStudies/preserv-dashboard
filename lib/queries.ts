@@ -216,53 +216,167 @@ export async function getCollections(): Promise<CollectionWithMeta[]> {
  * Returns all distinct documents associated with a collection through its tag.
  */
 export async function getCollectionDocuments(collectionId: string): Promise<Document[]> {
-  const rows = await db.$queryRaw<CollectionDocumentRow[]>(Prisma.sql`
-    SELECT DISTINCT
-      d.id,
-      d.filesize,
-      d.hash_binary,
-      d.hash_content,
-      d.id_legacy,
-      NULL AS source_id,
-      d.name,
-      d.created_at,
-      d.updated_at,
-      0 AS is_duplicate
-    FROM documents d
-    INNER JOIN document_to_tags dtt ON dtt.document_id = d.id
-    INNER JOIN collections c ON c.tag_id = dtt.tag_id
-    WHERE c.id = ${collectionId}
-    ORDER BY d.name ASC, d.id ASC
-  `)
-
-  return rows.map(normalizeCollectionDocumentRow)
+  const result = await getDocumentsForCollection(collectionId, { page: 1, pageSize: 100 })
+  return result.documents
 }
 
-export async function getDocumentsForCollection(collectionId: string): Promise<Document[]> {
-  return getCollectionDocuments(collectionId)
+interface CollectionDocumentQueryParams {
+  search?: string
+  sortField?: 'name' | 'id_legacy' | 'filesize' | 'created_at'
+  sortDirection?: 'asc' | 'desc'
+  page?: number
+  pageSize?: number
 }
 
-export async function getDocumentsNotInCollection(collectionId: string): Promise<Document[]> {
-  const rows = await db.$queryRaw<CollectionDocumentRow[]>(Prisma.sql`
-    SELECT DISTINCT
-      d.id,
-      d.filesize,
-      d.hash_binary,
-      d.hash_content,
-      d.id_legacy,
-      NULL AS source_id,
-      d.name,
-      d.created_at,
-      d.updated_at,
-      0 AS is_duplicate
-    FROM documents d
-    LEFT JOIN document_to_tags dtt ON dtt.document_id = d.id
-      AND dtt.tag_id = (SELECT tag_id FROM collections WHERE id = ${collectionId})
-    WHERE dtt.document_id IS NULL
-    ORDER BY d.name ASC, d.id ASC
-  `)
+interface CollectionDocumentQueryResult {
+  documents: Document[]
+  total: number
+}
 
-  return rows.map(normalizeCollectionDocumentRow)
+const COLLECTION_DOCUMENT_SORT_FIELDS = ['name', 'id_legacy', 'filesize', 'created_at'] as const
+
+type CollectionDocumentSortField = (typeof COLLECTION_DOCUMENT_SORT_FIELDS)[number]
+
+function normalizeCollectionDocumentPage(page?: number): number {
+  return page && page > 0 ? Math.floor(page) : 1
+}
+
+function normalizeCollectionDocumentPageSize(pageSize?: number): number {
+  if (!pageSize || pageSize < 1 || Number.isNaN(pageSize)) {
+    return 25
+  }
+  return Math.min(Math.floor(pageSize), 100)
+}
+
+function normalizeCollectionDocumentSortField(sortField?: string): CollectionDocumentSortField {
+  return COLLECTION_DOCUMENT_SORT_FIELDS.includes(sortField as CollectionDocumentSortField)
+    ? (sortField as CollectionDocumentSortField)
+    : 'name'
+}
+
+function buildCollectionDocumentSortExpression(sortField: CollectionDocumentSortField, useDAlias = false): Prisma.Sql {
+  const table = useDAlias ? 'd' : 'f'
+  switch (sortField) {
+    case 'filesize':
+      return Prisma.sql`COALESCE(${Prisma.raw(table)}.filesize, -1)`
+    case 'created_at':
+      return Prisma.sql`COALESCE(${Prisma.raw(table)}.created_at, TIMESTAMP('1000-01-01 00:00:00'))`
+    case 'id_legacy':
+      return Prisma.sql`COALESCE(${Prisma.raw(table)}.id_legacy, '')`
+    case 'name':
+    default:
+      return Prisma.sql`COALESCE(${Prisma.raw(table)}.name, '')`
+  }
+}
+
+function buildCollectionDocumentRowsSql(params: {
+  collectionId: string
+  search?: string
+  sortField?: string
+  sortDirection?: 'asc' | 'desc'
+  page?: number
+  pageSize?: number
+  mode: 'in' | 'out'
+}): Prisma.Sql {
+  const page = normalizeCollectionDocumentPage(params.page)
+  const pageSize = normalizeCollectionDocumentPageSize(params.pageSize)
+  const sortField = normalizeCollectionDocumentSortField(params.sortField)
+  const sortDirection = params.sortDirection === 'desc' ? 'DESC' : 'ASC'
+  const offset = (page - 1) * pageSize
+  const sortExpression = buildCollectionDocumentSortExpression(sortField, true)
+  const searchCondition = params.search?.trim()
+    ? Prisma.sql`AND LOWER(COALESCE(d.name, '')) LIKE ${`%${params.search.trim().toLowerCase()}%`}`
+    : Prisma.empty
+
+  if (params.mode === 'in') {
+    return Prisma.sql`
+      WITH filtered AS (
+        SELECT DISTINCT
+          d.id,
+          d.filesize,
+          d.hash_binary,
+          d.hash_content,
+          d.id_legacy,
+          NULL AS source_id,
+          d.name,
+          d.created_at,
+          d.updated_at,
+          0 AS is_duplicate
+        FROM documents d
+        INNER JOIN document_to_tags dtt ON dtt.document_id = d.id
+        INNER JOIN collections c ON c.tag_id = dtt.tag_id
+        WHERE c.id = ${params.collectionId}
+        ${searchCondition}
+      )
+      SELECT f.*, totals.total
+      FROM filtered f
+      CROSS JOIN (SELECT COUNT(*) AS total FROM filtered) totals
+      ORDER BY ${sortExpression} ${Prisma.raw(sortDirection)}, f.id ASC
+      LIMIT ${pageSize} OFFSET ${offset}
+    `
+  }
+
+  return Prisma.sql`
+    WITH filtered AS (
+      SELECT DISTINCT
+        d.id,
+        d.filesize,
+        d.hash_binary,
+        d.hash_content,
+        d.id_legacy,
+        NULL AS source_id,
+        d.name,
+        d.created_at,
+        d.updated_at,
+        0 AS is_duplicate
+      FROM documents d
+      LEFT JOIN document_to_tags dtt ON dtt.document_id = d.id
+        AND dtt.tag_id = (SELECT tag_id FROM collections WHERE id = ${params.collectionId})
+      WHERE dtt.document_id IS NULL
+      ${searchCondition}
+    )
+    SELECT f.*, totals.total
+    FROM filtered f
+    CROSS JOIN (SELECT COUNT(*) AS total FROM filtered) totals
+    ORDER BY ${sortExpression} ${Prisma.raw(sortDirection)}, f.id ASC
+    LIMIT ${pageSize} OFFSET ${offset}
+  `
+}
+
+async function getCollectionDocumentsPage(
+  params: {
+    collectionId: string
+    search?: string
+    sortField?: string
+    sortDirection?: 'asc' | 'desc'
+    page?: number
+    pageSize?: number
+    mode: 'in' | 'out'
+  },
+): Promise<CollectionDocumentQueryResult> {
+  const rows = await db.$queryRaw<Array<CollectionDocumentRow & { total: bigint | number | string }>>(
+    buildCollectionDocumentRowsSql(params),
+  )
+
+  const total = rows.length > 0 ? Number(rows[0].total ?? 0) : 0
+  return {
+    documents: rows.map(({ total: _total, ...row }) => normalizeCollectionDocumentRow(row)),
+    total,
+  }
+}
+
+export async function getDocumentsForCollection(
+  collectionId: string,
+  params?: CollectionDocumentQueryParams,
+): Promise<CollectionDocumentQueryResult> {
+  return getCollectionDocumentsPage({ collectionId, mode: 'in', ...params })
+}
+
+export async function getDocumentsNotInCollection(
+  collectionId: string,
+  params?: CollectionDocumentQueryParams,
+): Promise<CollectionDocumentQueryResult> {
+  return getCollectionDocumentsPage({ collectionId, mode: 'out', ...params })
 }
 
 export async function addDocumentsToCollection(collectionId: string, documentIds: string[]): Promise<void> {

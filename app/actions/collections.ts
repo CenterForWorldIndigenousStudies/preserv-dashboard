@@ -7,14 +7,28 @@ import {
   getDocumentsNotInCollection,
   removeDocumentsFromCollection,
 } from '@lib/queries'
-import type { Document } from '@lib/types'
+import type { PaginatedDocumentsResult } from '@lib/types'
 
-export async function getDocumentsForCollectionAction(collectionId: string): Promise<Document[]> {
-  return getDocumentsForCollection(collectionId)
+interface CollectionDocumentsParams {
+  search?: string
+  sortField?: 'name' | 'id_legacy' | 'filesize' | 'created_at'
+  sortDirection?: 'asc' | 'desc'
+  page?: number
+  pageSize?: number
 }
 
-export async function getDocumentsNotInCollectionAction(collectionId: string): Promise<Document[]> {
-  return getDocumentsNotInCollection(collectionId)
+export async function getDocumentsForCollectionAction(
+  collectionId: string,
+  params?: CollectionDocumentsParams,
+): Promise<PaginatedDocumentsResult> {
+  return getDocumentsForCollection(collectionId, params)
+}
+
+export async function getDocumentsNotInCollectionAction(
+  collectionId: string,
+  params?: CollectionDocumentsParams,
+): Promise<PaginatedDocumentsResult> {
+  return getDocumentsNotInCollection(collectionId, params)
 }
 
 export async function addDocumentsToCollectionAction(collectionId: string, documentIds: string[]): Promise<void> {

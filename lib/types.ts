@@ -187,6 +187,16 @@ export interface PagedResult<T> {
   total: number
 }
 
+export interface PaginatedDocumentsResult {
+  documents: Document[]
+  total: number
+}
+
+export interface PaginatedDocumentsResult {
+  documents: Document[]
+  total: number
+}
+
 export interface ReviewQueueItem {
   id: string
   name: string | null

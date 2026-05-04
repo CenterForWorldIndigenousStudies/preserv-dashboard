@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { CollectionDocumentManager } from '@organisms/CollectionDocumentManager'
-import type { Document } from '@lib/types'
+import type { Document, PaginatedDocumentsResult } from '@lib/types'
+import type { SelectionSortField } from '@molecules/SelectionTable'
 
 const NAME_POOL = [
   'Cherokee Syllabary Guide', 'Language Preservation Interview', 'Oral History Transcript',
@@ -38,6 +39,43 @@ function generateDocuments(count: number, inCollection: boolean): Document[] {
     })
   }
   return docs
+}
+
+function paginate(documents: Document[], params?: { search?: string; sortField?: SelectionSortField; sortDirection?: 'asc' | 'desc'; page?: number; pageSize?: number }): PaginatedDocumentsResult {
+  const search = params?.search?.trim().toLowerCase() ?? ''
+  const page = params?.page && params.page > 0 ? Math.floor(params.page) : 1
+  const pageSize = params?.pageSize && params.pageSize > 0 ? Math.min(Math.floor(params.pageSize), 100) : 25
+  const sortField = params?.sortField ?? 'name'
+  const sortDirection = params?.sortDirection ?? 'asc'
+
+  let results = [...documents]
+  if (search) {
+    results = results.filter((doc) => (doc.name ?? '').toLowerCase().includes(search) || (doc.id_legacy ?? '').toLowerCase().includes(search))
+  }
+
+  results.sort((a, b) => {
+    const get = (doc: Document): string | number => {
+      switch (sortField) {
+        case 'filesize': return doc.filesize ?? -1
+        case 'created_at': return doc.created_at ? new Date(doc.created_at).getTime() : 0
+        case 'id_legacy': return doc.id_legacy ?? ''
+        case 'name':
+        default: return doc.name ?? ''
+      }
+    }
+    const av = get(a)
+    const bv = get(b)
+    if (av < bv) return sortDirection === 'asc' ? -1 : 1
+    if (av > bv) return sortDirection === 'asc' ? 1 : -1
+    return a.id.localeCompare(b.id)
+  })
+
+  const total = results.length
+  const start = (page - 1) * pageSize
+  return {
+    documents: results.slice(start, start + pageSize),
+    total,
+  }
 }
 
 const inCollectionDocuments: Document[] = [
@@ -103,8 +141,8 @@ const meta = {
     collectionName: 'Cherokee Language Collection',
     open: true,
     onClose: () => undefined,
-    loadInCollection: () => Promise.resolve(inCollectionDocuments),
-    loadOutOfCollection: () => Promise.resolve(outOfCollectionDocuments),
+    loadInCollection: () => Promise.resolve({ documents: inCollectionDocuments, total: inCollectionDocuments.length }),
+    loadOutOfCollection: () => Promise.resolve({ documents: outOfCollectionDocuments, total: outOfCollectionDocuments.length }),
     addDocuments: () => Promise.resolve(),
     removeDocuments: () => Promise.resolve(),
   },
@@ -132,15 +170,33 @@ export const RemoveMode: Story = {
 export const LargeAddMode: Story = {
   args: {
     initialAction: 'add',
-    loadInCollection: () => Promise.resolve(generateDocuments(500, true)),
-    loadOutOfCollection: () => Promise.resolve(generateDocuments(1000, false)),
+    loadInCollection: () => Promise.resolve({ documents: generateDocuments(500, true), total: 500 }),
+    loadOutOfCollection: () => Promise.resolve({ documents: generateDocuments(1000, false), total: 1000 }),
   },
 }
 
 export const LargeRemoveMode: Story = {
   args: {
     initialAction: 'remove',
-    loadInCollection: () => Promise.resolve(generateDocuments(500, true)),
-    loadOutOfCollection: () => Promise.resolve(generateDocuments(1000, false)),
+    loadInCollection: () => Promise.resolve({ documents: generateDocuments(500, true), total: 500 }),
+    loadOutOfCollection: () => Promise.resolve({ documents: generateDocuments(1000, false), total: 1000 }),
+  },
+}
+
+export const ServerMode: Story = {
+  render: (args) => {
+    const loadInCollection = (_collectionId: string, params?: { search?: string; sortField?: SelectionSortField; sortDirection?: 'asc' | 'desc'; page?: number; pageSize?: number }) =>
+      Promise.resolve(paginate(inCollectionDocuments, params))
+    const loadOutOfCollection = (_collectionId: string, params?: { search?: string; sortField?: SelectionSortField; sortDirection?: 'asc' | 'desc'; page?: number; pageSize?: number }) =>
+      Promise.resolve(paginate(generateDocuments(250, false), params))
+
+    return (
+      <CollectionDocumentManager
+        {...args}
+        initialAction="add"
+        loadInCollection={loadInCollection}
+        loadOutOfCollection={loadOutOfCollection}
+      />
+    )
   },
 }

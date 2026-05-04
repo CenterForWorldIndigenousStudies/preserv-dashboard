@@ -1,17 +1,30 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
-import { addDocumentsToCollectionAction, getDocumentsForCollectionAction, getDocumentsNotInCollectionAction, removeDocumentsFromCollectionAction } from '@actions/collections'
+import {
+  addDocumentsToCollectionAction,
+  getDocumentsForCollectionAction,
+  getDocumentsNotInCollectionAction,
+  removeDocumentsFromCollectionAction,
+} from '@actions/collections'
 import { sortDocuments, DEFAULT_SELECTION_SORT, type SelectionSortState } from '@molecules/SelectionTable'
-import type { Document } from '@lib/types'
+import type { Document, PaginatedDocumentsResult } from '@lib/types'
 
 export type CollectionManagerAction = 'add' | 'remove'
 
+export interface CollectionDocumentsParams {
+  search?: string
+  sortField?: SelectionSortState['field']
+  sortDirection?: SelectionSortState['direction']
+  page?: number
+  pageSize?: number
+}
+
 export interface UseCollectionManagerOptions {
   initialAction?: CollectionManagerAction
-  loadInCollection?: (collectionId: string) => Promise<Document[]>
-  loadOutOfCollection?: (collectionId: string) => Promise<Document[]>
+  loadInCollection?: (collectionId: string, params?: CollectionDocumentsParams) => Promise<PaginatedDocumentsResult>
+  loadOutOfCollection?: (collectionId: string, params?: CollectionDocumentsParams) => Promise<PaginatedDocumentsResult>
   addDocuments?: (collectionId: string, documentIds: string[]) => Promise<void>
   removeDocuments?: (collectionId: string, documentIds: string[]) => Promise<void>
   open?: boolean
@@ -20,6 +33,8 @@ export interface UseCollectionManagerOptions {
 export interface UseCollectionManagerReturn {
   inCollection: Document[]
   outOfCollection: Document[]
+  inTotal: number
+  outTotal: number
   selectedIn: Set<string>
   selectedOut: Set<string>
   activeAction: CollectionManagerAction
@@ -30,11 +45,17 @@ export interface UseCollectionManagerReturn {
   outSearch: string
   inSort: SelectionSortState
   outSort: SelectionSortState
+  inPage: number
+  outPage: number
+  inPageSize: number
+  outPageSize: number
   setActiveAction: (action: CollectionManagerAction) => void
   setInSearch: (value: string) => void
   setOutSearch: (value: string) => void
   setInSort: (state: SelectionSortState) => void
   setOutSort: (state: SelectionSortState) => void
+  setInPage: (page: number) => void
+  setOutPage: (page: number) => void
   toggleIn: (documentId: string, checked: boolean) => void
   toggleOut: (documentId: string, checked: boolean) => void
   clearSelection: () => void
@@ -47,6 +68,10 @@ export interface UseCollectionManagerReturn {
 
 function sortDocumentsByName(documents: Document[]): Document[] {
   return sortDocuments(documents, DEFAULT_SELECTION_SORT)
+}
+
+function normalizePage(page: number): number {
+  return page > 0 ? Math.floor(page) : 1
 }
 
 export function useCollectionManager(
@@ -63,6 +88,8 @@ export function useCollectionManager(
 ): UseCollectionManagerReturn {
   const [inCollection, setInCollection] = useState<Document[]>([])
   const [outOfCollection, setOutOfCollection] = useState<Document[]>([])
+  const [inTotal, setInTotal] = useState(0)
+  const [outTotal, setOutTotal] = useState(0)
   const [selectedIn, setSelectedIn] = useState<Set<string>>(new Set())
   const [selectedOut, setSelectedOut] = useState<Set<string>>(new Set())
   const [showConfirm, setShowConfirm] = useState(false)
@@ -75,8 +102,33 @@ export function useCollectionManager(
   const [outSearch, setOutSearch] = useState('')
   const [inSort, setInSort] = useState<SelectionSortState>(DEFAULT_SELECTION_SORT)
   const [outSort, setOutSort] = useState<SelectionSortState>(DEFAULT_SELECTION_SORT)
+  const [inPage, setInPage] = useState(1)
+  const [outPage, setOutPage] = useState(1)
+  const [inPageSize] = useState(25)
+  const [outPageSize] = useState(25)
 
-  // Load documents when the modal opens
+  const inParams = useMemo<CollectionDocumentsParams>(
+    () => ({
+      search: inSearch.trim() || undefined,
+      sortField: inSort.field,
+      sortDirection: inSort.direction,
+      page: inPage,
+      pageSize: inPageSize,
+    }),
+    [inSearch, inSort.field, inSort.direction, inPage, inPageSize],
+  )
+
+  const outParams = useMemo<CollectionDocumentsParams>(
+    () => ({
+      search: outSearch.trim() || undefined,
+      sortField: outSort.field,
+      sortDirection: outSort.direction,
+      page: outPage,
+      pageSize: outPageSize,
+    }),
+    [outSearch, outSort.field, outSort.direction, outPage, outPageSize],
+  )
+
   useEffect(() => {
     if (!collectionId || !open) {
       return
@@ -88,44 +140,37 @@ export function useCollectionManager(
     setActiveAction(initialAction)
     setSelectedIn(new Set())
     setSelectedOut(new Set())
-    setInSearch('')
-    setOutSearch('')
-    setInSort(DEFAULT_SELECTION_SORT)
-    setOutSort(DEFAULT_SELECTION_SORT)
     setShowConfirm(false)
     setPendingAction(null)
     setError(null)
     setIsLoading(true)
 
-    // Defensive 15-second timeout so the modal never hangs silently
     timeoutId = setTimeout(() => {
       if (!cancelled) {
         setError('Timed out loading documents. Please try again.')
         setInCollection([])
         setOutOfCollection([])
+        setInTotal(0)
+        setOutTotal(0)
         setIsLoading(false)
       }
     }, 15_000)
 
-    Promise.all([loadInCollection(collectionId), loadOutOfCollection(collectionId)])
+    Promise.all([loadInCollection(collectionId, inParams), loadOutOfCollection(collectionId, outParams)])
       .then(([nextInCollection, nextOutOfCollection]) => {
-        console.log("[CM] .then() reached, nextInCollection:", nextInCollection.length, "nextOutOfCollection:", nextOutOfCollection.length)
         if (cancelled) {
-          console.log("[CM] .then() bailing out - cancelled = true")
           return
         }
 
         clearTimeout(timeoutId)
-        console.log("[CM] About to set state and setIsLoading(false)")
-        setInCollection(nextInCollection)
-        setOutOfCollection(nextOutOfCollection)
+        setInCollection(nextInCollection.documents)
+        setOutOfCollection(nextOutOfCollection.documents)
+        setInTotal(nextInCollection.total)
+        setOutTotal(nextOutOfCollection.total)
         setIsLoading(false)
-        console.log("[CM] setIsLoading(false) called successfully")
       })
       .catch((loadError: unknown) => {
-        console.error("[CM] .catch() error:", loadError)
         if (cancelled) {
-          console.log("[CM] .catch() bailing out - cancelled = true")
           return
         }
 
@@ -133,15 +178,16 @@ export function useCollectionManager(
         setError(loadError instanceof Error ? loadError.message : 'Unable to load collection documents.')
         setInCollection([])
         setOutOfCollection([])
+        setInTotal(0)
+        setOutTotal(0)
         setIsLoading(false)
-        console.log("[CM] .catch() completed")
       })
 
     return () => {
       cancelled = true
       clearTimeout(timeoutId)
     }
-  }, [collectionId, open, initialAction, loadInCollection, loadOutOfCollection])
+  }, [collectionId, open, initialAction, loadInCollection, loadOutOfCollection, inParams, outParams])
 
   const toggleIn = useCallback((documentId: string, checked: boolean) => {
     setSelectedIn((current) => {
@@ -172,6 +218,13 @@ export function useCollectionManager(
     setSelectedOut(new Set())
   }, [])
 
+  const handleSearchChange = useCallback((setter: (value: string) => void, pageSetter: (page: number) => void) => {
+    return (value: string) => {
+      setter(value)
+      pageSetter(1)
+    }
+  }, [])
+
   const handleConfirm = useCallback(async (): Promise<void> => {
     if (!pendingAction || isSubmitting) {
       return
@@ -195,6 +248,8 @@ export function useCollectionManager(
 
         setInCollection((current) => sortDocumentsByName([...current, ...movedDocuments]))
         setOutOfCollection((current) => current.filter((document) => !selectedOut.has(document.id)))
+        setInTotal((current) => current + selectedIds.length)
+        setOutTotal((current) => Math.max(0, current - selectedIds.length))
         setSelectedOut(new Set())
       } else {
         await removeDocuments(collectionId, selectedIds)
@@ -202,6 +257,8 @@ export function useCollectionManager(
 
         setOutOfCollection((current) => sortDocumentsByName([...current, ...movedDocuments]))
         setInCollection((current) => current.filter((document) => !selectedIn.has(document.id)))
+        setOutTotal((current) => current + selectedIds.length)
+        setInTotal((current) => Math.max(0, current - selectedIds.length))
         setSelectedIn(new Set())
       }
 
@@ -217,6 +274,8 @@ export function useCollectionManager(
   return {
     inCollection,
     outOfCollection,
+    inTotal,
+    outTotal,
     selectedIn,
     selectedOut,
     activeAction,
@@ -227,11 +286,17 @@ export function useCollectionManager(
     outSearch,
     inSort,
     outSort,
+    inPage,
+    outPage,
+    inPageSize,
+    outPageSize,
     setActiveAction,
-    setInSearch,
-    setOutSearch,
+    setInSearch: handleSearchChange(setInSearch, setInPage),
+    setOutSearch: handleSearchChange(setOutSearch, setOutPage),
     setInSort,
     setOutSort,
+    setInPage: (page: number) => setInPage(normalizePage(page)),
+    setOutPage: (page: number) => setOutPage(normalizePage(page)),
     toggleIn,
     toggleOut,
     clearSelection,

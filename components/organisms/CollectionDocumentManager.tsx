@@ -37,6 +37,17 @@ function buildConfirmationMessage(action: CollectionManagerAction, collectionNam
   return `Remove ${count} ${noun} from ${collectionName}?`
 }
 
+function updateSort(current: SelectionSortState, field: SelectionSortField): SelectionSortState {
+  if (current.field === field) {
+    return {
+      field,
+      direction: current.direction === 'asc' ? 'desc' : 'asc',
+    }
+  }
+
+  return { field, direction: 'asc' }
+}
+
 export function CollectionDocumentManager({
   collectionId,
   collectionName,
@@ -51,6 +62,8 @@ export function CollectionDocumentManager({
   const {
     inCollection,
     outOfCollection,
+    inTotal,
+    outTotal,
     selectedIn,
     selectedOut,
     activeAction,
@@ -61,10 +74,16 @@ export function CollectionDocumentManager({
     outSearch,
     inSort,
     outSort,
+    inPage,
+    outPage,
+    inPageSize,
+    outPageSize,
     setInSearch,
     setOutSearch,
     setInSort,
     setOutSort,
+    setInPage,
+    setOutPage,
     toggleIn,
     toggleOut,
     handleConfirm,
@@ -83,23 +102,8 @@ export function CollectionDocumentManager({
 
   const selectedCount = activeAction === 'add' ? selectedOut.size : selectedIn.size
 
-  function handleSortChange(current: SelectionSortState, setSortState: (state: SelectionSortState) => void, field: SelectionSortField): void {
-    if (current.field === field) {
-      setSortState({
-        field,
-        direction: current.direction === 'asc' ? 'desc' : 'asc',
-      })
-      return
-    }
-
-    setSortState({ field, direction: 'asc' })
-  }
-
   function handleClose(): void {
-    if (isSubmitting) {
-      return
-    }
-
+    if (isSubmitting) return
     setShowConfirm(false)
     setPendingAction(null)
     onClose()
@@ -128,12 +132,19 @@ export function CollectionDocumentManager({
               title="Available Documents"
               searchLabel="Search available documents"
               documents={outOfCollection}
+              total={outTotal}
+              page={outPage}
+              pageSize={outPageSize}
               searchValue={outSearch}
-              onSearchChange={setOutSearch}
+              sortState={outSort}
+              onSearch={setOutSearch}
+              onSort={(field) => {
+                setOutSort(updateSort(outSort, field))
+                setOutPage(1)
+              }}
+              onPageChange={setOutPage}
               isChecked={(id) => selectedOut.has(id)}
               onToggle={toggleOut}
-              sortState={outSort}
-              onSortChange={(field) => handleSortChange(outSort, setOutSort, field)}
               emptyMessage="No other documents available."
             />
           ) : (
@@ -141,12 +152,19 @@ export function CollectionDocumentManager({
               title="Documents in Collection"
               searchLabel="Search documents in collection"
               documents={inCollection}
+              total={inTotal}
+              page={inPage}
+              pageSize={inPageSize}
               searchValue={inSearch}
-              onSearchChange={setInSearch}
+              sortState={inSort}
+              onSearch={setInSearch}
+              onSort={(field) => {
+                setInSort(updateSort(inSort, field))
+                setInPage(1)
+              }}
+              onPageChange={setInPage}
               isChecked={(id) => !selectedIn.has(id)}
               onToggle={toggleIn}
-              sortState={inSort}
-              onSortChange={(field) => handleSortChange(inSort, setInSort, field)}
               emptyMessage="No documents associated with this collection."
             />
           )}

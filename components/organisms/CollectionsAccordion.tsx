@@ -138,8 +138,8 @@ export function CollectionsAccordion({ collections }: CollectionsAccordionProps)
         })
 
         try {
-          const docs = await getDocumentsForCollectionAction(collectionId)
-          setCollectionDocuments((prev) => new Map(prev).set(collectionId, docs))
+          const result = await getDocumentsForCollectionAction(collectionId)
+          setCollectionDocuments((prev) => new Map(prev).set(collectionId, result.documents))
         } catch {
           setErrorCollections((prev) => new Map(prev).set(collectionId, 'Unable to load documents.'))
         } finally {
