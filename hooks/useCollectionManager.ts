@@ -193,9 +193,9 @@ export function useCollectionManager(
     setSelectedIn((current) => {
       const next = new Set(current)
       if (checked) {
-        next.delete(documentId)
-      } else {
         next.add(documentId)
+      } else {
+        next.delete(documentId)
       }
       return next
     })

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react'
 import { NestedValueRenderer } from './NestedValueRenderer'
 
 const meta = {
-  title: 'DesignSystem/Molecules/NestedValueRenderer',
+  title: 'Molecules/NestedValueRenderer',
   component: NestedValueRenderer,
   tags: ['autodocs'],
 } satisfies Meta<typeof NestedValueRenderer>

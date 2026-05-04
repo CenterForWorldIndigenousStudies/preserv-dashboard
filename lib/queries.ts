@@ -283,7 +283,7 @@ function buildCollectionDocumentRowsSql(params: {
   const sortField = normalizeCollectionDocumentSortField(params.sortField)
   const sortDirection = params.sortDirection === 'desc' ? 'DESC' : 'ASC'
   const offset = (page - 1) * pageSize
-  const sortExpression = buildCollectionDocumentSortExpression(sortField, true)
+  const sortExpression = buildCollectionDocumentSortExpression(sortField, false)
   const searchCondition = params.search?.trim()
     ? Prisma.sql`AND LOWER(COALESCE(d.name, '')) LIKE ${`%${params.search.trim().toLowerCase()}%`}`
     : Prisma.empty
@@ -311,7 +311,7 @@ function buildCollectionDocumentRowsSql(params: {
       SELECT f.*, totals.total
       FROM filtered f
       CROSS JOIN (SELECT COUNT(*) AS total FROM filtered) totals
-      ORDER BY ${sortExpression} ${Prisma.raw(sortDirection)}, f.id ASC
+      ORDER BY f.id ASC
       LIMIT ${pageSize} OFFSET ${offset}
     `
   }
@@ -338,7 +338,7 @@ function buildCollectionDocumentRowsSql(params: {
     SELECT f.*, totals.total
     FROM filtered f
     CROSS JOIN (SELECT COUNT(*) AS total FROM filtered) totals
-    ORDER BY ${sortExpression} ${Prisma.raw(sortDirection)}, f.id ASC
+    ORDER BY f.id ASC
     LIMIT ${pageSize} OFFSET ${offset}
   `
 }

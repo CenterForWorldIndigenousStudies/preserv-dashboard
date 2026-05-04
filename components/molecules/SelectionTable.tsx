@@ -1,20 +1,19 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react'
-import { useVirtualizer } from '@tanstack/react-virtual'
+import { type Updater } from '@tanstack/react-table'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Checkbox from '@mui/material/Checkbox'
 import Paper from '@mui/material/Paper'
-import Table from '@mui/material/Table'
-import TableBody from '@mui/material/TableBody'
-import TableCell from '@mui/material/TableCell'
-import TableContainer from '@mui/material/TableContainer'
-import TableHead from '@mui/material/TableHead'
-import TableRow from '@mui/material/TableRow'
-import TableSortLabel from '@mui/material/TableSortLabel'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
+import {
+  MaterialReactTable,
+  useMaterialReactTable,
+  type MRT_ColumnDef,
+  type MRT_SortingState,
+} from 'material-react-table'
 
 import { DateAtom } from '@atoms/Date'
 import { FileSize } from '@atoms/FileSize'
@@ -51,14 +50,19 @@ function getComparableValue(document: Document, field: SelectionSortField): numb
   }
 }
 
+function compareDocuments(left: Document, right: Document, field: SelectionSortField): number {
+  const leftValue = getComparableValue(left, field)
+  const rightValue = getComparableValue(right, field)
+
+  if (leftValue < rightValue) return -1
+  if (leftValue > rightValue) return 1
+  return (left.name ?? '').localeCompare(right.name ?? '') || left.id.localeCompare(right.id)
+}
+
 export function sortDocuments(documents: Document[], sortState: SelectionSortState): Document[] {
   return [...documents].sort((left, right) => {
-    const leftValue = getComparableValue(left, sortState.field)
-    const rightValue = getComparableValue(right, sortState.field)
-
-    if (leftValue < rightValue) return sortState.direction === 'asc' ? -1 : 1
-    if (leftValue > rightValue) return sortState.direction === 'asc' ? 1 : -1
-    return (left.name ?? '').localeCompare(right.name ?? '') || left.id.localeCompare(right.id)
+    const comparison = compareDocuments(left, right, sortState.field)
+    return sortState.direction === 'asc' ? comparison : comparison * -1
   })
 }
 
@@ -110,29 +114,34 @@ interface ServerModeProps extends BaseProps {
 
 type SelectionTableProps = ClientModeProps | ServerModeProps
 
-const HEADERS: Array<{ field: SelectionSortField; label: string; align?: 'left' | 'right' }> = [
-  { field: 'name', label: 'Name' },
-  { field: 'id_legacy', label: 'Legacy ID' },
-  { field: 'filesize', label: 'File Size', align: 'right' },
-  { field: 'created_at', label: 'Created' },
-]
+function isServerModeProps(props: SelectionTableProps): props is ServerModeProps {
+  return 'onSearch' in props
+}
+
+function toSortingState(sortState: SelectionSortState): MRT_SortingState {
+  return [{ id: sortState.field, desc: sortState.direction === 'desc' }]
+}
+
+function getNextSortField(currentSorting: MRT_SortingState, updater: Updater<MRT_SortingState>): SelectionSortField | null {
+  const nextSorting = typeof updater === 'function' ? updater(currentSorting) : updater
+  const nextField = nextSorting[0]?.id ?? currentSorting[0]?.id
+
+  return nextField ? (nextField as SelectionSortField) : null
+}
 
 export function SelectionTable(props: SelectionTableProps): ReactElement {
-  const serverProps = 'onSearch' in props ? (props as ServerModeProps) : undefined
-  const clientProps = serverProps ? undefined : (props as ClientModeProps)
-  const activeProps = serverProps ?? clientProps!
-  const serverMode = Boolean(serverProps)
+  const serverMode = isServerModeProps(props)
   const [localSearch, setLocalSearch] = useState(props.searchValue)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    if (serverProps) {
-      setLocalSearch(serverProps.searchValue)
+    if (serverMode) {
+      setLocalSearch(props.searchValue)
     }
-  }, [serverProps])
+  }, [props.searchValue, serverMode])
 
   useEffect(() => {
-    if (!serverProps) {
+    if (!serverMode) {
       return
     }
 
@@ -140,12 +149,12 @@ export function SelectionTable(props: SelectionTableProps): ReactElement {
       clearTimeout(debounceRef.current)
     }
 
-    if (localSearch === serverProps.searchValue) {
+    if (localSearch === props.searchValue) {
       return
     }
 
     debounceRef.current = setTimeout(() => {
-      serverProps.onSearch(localSearch)
+      props.onSearch(localSearch)
     }, 300)
 
     return () => {
@@ -153,53 +162,185 @@ export function SelectionTable(props: SelectionTableProps): ReactElement {
         clearTimeout(debounceRef.current)
       }
     }
-  }, [localSearch, serverProps])
+  }, [localSearch, props, serverMode])
 
-  const filteredDocuments = useMemo(() => {
-    if (serverProps) {
-      return serverProps.documents
+  const searchValue = serverMode ? localSearch : props.searchValue
+  const sorting = useMemo(() => toSortingState(props.sortState), [props.sortState])
+
+  const data = useMemo(() => {
+    if (serverMode) {
+      return props.documents
     }
 
-    return sortDocuments(filterDocuments(clientProps!.documents, clientProps!.searchValue), clientProps!.sortState)
-  }, [clientProps, serverProps])
+    return filterDocuments(props.documents, props.searchValue)
+  }, [props.documents, props.searchValue, serverMode])
 
-  const parentRef = useRef<HTMLDivElement>(null)
-  const [containerHeight, setContainerHeight] = useState(520)
+  const columns = useMemo<MRT_ColumnDef<Document>[]>(
+    () => [
+      {
+        id: 'selection',
+        header: 'Select',
+        enableSorting: false,
+        grow: false,
+        size: 72,
+        Cell: ({ row }) => (
+          <Checkbox
+            checked={props.isChecked(row.original.id)}
+            onChange={(event) => props.onToggle(row.original.id, event.target.checked)}
+          />
+        ),
+        muiTableBodyCellProps: {
+          padding: 'checkbox',
+        },
+        muiTableHeadCellProps: {
+          padding: 'checkbox',
+        },
+      },
+      {
+        accessorKey: 'name',
+        header: 'Name',
+        size: 320,
+        sortDescFirst: false,
+        sortingFn: (left, right) => compareDocuments(left.original, right.original, 'name'),
+        Cell: ({ row }) => row.original.name ?? 'Untitled document',
+      },
+      {
+        accessorKey: 'id_legacy',
+        header: 'Legacy ID',
+        size: 220,
+        sortDescFirst: false,
+        sortingFn: (left, right) => compareDocuments(left.original, right.original, 'id_legacy'),
+        Cell: ({ row }) => row.original.id_legacy ?? '-',
+      },
+      {
+        accessorKey: 'filesize',
+        header: 'File Size',
+        size: 140,
+        sortDescFirst: false,
+        sortingFn: (left, right) => compareDocuments(left.original, right.original, 'filesize'),
+        Cell: ({ row }) => <FileSize value={row.original.filesize} />,
+        muiTableBodyCellProps: {
+          align: 'right',
+        },
+        muiTableHeadCellProps: {
+          align: 'right',
+        },
+      },
+      {
+        accessorKey: 'created_at',
+        header: 'Created',
+        size: 180,
+        sortDescFirst: false,
+        sortingFn: (left, right) => compareDocuments(left.original, right.original, 'created_at'),
+        Cell: ({ row }) => <DateAtom value={row.original.created_at} />,
+      },
+    ],
+    [props],
+  )
 
-  useEffect(() => {
-    const el = parentRef.current
-    if (!el) return
-    const ro = new ResizeObserver(([entry]) => {
-      setContainerHeight(Math.max(100, entry.contentRect.height - 8))
-    })
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
+  const table = useMaterialReactTable({
+    columns,
+    data,
+    enableBottomToolbar: false,
+    enableColumnActions: false,
+    enableColumnFilters: false,
+    enableColumnOrdering: false,
+    enableDensityToggle: false,
+    enableFullScreenToggle: false,
+    enableGlobalFilter: false,
+    enableHiding: false,
+    enableMultiSort: false,
+    enablePagination: false,
+    enableRowVirtualization: true,
+    enableSorting: true,
+    enableStickyHeader: true,
+    getRowId: (row) => row.id,
+    localization: {
+      noRecordsToDisplay: props.emptyMessage ?? 'No documents found.',
+    },
+    manualFiltering: true,
+    manualPagination: serverMode,
+    manualSorting: serverMode,
+    muiTableBodyRowProps: ({ staticRowIndex }) => ({
+      sx: {
+        backgroundColor: staticRowIndex % 2 === 1 ? 'rgba(244,241,240,0.3)' : 'transparent',
+      },
+    }),
+    muiTableContainerProps: {
+      sx: {
+        height: '100%',
+        maxHeight: 'none',
+        overflow: 'auto',
+      },
+    },
+    muiTableHeadCellProps: {
+      sx: {
+        backgroundColor: '#f4f1f0',
+        color: '#231f20',
+        fontWeight: 600,
+        fontSize: '0.75rem',
+        letterSpacing: '0.1em',
+        textTransform: 'uppercase',
+      },
+    },
+    muiTablePaperProps: {
+      elevation: 0,
+      sx: {
+        backgroundColor: 'transparent',
+        boxShadow: 'none',
+        display: 'flex',
+        flex: 1,
+        flexDirection: 'column',
+        minHeight: 0,
+      },
+    },
+    muiTableProps: {
+      size: 'small',
+      sx: {
+        tableLayout: 'fixed',
+      },
+    },
+    onSortingChange: (updater) => {
+      const nextField = getNextSortField(sorting, updater)
+      if (!nextField) {
+        return
+      }
 
-  const rowVirtualizer = useVirtualizer({
-    count: filteredDocuments.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 52,
-    overscan: 10,
+      if (serverMode) {
+        props.onSort(nextField)
+        return
+      }
+
+      props.onSortChange(nextField)
+    },
+    rowVirtualizerOptions: {
+      estimateSize: () => 52,
+      overscan: 10,
+    },
+    state: {
+      globalFilter: searchValue,
+      sorting,
+    },
   })
 
-  const virtualRows = rowVirtualizer.getVirtualItems()
-
-  useEffect(() => {
-    const raf = requestAnimationFrame(() => rowVirtualizer.measure())
-    return () => cancelAnimationFrame(raf)
-  }, [rowVirtualizer])
-
-  const total: number = serverProps ? serverProps.total : filteredDocuments.length
-  const page: number = serverProps ? serverProps.page : 1
-  const pageSize: number = serverProps ? serverProps.pageSize : Math.max(filteredDocuments.length, 1)
+  const total = serverMode ? props.total : data.length
+  const page = serverMode ? props.page : 1
+  const pageSize = serverMode ? props.pageSize : Math.max(data.length, 1)
   const start = total === 0 ? 0 : (page - 1) * pageSize + 1
   const end = total === 0 ? 0 : Math.min(page * pageSize, total)
-  const searchValue = serverMode ? localSearch : props.searchValue
-  const sortState = serverMode ? serverProps!.sortState : clientProps!.sortState
 
   return (
-    <Paper sx={{ borderRadius: '1rem', border: '1px solid rgba(53,88,52,0.125)', overflow: 'hidden' }}>
+    <Paper
+      sx={{
+        borderRadius: '1rem',
+        border: '1px solid rgba(53,88,52,0.125)',
+        overflow: 'hidden',
+        flex: 1,
+        minHeight: 0,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
       <Box sx={{ borderBottom: '1px solid rgba(53,88,52,0.125)', p: 2 }}>
         <Typography sx={{ color: '#231f20', fontSize: '1rem', fontWeight: 600 }}>{props.title}</Typography>
         <TextField
@@ -210,125 +351,38 @@ export function SelectionTable(props: SelectionTableProps): ReactElement {
           onChange={(event) => {
             if (serverMode) {
               setLocalSearch(event.target.value)
-            } else {
-              clientProps!.onSearchChange(event.target.value)
+              return
             }
+
+            props.onSearchChange(event.target.value)
           }}
           sx={{ mt: 2 }}
         />
       </Box>
 
-      <TableContainer ref={parentRef} sx={{ maxHeight: containerHeight, overflow: 'auto' }}>
-        <Table stickyHeader size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell padding="checkbox" sx={{ backgroundColor: '#f4f1f0' }}>
-                Select
-              </TableCell>
-              {HEADERS.map((header) => (
-                <TableCell
-                  key={header.field}
-                  align={header.align}
-                  sx={{
-                    backgroundColor: '#f4f1f0',
-                    color: '#231f20',
-                    fontWeight: 600,
-                    fontSize: '0.75rem',
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  <TableSortLabel
-                    active={sortState.field === header.field}
-                    direction={sortState.field === header.field ? sortState.direction : 'asc'}
-                    onClick={() => {
-                      if (serverMode) {
-                        serverProps!.onSort(header.field)
-                      } else {
-                        clientProps!.onSortChange(header.field)
-                      }
-                    }}
-                  >
-                    {header.label}
-                  </TableSortLabel>
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody sx={{ position: 'relative', display: 'block' }}>
-            {filteredDocuments.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} sx={{ color: 'rgba(35,31,32,0.7)', py: 3, textAlign: 'center' }}>
-                  {activeProps.emptyMessage ?? 'No documents found.'}
-                </TableCell>
-              </TableRow>
-            ) : virtualRows.length > 0 ? (
-              virtualRows.map((virtualRow) => {
-                const document = filteredDocuments[virtualRow.index]
-                const checked = activeProps.isChecked(document.id)
-                return (
-                  <TableRow
-                    key={document.id}
-                    ref={rowVirtualizer.measureElement}
-                    data-index={virtualRow.index}
-                    sx={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      transform: `translateY(${virtualRow.start}px)`,
-                      '& td': {
-                        backgroundColor: virtualRow.index % 2 === 1 ? 'rgba(244,241,240,0.3)' : 'transparent',
-                      },
-                    }}
-                    hover
-                  >
-                    <TableCell padding="checkbox">
-                      <Checkbox checked={checked} onChange={(event) => activeProps.onToggle(document.id, event.target.checked)} />
-                    </TableCell>
-                    <TableCell>{document.name ?? 'Untitled document'}</TableCell>
-                    <TableCell>{document.id_legacy ?? '—'}</TableCell>
-                    <TableCell align="right">
-                      <FileSize value={document.filesize} />
-                    </TableCell>
-                    <TableCell>
-                      <DateAtom value={document.created_at} />
-                    </TableCell>
-                  </TableRow>
-                )
-              })
-            ) : (
-              filteredDocuments.map((document, index) => {
-                const checked = activeProps.isChecked(document.id)
-                return (
-                  <TableRow key={document.id} hover sx={{ backgroundColor: index % 2 === 1 ? 'rgba(244,241,240,0.3)' : 'transparent' }}>
-                    <TableCell padding="checkbox">
-                      <Checkbox checked={checked} onChange={(event) => activeProps.onToggle(document.id, event.target.checked)} />
-                    </TableCell>
-                    <TableCell>{document.name ?? 'Untitled document'}</TableCell>
-                    <TableCell>{document.id_legacy ?? '—'}</TableCell>
-                    <TableCell align="right">
-                      <FileSize value={document.filesize} />
-                    </TableCell>
-                    <TableCell>
-                      <DateAtom value={document.created_at} />
-                    </TableCell>
-                  </TableRow>
-                )
-              })
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+        <MaterialReactTable table={table} />
+      </Box>
 
       {serverMode ? (
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1.5, borderTop: '1px solid rgba(53,88,52,0.125)' }}>
-          <Typography variant="body2">Showing {start}-{end} of {total}</Typography>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            px: 2,
+            py: 1.5,
+            borderTop: '1px solid rgba(53,88,52,0.125)',
+          }}
+        >
+          <Typography variant="body2">
+            Showing {start}-{end} of {total}
+          </Typography>
           <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button size="small" variant="outlined" disabled={page <= 1} onClick={() => serverProps!.onPageChange(page - 1)}>
+            <Button size="small" variant="outlined" disabled={page <= 1} onClick={() => props.onPageChange(page - 1)}>
               Prev
             </Button>
-            <Button size="small" variant="outlined" disabled={end >= total} onClick={() => serverProps!.onPageChange(page + 1)}>
+            <Button size="small" variant="outlined" disabled={end >= total} onClick={() => props.onPageChange(page + 1)}>
               Next
             </Button>
           </Box>
