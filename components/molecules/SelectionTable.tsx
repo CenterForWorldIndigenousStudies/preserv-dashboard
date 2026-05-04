@@ -1,6 +1,7 @@
 'use client'
 
-import { useMemo, type ReactElement } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import Box from '@mui/material/Box'
 import Checkbox from '@mui/material/Checkbox'
 import Paper from '@mui/material/Paper'
@@ -132,14 +133,38 @@ export function SelectionTable({
     [documents, searchValue, sortState],
   )
 
+  const parentRef = useRef<HTMLDivElement>(null)
+  const [containerHeight, setContainerHeight] = useState(420)
+
+  // Measure the available height so the virtualizer and Dialog can expand appropriately.
+  useEffect(() => {
+    const el = parentRef.current
+    if (!el) return
+    const ro = new ResizeObserver(([entry]) => {
+      setContainerHeight(Math.max(100, entry.contentRect.height - 8))
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  const rowVirtualizer = useVirtualizer({
+    count: filteredDocuments.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 52,
+    overscan: 10,
+  })
+
+  const virtualRows = rowVirtualizer.getVirtualItems()
+
+  // After the scroll container is mounted, force the virtualizer to remeasure
+  // now that it knows the actual height of the scroll area.
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => rowVirtualizer.measure())
+    return () => cancelAnimationFrame(raf)
+  }, [rowVirtualizer])
+
   return (
-    <Paper
-      sx={{
-        borderRadius: '1rem',
-        border: '1px solid rgba(53,88,52,0.125)',
-        overflow: 'hidden',
-      }}
-    >
+    <Paper sx={{ borderRadius: '1rem', border: '1px solid rgba(53,88,52,0.125)', overflow: 'hidden' }}>
       <Box sx={{ borderBottom: '1px solid rgba(53,88,52,0.125)', p: 2 }}>
         <Typography sx={{ color: '#231f20', fontSize: '1rem', fontWeight: 600 }}>{title}</Typography>
         <TextField
@@ -151,7 +176,7 @@ export function SelectionTable({
           sx={{ mt: 2 }}
         />
       </Box>
-      <TableContainer sx={{ maxHeight: 420 }}>
+      <TableContainer ref={parentRef} sx={{ maxHeight: containerHeight, overflow: 'auto' }}>
         <Table stickyHeader size="small">
           <TableHead>
             <TableRow>
@@ -182,26 +207,33 @@ export function SelectionTable({
               ))}
             </TableRow>
           </TableHead>
-          <TableBody>
+          <TableBody sx={{ position: 'relative', display: 'block' }}>
             {filteredDocuments.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} sx={{ color: 'rgba(35,31,32,0.7)', py: 3, textAlign: 'center' }}>
                   {emptyMessage}
                 </TableCell>
               </TableRow>
-            ) : (
-              filteredDocuments.map((document, index) => {
+            ) : virtualRows.length > 0 ? (
+              virtualRows.map((virtualRow) => {
+                const document = filteredDocuments[virtualRow.index]
                 const checked = isChecked(document.id)
-
                 return (
                   <TableRow
                     key={document.id}
-                    hover
+                    ref={rowVirtualizer.measureElement}
+                    data-index={virtualRow.index}
                     sx={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${virtualRow.start}px)`,
                       '& td': {
-                        backgroundColor: index % 2 === 1 ? 'rgba(244,241,240,0.3)' : 'transparent',
+                        backgroundColor: virtualRow.index % 2 === 1 ? 'rgba(244,241,240,0.3)' : 'transparent',
                       },
                     }}
+                    hover
                   >
                     <TableCell padding="checkbox">
                       <Checkbox checked={checked} onChange={(event) => onToggle(document.id, event.target.checked)} />
@@ -217,7 +249,24 @@ export function SelectionTable({
                   </TableRow>
                 )
               })
-            )}
+            ) : filteredDocuments.map((document, index) => {
+              const checked = isChecked(document.id)
+              return (
+                <TableRow key={document.id} hover sx={{ backgroundColor: index % 2 === 1 ? 'rgba(244,241,240,0.3)' : 'transparent' }}>
+                  <TableCell padding="checkbox">
+                    <Checkbox checked={checked} onChange={(event) => onToggle(document.id, event.target.checked)} />
+                  </TableCell>
+                  <TableCell>{document.name ?? 'Untitled document'}</TableCell>
+                  <TableCell>{document.id_legacy ?? '—'}</TableCell>
+                  <TableCell align="right">
+                    <FileSize value={document.filesize} />
+                  </TableCell>
+                  <TableCell>
+                    <DateAtom value={document.created_at} />
+                  </TableCell>
+                </TableRow>
+              )
+            })}
           </TableBody>
         </Table>
       </TableContainer>
