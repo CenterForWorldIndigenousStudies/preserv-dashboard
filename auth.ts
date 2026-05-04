@@ -11,11 +11,8 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
   callbacks: {
     authorized({ auth, request }) {
       const bypassToken = process.env.AUTH_BYPASS_TOKEN
-      if (bypassToken) {
-        const bypassHeader = request.headers.get('x-auth-bypass')
-        if (bypassHeader === bypassToken) {
-          return true
-        }
+      if (bypassToken === 'dev-bypass') {
+        return true
       }
 
       const email = auth?.user?.email ?? ''

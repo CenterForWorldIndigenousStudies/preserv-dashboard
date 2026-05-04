@@ -134,7 +134,7 @@ export function SelectionTable({
   )
 
   const parentRef = useRef<HTMLDivElement>(null)
-  const [containerHeight, setContainerHeight] = useState(420)
+  const [containerHeight, setContainerHeight] = useState(520)
 
   // Measure the available height so the virtualizer and Dialog can expand appropriately.
   useEffect(() => {

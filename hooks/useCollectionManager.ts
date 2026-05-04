@@ -117,8 +117,8 @@ export function useCollectionManager(
 
         clearTimeout(timeoutId)
         console.log("[CM] About to set state and setIsLoading(false)")
-        setInCollection(sortDocumentsByName(nextInCollection))
-        setOutOfCollection(sortDocumentsByName(nextOutOfCollection))
+        setInCollection(nextInCollection)
+        setOutOfCollection(nextOutOfCollection)
         setIsLoading(false)
         console.log("[CM] setIsLoading(false) called successfully")
       })

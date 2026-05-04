@@ -2,7 +2,6 @@
 
 import { type ReactElement } from 'react'
 import Alert from '@mui/material/Alert'
-import Box from '@mui/material/Box'
 import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
@@ -113,10 +112,10 @@ export function CollectionDocumentManager({
         onClose={handleClose}
         fullWidth
         maxWidth="xl"
-        sx={{ '& .MuiDialog-paper': { borderRadius: '1rem' } }}
+        sx={{ '& .MuiDialog-paper': { borderRadius: '1rem', height: '90vh' } }}
       >
         <DialogTitle>{buildDialogTitle(activeAction, collectionName)}</DialogTitle>
-        <DialogContent dividers sx={{ display: 'grid', gap: 3, px: 3, py: 3 }}>
+        <DialogContent dividers sx={{ px: 3, py: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
           {error ? <Alert severity="error">{error}</Alert> : null}
           {isLoading ? (
             <div aria-live="polite" className="flex justify-center">
@@ -124,42 +123,32 @@ export function CollectionDocumentManager({
                 Loading documents
               </Button>
             </div>
+          ) : activeAction === 'add' ? (
+            <SelectionTable
+              title="Available Documents"
+              searchLabel="Search available documents"
+              documents={outOfCollection}
+              searchValue={outSearch}
+              onSearchChange={setOutSearch}
+              isChecked={(id) => selectedOut.has(id)}
+              onToggle={toggleOut}
+              sortState={outSort}
+              onSortChange={(field) => handleSortChange(outSort, setOutSort, field)}
+              emptyMessage="No other documents available."
+            />
           ) : (
-            <Box
-              sx={{
-                display: 'grid',
-                gap: 3,
-                gridTemplateColumns: {
-                  xs: '1fr',
-                  lg: '1fr 1fr',
-                },
-              }}
-            >
-              <SelectionTable
-                title="Documents in Collection"
-                searchLabel="Search documents in collection"
-                documents={inCollection}
-                searchValue={inSearch}
-                onSearchChange={setInSearch}
-                isChecked={(documentId) => !selectedIn.has(documentId)}
-                onToggle={toggleIn}
-                sortState={inSort}
-                onSortChange={(field) => handleSortChange(inSort, setInSort, field)}
-                emptyMessage="No documents associated with this collection."
-              />
-              <SelectionTable
-                title="Other Documents"
-                searchLabel="Search other documents"
-                documents={outOfCollection}
-                searchValue={outSearch}
-                onSearchChange={setOutSearch}
-                isChecked={(documentId) => selectedOut.has(documentId)}
-                onToggle={toggleOut}
-                sortState={outSort}
-                onSortChange={(field) => handleSortChange(outSort, setOutSort, field)}
-                emptyMessage="No other documents available."
-              />
-            </Box>
+            <SelectionTable
+              title="Documents in Collection"
+              searchLabel="Search documents in collection"
+              documents={inCollection}
+              searchValue={inSearch}
+              onSearchChange={setInSearch}
+              isChecked={(id) => !selectedIn.has(id)}
+              onToggle={toggleIn}
+              sortState={inSort}
+              onSortChange={(field) => handleSortChange(inSort, setInSort, field)}
+              emptyMessage="No documents associated with this collection."
+            />
           )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3, pt: 2 }}>
@@ -168,23 +157,13 @@ export function CollectionDocumentManager({
           </Button>
           <Button
             variant="secondary"
-            disabled={isLoading || isSubmitting || selectedOut.size === 0}
+            disabled={isLoading || isSubmitting || selectedCount === 0}
             onClick={() => {
-              setPendingAction('add')
+              setPendingAction(activeAction)
               setShowConfirm(true)
             }}
           >
-            {buildActionLabel('add', selectedOut.size)}
-          </Button>
-          <Button
-            variant="secondary"
-            disabled={isLoading || isSubmitting || selectedIn.size === 0}
-            onClick={() => {
-              setPendingAction('remove')
-              setShowConfirm(true)
-            }}
-          >
-            {buildActionLabel('remove', selectedIn.size)}
+            {buildActionLabel(activeAction, selectedCount)}
           </Button>
         </DialogActions>
       </Dialog>
