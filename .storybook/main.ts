@@ -45,6 +45,11 @@ const config: StorybookConfig = {
           // never enters the Storybook browser bundle. The stories pass
           // initialData directly and never call any db function at runtime.
           '@lib/db': path.resolve(__dirname, '../lib/db.storybook.ts'),
+          // Stub @lib/prisma/generated/client - Prisma uses Node.js require() internally
+          // which Rolldown cannot process in a browser ESM context. The queries module
+          // only uses Prisma.sql (template tag) and Prisma.TransactionClient (type) so
+          // this lightweight stub is sufficient for the storybook build.
+          '@lib/prisma/generated/client': path.resolve(__dirname, '../lib/prisma.storybook.ts'),
           // Client stories only need the browser-safe utilities from this module.
           '@lib/tag-utils': path.resolve(__dirname, '../lib/tag-utils.storybook.ts'),
         },
