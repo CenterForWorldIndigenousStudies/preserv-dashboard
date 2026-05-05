@@ -1,5 +1,10 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { db } from '@lib/db'
+
+vi.mock('@lib/editHistory', () => ({
+  createEditHistoryEntry: vi.fn(),
+}))
+
 import {
   getCollections,
   getCollectionDocuments,
