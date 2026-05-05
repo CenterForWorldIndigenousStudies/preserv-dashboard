@@ -3,7 +3,6 @@ import type { ReactElement } from 'react'
 import { PageHeader } from '@organisms/PageHeader'
 import { CollectionsAccordion } from '@organisms/CollectionsAccordion'
 import { getCollections } from '@lib/queries'
-import type { CollectionWithMeta } from '@lib/types'
 
 export const dynamic = 'force-dynamic'
 

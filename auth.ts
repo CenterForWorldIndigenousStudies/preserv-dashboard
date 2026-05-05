@@ -9,7 +9,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     error: '/auth/error',
   },
   callbacks: {
-    authorized({ auth, request }) {
+    authorized({ auth }) {
       const bypassToken = process.env.AUTH_BYPASS_TOKEN
       if (bypassToken === 'dev-bypass') {
         return true

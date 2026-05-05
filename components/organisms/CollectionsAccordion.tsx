@@ -164,7 +164,7 @@ export function CollectionsAccordion({ collections }: CollectionsAccordionProps)
       return next
     })
     if (expanded) {
-      loadCollectionDocuments(collectionId)
+      void loadCollectionDocuments(collectionId)
     }
   }
 
@@ -284,7 +284,7 @@ export function CollectionsAccordion({ collections }: CollectionsAccordionProps)
                           next.delete(collection.id)
                           return next
                         })
-                        loadCollectionDocuments(collection.id)
+                        void loadCollectionDocuments(collection.id)
                       }}
                     >
                       Retry
@@ -294,7 +294,7 @@ export function CollectionsAccordion({ collections }: CollectionsAccordionProps)
                   <Typography sx={{ color: 'rgba(35,31,32,0.7)', fontSize: '0.95rem' }}>
                     No documents associated with this collection.
                   </Typography>
-                ) : !isExpanded ? null : docs == null || docs.length === 0 ? (
+                ) : !isExpanded ? null : !docs || docs.length === 0 ? (
                   <Typography sx={{ color: 'rgba(35,31,32,0.7)', fontSize: '0.95rem' }}>
                     No documents associated with this collection.
                   </Typography>

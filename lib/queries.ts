@@ -248,25 +248,11 @@ function normalizeCollectionDocumentPageSize(pageSize?: number): number {
   return Math.min(Math.floor(pageSize), 100)
 }
 
-function normalizeCollectionDocumentSortField(sortField?: string): CollectionDocumentSortField {
-  return COLLECTION_DOCUMENT_SORT_FIELDS.includes(sortField as CollectionDocumentSortField)
-    ? (sortField as CollectionDocumentSortField)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- normalizeCollectionDocumentSortField is kept for future use with server-side sorting
+function normalizeCollectionDocumentSortField(_sortField?: string): CollectionDocumentSortField {
+  return COLLECTION_DOCUMENT_SORT_FIELDS.includes(_sortField as CollectionDocumentSortField)
+    ? (_sortField as CollectionDocumentSortField)
     : 'name'
-}
-
-function buildCollectionDocumentSortExpression(sortField: CollectionDocumentSortField, useDAlias = false): Prisma.Sql {
-  const table = useDAlias ? 'd' : 'f'
-  switch (sortField) {
-    case 'filesize':
-      return Prisma.sql`COALESCE(${Prisma.raw(table)}.filesize, -1)`
-    case 'created_at':
-      return Prisma.sql`COALESCE(${Prisma.raw(table)}.created_at, TIMESTAMP('1000-01-01 00:00:00'))`
-    case 'id_legacy':
-      return Prisma.sql`COALESCE(${Prisma.raw(table)}.id_legacy, '')`
-    case 'name':
-    default:
-      return Prisma.sql`COALESCE(${Prisma.raw(table)}.name, '')`
-  }
 }
 
 function buildCollectionDocumentRowsSql(params: {
@@ -280,10 +266,7 @@ function buildCollectionDocumentRowsSql(params: {
 }): Prisma.Sql {
   const page = normalizeCollectionDocumentPage(params.page)
   const pageSize = normalizeCollectionDocumentPageSize(params.pageSize)
-  const sortField = normalizeCollectionDocumentSortField(params.sortField)
-  const sortDirection = params.sortDirection === 'desc' ? 'DESC' : 'ASC'
   const offset = (page - 1) * pageSize
-  const sortExpression = buildCollectionDocumentSortExpression(sortField, false)
   const searchCondition = params.search?.trim()
     ? Prisma.sql`AND LOWER(COALESCE(d.name, '')) LIKE ${`%${params.search.trim().toLowerCase()}%`}`
     : Prisma.empty
