@@ -32,6 +32,7 @@ import {
   type OverviewStatusOption,
 } from '@lib/overview-search'
 import { db } from '@lib/db'
+import { createEditHistoryEntry } from '@lib/editHistory'
 import { Prisma, PrismaClient } from '@lib/prisma/generated/client'
 
 // Fields on the documents model used for orderBy/filtering
@@ -367,14 +368,24 @@ export async function addDocumentsToCollection(collectionId: string, documentIds
     return
   }
 
-  const collection = await db.collections.findUnique({ where: { id: collectionId } })
+  const collection = await db.collections.findUnique({
+    where: { id: collectionId },
+    include: { tags: true },
+  })
 
   if (!collection) {
     throw new Error('Collection not found')
   }
 
-  await db.$transaction(async (tx) => {
-    await Promise.all(
+  const documentNames = await db.documents.findMany({
+    where: { id: { in: documentIds } },
+    select: { id: true, name: true },
+  })
+
+  const nameMap = new Map(documentNames.map((d) => [d.id, d.name ?? 'Untitled']))
+
+  const upsertResults = await db.$transaction(async (tx) => {
+    return Promise.all(
       documentIds.map(async (documentId) =>
         tx.document_to_tags.upsert({
           where: {
@@ -389,6 +400,21 @@ export async function addDocumentsToCollection(collectionId: string, documentIds
             document_id: documentId,
             tag_id: collection.tag_id,
           },
+          select: { id: true, document_id: true },
+        }),
+      ),
+    )
+  })
+
+  await db.$transaction(async (tx) => {
+    await Promise.all(
+      upsertResults.map((result) =>
+        createEditHistoryEntry(tx, {
+          entityTable: 'document_to_tags',
+          entityId: result.id,
+          previousValue: null,
+          newValue: { id: result.id, document_id: result.document_id, tag_id: collection.tag_id },
+          editSummary: `Added document "${nameMap.get(result.document_id) ?? 'Untitled'}" to collection "${collection.tags?.name ?? collection.tag_id}"`,
         }),
       ),
     )
@@ -400,11 +426,22 @@ export async function removeDocumentsFromCollection(collectionId: string, docume
     return
   }
 
-  const collection = await db.collections.findUnique({ where: { id: collectionId } })
+  const collection = await db.collections.findUnique({
+    where: { id: collectionId },
+    include: { tags: true },
+  })
 
   if (!collection) {
     throw new Error('Collection not found')
   }
+
+  const rowsToDelete = await db.document_to_tags.findMany({
+    where: {
+      document_id: { in: documentIds },
+      tag_id: collection.tag_id,
+    },
+    include: { documents: { select: { name: true } } },
+  })
 
   await db.$transaction(async (tx) => {
     await tx.document_to_tags.deleteMany({
@@ -413,6 +450,18 @@ export async function removeDocumentsFromCollection(collectionId: string, docume
         tag_id: collection.tag_id,
       },
     })
+
+    await Promise.all(
+      rowsToDelete.map((row) =>
+        createEditHistoryEntry(tx, {
+          entityTable: 'document_to_tags',
+          entityId: row.id,
+          previousValue: { id: row.id, document_id: row.document_id, tag_id: row.tag_id },
+          newValue: null,
+          editSummary: `Removed document "${row.documents?.name ?? 'Untitled'}" from collection "${collection.tags?.name ?? collection.tag_id}"`,
+        }),
+      ),
+    )
   })
 }
 
