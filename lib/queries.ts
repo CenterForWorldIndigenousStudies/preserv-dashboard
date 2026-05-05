@@ -400,7 +400,7 @@ export async function addDocumentsToCollection(collectionId: string, documentIds
             document_id: documentId,
             tag_id: collection.tag_id,
           },
-          select: { id: true, document_id: true },
+          select: { id: true, document_id: true, created_at: true },
         }),
       ),
     )
@@ -413,7 +413,18 @@ export async function addDocumentsToCollection(collectionId: string, documentIds
           entityTable: 'document_to_tags',
           entityId: result.id,
           previousValue: null,
-          newValue: { id: result.id, document_id: result.document_id, tag_id: collection.tag_id },
+          newValue: {
+            id: result.id,
+            document_id: result.document_id,
+            tag_id: collection.tag_id,
+            notes: null,
+            created_at: result.created_at,
+            tags: collection.tags,
+            documents: {
+              id: result.document_id,
+              name: nameMap.get(result.document_id) ?? 'Untitled',
+            },
+          },
           editSummary: `Added document "${nameMap.get(result.document_id) ?? 'Untitled'}" to collection "${collection.tags?.name ?? collection.tag_id}"`,
         }),
       ),
@@ -440,7 +451,7 @@ export async function removeDocumentsFromCollection(collectionId: string, docume
       document_id: { in: documentIds },
       tag_id: collection.tag_id,
     },
-    include: { documents: { select: { name: true } } },
+    include: { documents: { select: { name: true } }, tags: true },
   })
 
   await db.$transaction(async (tx) => {
@@ -456,7 +467,18 @@ export async function removeDocumentsFromCollection(collectionId: string, docume
         createEditHistoryEntry(tx, {
           entityTable: 'document_to_tags',
           entityId: row.id,
-          previousValue: { id: row.id, document_id: row.document_id, tag_id: row.tag_id },
+          previousValue: {
+            id: row.id,
+            document_id: row.document_id,
+            tag_id: row.tag_id,
+            notes: row.notes,
+            created_at: row.created_at,
+            tags: row.tags,
+            documents: {
+              id: row.document_id,
+              name: row.documents?.name ?? 'Untitled',
+            },
+          },
           newValue: null,
           editSummary: `Removed document "${row.documents?.name ?? 'Untitled'}" from collection "${collection.tags?.name ?? collection.tag_id}"`,
         }),
