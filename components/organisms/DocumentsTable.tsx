@@ -61,7 +61,7 @@ export function DocumentsTable({ initialData, initialQuery, filterOptions }: Doc
       endCursor: null,
     },
   )
-  const [isLoading, setIsLoading] = useState(false)
+  const [, setIsLoading] = useState(false)
 
   const preservedOverviewHref = useMemo(() => {
     const currentSearch = searchParams.toString()

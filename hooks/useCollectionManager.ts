@@ -135,8 +135,6 @@ export function useCollectionManager(
     }
 
     let cancelled = false
-    let timeoutId: ReturnType<typeof setTimeout> | undefined
-
     setActiveAction(initialAction)
     setSelectedIn(new Set())
     setSelectedOut(new Set())
@@ -145,7 +143,7 @@ export function useCollectionManager(
     setError(null)
     setIsLoading(true)
 
-    timeoutId = setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       if (!cancelled) {
         setError('Timed out loading documents. Please try again.')
         setInCollection([])
@@ -193,9 +191,9 @@ export function useCollectionManager(
     setSelectedIn((current) => {
       const next = new Set(current)
       if (checked) {
-        next.delete(documentId)
-      } else {
         next.add(documentId)
+      } else {
+        next.delete(documentId)
       }
       return next
     })

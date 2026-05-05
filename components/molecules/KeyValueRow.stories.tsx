@@ -1,8 +1,8 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { KeyValueRow } from './KeyValueRow'
 
 const meta = {
-  title: 'DesignSystem/Molecules/KeyValueRow',
+  title: 'Molecules/KeyValueRow',
   component: KeyValueRow,
   tags: ['autodocs'],
 } satisfies Meta<typeof KeyValueRow>

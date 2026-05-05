@@ -116,10 +116,13 @@ export function CollectionDocumentManager({
         onClose={handleClose}
         fullWidth
         maxWidth="xl"
-        sx={{ '& .MuiDialog-paper': { borderRadius: '1rem', height: '90vh' } }}
+        sx={{ '& .MuiDialog-paper': { borderRadius: '1rem', height: '90vh', maxHeight: '90vh' } }}
       >
         <DialogTitle>{buildDialogTitle(activeAction, collectionName)}</DialogTitle>
-        <DialogContent dividers sx={{ px: 3, py: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
+        <DialogContent
+          dividers
+          sx={{ px: 3, py: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0, flex: 1 }}
+        >
           {error ? <Alert severity="error">{error}</Alert> : null}
           {isLoading ? (
             <div aria-live="polite" className="flex justify-center">
@@ -163,7 +166,7 @@ export function CollectionDocumentManager({
                 setInPage(1)
               }}
               onPageChange={setInPage}
-              isChecked={(id) => !selectedIn.has(id)}
+              isChecked={(id) => selectedIn.has(id)}
               onToggle={toggleIn}
               emptyMessage="No documents associated with this collection."
             />

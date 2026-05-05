@@ -39,15 +39,15 @@ describe('collection queries (integration)', () => {
         const collections = await getCollections()
         expect(collections.length).toBeGreaterThan(0)
 
-        const docs = await getDocumentsForCollection(collections[0].id)
-        expect(Array.isArray(docs)).toBe(true)
+        const { documents } = await getDocumentsForCollection(collections[0].id)
+        expect(Array.isArray(documents)).toBe(true)
       })
     })
 
     it('returns an empty array for a non-existent collection id', async () => {
       await withRollbackTransaction(async () => {
-        const docs = await getDocumentsForCollection('00000000-0000-0000-0000-000000000000')
-        expect(docs).toEqual([])
+        const { documents } = await getDocumentsForCollection('00000000-0000-0000-0000-000000000000')
+        expect(documents).toEqual([])
       })
     })
   })
@@ -58,7 +58,7 @@ describe('collection queries (integration)', () => {
         const collections = await getCollections()
         expect(collections.length).toBeGreaterThan(0)
 
-        const docs = await getDocumentsNotInCollection(collections[0].id)
+        const { documents: docs } = await getDocumentsNotInCollection(collections[0].id)
         expect(Array.isArray(docs)).toBe(true)
       })
     })
