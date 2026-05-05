@@ -1,6 +1,11 @@
 import type { Prisma } from '@lib/prisma/generated/client'
-import { afterAll, beforeAll, describe, it, expect } from 'vitest'
+import { afterAll, beforeAll, describe, it, expect, vi } from 'vitest'
 import { db } from '@lib/db'
+
+vi.mock('@lib/editHistory', () => ({
+  createEditHistoryEntry: vi.fn(),
+}))
+
 import { getAllDocuments, getDocuments } from '@lib/queries'
 import { resetTestDatabase } from '../support/test-db'
 import { withRollbackTransaction } from '../support/transaction'

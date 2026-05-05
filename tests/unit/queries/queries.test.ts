@@ -14,6 +14,10 @@ vi.mock('@lib/db', () => ({
   },
 }))
 
+vi.mock('@lib/editHistory', () => ({
+  createEditHistoryEntry: vi.fn(),
+}))
+
 import { getAllDocuments, getDocuments } from '@lib/queries'
 
 // ---------------------------------------------------------------------------
