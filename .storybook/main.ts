@@ -28,6 +28,10 @@ const config: StorybookConfig = {
   async viteFinal(config) {
     return {
       ...config,
+      build: {
+        ...config.build,
+        chunkSizeWarningLimit: 1000,
+      },
       resolve: {
         ...config.resolve,
         alias: {
