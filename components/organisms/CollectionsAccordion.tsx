@@ -2,14 +2,17 @@
 
 import { useMemo, useState, type ReactElement } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Accordion, AccordionDetails, AccordionSummary, Box, Chip, CircularProgress, Typography } from '@mui/material'
 
+import { deleteCollectionAction, getDocumentsForCollectionAction } from '@actions/collections'
 import { Button } from '@atoms/Button'
+import { IconX } from '@atoms/icons/IconX'
 import { CollectionDocumentManager } from '@organisms/CollectionDocumentManager'
+import { TagDeleteFlowDialog } from '@organisms/TagDeleteFlowDialog'
 import { MaterialReactTable, useMaterialReactTable, type MRT_ColumnDef } from 'material-react-table'
 
 import { DateAtom } from '@atoms/Date'
-import { getDocumentsForCollectionAction } from '@actions/collections'
 import type { CollectionWithMeta, Document } from '@lib/types'
 
 interface CollectionsAccordionProps {
@@ -117,11 +120,14 @@ function CollectionDocumentsTable({ documents }: { documents: Document[] }): Rea
 }
 
 export function CollectionsAccordion({ collections }: CollectionsAccordionProps): ReactElement {
+  const router = useRouter()
   const [managerState, setManagerState] = useState<CollectionManagerState | null>(null)
   const [expandedCollections, setExpandedCollections] = useState<Set<string>>(new Set())
   const [collectionDocuments, setCollectionDocuments] = useState<Map<string, Document[]>>(new Map())
   const [loadingCollections, setLoadingCollections] = useState<Set<string>>(new Set())
   const [errorCollections, setErrorCollections] = useState<Map<string, string>>(new Map())
+  const [collectionToDelete, setCollectionToDelete] = useState<CollectionWithMeta | null>(null)
+  const [isDeletingCollection, setIsDeletingCollection] = useState(false)
 
   const loadCollectionDocuments = useMemo(
     () =>
@@ -165,6 +171,23 @@ export function CollectionsAccordion({ collections }: CollectionsAccordionProps)
     })
     if (expanded) {
       void loadCollectionDocuments(collectionId)
+    }
+  }
+
+  async function handleDeleteCollection(deleteTagFromSystem: boolean): Promise<void> {
+    if (!collectionToDelete || isDeletingCollection) {
+      return
+    }
+
+    setIsDeletingCollection(true)
+
+    try {
+      await deleteCollectionAction(collectionToDelete.id, { deleteTagFromSystem })
+      setCollectionToDelete(null)
+      router.refresh()
+    } catch (deleteCollectionError) {
+      setIsDeletingCollection(false)
+      throw deleteCollectionError
     }
   }
 
@@ -264,6 +287,18 @@ export function CollectionsAccordion({ collections }: CollectionsAccordionProps)
                       Remove documents
                     </Button>
                   ) : null}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    startIcon={<IconX size={14} />}
+                    onClick={(event) => {
+                      event.preventDefault()
+                      setIsDeletingCollection(false)
+                      setCollectionToDelete(collection)
+                    }}
+                  >
+                    Delete collection
+                  </Button>
                 </Box>
                 {isLoading ? (
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 2 }}>
@@ -315,6 +350,23 @@ export function CollectionsAccordion({ collections }: CollectionsAccordionProps)
           onClose={() => setManagerState(null)}
         />
       ) : null}
+      <TagDeleteFlowDialog
+        open={Boolean(collectionToDelete)}
+        title="Remove collection?"
+        subjectName="collection"
+        usageCount={collectionToDelete?.document_count ?? null}
+        primaryMessage={`Remove "${collectionToDelete?.collection_name ?? 'this collection'}"?`}
+        checkboxLabel="Also delete tag and remove from all documents"
+        secondConfirmMessage={`This will remove the tag from ${collectionToDelete?.document_count ?? 0} ${(collectionToDelete?.document_count ?? 0) === 1 ? 'document' : 'documents'} and delete the tag. This cannot be undone.`}
+        onConfirm={handleDeleteCollection}
+        onClose={() => {
+          if (isDeletingCollection) {
+            return
+          }
+
+          setCollectionToDelete(null)
+        }}
+      />
     </>
   )
 }

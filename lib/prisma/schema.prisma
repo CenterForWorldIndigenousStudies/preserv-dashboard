@@ -11,9 +11,13 @@ model access_levels {
   id              String            @id @db.VarChar(36)
   level_name      String            @unique(map: "uk_access_levels_level_name") @db.VarChar(255)
   description     String?           @db.Text
-  created_at      DateTime?         @default(now()) @db.Timestamp(0)
-  updated_at      DateTime?         @default(now()) @db.Timestamp(0)
+  created_at      DateTime?         @default(now()) @db.DateTime(0)
+  updated_at      DateTime?         @default(now()) @db.DateTime(0)
   document_access document_access[]
+}
+
+model alembic_version {
+  version_num String @id @db.VarChar(32)
 }
 
 model authors {
@@ -21,9 +25,11 @@ model authors {
   name                String                @db.Text
   name_hash           String?               @unique(map: "uk_authors_name_hash") @db.VarChar(64)
   notes               String?               @db.Text
-  created_at          DateTime?             @default(now()) @db.Timestamp(0)
-  updated_at          DateTime?             @default(now()) @db.Timestamp(0)
+  created_at          DateTime?             @default(now()) @db.DateTime(0)
+  updated_at          DateTime?             @default(now()) @db.DateTime(0)
   document_to_authors document_to_authors[]
+
+  @@index([name(length: 255)], map: "idx_authors_name")
 }
 
 model batch_metadata {
@@ -31,9 +37,11 @@ model batch_metadata {
   name                      String                      @db.Text
   name_hash                 String?                     @unique(map: "uk_batch_metadata_name_hash") @db.VarChar(64)
   notes                     String?                     @db.Text
-  created_at                DateTime?                   @default(now()) @db.Timestamp(0)
-  updated_at                DateTime?                   @default(now()) @db.Timestamp(0)
+  created_at                DateTime?                   @default(now()) @db.DateTime(0)
+  updated_at                DateTime?                   @default(now()) @db.DateTime(0)
   batch_to_batches_metadata batch_to_batches_metadata[]
+
+  @@index([name(length: 255)], map: "idx_batch_metadata_name")
 }
 
 model batch_to_batches_metadata {
@@ -42,8 +50,8 @@ model batch_to_batches_metadata {
   batch_metadata_id String         @db.VarChar(36)
   value             String?        @db.LongText
   value_type        String?        @db.VarChar(50)
-  created_at        DateTime?      @default(now()) @db.Timestamp(0)
-  updated_at        DateTime?      @default(now()) @db.Timestamp(0)
+  created_at        DateTime?      @default(now()) @db.DateTime(0)
+  updated_at        DateTime?      @default(now()) @db.DateTime(0)
   batches           batches        @relation(fields: [batch_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_batch_to_batches_metadata_batch_id")
   batch_metadata    batch_metadata @relation(fields: [batch_metadata_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_batch_to_batches_metadata_batch_metadata_id")
 
@@ -57,25 +65,26 @@ model batches {
   id_legacy                 String?                     @db.VarChar(255)
   name                      String?                     @db.Text
   name_hash                 String?                     @unique(map: "uk_batches_name_hash") @db.VarChar(64)
-  processing_details        String?                     @default(dbgenerated("(json_object())")) @db.LongText
-  created_at                DateTime?                   @default(now()) @db.Timestamp(0)
-  updated_at                DateTime?                   @default(now()) @db.Timestamp(0)
-  started_at                DateTime?                   @db.Timestamp(0)
-  completed_at              DateTime?                   @db.Timestamp(0)
-  last_processed            DateTime?                   @db.Timestamp(0)
+  processing_details        String?                     @db.LongText
+  created_at                DateTime?                   @default(now()) @db.DateTime(0)
+  updated_at                DateTime?                   @default(now()) @db.DateTime(0)
+  started_at                DateTime?                   @db.DateTime(0)
+  completed_at              DateTime?                   @db.DateTime(0)
+  last_processed            DateTime?                   @db.DateTime(0)
   started_by                String?                     @db.VarChar(255)
   batch_to_batches_metadata batch_to_batches_metadata[]
   document_to_batches       document_to_batches[]
 
   @@index([id_legacy], map: "idx_batches_id_legacy")
+  @@index([name(length: 255)], map: "idx_batches_name")
 }
 
 model collections {
   id         String    @id @db.VarChar(36)
   tag_id     String    @unique(map: "uk_collections_tag_id") @db.VarChar(36)
   notes      String?   @db.Text
-  created_at DateTime? @default(now()) @db.Timestamp(0)
-  updated_at DateTime? @default(now()) @db.Timestamp(0)
+  created_at DateTime? @default(now()) @db.DateTime(0)
+  updated_at DateTime? @default(now()) @db.DateTime(0)
   tags       tags      @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_collections_tag_id")
 
   @@index([tag_id], map: "idx_collections_tag_id")
@@ -87,7 +96,7 @@ model document_access {
   access_level_id  String        @db.VarChar(36)
   granted_by_name  String?       @db.VarChar(255)
   granted_by_email String?       @db.VarChar(255)
-  granted_at       DateTime?     @default(now()) @db.Timestamp(0)
+  granted_at       DateTime?     @db.DateTime(0)
   access_levels    access_levels @relation(fields: [access_level_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_access_access_level_id")
   documents        documents     @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_access_document_id")
 
@@ -108,8 +117,9 @@ model document_quality {
   validator_name       String?                             @db.VarChar(255)
   validator_email      String?                             @db.VarChar(255)
   current_status       String?                             @db.VarChar(36)
-  created_at           DateTime?                           @default(now()) @db.Timestamp(0)
-  updated_at           DateTime?                           @default(now()) @db.Timestamp(0)
+  created_at           DateTime?                           @default(now()) @db.DateTime(0)
+  updated_at           DateTime?                           @default(now()) @db.DateTime(0)
+  reprocess            Boolean                             @default(false)
   state_history        state_history?                      @relation(fields: [current_status], references: [id], onUpdate: Restrict, map: "fk_document_quality_current_status")
   documents            documents                           @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_quality_document_id")
 
@@ -122,8 +132,8 @@ model document_to_authors {
   author_id        String    @db.VarChar(36)
   contributor_type String?   @db.VarChar(255)
   notes            String?   @db.Text
-  created_at       DateTime? @default(now()) @db.Timestamp(0)
-  updated_at       DateTime? @default(now()) @db.Timestamp(0)
+  created_at       DateTime? @default(now()) @db.DateTime(0)
+  updated_at       DateTime? @default(now()) @db.DateTime(0)
   authors          authors   @relation(fields: [author_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_to_authors_author_id")
   documents        documents @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_to_authors_document_id")
 
@@ -136,7 +146,7 @@ model document_to_batches {
   id                      String    @id @db.VarChar(36)
   document_id             String    @db.VarChar(36)
   batch_id                String    @db.VarChar(36)
-  added_at                DateTime? @default(now()) @db.Timestamp(0)
+  added_at                DateTime? @db.DateTime(0)
   batch_origin            String?   @db.Text
   cost                    Decimal?  @db.Decimal(12, 2)
   processing_time_seconds Int?
@@ -156,8 +166,8 @@ model document_to_metadata {
   metadata_id String    @db.VarChar(36)
   value       String?   @db.LongText
   value_type  String?   @db.VarChar(50)
-  created_at  DateTime? @default(now()) @db.Timestamp(0)
-  updated_at  DateTime? @default(now()) @db.Timestamp(0)
+  created_at  DateTime? @default(now()) @db.DateTime(0)
+  updated_at  DateTime? @default(now()) @db.DateTime(0)
   documents   documents @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_to_metadata_document_id")
   metadata    metadata  @relation(fields: [metadata_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_to_metadata_metadata_id")
 
@@ -172,8 +182,8 @@ model document_to_publishers {
   document_id  String     @db.VarChar(36)
   publisher_id String     @db.VarChar(36)
   notes        String?    @db.Text
-  created_at   DateTime?  @default(now()) @db.Timestamp(0)
-  updated_at   DateTime?  @default(now()) @db.Timestamp(0)
+  created_at   DateTime?  @default(now()) @db.DateTime(0)
+  updated_at   DateTime?  @default(now()) @db.DateTime(0)
   documents    documents  @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_to_publishers_document_id")
   publishers   publishers @relation(fields: [publisher_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_to_publishers_publisher_id")
 
@@ -187,7 +197,7 @@ model document_to_tags {
   document_id String    @db.VarChar(36)
   tag_id      String    @db.VarChar(36)
   notes       String?   @db.Text
-  created_at  DateTime? @default(now()) @db.Timestamp(0)
+  created_at  DateTime? @default(now()) @db.DateTime(0)
   documents   documents @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_to_tags_document_id")
   tags        tags      @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_to_tags_tag_id")
 
@@ -204,8 +214,8 @@ model document_versions {
   notes            String?        @db.Text
   changes_summary  String?        @db.Text
   analyzed_at      BigInt?
-  created_at       DateTime?      @default(now()) @db.Timestamp(0)
-  updated_at       DateTime?      @default(now()) @db.Timestamp(0)
+  created_at       DateTime?      @default(now()) @db.DateTime(0)
+  updated_at       DateTime?      @default(now()) @db.DateTime(0)
   documents        documents      @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_versions_document_id")
   version_groups   version_groups @relation(fields: [version_group_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_versions_version_group_id")
 
@@ -221,8 +231,8 @@ model documents {
   hash_content           String?                  @db.VarChar(255)
   id_legacy              String                   @unique(map: "uk_documents_id_legacy") @db.VarChar(255)
   name                   String?                  @db.VarChar(255)
-  created_at             DateTime?                @default(now()) @db.Timestamp(0)
-  updated_at             DateTime?                @default(now()) @db.Timestamp(0)
+  created_at             DateTime?                @default(now()) @db.DateTime(0)
+  updated_at             DateTime?                @default(now()) @db.DateTime(0)
   document_access        document_access[]
   document_quality       document_quality?
   document_to_authors    document_to_authors[]
@@ -250,7 +260,7 @@ model edit_history {
   new_value      String?   @db.LongText
   editor_email   String?   @db.VarChar(255)
   edit_summary   String?   @db.VarChar(255)
-  edited_at      DateTime? @default(now()) @db.Timestamp(0)
+  edited_at      DateTime? @db.DateTime(0)
 
   @@index([entity_table, entity_id], map: "idx_edit_history_entity")
   @@index([entity_table, entity_id, edited_at], map: "idx_edit_history_entity_edited_at")
@@ -261,11 +271,11 @@ model metadata {
   name                 String                 @db.Text
   name_hash            String?                @unique(map: "uk_metadata_name_hash") @db.VarChar(64)
   notes                String?                @db.Text
-  created_at           DateTime?              @default(now()) @db.Timestamp(0)
-  updated_at           DateTime?              @default(now()) @db.Timestamp(0)
+  created_at           DateTime?              @default(now()) @db.DateTime(0)
+  updated_at           DateTime?              @default(now()) @db.DateTime(0)
   document_to_metadata document_to_metadata[]
 
-  @@index([name(length: 191)], map: "idx_metadata_name")
+  @@index([name(length: 255)], map: "idx_metadata_name")
 }
 
 model publishers {
@@ -273,9 +283,11 @@ model publishers {
   name                   String                   @db.Text
   name_hash              String?                  @unique(map: "uk_publishers_name_hash") @db.VarChar(64)
   notes                  String?                  @db.Text
-  created_at             DateTime?                @default(now()) @db.Timestamp(0)
-  updated_at             DateTime?                @default(now()) @db.Timestamp(0)
+  created_at             DateTime?                @default(now()) @db.DateTime(0)
+  updated_at             DateTime?                @default(now()) @db.DateTime(0)
   document_to_publishers document_to_publishers[]
+
+  @@index([name(length: 255)], map: "idx_publishers_name")
 }
 
 model state_history {
@@ -283,7 +295,7 @@ model state_history {
   document_id      String             @db.VarChar(36)
   previous_state   String?            @db.VarChar(255)
   new_state        String?            @db.VarChar(255)
-  changed_at       DateTime?          @default(now()) @db.Timestamp(0)
+  changed_at       DateTime?          @db.DateTime(0)
   document_quality document_quality[]
   documents        documents          @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_state_history_document_id")
 
@@ -297,20 +309,20 @@ model tags {
   name             String             @db.Text
   name_hash        String?            @unique(map: "uk_tags_name_hash") @db.VarChar(64)
   notes            String?            @db.Text
-  created_at       DateTime?          @default(now()) @db.Timestamp(0)
-  updated_at       DateTime?          @default(now()) @db.Timestamp(0)
+  created_at       DateTime?          @default(now()) @db.DateTime(0)
+  updated_at       DateTime?          @default(now()) @db.DateTime(0)
   collections      collections?
   document_to_tags document_to_tags[]
 
-  @@index([name(length: 191)], map: "idx_tags_name")
+  @@index([name(length: 255)], map: "idx_tags_name")
 }
 
 model version_groups {
   id                    String              @id @db.VarChar(36)
   canonical_document_id String              @unique(map: "uk_version_groups_canonical_document_id") @db.VarChar(36)
   notes                 String?             @db.Text
-  created_at            DateTime?           @default(now()) @db.Timestamp(0)
-  updated_at            DateTime?           @default(now()) @db.Timestamp(0)
+  created_at            DateTime?           @default(now()) @db.DateTime(0)
+  updated_at            DateTime?           @default(now()) @db.DateTime(0)
   document_versions     document_versions[]
   documents             documents           @relation(fields: [canonical_document_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_version_groups_canonical_document_id")
 }

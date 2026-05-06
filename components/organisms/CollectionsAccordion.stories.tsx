@@ -18,6 +18,14 @@ interface CollectionWithDocuments extends CollectionWithMeta {
 const meta = {
   component: CollectionsAccordion,
   tags: ['autodocs'],
+  parameters: {
+    nextjs: {
+      appDirectory: true,
+      navigation: {
+        pathname: '/collections',
+      },
+    },
+  },
 } satisfies Meta<typeof CollectionsAccordion>
 
 export default meta
@@ -115,6 +123,12 @@ export const SingleCollection: Story = {
 }
 
 export const MixedDocumentCounts: Story = {
+  args: {
+    collections: sampleCollections,
+  },
+}
+
+export const DeletableCollections: Story = {
   args: {
     collections: sampleCollections,
   },

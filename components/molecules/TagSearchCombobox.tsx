@@ -23,6 +23,8 @@ interface TagSearchComboboxProps {
   disabled?: boolean
   label?: string
   placeholder?: string
+  getOptionDisabled?: (tag: TagSuggestion) => boolean
+  getOptionHelperText?: (tag: TagSuggestion) => string | null
 }
 
 function tagSearchFilterOptions(
@@ -46,6 +48,8 @@ export function TagSearchCombobox({
   disabled = false,
   label = 'Search tags',
   placeholder = 'Type to search or create a tag',
+  getOptionDisabled,
+  getOptionHelperText,
 }: TagSearchComboboxProps): ReactElement {
   const [inputValue, setInputValue] = useState(value)
   const { suggestions, isLoading } = useTagSearch(inputValue, {
@@ -70,6 +74,10 @@ export function TagSearchCombobox({
 
     if ('inputValue' in selected) {
       onSelectCreate(selected.inputValue)
+      return
+    }
+
+    if (getOptionDisabled?.(selected)) {
       return
     }
 
@@ -105,6 +113,7 @@ export function TagSearchCombobox({
 
         return filtered
       }}
+      getOptionDisabled={(option) => ('inputValue' in option ? false : getOptionDisabled?.(option) ?? false)}
       getOptionLabel={(option) => {
         if (typeof option === 'string') {
           return option
@@ -119,11 +128,15 @@ export function TagSearchCombobox({
       }}
       renderOption={(props, option) => {
         const { key, ...optionProps } = props
+        const optionDisabled = 'inputValue' in option ? false : getOptionDisabled?.(option) ?? false
+        const helperText = 'inputValue' in option ? null : getOptionHelperText?.(option) ?? null
+
         return (
           <li key={key} {...optionProps}>
-            <div className="flex flex-col">
+            <div className={`flex flex-col ${optionDisabled ? 'opacity-50' : ''}`}>
               <span className="font-medium text-ink">{option.name}</span>
               {option.notes ? <span className="text-sm text-ink/60">{option.notes}</span> : null}
+              {helperText ? <span className="text-sm text-ink/50">{helperText}</span> : null}
             </div>
           </li>
         )
