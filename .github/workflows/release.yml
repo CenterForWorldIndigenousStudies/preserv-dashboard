@@ -42,6 +42,31 @@ jobs:
           echo "Publishing version: ${VERSION}"
         shell: bash
 
+      - name: Get changed project files
+        if: steps.check-branch.outputs.skip != 'true'
+        id: changed-files
+        uses: tj-actions/changed-files@v47
+        with:
+          files: |
+            **/*
+          files_ignore: |
+            **/*.md
+            .cursorrules
+            .env*
+            .gitigore
+            .markdownlint*
+            .prettier*
+            eslint*
+            vercel.json
+            vitest*
+            .next/**
+            .storybook/**
+            .vscode/**
+            documentation/**
+            lib/prisma/generated/**
+            public/developers/storybook/**
+            scripts/**
+
       - name: Check tag and changes
         id: check_tag
         run: |
@@ -57,10 +82,7 @@ jobs:
           LATEST_TAG=$(git tag --sort=-v:refname | grep -E "^[0-9]+\.[0-9]+\.[0-9]+$" | head -n 1 || true)
 
           if [ -n "$LATEST_TAG" ]; then
-            CHANGES=$(git diff --name-only "$LATEST_TAG"..HEAD -- \
-              app/ components/ hooks/ lib/ public/ styles/ tests/ types/ .github/workflows/ auth.ts next.config.ts package.json package-lock.json postcss.config.js prisma.config.js proxy.ts tailwind.config.ts ':(glob)tsconfig.*')
-
-            if [ -z "$CHANGES" ]; then
+            if [ "${{ steps.changed-files.outputs.any_modified }}" != 'true' ]; then
               echo "No package-relevant changes since ${LATEST_TAG}, skipping."
               echo "skip=true" >> $GITHUB_OUTPUT
               exit 0
