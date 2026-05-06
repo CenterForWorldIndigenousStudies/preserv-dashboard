@@ -121,25 +121,31 @@ export function DocumentTagsEditor({ documentId, initialTags }: DocumentTagsEdit
       return
     }
 
-    const response = await fetch(`/api/documents/${documentId}/tags`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        tagId: tagToRemove.tag_id,
-        deleteTagFromSystem: options.deleteTagFromSystem,
-      }),
-    })
+    const response = options.deleteTagFromSystem
+      ? await fetch(`/api/tags/${tagToRemove.tag_id}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cascade: true }),
+        })
+      : await fetch(`/api/documents/${documentId}/tags`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tagId: tagToRemove.tag_id,
+            deleteTagFromSystem: false,
+          }),
+        })
     const payload = (await response.json()) as { deletedTag?: boolean; error?: string }
 
     if (!response.ok) {
       throw new Error(payload.error ?? 'Unable to remove tag.')
     }
 
-    setTags((current) => current.filter((item) => item.id !== tagToRemove.id))
+    setTags((current) => current.filter((item) => item.tag_id !== tagToRemove.tag_id))
     setTagToRemove(null)
     setUsageCount(null)
     setSuccessMessage(
-      payload.deletedTag
+      options.deleteTagFromSystem
         ? `Removed and deleted tag "${tagToRemove.tags.name}".`
         : `Removed tag "${tagToRemove.tags.name}".`,
     )

@@ -1,6 +1,5 @@
-import { NextResponse } from 'next/server'
-import { createEditHistoryEntry } from '@lib/editHistory'
-import { db } from '@lib/db'
+import { NextRequest, NextResponse } from 'next/server'
+import { deleteTag, deleteTagAndDocumentAssociations } from '@lib/queries'
 
 interface RouteContext {
   params: Promise<{
@@ -8,47 +7,33 @@ interface RouteContext {
   }>
 }
 
-export async function DELETE(_: Request, context: RouteContext): Promise<NextResponse> {
+interface DeleteTagRequestBody {
+  cascade?: unknown
+}
+
+export async function DELETE(request: NextRequest, context: RouteContext): Promise<NextResponse> {
   try {
     const { id } = await context.params
+    const body = (await request.json().catch(() => null)) as DeleteTagRequestBody | null
+    const cascade = body?.cascade === true
 
-    const tag = await db.tags.findUnique({
-      where: { id },
-      include: {
-        document_to_tags: {
-          select: { id: true },
-        },
-      },
-    })
-
-    if (!tag) {
-      return NextResponse.json({ error: 'Tag not found.' }, { status: 404 })
+    if (cascade) {
+      await deleteTagAndDocumentAssociations(id)
+      return NextResponse.json({ success: true })
     }
 
-    if (tag.document_to_tags.length > 0) {
-      return NextResponse.json(
-        { error: 'Cannot delete a tag that is still associated with documents.' },
-        { status: 409 },
-      )
-    }
-
-    await db.$transaction(async (tx) => {
-      await tx.tags.delete({
-        where: { id },
-      })
-
-      await createEditHistoryEntry(tx, {
-        entityTable: 'tags',
-        entityId: id,
-        previousValue: tag,
-        newValue: null,
-        editSummary: `Deleted tag "${tag.name}"`,
-      })
-    })
-
+    await deleteTag(id)
     return NextResponse.json({ success: true })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to delete tag.'
-    return NextResponse.json({ error: message }, { status: 500 })
+    const status =
+      message === 'Tag not found.'
+        ? 404
+        : message === 'Tag id is required.'
+          ? 400
+          : message === 'Cannot delete a tag that is still associated with documents.'
+            ? 409
+            : 500
+    return NextResponse.json({ error: message }, { status })
   }
 }

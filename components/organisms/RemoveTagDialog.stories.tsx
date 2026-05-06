@@ -1,11 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { RemoveTagDialog } from '@organisms/RemoveTagDialog'
 
-const usageCountMap = {
-  singleUse: 1,
-  shared: 3,
-} as const
-
 const meta = {
   title: 'Organisms/RemoveTagDialog',
   component: RemoveTagDialog,
@@ -13,7 +8,7 @@ const meta = {
   args: {
     open: true,
     tagName: 'Cherokee Language',
-    usageCount: usageCountMap.singleUse,
+    usageCount: 1,
     onClose: () => undefined,
     onConfirm: () => Promise.resolve(),
   },
@@ -23,10 +18,10 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
-export const SingleUse: Story = {}
+export const Default: Story = {}
 
 export const SharedAcrossDocuments: Story = {
   args: {
-    usageCount: usageCountMap.shared,
+    usageCount: 3,
   },
 }

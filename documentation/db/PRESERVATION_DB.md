@@ -41,6 +41,7 @@ erDiagram
         bigint validation_timestamp
         varchar validator_name
         varchar validator_email
+        bool reprocess
         varchar current_status FK
         timestamp created_at
         timestamp updated_at
@@ -349,6 +350,7 @@ One quality/validation record per document.
 | `validation_timestamp` | `BIGINT` | Unix timestamp. |
 | `validator_name` | `VARCHAR(255)` | Validator display name. |
 | `validator_email` | `VARCHAR(255)` | Validator email. |
+| `reprocess` | `BOOLEAN` | Whether the document should be reprocessed ot not. |
 | `current_status` | `VARCHAR(36)` | FK to `state_history.id`. |
 | `created_at` | `TIMESTAMP` | Row creation time. |
 | `updated_at` | `TIMESTAMP` | Row update time. |

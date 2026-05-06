@@ -34,6 +34,7 @@ import {
 import { db } from '@lib/db'
 import { createEditHistoryEntry } from '@lib/editHistory'
 import { Prisma, PrismaClient } from '@lib/prisma/generated/client'
+import { buildNameHash, normalizeTagName } from '@lib/tag-utils'
 
 // Fields on the documents model used for orderBy/filtering
 const DOCUMENTS_ORDERABLE_FIELDS = [
@@ -213,6 +214,284 @@ export async function getCollections(): Promise<CollectionWithMeta[]> {
   }))
 }
 
+export async function createCollection(
+  input: CreateCollectionInput,
+): Promise<{ collection: CollectionWithMeta; createdTag: boolean }> {
+  const tagId = input.tagId?.trim() ?? ''
+  const tagName = normalizeTagName(input.tagName ?? '')
+  const collectionNotes = input.collectionNotes?.trim() ?? ''
+  const tagNotes = input.tagNotes?.trim() ?? ''
+
+  if (!tagId && !tagName) {
+    throw new Error('Select an existing tag or enter a new tag name.')
+  }
+
+  return db.$transaction(async (tx) => {
+    let createdTag = false
+    let tag = tagId
+      ? await tx.tags.findUnique({ where: { id: tagId } })
+      : null
+
+    if (!tagId && tagName) {
+      const nameHash = buildNameHash(tagName)
+      tag = await tx.tags.findFirst({
+        where: {
+          OR: [{ name_hash: nameHash }, { name: tagName }],
+        },
+      })
+
+      if (!tag) {
+        tag = await tx.tags.create({
+          data: {
+            id: crypto.randomUUID(),
+            name: tagName,
+            notes: tagNotes || null,
+          },
+        })
+
+        await createEditHistoryEntry(tx, {
+          entityTable: 'tags',
+          entityId: tag.id,
+          previousValue: null,
+          newValue: tag,
+          editSummary: `Created tag "${tag.name}"`,
+        })
+
+        createdTag = true
+      }
+    }
+
+    if (!tag) {
+      throw new Error('Tag not found.')
+    }
+
+    const existingCollection = await tx.collections.findUnique({
+      where: { tag_id: tag.id },
+      include: { tags: true },
+    })
+
+    if (existingCollection) {
+      throw new Error(`A collection for "${existingCollection.tags.name ?? 'this tag'}" already exists.`)
+    }
+
+    const createdCollection = await tx.collections.create({
+      data: {
+        id: crypto.randomUUID(),
+        tag_id: tag.id,
+        notes: collectionNotes || null,
+      },
+      include: { tags: true },
+    })
+
+    await createEditHistoryEntry(tx, {
+      entityTable: 'collections',
+      entityId: createdCollection.id,
+      previousValue: null,
+      newValue: createdCollection,
+      editSummary: `Created collection "${createdCollection.tags.name ?? tag.id}"`,
+    })
+
+    return {
+      collection: {
+        id: createdCollection.id,
+        tag_id: createdCollection.tag_id,
+        collection_name: createdCollection.tags.name ?? 'Untitled collection',
+        notes: createdCollection.notes ?? null,
+        created_at: createdCollection.created_at ?? null,
+        updated_at: createdCollection.updated_at ?? null,
+        document_count: 0,
+      },
+      createdTag,
+    }
+  })
+}
+
+export async function deleteCollection(collectionId: string): Promise<void> {
+  return deleteCollectionWithOptions(collectionId)
+}
+
+export interface DeleteCollectionOptions {
+  deleteTagFromSystem?: boolean
+}
+
+export async function deleteCollectionWithOptions(
+  collectionId: string,
+  options: DeleteCollectionOptions = {},
+): Promise<void> {
+  const trimmedCollectionId = collectionId.trim()
+
+  if (!trimmedCollectionId) {
+    throw new Error('Collection id is required.')
+  }
+
+  await db.$transaction(async (tx) => {
+    await deleteCollectionWithOptionsInTransaction(tx, trimmedCollectionId, options)
+  })
+}
+
+export async function deleteCollectionWithOptionsInTransaction(
+  client: Prisma.TransactionClient | PrismaClient,
+  collectionId: string,
+  options: DeleteCollectionOptions = {},
+): Promise<void> {
+  const collection = await client.collections.findUnique({
+    where: { id: collectionId },
+    include: { tags: true },
+  })
+
+  if (!collection) {
+    throw new Error('Collection not found.')
+  }
+
+  await client.collections.delete({ where: { id: collectionId } })
+
+  if (options.deleteTagFromSystem) {
+    await deleteTagAndDocumentAssociationsInTransaction(client, collection.tag_id)
+  }
+
+  await createEditHistoryEntry(client, {
+    entityTable: 'collections',
+    entityId: collection.id,
+    previousValue: collection,
+    newValue: null,
+    editSummary: `Deleted collection "${collection.tags.name ?? collection.tag_id}"`,
+  })
+}
+
+export async function deleteTag(tagId: string, deleteAssociations = false): Promise<void> {
+  const trimmedTagId = tagId.trim()
+
+  if (!trimmedTagId) {
+    throw new Error('Tag id is required.')
+  }
+
+  await db.$transaction(async (tx) => {
+    await deleteTagInTransaction(tx, trimmedTagId, deleteAssociations)
+  })
+}
+
+export async function deleteTagAndDocumentAssociations(tagId: string): Promise<void> {
+  const trimmedTagId = tagId.trim()
+
+  if (!trimmedTagId) {
+    throw new Error('Tag id is required.')
+  }
+
+  await db.$transaction(async (tx) => {
+    await deleteTagAndDocumentAssociationsInTransaction(tx, trimmedTagId)
+  })
+}
+
+export async function deleteTagInTransaction(
+  client: Prisma.TransactionClient | PrismaClient,
+  tagId: string,
+  deleteAssociations = false,
+): Promise<void> {
+  if (deleteAssociations) {
+    await deleteTagAndDocumentAssociationsInTransaction(client, tagId)
+    return
+  }
+
+  const tag = await client.tags.findUnique({
+    where: { id: tagId },
+    include: {
+      document_to_tags: {
+        include: {
+          documents: { select: { id: true, name: true } },
+          tags: true,
+        },
+      },
+      collections: true,
+    },
+  })
+
+  if (!tag) {
+    throw new Error('Tag not found.')
+  }
+
+  if (tag.document_to_tags.length > 0) {
+    throw new Error('Cannot delete a tag that is still associated with documents.')
+  }
+
+  await client.tags.delete({ where: { id: tagId } })
+
+  await createEditHistoryEntry(client, {
+    entityTable: 'tags',
+    entityId: tag.id,
+    previousValue: tag,
+    newValue: null,
+    editSummary: `Deleted tag "${tag.name}"`,
+  })
+}
+
+export async function deleteTagAndDocumentAssociationsInTransaction(
+  client: Prisma.TransactionClient | PrismaClient,
+  tagId: string,
+): Promise<void> {
+  const tag = await client.tags.findUnique({
+    where: { id: tagId },
+    include: {
+      document_to_tags: {
+        include: {
+          documents: { select: { id: true, name: true } },
+          tags: true,
+        },
+      },
+      collections: {
+        include: {
+          tags: true,
+        },
+      },
+    },
+  })
+
+  if (!tag) {
+    throw new Error('Tag not found.')
+  }
+
+  await Promise.all(
+    tag.document_to_tags.map(async (association) => {
+      await client.document_to_tags.delete({ where: { id: association.id } })
+      await createEditHistoryEntry(client, {
+        entityTable: 'document_to_tags',
+        entityId: association.id,
+        previousValue: {
+          id: association.id,
+          document_id: association.document_id,
+          tag_id: association.tag_id,
+          notes: association.notes,
+          created_at: association.created_at,
+          tags: association.tags,
+          documents: association.documents,
+        },
+        newValue: null,
+        editSummary: `Removed tag "${tag.name}" from document "${association.documents?.name ?? association.document_id}"`,
+      })
+    }),
+  )
+
+  if (tag.collections) {
+    await client.collections.delete({ where: { id: tag.collections.id } })
+    await createEditHistoryEntry(client, {
+      entityTable: 'collections',
+      entityId: tag.collections.id,
+      previousValue: tag.collections,
+      newValue: null,
+      editSummary: `Deleted collection "${tag.collections.tags.name ?? tag.name ?? tag.collections.tag_id}"`,
+    })
+  }
+
+  await client.tags.delete({ where: { id: tagId } })
+
+  await createEditHistoryEntry(client, {
+    entityTable: 'tags',
+    entityId: tag.id,
+    previousValue: tag,
+    newValue: null,
+    editSummary: `Deleted tag "${tag.name}"`,
+  })
+}
+
 /**
  * Returns all distinct documents associated with a collection through its tag.
  */
@@ -232,6 +511,13 @@ interface CollectionDocumentQueryParams {
 interface CollectionDocumentQueryResult {
   documents: Document[]
   total: number
+}
+
+export interface CreateCollectionInput {
+  tagId?: string
+  tagName?: string
+  collectionNotes?: string
+  tagNotes?: string
 }
 
 const COLLECTION_DOCUMENT_SORT_FIELDS = ['name', 'id_legacy', 'filesize', 'created_at'] as const

@@ -1,0 +1,118 @@
+name: Release
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: write   # push tag
+
+jobs:
+  publish:
+    name: Create Release
+    runs-on: ubuntu-latest
+    environment:
+      name: main
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Read version
+        id: version
+        run: |
+          MAJOR_MINOR=$(jq -r .version package.json | grep -oE "^[0-9]+\.[0-9]+")
+          ESCAPED=$(echo "$MAJOR_MINOR" | sed 's/\./\\./g')
+          LATEST_PATCH_TAG=$(git tag --sort=-v:refname | grep -E "^v${ESCAPED}\.[0-9]+$" | head -n 1 || true)
+
+          if [ -z "$LATEST_PATCH_TAG" ]; then
+            PATCH=1
+          else
+            PATCH=$(echo "$LATEST_PATCH_TAG" | sed "s/^${ESCAPED}\\.//")
+            PATCH=$((PATCH + 1))
+          fi
+
+          VERSION="${MAJOR_MINOR}.${PATCH}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "tag=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Publishing version: ${VERSION}"
+        shell: bash
+
+      - name: Check tag and changes
+        id: check_tag
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+
+          if git show-ref --tags --verify --quiet "refs/tags/${TAG}"; then
+            echo "Tag ${TAG} already exists — version has not been bumped."
+            echo "skip=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Find the most recent tag to diff against
+          LATEST_TAG=$(git tag --sort=-v:refname | grep -E "^[0-9]+\.[0-9]+\.[0-9]+$" | head -n 1 || true)
+
+          if [ -n "$LATEST_TAG" ]; then
+            CHANGES=$(git diff --name-only "$LATEST_TAG"..HEAD -- \
+              app/ components/ hooks/ lib/ public/ styles/ tests/ types/ .github/workflows/ auth.ts next.config.ts package.json package-lock.json postcss.config.js prisma.config.js proxy.ts tailwind.config.ts ':(glob)tsconfig.*')
+
+            if [ -z "$CHANGES" ]; then
+              echo "No package-relevant changes since ${LATEST_TAG}, skipping."
+              echo "skip=true" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+
+            echo "::group::Changed files since ${LATEST_TAG}"
+            echo "$CHANGES"
+            echo "::endgroup::"
+          fi
+
+          echo "skip=false" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Push tag
+        if: steps.check_tag.outputs.skip != 'true'
+        id: push_tag
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          git tag "${TAG}"
+          git push origin "${TAG}"
+          echo "new_tag=${TAG}" >> $GITHUB_OUTPUT
+
+          previous_tag=$(git tag --sort=-v:refname | grep -E "^[0-9]+\.[0-9]+\.[0-9]+$" | sed -n '2p')
+          echo "previous_tag=${previous_tag}" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Create changelog
+        if: steps.check_tag.outputs.skip != 'true'
+        id: changelog
+        uses: requarks/changelog-action@v1
+        with:
+          excludeTypes: ''
+          fromTag: ${{ steps.push_tag.outputs.previous_tag != '' && steps.push_tag.outputs.new_tag || '' }}
+          includeInvalidCommits: true
+          tag: ${{ steps.push_tag.outputs.previous_tag == '' && steps.push_tag.outputs.new_tag || '' }}
+          toTag: ${{ steps.push_tag.outputs.previous_tag != '' && steps.push_tag.outputs.previous_tag || '' }}
+          token: ${{ github.token }}
+          writeToFile: false
+
+      - name: Create release
+        if: steps.check_tag.outputs.skip != 'true'
+        uses: ncipollo/release-action@v1
+        with:
+          body: ${{ steps.changelog.outputs.changes }}
+          makeLatest: true
+          name: 'v${{ steps.version.outputs.version }}'
+          prerelease: false
+          skipIfReleaseExists: true
+          tag: ${{ steps.push_tag.outputs.new_tag }}
+
+      - name: Clean up on failure
+        if: ${{ failure() && steps.push_tag.outputs.new_tag }}
+        run: |
+          git push --delete origin "${{ steps.push_tag.outputs.new_tag }}"
+        shell: bash
