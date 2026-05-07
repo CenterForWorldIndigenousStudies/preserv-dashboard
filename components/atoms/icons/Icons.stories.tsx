@@ -14,7 +14,7 @@ const meta = {
       options: [12, 16, 20, 24, 32],
       description: 'Icon size in pixels',
     },
-    className: { 
+    className: {
       control: 'text',
       description: 'Additional CSS classes for custom styling',
     },

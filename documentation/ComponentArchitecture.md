@@ -15,6 +15,58 @@ Atomic Design is a way to organize UI components by complexity and responsibilit
 Used well, Atomic Design keeps small components easy to reuse, medium components easy to reason
 about, and large components from turning into monoliths.
 
+## Assistant Decision Rules
+
+AI assistants should treat Atomic Design as a design and reuse discipline, not
+just a folder structure.
+
+Before creating a new component:
+
+1. Check `components/atoms/`, `components/molecules/`, and
+   `components/organisms/` for a reuse candidate.
+2. Prefer extending or composing an existing component before creating a new
+   one.
+3. Choose the smallest layer that truthfully matches the component's
+   responsibility.
+4. Use a generic name unless the component is truly tied to one workflow.
+5. Keep app styling in shared primitives and the MUI theme instead of
+   rebuilding it in page-specific JSX.
+
+This is the preferred decision rubric:
+
+- `atom`: one primitive or one thin app-styled wrapper such as `Button`,
+  `Badge`, or `StateBadge`
+- `molecule`: a small composed unit that can be reused across multiple views
+- `organism`: a feature-level section or workflow container with meaningful
+  state, orchestration, or domain context
+
+If a proposed component name contains a workflow, screen, or task name, stop
+and check whether the underlying UI can be generalized first.
+
+## Reuse Before Create
+
+The repo should prefer generic, app-styled primitives over task-specific
+one-offs.
+
+Good pattern:
+
+- `Button` is generalized and reusable, but still carries the application's
+  styling and behavior conventions
+
+Preferred order of operations:
+
+1. reuse an existing atom
+2. compose atoms into a reusable molecule
+3. create a workflow-specific organism only when the UI is genuinely
+   domain-specific
+
+Avoid these common mistakes:
+
+- creating workflow-specific wrappers when a generic component would work
+- placing composed or stateful workflow components in `atoms/`
+- rebuilding existing primitives instead of reusing them
+- coupling styling too tightly to one page or workflow
+
 ## Current Structure
 
 | Directory | Intended Role | Current Contents |

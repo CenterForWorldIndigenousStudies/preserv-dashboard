@@ -1,172 +1,142 @@
-# CWIS Preservation Dashboard
+# preserv-dashboard
 
-Next.js dashboard for browsing and reviewing preservation data written by `preserv-data-combiner`.
+## Overview
 
-The app uses:
+`preserv-dashboard` is the CWIS Preservation Next.js application for browsing,
+reviewing, and managing preservation data stored in the shared MariaDB
+database.
 
-- Next.js App Router
-- Prisma with the MariaDB adapter
-- Auth.js with Google OAuth
-- Storybook for component development
+At a high level it:
 
-## Documentation
+- provides document browsing, detail, and review workflows
+- authenticates users with Auth.js and Google OAuth
+- uses MUI-based components and Storybook for UI development
+- connects to the shared preservation database through Prisma
+- triggers pipeline work such as document ingest and shows live ingest status
 
-- [documentation/db/CONNECTING_TO_DB.md](./documentation/db/CONNECTING_TO_DB.md)
-- [documentation/db/PRESERVATION_DB.md](./documentation/db/PRESERVATION_DB.md)
-- [documentation/testing/TESTING.md](./documentation/testing/TESTING.md)
-- [documentation/DEPLOYING_STORYBOOK.md](./documentation/DEPLOYING_STORYBOOK.md)
+## Prerequisites
 
-## Pages
+Tools an engineer needs before working with this project:
 
-- `/` - overview dashboard
-- `/documents` - paginated document list
-- `/documents/[id]` - document detail, metadata, and history
-- `/reviews` - review queue
-- `/failures` - failure-oriented views
+- [Node.js](https://nodejs.org/) via `asdf` (see version in [`.tool-versions`](.tool-versions))
+- `npm`
+- MariaDB access for runtime and integration tests (see <https://github.com/jonryser/mariadb_docker>)
+- Google OAuth credentials for Auth.js
 
-## Local Development
+If you want the ingest screen working locally as well, you also need:
 
-Install dependencies:
+- access to a running [`preserv-data-ingester`](https://github.com/CenterForWorldIndigenousStudies/preserv-data-ingester)
+- shared trigger and callback tokens
+- Google Drive service account credentials for the folder browser
 
-```bash
-npm install
-```
+## Setup
 
-Start the app:
+1. Install the tool versions defined in `.tool-versions`.
+
+   ```bash
+   asdf install
+   ```
+
+2. Install dependencies.
+
+   ```bash
+   npm install
+   ```
+
+3. Create a local environment file.
+
+   ```bash
+   cp .env.local.example .env
+   ```
+
+4. Update `.env` with your database settings, Auth.js secrets, and any local
+   pipeline integration settings you need.
+
+See [documentation/ENV_VARS.md](documentation/ENV_VARS.md) for the full
+environment variable reference.
+
+## Running
+
+Start the local development environment:
 
 ```bash
 npm run dev
 ```
 
-Open <http://localhost:3000>.
+This starts:
 
-Notes:
+- the Next.js app on `http://localhost:3000`
+- the Storybook dev server on `http://localhost:6006`
 
-- `npm run dev` runs the Next.js app and the Storybook dev server together.
-- The app connects directly to MariaDB from the server runtime through Prisma.
-
-## Environment Variables
-
-For dashboard-specific database connection guidance, including remote DB caveats, pool tuning, and troubleshooting, see [documentation/db/CONNECTING_TO_DB.md](./documentation/db/CONNECTING_TO_DB.md).
-
-Database connection:
-
-```env
-DB_HOST=localhost
-DB_PORT=3306
-DB_NAME=cwis_preservation
-DB_USER=mariadb
-DB_PASS=docker
-```
-
-Auth.js / Google OAuth:
-
-```env
-AUTH_GOOGLE_ID=your-client-id
-AUTH_GOOGLE_SECRET=your-client-secret
-AUTH_URL=http://localhost:3000
-AUTH_SECRET=replace-this-with-a-long-random-secret
-```
-
-Storybook integration:
-
-```env
-STORYBOOK_URL=https://your-storybook-host.example.com
-```
-
-`STORYBOOK_URL` is required. The dashboard proxies Storybook through
-`/developers/storybook/*` after checking the user's session.
-
-For local development, point `STORYBOOK_URL` at the local Storybook server:
-
-```env
-STORYBOOK_URL=http://127.0.0.1:6006
-```
-
-In Vercel, set `STORYBOOK_URL` per environment so the dashboard points at the
-matching Storybook deployment:
-
-- Production: `https://storybook.your-domain.example`
-- Preview: the Storybook preview URL or branch-specific preview domain for the
-  same branch/environment
-
-For deployed environments, use the host, schema, user, and password for the target MariaDB instance.
-
-## Database
-
-The dashboard reads from MariaDB using Prisma and the generated client in [lib/prisma/generated](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/lib/prisma/generated).
-
-Useful Prisma commands:
+If you only want the Next.js app:
 
 ```bash
-npm run db:prisma:generate
-npm run db:prisma:pull
-npm run db:prisma:studio
+npm run dev:next
 ```
 
-Current Prisma schema:
+## Testing
 
-- [lib/prisma/schema.prisma](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/lib/prisma/schema.prisma)
+Run the full suite:
 
-Database client setup:
+```bash
+npm run test
+```
 
-- [lib/db.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/lib/db.ts)
+Run unit tests only:
 
-## Authentication
+```bash
+npm run test:unit
+```
 
-The dashboard uses Auth.js (`next-auth` v5 beta) with Google OAuth.
+Run integration tests only:
 
-Google OAuth setup:
+```bash
+npm run test:integration
+```
 
-1. Create an OAuth 2.0 Client ID in Google Cloud Console.
-2. Add `http://localhost:3000/api/auth/callback/google` for local development.
-3. Add the deployed callback URL for the active environment.
-4. Set `AUTH_SECRET` to a strong random value.
+Run Storybook tests only:
 
-## Scripts
+```bash
+npm run test:storybook
+```
 
-- `npm run dev` - start the Next.js app and Storybook together for local development
-- `npm run dev:next` - start only the Next.js development server
-- `npm run build` - generate the Prisma client and build the app
-- `npm run start` - start the production server
-- `npm run storybook` - run Storybook locally
-- `npm run storybook:build` - build Storybook as a standalone static site
-- `npm run storybook:clean` - remove generated Storybook output
-- `npm run lint` - run project linting and Markdown linting
-- `npm run lint:project` - run ESLint
-- `npm run lint:markdown` - lint Markdown files
-- `npm run test` - run unit tests and DB-backed integration tests
-- `npm run test:all` - alias for `npm run test`
-- `npm run test:unit` - run unit tests
-- `npm run test:integration` - run integration tests
-- `npm run typecheck` - run TypeScript without emitting files
+Integration tests require a reachable MariaDB test database.
 
-## Code Quality
+## Linting
 
-GitHub Actions currently runs:
+Run all linting checks:
 
-- [code-quality.yml](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/.github/workflows/code-quality.yml)
+```bash
+npm run lint
+```
 
-That workflow:
+Run TypeScript checks:
 
-- runs on pull requests to `main`
-- installs dependencies with `npm ci`
-- builds the app when relevant files change
-- lints project files and Markdown when relevant files change
-- runs unit tests when relevant files change
+```bash
+npm run typecheck
+```
 
-## Deployment
+Run project linting only:
 
-This repository is currently documented for the deployed app/runtime model rather than the earlier Docker/Caddy VPS experiment.
+```bash
+npm run lint:project
+```
 
-Operationally:
+Run Markdown linting only:
 
-- the dashboard is a standard Next.js app
-- it reads directly from MariaDB
-- deployed environments should provide the same `DB_*` and `AUTH_*` variables described above
-- the dashboard proxies a separately hosted Storybook through `/developers/storybook/*`
-- `STORYBOOK_URL` is required in every environment
-- Vercel project settings now own build/install/output configuration; the repo
-  root intentionally does not carry a shared `vercel.json`
+```bash
+npm run lint:markdown
+```
 
-If deployment architecture changes again, update this README to match the active production path rather than keeping multiple stale options here.
+## Documentation
+
+Additional project documentation:
+
+- [Environment variables](documentation/ENV_VARS.md)
+- [Pipeline trigger and callback architecture](documentation/PIPELINE_TRIGGER_CALLBACK_ARCHITECTURE.md)
+- [Component architecture](documentation/ComponentArchitecture.md)
+- [Storybook deployment](documentation/DEPLOYING_STORYBOOK.md)
+- [Database connection guidance](documentation/db/CONNECTING_TO_DB.md)
+- [Database reference](documentation/db/PRESERVATION_DB.md)
+- [Testing overview](documentation/testing/TESTING.md)
+- [AI assistant guidance](AGENTS.md)

@@ -1,228 +1,136 @@
-# Preservation Dashboard
+# Project
 
-## Project Overview
+`preserv-dashboard` is the CWIS Preservation Next.js application for browsing,
+reviewing, and managing preservation data in the shared MariaDB database.
 
-This is a Next.js dashboard application for the CWIS Digital Preservation system. It provides a web interface for managing and monitoring preservation workflows.
+At a high level it:
 
-## Tech Stack
+- renders authenticated document, review, and failure-management workflows
+- uses Prisma against the shared `preserv-db` schema
+- uses MUI-based components with Atomic Design organization
+- proxies authenticated Storybook access
+- integrates with external pipeline apps and can surface live status updates
 
-- **Framework:** Next.js 16 (App Router - see `package.json` for version)
-- **Language:** TypeScript (see `package.json` for version)
-- **Styling:** MUI theme + semantic CSS classes (see Styling section below)
-- **Auth:** Auth.js (`next-auth` v5) with Google OAuth (see `.env.local.example`)
-- **Runtime:** Node.js (see `.tool-versions` for version)
-- **Icons:** Lucide React
-- **Markdown:** react-markdown with remark-gfm
-- **Diagrams:** Mermaid (rendered via mermaid library)
+## Read First
 
-## Styling Architecture
+Use repo documentation for operational detail instead of expanding this file:
 
-### Overview
+- overview and setup: [README.md](README.md)
+- environment variables: [documentation/ENV_VARS.md](documentation/ENV_VARS.md)
+- component architecture: [documentation/ComponentArchitecture.md](documentation/ComponentArchitecture.md)
+- semantic styling rules: [documentation/styles/SEMANTIC_CLASSES.md](documentation/styles/SEMANTIC_CLASSES.md)
+- pipeline architecture: [documentation/PIPELINE_TRIGGER_CALLBACK_ARCHITECTURE.md](documentation/PIPELINE_TRIGGER_CALLBACK_ARCHITECTURE.md)
+- current ingest integration: [documentation/PIPELINE_INGEST_INTEGRATION.md](documentation/PIPELINE_INGEST_INTEGRATION.md)
+- database connection guidance: [documentation/db/CONNECTING_TO_DB.md](documentation/db/CONNECTING_TO_DB.md)
+- database reference: [documentation/db/PRESERVATION_DB.md](documentation/db/PRESERVATION_DB.md)
+- testing overview: [documentation/testing/TESTING.md](documentation/testing/TESTING.md)
+- Storybook deployment: [documentation/DEPLOYING_STORYBOOK.md](documentation/DEPLOYING_STORYBOOK.md)
 
-The dashboard uses a two-layer styling system:
+## Where To Start In Code
 
-1. **MUI Theme** (`theme.ts`) - All MUI component base styles (Button, Paper, Card, Table, etc.)
-2. **Semantic CSS Classes** - Page structure, layout, and context-specific styling
+Primary entrypoints:
 
-### Why
+- app routes and pages: `app/`
+- authenticated API routes: `app/api/`
+- auth configuration: `auth.ts`
+- auth proxy boundary: `proxy.ts`
+- database queries and helpers: `lib/queries.ts`, `lib/`
 
-- Design tokens defined once in the theme apply globally
-- Semantic class names describe element purpose, not appearance
-- All styling is cacheable CSS, not inline or scattered
-- Change a token in one place (theme or CSS), it updates everywhere
+Important UI areas:
 
-### MUI Theme
+- atoms: `components/atoms/`
+- molecules: `components/molecules/`
+- organisms: `components/organisms/`
 
-The MUI theme (`theme.ts`) defines all component-level styles. When modifying MUI components (Button, TextField, Paper, etc.), edit the theme - not the JSX. The theme's `components` section is the single source of truth for MUI component styling.
+Important pipeline integration areas:
 
-### Semantic Classes
+- shared route area: `app/api/`
+- shared service helpers: `lib/`
+- current ingest UI: `app/ingest-documents/page.tsx`
+- current ingest API routes: `app/api/ingest/`
 
-All HTML elements that need styling receive a semantic class name. Class names follow the pattern `<scope>-<specific>`, general to specific.
+## Execution Model
 
-Examples: `btn-submit`, `h-1`, `panel-detail`, `form-login`, `tbl-data`, `fld-label`
+The app is a Next.js App Router project.
 
-**Read the full convention at:** `documentation/styles/SEMANTIC_CLASSES.md`
+Most work falls into one of these paths:
 
-Key rules:
+- server-rendered pages under `app/`
+- authenticated route handlers under `app/api/`
+- shared database reads and writes through Prisma-backed helpers in `lib/`
+- UI composition through Atomic Design components
 
-- Never style element selectors or IDs directly
-- Never use inline styles or `sx` on component usage
-- Never use presentational class names (`big`, `dark`, `red`)
-- MUI component classes go in JSX `className`; semantic classes do structural/layout styling
+For pipeline integrations, the common pattern is:
 
-### File Organization
+- the dashboard triggers pipeline apps server-to-server
+- pipeline apps write execution state into shared persistence
+- the dashboard streams live status to the browser with SSE
+- callback routes that serve pipeline apps stay outside the Auth.js proxy and use bearer-token auth instead
 
-- MUI theme: `theme.ts` (or `lib/theme.ts`)
-- Semantic CSS: `styles/` directory with CSS/SCSS files per page or component area
-- CSS custom properties for design tokens (colors, spacing, radii) - defined once, referenced everywhere
+See the pipeline docs for the generic architecture and the current ingest implementation.
 
-### Card Style
+## UI And Styling Notes
 
-Cards use the MUI Paper component styled via the theme. Do not add Tailwind border/shadow utilities to cards. If a card variant is needed, add it to the theme.
+- keep components in the correct Atomic Design layer
+- prefer existing atoms and molecules before creating new UI primitives
+- use MUI components and theme-driven styling
+- use semantic class names for structural/layout styling
+- do not introduce ad hoc presentational class names or inline styling patterns
 
-## Component Architecture (Atomic Design)
+If you need to change structure or styling rules, read the component and semantic styling docs first.
 
-All React components follow Atomic Design. When adding or modifying components, place them in the correct layer:
+## Component Creation Checklist
 
-```layout
-components/
-  atoms/           # Indivisible UI primitives
-  molecules/       # Composed atoms into functional units
-  organisms/       # Complex composed components (page sections)
-  LayoutBody.tsx   # Layout-level (template), stays at root
-```
+Before adding a new component:
 
-### Layers
+- check `components/atoms/`, `components/molecules/`, and `components/organisms/` for an existing reuse candidate
+- prefer extending or composing an existing component before creating a new one
+- choose the Atomic Design layer intentionally instead of defaulting to the nearest folder
+- use a generic name unless the component is truly tied to one workflow
+- keep app styling in shared primitives and the MUI theme rather than rebuilding it in task-specific JSX
 
-**Atoms** - Smallest, reusable primitives. No internal state. Examples:
-See [components/atoms](./components/atoms/)
+Use this rubric:
 
-**Molecules** - Composed from atoms. May have minimal state. Examples:
-See [components/molecules](./components/molecules/)
+- `atom`: one primitive or one thin app-styled wrapper such as `Button` or `Badge`
+- `molecule`: a small composed unit that can be reused across multiple views
+- `organism`: a feature-level section or workflow container with real orchestration or domain-specific state
 
-**Organisms** - Complex components made of atoms and molecules. Own significant logic. Examples:
-See [components/organisms](./components/organisms/)
+Avoid these common mistakes:
 
-### Adding Components
+- creating workflow-specific wrappers when a generic component would work
+- placing composed or stateful workflow components in `atoms/`
+- reimplementing an existing atom such as `Button`, `Badge`, dialog wrappers, or status display patterns
+- creating new styling conventions instead of using the MUI theme and semantic classes
 
-1. Determine the layer based on complexity and reusability
-2. Create the file in the appropriate `atoms/`, `molecules/`, or `organisms/` folder
-3. Export as named export: `export function MyComponent() ...`
-4. Import using `@atoms/MyAtom`, `@molecules/MyMolecule`, `@organisms/MyOrganism`
-5. Do NOT put new components at the `components/` root unless they are layout-level
+## Testing Notes
 
-### Component Rules
+Follow the testing docs for scope and command choice.
 
-- **Styling:** Components receive their base styles from the MUI theme. Do not use Tailwind classes or `sx` props for styling in JSX. Use semantic class names for structural/layout concerns.
-- **Atoms:** No side effects, no API calls, no hooks beyond useId/useCallback
-- **Molecules:** May use hooks, local state, and data-fetching for simple cases
-- **Organisms:** Own their data fetching and complex state; pages import organisms
-- **Pages:** Compose organisms into full views; keep minimal logic
+Project-specific layout notes:
 
-## Project Structure
-
-```layout
-app/                        # Next.js App Router pages and layouts
-  api/                      # API route handlers
-  auth/                     # Auth pages and route handlers
-  db/                       # Database schema documentation (Mermaid diagrams)
-  documents/[id]/            # Document detail page
-  failures/                 # Pipeline failures view
-  reviews/                  # Document review queue
-components/
-  atoms/                    # Atomic Design atoms
-  molecules/                # Atomic Design molecules
-  organisms/                # Atomic Design organisms
-lib/
-  format.ts                 # formatBytes, formatDateTime helpers
-  queries.ts                # Database query functions
-  types.ts                  # TypeScript type definitions
-proxy.ts                   # Auth proxy (redirects unauthenticated requests)
-documentation/db/
-  PRESERVATION_DB.md        # Mermaid ER diagram source or truth for /db
-```
-
-## Key Conventions
-
-- Unauthenticated requests redirect to `/auth/signin`
-- Use Auth.js v5 with Google OAuth for authentication
-- Auth config lives in `auth.ts`; route handlers re-export from `app/api/auth/[...nextauth]/route.ts`
-- Route protection lives in `proxy.ts`, not `middleware.ts`
-- All API routes and pages behind auth via proxy
-- Component props always use explicit TypeScript interfaces
-- Prefer `export function` named exports over `export default` for components
-- Use `next/link` for internal navigation, never raw `<a>` tags for app routes
-
-## Component Library (Storybook)
-
-Storybook provides an interactive component library for development and documentation. The dashboard exposes it through `/developers/storybook/*` after auth using `STORYBOOK_URL`.
-
-### Running Storybook
-
-```bash
-npm run dev               # Next.js app on :3000 plus Storybook on :6006
-npm run dev:next          # Next.js only
-npm run storybook         # Storybook dev server on http://localhost:6006
-npm run storybook:build   # Standalone static Storybook build → storybook-static/
-npm run storybook:preview # Preview the static build on port 6006
-```
-
-### Dev Workflow
-
-Set `STORYBOOK_URL=http://127.0.0.1:6006` in local development. `npm run dev` starts both the Next.js app and the Storybook dev server so `/component-library` can load Storybook through the authenticated proxy route.
-
-### Story Files
-
-Stories live alongside their components using the `*.stories.tsx` convention:
-
-```layout
-components/
-  atoms/Badge.stories.tsx
-  molecules/StatCard.stories.tsx
-  organisms/PageHeader.stories.tsx
-  organisms/NoDataState.stories.tsx
-```
-
-### Component Library Page
-
-The `/developers/component-library` page (behind Google OAuth) is the entry point and developer hub. It loads `/developers/storybook/index.html`, which the dashboard proxies to the configured Storybook host after auth.
-
-### Architecture
-
-- `STORYBOOK_URL` is required in local, preview, and production environments
-- The authenticated proxy route is `app/developers/storybook/[[...path]]/route.ts`
-- Standalone Storybook builds are emitted to `storybook-static/`
-- `staticDirs: ['../public']` in `.storybook/main.ts` ensures Storybook can access public assets
-
-## Environment Notes
-
-- Database connection guidance for this app lives in `documentation/db/CONNECTING_TO_DB.md`.
-- Use that document for dashboard-specific DB setup, remote DB caveats, pool tuning, and troubleshooting.
-- Do not infer dashboard connection behavior from `preserv-data-combiner`; the dashboard uses Next.js + Prisma + `@prisma/adapter-mariadb`, which behaves differently from CLI and Python tooling.
-- Auth.js uses v5-style env names:
-  - `AUTH_GOOGLE_ID`
-  - `AUTH_GOOGLE_SECRET`
-  - `AUTH_URL`
-  - `AUTH_SECRET`
-- Storybook deployment guidance lives in `documentation/DEPLOYING_STORYBOOK.md`.
-- Set `STORYBOOK_URL` for local, preview, and production environments.
-- Local development DB uses the `cwis_preservation` schema name
-- Copy `.env.local.example` to `.env.local` and keep local/dev values separate from DreamHost production values
-- Google OAuth redirect URIs must exactly match the domains in use:
-  - local: `http://localhost:3000/api/auth/callback/google`
-  - production: `https://<your-domain>/api/auth/callback/google`
-- Vercel preview deployments will not support Google OAuth unless their exact callback URL is registered or a redirect-proxy strategy is added
-
-## Deployment
-
-This project uses Vercel's native GitHub integration for automatic deployments:
-
-- `develop` branch → Vercel staging preview
-- `main` branch → Vercel production
-
-No GitHub Actions deploy workflows needed - Vercel handles all deployments automatically.
-
-## GitHub Actions
-
-Only `code-quality.yml` runs on PRs to `develop`. It checks:
-
-- Build succeeds
-- No lint errors in changed files
-
-## Local Development
-
-```bash
-npm install
-npm run dev    # Start Next.js on localhost:3000 and Storybook on localhost:6006
-npm run typecheck
-npm run lint:project
-npm run build  # Production build
-```
-
-Copy `.env.local.example` to `.env.local` and fill in credentials from KeePass (`Google` group for OAuth, `Vercel` group if needed).
+- `tests/unit/` is the fast Vitest suite
+- `tests/integration/` covers integration behavior
+- Storybook-specific tests run through the Storybook Vitest project
 
 ## Validation
 
-- Prefer validating changes with `npm run typecheck`
-- Run `npm run lint:project` for TS/React linting and `npm run lint:markdown` for docs changes
-- Run `npm run build` before finishing auth, routing, config, or deployment-related changes
+Prefer repo scripts when possible:
+
+- `npm run typecheck`
+- `npm run lint`
+- `npm run lint:project`
+- `npm run lint:markdown`
+- `npm run test`
+- `npm run test:unit`
+- `npm run test:integration`
+- `npm run test:storybook`
+- `npm run build`
+
+## Guardrails
+
+- treat the shared preservation database schema as external source of truth; do not invent local schema variants
+- keep auth/session concerns in Auth.js and proxy configuration, not scattered per-page
+- keep pipeline callback routes outside the Auth.js proxy when they are meant for server-to-server access
+- prefer extending existing query helpers, components, and documentation over creating parallel patterns
+- default to general-purpose reusable components before introducing task-specific ones
+- if a useful assistant-facing note has no documentation yet, keep it brief and prefer creating the real documentation afterward

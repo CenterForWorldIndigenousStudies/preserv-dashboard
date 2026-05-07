@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { LayoutDashboard, ClipboardList, Database, BookOpen, X } from 'lucide-react'
+import { LayoutDashboard, ClipboardList, Database, BookOpen, FolderInput, X } from 'lucide-react'
 import AuthStatus from '@molecules/AuthStatus'
 
 export type SidebarVariant = 'desktop' | 'mobile'
@@ -19,6 +19,7 @@ const navItems = [
   { href: '/review-queue', label: 'Review Queue', icon: ClipboardList },
   { href: '/ready-for-library', label: 'Ready for Library', icon: BookOpen },
   { href: '/batch-summary', label: 'Batch Summary', icon: Database },
+  { href: '/ingest-documents', label: 'Ingest Documents', icon: FolderInput },
   { href: '/collections', label: 'Collections', icon: BookOpen },
   { href: '/db', label: 'DB Schema', icon: Database },
   { href: '/component-library', label: 'Components', icon: BookOpen },
