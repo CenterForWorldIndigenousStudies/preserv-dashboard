@@ -1,15 +1,15 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { Badge, variantMap } from '@atoms/Badge'
+import { Badge, variantMap } from '@atoms/Badges/Badge'
 
 const meta = {
-  title: 'Atoms/Badge',
+  title: 'Atoms/Badges/Badge',
   component: Badge,
   tags: ['autodocs'],
   argTypes: {
     variant: {
       control: 'select',
       options: Object.keys(variantMap),
-      description: 'Color variant of the badge',
+      description: 'Semantic badge variant',
     },
     children: {
       control: 'text',
@@ -21,7 +21,7 @@ const meta = {
     },
   },
   args: {
-    variant: 'sky',
+    variant: 'info',
     children: 'In Review',
   },
   parameters: {

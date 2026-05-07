@@ -7,7 +7,7 @@ import {
   type MRT_ColumnDef,
 } from 'material-react-table'
 import { DateAtom } from '@atoms/Date'
-import { StateBadge } from '@atoms/StateBadge'
+import { StateBadge } from '@atoms/Badges/StateBadge'
 import type { ReviewItem } from '@lib/types'
 
 const mrtTableHeadCellSx = {
