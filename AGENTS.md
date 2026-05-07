@@ -3,6 +3,8 @@
 `preserv-dashboard` is the CWIS Preservation Next.js application for browsing,
 reviewing, and managing preservation data in the shared MariaDB database.
 
+ALL CODE MUST BE IN ENGLISH
+
 At a high level it:
 
 - renders authenticated document, review, and failure-management workflows
