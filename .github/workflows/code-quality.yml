@@ -99,6 +99,7 @@ jobs:
       - name: Install dependencies
         if: steps.check-branch.outputs.skip != 'true' && (steps.check-build.outputs.run == 'true' || steps.lint-docs.outputs.run == 'true' || steps.lint-project.outputs.run == 'true' || steps.run-tests.outputs.run == 'true')
         run: npm ci
+        shell: bash
 
       - name: Build
         if: steps.check-build.outputs.run == 'true'

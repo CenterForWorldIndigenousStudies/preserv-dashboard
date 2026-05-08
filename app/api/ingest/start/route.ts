@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'node:crypto'
 
+import { BASE_URL } from '@constants/server'
 import { auth } from '@root/auth'
 import { logEvent } from '@lib/observability'
 
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'At least one source folder must be selected.' }, { status: 400 })
   }
 
-  const callbackUrl = new URL('/api/ingest/callback', request.nextUrl.origin).toString()
+  const callbackUrl = new URL('/api/ingest/callback', BASE_URL).toString()
   const requestId = randomUUID()
   const collection = collectionName
     ? {
