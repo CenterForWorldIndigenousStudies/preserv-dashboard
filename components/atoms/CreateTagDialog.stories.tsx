@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { CreateTagDialog } from '@atoms/CreateTagDialog'
+import {TAG_SEARCH_PATH } from '@constants/paths'
 
 const mockSuggestions = [
   {
@@ -33,7 +34,7 @@ const meta = {
     globalThis.fetch = async (input, init) => {
       const requestUrl = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
 
-      if (requestUrl.startsWith('/api/tags/search')) {
+      if (requestUrl.startsWith(TAG_SEARCH_PATH)) {
         return new Response(JSON.stringify({ tags: mockSuggestions }), {
           status: 200,
           headers: {

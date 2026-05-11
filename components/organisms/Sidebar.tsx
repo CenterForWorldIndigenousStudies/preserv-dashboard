@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { LayoutDashboard, ClipboardList, Database, BookOpen, FolderInput, X } from 'lucide-react'
+import { BATCH_SUMMARY_PATH, COLLECTIONS_PATH, COMPONENT_LIBRARY_PATH, DB_SCHEMA_PATH, PROCESS_DOCUMENTS_PATH, READY_FOR_LIBRARY_PATH } from '@constants/paths'
 import AuthStatus from '@molecules/AuthStatus'
 
 export type SidebarVariant = 'desktop' | 'mobile'
@@ -17,12 +18,12 @@ interface SidebarProps {
 const navItems = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
   { href: '/review-queue', label: 'Review Queue', icon: ClipboardList },
-  { href: '/ready-for-library', label: 'Ready for Library', icon: BookOpen },
-  { href: '/batch-summary', label: 'Batch Summary', icon: Database },
-  { href: '/ingest-documents', label: 'Ingest Documents', icon: FolderInput },
-  { href: '/collections', label: 'Collections', icon: BookOpen },
-  { href: '/db', label: 'DB Schema', icon: Database },
-  { href: '/component-library', label: 'Components', icon: BookOpen },
+  { href: READY_FOR_LIBRARY_PATH, label: 'Ready for Library', icon: BookOpen },
+  { href: BATCH_SUMMARY_PATH, label: 'Batch Summary', icon: Database },
+  { href: PROCESS_DOCUMENTS_PATH, label: 'Process Documents', icon: FolderInput },
+  { href: COLLECTIONS_PATH, label: 'Collections', icon: BookOpen },
+  { href: DB_SCHEMA_PATH, label: 'DB Schema', icon: Database },
+  { href: COMPONENT_LIBRARY_PATH, label: 'Components', icon: BookOpen },
 ]
 
 export default function Sidebar({ variant, isOpen, onClose }: SidebarProps) {

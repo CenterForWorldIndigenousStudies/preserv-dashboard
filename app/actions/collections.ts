@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { COLLECTIONS_PATH } from '@constants/paths'
 import {
   addDocumentsToCollection,
   createCollection,
@@ -35,7 +36,7 @@ export async function getDocumentsNotInCollectionAction(
 
 export async function addDocumentsToCollectionAction(collectionId: string, documentIds: string[]): Promise<void> {
   await addDocumentsToCollection(collectionId, documentIds)
-  revalidatePath('/collections')
+  revalidatePath(COLLECTIONS_PATH)
 }
 
 export async function createCollectionAction(input: {
@@ -46,7 +47,7 @@ export async function createCollectionAction(input: {
     tagId: input.tagId,
     collectionNotes: input.collectionNotes,
   })
-  revalidatePath('/collections')
+  revalidatePath(COLLECTIONS_PATH)
 }
 
 export async function createCollectionWithNewTagAction(input: {
@@ -59,7 +60,7 @@ export async function createCollectionWithNewTagAction(input: {
     tagNotes: input.tagNotes,
     collectionNotes: input.collectionNotes,
   })
-  revalidatePath('/collections')
+  revalidatePath(COLLECTIONS_PATH)
 }
 
 export async function deleteCollectionAction(
@@ -67,10 +68,10 @@ export async function deleteCollectionAction(
   options?: { deleteTagFromSystem?: boolean },
 ): Promise<void> {
   await deleteCollectionWithOptions(collectionId, options)
-  revalidatePath('/collections')
+  revalidatePath(COLLECTIONS_PATH)
 }
 
 export async function removeDocumentsFromCollectionAction(collectionId: string, documentIds: string[]): Promise<void> {
   await removeDocumentsFromCollection(collectionId, documentIds)
-  revalidatePath('/collections')
+  revalidatePath(COLLECTIONS_PATH)
 }

@@ -3,6 +3,7 @@ import Link from 'next/link'
 
 import { DateAtom } from '@atoms/Date'
 import { FilterPill } from '@atoms/FilterPill'
+import { REVIEWS_PATH } from '@constants/paths'
 import { NoDataState } from '@organisms/NoDataState'
 import { PageHeader } from '@organisms/PageHeader'
 import { Pagination } from '@molecules/Pagination'
@@ -34,7 +35,7 @@ function buildReviewsHref(status?: string, field?: string, page?: number): strin
   }
 
   const queryString = params.toString()
-  return queryString ? `/reviews?${queryString}` : '/reviews'
+  return queryString ? `${REVIEWS_PATH}?${queryString}` : `${REVIEWS_PATH}`
 }
 
 export default async function ReviewsPage({ searchParams }: ReviewsPageProps): Promise<ReactElement> {

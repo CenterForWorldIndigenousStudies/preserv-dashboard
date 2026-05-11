@@ -27,7 +27,7 @@ Common local files in this repo:
 - database
 - Storybook
 - Google OAuth / Auth.js
-- ingest integration
+- process integration
 
 Do not commit real secrets.
 
@@ -81,55 +81,69 @@ Notes:
 
 This variable is used by:
 
-- [app/developers/storybook/[[...path]]/route.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/app/developers/storybook/[[...path]]/route.ts:1)
+- [app/component-library/page.tsx](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/app/component-library/page.tsx:1)
 
 | Variable | Required | Default | Purpose |
 | --- | --- | --- | --- |
-| `STORYBOOK_URL` | Yes for Storybook proxy usage | None | Base URL for the separately deployed Storybook instance that the dashboard proxies. |
+| `STORYBOOK_URL` | Yes for component library usage | None | Base URL for the deployed Storybook instance that the component-library iframe loads directly. |
 
 Notes:
 
-- The dashboard throws if the Storybook proxy route is used without
+- The dashboard throws if the component-library page is used without
   `STORYBOOK_URL`.
 - For local development, this is usually `http://localhost:6006` or
   `http://127.0.0.1:6006`.
+- The Storybook host must allow iframe embedding from the dashboard origin.
 
 ## Pipeline Trigger and Callback Variables
 
 These variables are used by:
 
-- [app/api/ingest/start/route.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/app/api/ingest/start/route.ts:1)
-- [app/api/ingest/callback/route.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/app/api/ingest/callback/route.ts:1)
+- [app/api/process/start/route.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/app/api/process/start/route.ts:1)
+- [app/api/pipeline/ingester/callback/route.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/app/api/pipeline/ingester/callback/route.ts:1)
+- [app/api/pipeline/document-splitter/callback/route.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/app/api/pipeline/document-splitter/callback/route.ts:1)
 
 | Variable | Required | Default | Purpose |
 | --- | --- | --- | --- |
-| `DATA_INGESTER_BASE_URL` | Yes for ingest triggers | None | Base URL for the `preserv-data-ingester` app. The dashboard posts trigger requests to `${DATA_INGESTER_BASE_URL}/ingest`. |
-| `DATA_INGESTER_TRIGGER_TOKEN` | Yes for ingest triggers | None | Bearer token used by the dashboard to authenticate server-to-server trigger requests into `preserv-data-ingester`. |
-| `INGESTER_CALLBACK_TOKEN` | Yes for ingest triggers and callbacks | None | Shared bearer token used to authenticate `preserv-data-ingester` callback requests into the dashboard. |
+| `DASHBOARD_BASE_URL` | No | `http://localhost:3000` | Explicit server-reachable dashboard base URL for callback generation. Useful when pipeline apps run in Docker or another network namespace. |
+| `DATA_INGESTER_BASE_URL` | Yes for process start | None | Base URL for the `preserv-data-ingester` app. The dashboard posts trigger requests to `${DATA_INGESTER_BASE_URL}/ingest`. |
+| `DATA_INGESTER_TRIGGER_TOKEN` | Yes for process start | None | Bearer token used by the dashboard to authenticate server-to-server trigger requests into `preserv-data-ingester`. |
+| `DATA_INGESTER_CALLBACK_TOKEN` | Yes for process start and ingester callbacks | None | Shared bearer token used to authenticate `preserv-data-ingester` callback requests into the dashboard. |
+| `DOCUMENT_SPLITTER_BASE_URL` | Yes for automatic splitter chaining | None | Base URL for the `preserv-document-splitter` app. The dashboard posts trigger requests to `${DOCUMENT_SPLITTER_BASE_URL}/split`. |
+| `DOCUMENT_SPLITTER_TRIGGER_TOKEN` | Yes for automatic splitter chaining | None | Bearer token used by the dashboard to authenticate server-to-server trigger requests into `preserv-document-splitter`. |
+| `DOCUMENT_SPLITTER_CALLBACK_TOKEN` | Yes for automatic splitter chaining and splitter callbacks | None | Shared bearer token used to authenticate `preserv-document-splitter` callback requests into the dashboard. |
 
 Notes:
 
 - The dashboard uses `DATA_INGESTER_TRIGGER_TOKEN` in the `Authorization`
   header when it calls `preserv-data-ingester`.
-- The dashboard uses `INGESTER_CALLBACK_TOKEN` in two places:
+- The dashboard uses `DATA_INGESTER_CALLBACK_TOKEN` in two places:
   - it sends the token to `preserv-data-ingester` as part of the callback
     payload
   - it verifies the same token when the ingester calls back
-- Future pipeline apps should use the same pattern, but with separate callback
-  tokens per app and separate trigger tokens per app.
+- The dashboard uses `DOCUMENT_SPLITTER_TRIGGER_TOKEN` in the `Authorization`
+  header when it calls `preserv-document-splitter`.
+- The dashboard uses `DOCUMENT_SPLITTER_CALLBACK_TOKEN` in two places:
+  - it sends the token to `preserv-document-splitter` as part of the callback
+    payload
+  - it verifies the same token when the splitter calls back
+- `DASHBOARD_BASE_URL` should point to a hostname reachable from the pipeline
+  app environment. When local pipeline apps run in Docker, `localhost` is
+  usually wrong and `http://host.docker.internal:3000` is typically the better
+  choice.
 
-## Google Drive Ingest Browser Variables
+## Google Drive Process Browser Variables
 
 These variables are used by:
 
 - [lib/googleDrive.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/lib/googleDrive.ts:1)
-- [app/api/ingest/folders/route.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/app/api/ingest/folders/route.ts:1)
+- [app/api/process/folders/route.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/app/api/process/folders/route.ts:1)
 
 | Variable | Required | Default | Purpose |
 | --- | --- | --- | --- |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | Conditionally required | None | JSON-encoded Google service account credentials. Preferred for Vercel and other hosted deployments. |
 | `GOOGLE_SERVICE_ACCOUNT_FILE` | Conditionally required | None | Filesystem path to a Google service account JSON file. Preferred for local file-based development. |
-| `GOOGLE_INGEST_SOURCE_ROOT_FOLDER_IDS` | No | None | Optional top-level folder allowlist for the ingest folder browser. Accepts either a JSON array or comma-separated list. |
+| `GOOGLE_INGEST_SOURCE_ROOT_FOLDER_IDS` | No | None | Optional top-level folder allowlist for the process page folder browser. Accepts either a JSON array or comma-separated list. |
 
 Credential resolution order:
 
@@ -139,8 +153,8 @@ Credential resolution order:
 Notes:
 
 - At least one of `GOOGLE_SERVICE_ACCOUNT_JSON` or
-  `GOOGLE_SERVICE_ACCOUNT_FILE` must be set if the ingest folder browser is
-  used.
+  `GOOGLE_SERVICE_ACCOUNT_FILE` must be set if the process page folder browser
+  is used.
 - In practice, you should choose one credential mode for a given environment,
   even though `.env.local.example` shows both forms for reference.
 - `GOOGLE_SERVICE_ACCOUNT_JSON` should be used in Vercel.
@@ -180,12 +194,15 @@ AUTH_SECRET=replace-this-with-a-long-random-secret
 STORYBOOK_URL=http://localhost:6006
 ```
 
-If you also want the ingest page working locally, add:
+If you also want the process page working locally, add:
 
 ```env
 DATA_INGESTER_BASE_URL=http://localhost:8000
 DATA_INGESTER_TRIGGER_TOKEN=replace-this-with-a-shared-secret
 INGESTER_CALLBACK_TOKEN=replace-this-with-a-shared-secret
+DOCUMENT_SPLITTER_BASE_URL=http://localhost:8100
+DOCUMENT_SPLITTER_TRIGGER_TOKEN=replace-this-with-a-shared-secret
+DOCUMENT_SPLITTER_CALLBACK_TOKEN=replace-this-with-a-shared-secret
 GOOGLE_SERVICE_ACCOUNT_FILE=/absolute/path/to/service_account.json
 ```
 
@@ -207,6 +224,8 @@ For Vercel deployments:
 - set `STORYBOOK_URL` to the matching Storybook deployment
 - set `DATA_INGESTER_BASE_URL` to the deployed ingester URL
 - set `DATA_INGESTER_TRIGGER_TOKEN` to the shared dashboard -> ingester bearer token
+- set `DOCUMENT_SPLITTER_BASE_URL` to the deployed splitter URL
+- set `DOCUMENT_SPLITTER_TRIGGER_TOKEN` to the shared dashboard -> splitter bearer token
 
 ## Security Notes
 

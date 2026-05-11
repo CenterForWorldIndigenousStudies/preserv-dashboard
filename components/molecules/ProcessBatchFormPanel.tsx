@@ -3,7 +3,7 @@ import { Alert, Paper, Stack, TextField, Typography } from '@mui/material'
 
 import { Button } from '@atoms/Button'
 
-interface IngestBatchFormPanelProps {
+interface ProcessBatchFormPanelProps {
   batchName: string
   collectionName: string
   collectionNotes: string
@@ -27,7 +27,7 @@ function handleTextChange(
   }
 }
 
-export function IngestBatchFormPanel({
+export function ProcessBatchFormPanel({
   batchName,
   collectionName,
   collectionNotes,
@@ -41,7 +41,7 @@ export function IngestBatchFormPanel({
   onCollectionNotesChange,
   onSubmit,
   onRefresh,
-}: IngestBatchFormPanelProps): ReactElement {
+}: ProcessBatchFormPanelProps): ReactElement {
   return (
     <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, p: 3 }}>
       <Stack spacing={3}>
@@ -50,10 +50,10 @@ export function IngestBatchFormPanel({
             Batch Details
           </Typography>
           <Typography variant="h5" sx={{ mt: 1 }}>
-            Create a new ingest batch
+            Create a new batch
           </Typography>
           <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
-            Choose one or more source folders, add an optional collection, and submit the batch to the data-ingester.
+            Choose source folders, add an optional collection, and start the document-processing pipeline.
           </Typography>
         </div>
 
@@ -95,7 +95,7 @@ export function IngestBatchFormPanel({
         {submitError ? <Alert severity="error">{submitError}</Alert> : null}
         {acceptedBatchName ? (
           <Alert severity="success">
-            Batch <strong>{acceptedBatchName}</strong> was accepted. Live status updates will appear below.
+            Batch <strong>{acceptedBatchName}</strong> was accepted. Live process updates will appear below.
           </Alert>
         ) : null}
       </Stack>

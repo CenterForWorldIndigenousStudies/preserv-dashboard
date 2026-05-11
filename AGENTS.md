@@ -10,7 +10,7 @@ At a high level it:
 - renders authenticated document, review, and failure-management workflows
 - uses Prisma against the shared `preserv-db` schema
 - uses MUI-based components with Atomic Design organization
-- proxies authenticated Storybook access
+- embeds the external Storybook component library
 - integrates with external pipeline apps and can surface live status updates
 
 ## Read First
@@ -22,7 +22,7 @@ Use repo documentation for operational detail instead of expanding this file:
 - component architecture: [documentation/ComponentArchitecture.md](documentation/ComponentArchitecture.md)
 - semantic styling rules: [documentation/styles/SEMANTIC_CLASSES.md](documentation/styles/SEMANTIC_CLASSES.md)
 - pipeline architecture: [documentation/PIPELINE_TRIGGER_CALLBACK_ARCHITECTURE.md](documentation/PIPELINE_TRIGGER_CALLBACK_ARCHITECTURE.md)
-- current ingest integration: [documentation/PIPELINE_INGEST_INTEGRATION.md](documentation/PIPELINE_INGEST_INTEGRATION.md)
+- current process-page integration: [documentation/PIPELINE_INGEST_INTEGRATION.md](documentation/PIPELINE_INGEST_INTEGRATION.md)
 - database connection guidance: [documentation/db/CONNECTING_TO_DB.md](documentation/db/CONNECTING_TO_DB.md)
 - database reference: [documentation/db/PRESERVATION_DB.md](documentation/db/PRESERVATION_DB.md)
 - testing overview: [documentation/testing/TESTING.md](documentation/testing/TESTING.md)
@@ -48,8 +48,9 @@ Important pipeline integration areas:
 
 - shared route area: `app/api/`
 - shared service helpers: `lib/`
-- current ingest UI: `app/ingest-documents/page.tsx`
-- current ingest API routes: `app/api/ingest/`
+- current process UI: `app/process-documents/page.tsx`
+- process browser routes: `app/api/process/`
+- pipeline callback routes: `app/api/pipeline/`
 
 ## Execution Model
 
@@ -69,7 +70,7 @@ For pipeline integrations, the common pattern is:
 - the dashboard streams live status to the browser with SSE
 - callback routes that serve pipeline apps stay outside the Auth.js proxy and use bearer-token auth instead
 
-See the pipeline docs for the generic architecture and the current ingest implementation.
+See the pipeline docs for the generic architecture and the current process-page implementation.
 
 ## UI And Styling Notes
 
