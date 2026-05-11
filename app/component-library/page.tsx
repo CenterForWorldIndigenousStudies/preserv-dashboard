@@ -1,41 +1,24 @@
-'use client'
+import { redirect } from 'next/navigation'
 
-import { useEffect, useState } from 'react'
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { COMPONENT_LIBRARY_PATH, SIGNIN_PATH } from '@constants/paths'
+import { auth } from '@root/auth'
 
-export default function ComponentLibraryPage() {
-  const { status } = useSession()
-  const router = useRouter()
-  const [src, setSrc] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.replace('/auth/signin?callbackUrl=/component-library')
-      return
-    }
-    if (status !== 'authenticated') return
-
-    // Storybook is served through an authenticated app route. That route can
-    // proxy a separately deployed static Storybook or fall back to local assets.
-    setSrc('/developers/storybook/index.html')
-  }, [status, router])
-
-  if (status === 'loading') {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <p className="text-sm text-ink/60">Loading component library...</p>
-      </div>
-    )
+function buildStorybookUrl(): string {
+  const baseUrl = process.env.STORYBOOK_URL
+  if (!baseUrl) {
+    throw new Error('STORYBOOK_URL is not configured')
   }
 
-  if (!src) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <p className="text-sm text-ink/60">Loading component library...</p>
-      </div>
-    )
+  return new URL('index.html', `${baseUrl.replace(/\/+$/, '')}/`).toString()
+}
+
+export default async function ComponentLibraryPage() {
+  const session = await auth()
+  if (!session) {
+    redirect(`${SIGNIN_PATH}?callbackUrl=${COMPONENT_LIBRARY_PATH}`)
   }
+
+  const src = buildStorybookUrl()
 
   return (
     <div className="-m-6 -mt-4 h-[calc(100vh-8rem)]">

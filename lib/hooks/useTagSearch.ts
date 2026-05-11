@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { TAG_SEARCH_PATH } from '@constants/paths'
 
 export interface TagSuggestion {
   id: string
@@ -47,7 +48,7 @@ export function useTagSearch(query: string, options: UseTagSearchOptions = {}): 
           query: normalizedQuery,
           limit: String(limit),
         })
-        const response = await fetch(`/api/tags/search?${searchParams.toString()}`, {
+        const response = await fetch(`${TAG_SEARCH_PATH}?${searchParams.toString()}`, {
           signal: controller.signal,
         })
         const payload = (await response.json()) as {

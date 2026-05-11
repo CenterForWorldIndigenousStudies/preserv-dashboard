@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { COMPONENT_LIBRARY_PATH } from '@constants/paths'
 import Sidebar, { type SidebarVariant } from '@organisms/Sidebar'
 
 const meta: Meta<typeof Sidebar> = {
@@ -16,7 +17,7 @@ const meta: Meta<typeof Sidebar> = {
     nextjs: {
       appDirectory: true,
       navigation: {
-        pathname: '/component-library',
+        pathname: COMPONENT_LIBRARY_PATH,
       },
     },
   },

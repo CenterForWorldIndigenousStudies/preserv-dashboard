@@ -1,34 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { markIngestCallbackReceived } from '@lib/ingestBatches'
 import { logEvent } from '@lib/observability'
+import { shouldTriggerDocumentSplitter, triggerDocumentSplitter } from '@lib/pipelineTriggers'
+import {
+  getProcessBatchStatus,
+  markProcessStageCallbackReceived,
+} from '@lib/processBatches'
 
 export const dynamic = 'force-dynamic'
 export const preferredRegion = 'sfo1'
 
-interface IngestCallbackBody {
+interface IngesterCallbackBody {
   batch_id?: unknown
   request_id?: unknown
   status?: unknown
   error?: unknown
 }
 
+function parseBearerToken(authorization: string | null): string {
+  return (authorization ?? '').replace(/^Bearer\s+/i, '').trim()
+}
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const expectedToken = process.env.INGESTER_CALLBACK_TOKEN?.trim()
+  const expectedToken = process.env.DATA_INGESTER_CALLBACK_TOKEN?.trim()
   if (!expectedToken) {
-    return NextResponse.json({ error: 'INGESTER_CALLBACK_TOKEN is not configured.' }, { status: 500 })
+    return NextResponse.json({ error: 'DATA_INGESTER_CALLBACK_TOKEN is not configured.' }, { status: 500 })
   }
 
-  const authorization = request.headers.get('authorization') ?? ''
-  const actualToken = authorization.replace(/^Bearer\s+/i, '').trim()
+  const actualToken = parseBearerToken(request.headers.get('authorization'))
   if (actualToken !== expectedToken) {
-    logEvent('warn', 'ingest_callback_unauthorized')
+    logEvent('warn', 'ingester_callback_unauthorized')
     return NextResponse.json({ error: 'Unauthorized callback.' }, { status: 401 })
   }
 
-  let body: IngestCallbackBody
+  let body: IngesterCallbackBody
   try {
-    body = (await request.json()) as IngestCallbackBody
+    body = (await request.json()) as IngesterCallbackBody
   } catch {
     return NextResponse.json({ error: 'Request body must be valid JSON.' }, { status: 400 })
   }
@@ -42,17 +49,28 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    await markIngestCallbackReceived(batchId, new Date().toISOString())
-    logEvent('info', 'ingest_callback_received', {
+    const receivedAtIso = new Date().toISOString()
+    await markProcessStageCallbackReceived(batchId, 'ingester', receivedAtIso)
+    logEvent('info', 'ingester_callback_received', {
       batchId,
       requestId,
       status,
       errorMessage: errorMessage || null,
     })
+
+    const batch = await getProcessBatchStatus(batchId)
+    if (!batch) {
+      throw new Error(`Batch ${batchId} was not found after recording ingester callback.`)
+    }
+
+    if (shouldTriggerDocumentSplitter(batch)) {
+      await triggerDocumentSplitter(batch)
+    }
+
     return new NextResponse(null, { status: 204 })
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Failed to record ingest callback.'
-    logEvent('error', 'ingest_callback_record_failed', {
+    const message = error instanceof Error ? error.message : 'Failed to record ingester callback.'
+    logEvent('error', 'ingester_callback_record_failed', {
       batchId,
       requestId,
       status,

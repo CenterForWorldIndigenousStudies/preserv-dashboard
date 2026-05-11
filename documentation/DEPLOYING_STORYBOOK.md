@@ -1,14 +1,13 @@
 # Deploying Storybook
 
-Storybook is hosted as a separate static site, and the dashboard loads it through the authenticated proxy route. The deployment model is:
+Storybook is hosted as a separate static site, and the dashboard embeds it directly in the component-library page. The deployment model is:
 
 - build and host Storybook as a separate static site
 - set `STORYBOOK_URL` in the dashboard deployment
-- let the dashboard proxy Storybook through `/developers/storybook/*` after checking the user's
-  Google-authenticated session
+- let the dashboard iframe point directly at that Storybook host
 
-This keeps the dashboard behind the app's auth wall without making every app build depend on a
-Storybook build.
+This keeps Storybook deployment independent from the Next.js app and avoids
+making the dashboard proxy every Storybook asset request.
 
 ## Recommended Vercel Setup
 
@@ -37,8 +36,8 @@ The repository root keeps `vercel.json` out of the shared config surface, so eac
 
 ## Setting `STORYBOOK_URL`
 
-The dashboard project should always point to the Storybook project for the same
-environment.
+The dashboard project should always point `STORYBOOK_URL` at the Storybook
+project for the same environment.
 
 ### Production
 
@@ -140,5 +139,5 @@ Once deployed, set the `STORYBOOK_URL` environment variable in the Next.js Verce
 STORYBOOK_URL=https://your-storybook-host.example.com
 ```
 
-The `/developers/component-library` page will then load Storybook through the dashboard's
-authenticated proxy route instead of linking directly to the external host.
+The `/component-library` page will then load Storybook directly from that host
+inside the dashboard iframe.

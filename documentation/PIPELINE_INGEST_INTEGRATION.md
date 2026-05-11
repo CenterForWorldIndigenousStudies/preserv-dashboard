@@ -1,38 +1,54 @@
-# Ingest Pipeline Integration
+# Process Page Integration
 
 ## Purpose
 
-This document describes the current `preserv-dashboard` integration with
-`preserv-data-ingester`.
+This document describes the current `preserv-dashboard` process-page
+integration.
+
+In the current implementation:
+
+- ingest is the required first stage
+- `document-splitter` is the first optional downstream stage
+- the dashboard persists requested downstream stages in shared batch state
+- the dashboard auto-triggers `document-splitter` server-side after a
+  successful ingest when that stage was requested
 
 For the broader reusable pattern, see
 [PIPELINE_TRIGGER_CALLBACK_ARCHITECTURE.md](./PIPELINE_TRIGGER_CALLBACK_ARCHITECTURE.md).
 
 ## Current Scope
 
-The current ingest flow supports:
+The current process flow supports:
 
 - browsing Google Drive folders with the shared service account
-- creating an ingest batch from the dashboard
+- creating a new batch from `/process-documents`
+- selecting optional downstream stages
 - sending the ingest request to `preserv-data-ingester`
-- streaming live batch-status updates to the browser with SSE
-- recording callback receipt from `preserv-data-ingester`
-- reading ingest status from the `batches` table
+- streaming live process updates to the browser with SSE
+- recording callback receipt from both `preserv-data-ingester` and
+  `preserv-document-splitter`
+- auto-triggering `preserv-document-splitter` from the ingester callback when
+  appropriate
+- reading process state from the `batches` table
 
-The primary route is `/ingest-documents`.
+The primary route is `/process-documents`.
 
 ## High-Level Flow
 
 ```txt
 User
-  -> /ingest-documents
-  -> GET /api/ingest/folders
-  -> POST /api/ingest/start
+  -> /process-documents
+  -> GET /api/process/folders
+  -> POST /api/process/start
   -> preserv-data-ingester POST /ingest
   -> preserv-data-ingester background execution
-  -> GET /api/ingest/events
-  -> dashboard streams batch status from shared DB to browser
-  -> POST /api/ingest/callback
+  -> GET /api/process/events
+  -> POST /api/pipeline/ingester/callback
+  -> dashboard records callback receipt
+  -> dashboard checks processing_details.pipeline.requested_stages
+  -> preserv-document-splitter POST /split (optional)
+  -> preserv-document-splitter background execution (optional)
+  -> POST /api/pipeline/document-splitter/callback (optional)
   -> dashboard records callback receipt
 ```
 
@@ -40,22 +56,23 @@ User
 
 ### UI entrypoint
 
-- [app/ingest-documents/page.tsx](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/app/ingest-documents/page.tsx:1)
-- [components/organisms/IngestDocumentsManager.tsx](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/components/organisms/IngestDocumentsManager.tsx:1)
+- [app/process-documents/page.tsx](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/app/process-documents/page.tsx:1)
+- [components/organisms/ProcessDocumentsManager.tsx](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/components/organisms/ProcessDocumentsManager.tsx:1)
 
 Responsibilities:
 
-- render the ingest page
-- load recent ingest batch statuses
+- render the process page
+- load recent process batch statuses
 - let the user enter `batchName`
 - let the user select one or more source folders
 - collect optional collection name and notes
+- let the user opt into downstream stages such as `document-splitter`
 - submit the request to the dashboard backend
 - subscribe to live batch updates for the accepted batch over SSE
 
 ### Folder browsing route
 
-- [app/api/ingest/folders/route.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/app/api/ingest/folders/route.ts:1)
+- [app/api/process/folders/route.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/app/api/process/folders/route.ts:1)
 - [lib/googleDrive.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/lib/googleDrive.ts:1)
 
 Responsibilities:
@@ -74,11 +91,9 @@ Optional scope control:
 
 - `GOOGLE_INGEST_SOURCE_ROOT_FOLDER_IDS`
 
-If configured, this limits the top-level folder browser to those folder IDs.
+### Process start route
 
-### Trigger route
-
-- [app/api/ingest/start/route.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/app/api/ingest/start/route.ts:1)
+- [app/api/process/start/route.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/app/api/process/start/route.ts:1)
 
 Responsibilities:
 
@@ -86,7 +101,8 @@ Responsibilities:
 - validate user input
 - derive `started_by` from the current session
 - derive `initiated_at` server-side
-- build the callback URL and callback token payload
+- pass `requested_stages` through to `preserv-data-ingester`
+- build the ingester callback URL and callback token payload
 - send the request to `preserv-data-ingester`
 
 Incoming dashboard request shape:
@@ -96,7 +112,8 @@ Incoming dashboard request shape:
   "batchName": "May 2026 Refugee Mental Health Ingest",
   "sourceFolderIds": ["folder-1", "folder-2"],
   "collectionName": "Periodicals",
-  "collectionNotes": "Optional notes"
+  "collectionNotes": "Optional notes",
+  "requestedStages": ["document-splitter"]
 }
 ```
 
@@ -108,14 +125,15 @@ Outgoing ingester request shape:
   "request_id": "0f66fd56-b2f1-43f2-a6d4-e9be0d1d2608",
   "batch_name": "May 2026 Refugee Mental Health Ingest",
   "started_by": "user@example.org",
-  "initiated_at": "2026-05-06T19:00:00Z",
+  "initiated_at": "2026-05-08T19:00:00Z",
   "source_folder_ids": ["folder-1", "folder-2"],
+  "requested_stages": ["document-splitter"],
   "collection": {
     "name": "Periodicals",
     "notes": "Optional notes"
   },
   "callback": {
-    "url": "https://dashboard.example.org/api/ingest/callback",
+    "url": "https://dashboard.example.org/api/pipeline/ingester/callback",
     "token": "shared-secret"
   }
 }
@@ -128,95 +146,108 @@ request:
 Authorization: Bearer <DATA_INGESTER_TRIGGER_TOKEN>
 ```
 
-### Callback route
+### Ingester callback route
 
-- [app/api/ingest/callback/route.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/app/api/ingest/callback/route.ts:1)
-- [lib/ingestBatches.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/lib/ingestBatches.ts:1)
+- [app/api/pipeline/ingester/callback/route.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/app/api/pipeline/ingester/callback/route.ts:1)
 
 Responsibilities:
 
 - bypass Auth.js session protection at the proxy layer
-- verify `Authorization: Bearer <token>`
+- verify `Authorization: Bearer <DATA_INGESTER_CALLBACK_TOKEN>`
 - parse the callback payload
 - require `batch_id`
-- record callback receipt time in `batches.processing_details`
+- record callback receipt time in `batches.processing_details.ingester.callback.received_at`
+- load the batch process state
+- trigger `preserv-document-splitter` when:
+  - ingest status is `completed`
+  - `document-splitter` appears in `processing_details.pipeline.requested_stages`
+  - `processing_details.document_splitter.status` is not already `queued`,
+    `running`, or `completed`
 
-Current callback payload requirement:
+### Document-splitter trigger
+
+- [lib/pipelineTriggers.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/lib/pipelineTriggers.ts:1)
+
+Outgoing splitter request shape:
 
 ```json
 {
-  "request_id": "0f66fd56-b2f1-43f2-a6d4-e9be0d1d2608",
-  "batch_id": "batch-uuid",
-  "status": "completed",
-  "error": null
+  "app": "preserv-dashboard",
+  "request_id": "new-uuid",
+  "batch_id": "existing-batch-id",
+  "started_by": "user@example.org",
+  "initiated_at": "2026-05-08T19:10:00Z",
+  "callback": {
+    "url": "https://dashboard.example.org/api/pipeline/document-splitter/callback",
+    "token": "shared-secret"
+  }
 }
 ```
 
-The callback route is intentionally excluded from the global Auth.js proxy.
-Pipeline apps cannot complete a Google sign-in flow, so callback requests must
-reach the route handler directly and be authenticated only by the callback
-bearer token.
+The dashboard sends:
 
-That exclusion is implemented in:
+```txt
+Authorization: Bearer <DOCUMENT_SPLITTER_TRIGGER_TOKEN>
+```
 
-- [proxy.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/proxy.ts:1)
+### Document-splitter callback route
 
-If the callback path is accidentally reintroduced into the global Auth.js
-matcher, pipeline apps will typically see an HTTP `307 Temporary Redirect`
-instead of reaching the callback route handler.
+- [app/api/pipeline/document-splitter/callback/route.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/app/api/pipeline/document-splitter/callback/route.ts:1)
+
+Responsibilities:
+
+- bypass Auth.js session protection at the proxy layer
+- verify `Authorization: Bearer <DOCUMENT_SPLITTER_CALLBACK_TOKEN>`
+- parse the callback payload
+- record callback receipt time in
+  `batches.processing_details.document_splitter.callback.received_at`
 
 ### SSE route
 
-- [app/api/ingest/events/route.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/app/api/ingest/events/route.ts:1)
-- [lib/ingestBatches.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/lib/ingestBatches.ts:1)
+- [app/api/process/events/route.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/app/api/process/events/route.ts:1)
+- [lib/processBatches.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/lib/processBatches.ts:1)
 
 Responsibilities:
 
 - require an authenticated dashboard session
 - accept a `batchId` query parameter
 - open a `text/event-stream` response
-- send an initial batch snapshot immediately
-- re-read batch status from the shared DB on a short server-side interval
-- emit `batch_status` events only when the batch payload changes
-- close the stream when the batch reaches `completed` or `failed`
+- send an initial process snapshot immediately
+- re-read process state from the shared DB on a short server-side interval
+- emit `batch_status` events only when the full payload changes
+- keep the stream open through ingest completion when downstream stages are
+  still pending
+- close the stream only when the full requested process reaches terminal state
 
 ## Persistence Model
 
-Ingest execution state is stored in the related batch row under:
+Process execution state lives in the related batch row under:
 
+- `batches.processing_details.pipeline`
 - `batches.processing_details.ingester`
+- `batches.processing_details.document_splitter`
 
-The dashboard reads that structure through
-[lib/ingestBatches.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/lib/ingestBatches.ts:1).
+Current orchestration intent:
 
-Fields currently surfaced by the dashboard include:
+- `processing_details.pipeline.requested_stages`
 
-- `request_id`
-- `status`
-- `last_transition_at`
-- `source_folder_ids`
-- `collection.name`
-- `collection.notes`
-- `processed_count`
-- `ingested_count`
-- `duplicate_count`
-- `skipped_same_origin_count`
-- `error`
-- `callback.delivery_status`
-- `callback.notified_at`
-- `callback.received_at`
-- `callback.http_status`
-- `callback.error_type`
-- `callback.error_message`
+Current stage-specific callback receipt fields:
+
+- `processing_details.ingester.callback.received_at`
+- `processing_details.document_splitter.callback.received_at`
 
 ## Environment Variables
 
-Current ingest integration depends on:
+Current process integration depends on:
 
 ```env
+DASHBOARD_BASE_URL=https://dashboard.example.org
 DATA_INGESTER_BASE_URL=https://your-data-ingester.example.com
 DATA_INGESTER_TRIGGER_TOKEN=replace-this-with-a-shared-secret
-INGESTER_CALLBACK_TOKEN=replace-this-with-a-shared-secret
+DATA_INGESTER_CALLBACK_TOKEN=replace-this-with-a-shared-secret
+DOCUMENT_SPLITTER_BASE_URL=https://your-document-splitter.example.com
+DOCUMENT_SPLITTER_TRIGGER_TOKEN=replace-this-with-a-shared-secret
+DOCUMENT_SPLITTER_CALLBACK_TOKEN=replace-this-with-a-shared-secret
 GOOGLE_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}'
 GOOGLE_SERVICE_ACCOUNT_FILE=/absolute/path/to/service_account.json
 GOOGLE_INGEST_SOURCE_ROOT_FOLDER_IDS=["folder-id-1","folder-id-2"]
@@ -228,11 +259,20 @@ Notes:
 - use `GOOGLE_SERVICE_ACCOUNT_FILE` for local file-based development
 - `GOOGLE_SERVICE_ACCOUNT_JSON` takes precedence when both are present
 - `GOOGLE_INGEST_SOURCE_ROOT_FOLDER_IDS` is optional
+- `DASHBOARD_BASE_URL` is useful when local pipeline apps run in Docker and
+  need a host-reachable callback URL such as `http://host.docker.internal:3000`
 
-## Current Limitations
+## Auth Proxy Boundary
 
-- The callback route records callback receipt, but does not persist a second
-  full copy of the callback payload.
-- The current SSE route is scoped to a single `batchId` per connection.
-- The current SSE route re-reads the DB on a short server-side interval rather
-  than using a push subscription from the database itself.
+The callback routes are intentionally excluded from the global Auth.js proxy:
+
+- `/api/pipeline/ingester/callback`
+- `/api/pipeline/document-splitter/callback`
+
+That exclusion is implemented in:
+
+- [proxy.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/proxy.ts:1)
+
+If either callback path is accidentally reintroduced into the global Auth.js
+matcher, the corresponding pipeline app will typically see an HTTP `307
+Temporary Redirect` instead of reaching the route handler.

@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { auth } from '@root/auth'
-import { getIngestBatchStatus } from '@lib/ingestBatches'
 import { logEvent } from '@lib/observability'
+import {
+  getProcessBatchStatus,
+  type ProcessBatchStatus,
+} from '@lib/processBatches'
+import { shouldCloseProcessStream } from '@lib/pipelineTriggers'
 
 export const dynamic = 'force-dynamic'
 export const preferredRegion = 'sfo1'
@@ -24,6 +28,10 @@ function sleep(milliseconds: number): Promise<void> {
   })
 }
 
+function currentRequestId(batch: ProcessBatchStatus): string | null {
+  return batch.documentSplitter?.requestId ?? batch.ingester?.requestId ?? null
+}
+
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const session = await auth()
   if (!session?.user?.email) {
@@ -35,13 +43,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'batchId is required.' }, { status: 400 })
   }
 
-  const initialStatus = await getIngestBatchStatus(batchId)
+  const initialStatus = await getProcessBatchStatus(batchId)
   if (!initialStatus) {
     return NextResponse.json({ error: `Batch ${batchId} was not found.` }, { status: 404 })
   }
+
   logEvent('info', 'sse_client_connected', {
     batchId,
-    requestId: initialStatus.requestId,
+    requestId: currentRequestId(initialStatus),
     userEmail: session.user.email,
   })
 
@@ -61,7 +70,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       const abortHandler = () => {
         logEvent('info', 'sse_client_disconnected', {
           batchId,
-          requestId: initialStatus.requestId,
+          requestId: currentRequestId(initialStatus),
           userEmail: session.user.email,
         })
         closeStream()
@@ -79,11 +88,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           return
         }
 
-        const latestStatus = await getIngestBatchStatus(batchId)
+        const latestStatus = await getProcessBatchStatus(batchId)
         if (!latestStatus) {
           logEvent('warn', 'sse_batch_missing', {
             batchId,
-            requestId: initialStatus.requestId,
+            requestId: currentRequestId(initialStatus),
             userEmail: session.user.email,
           })
           controller.enqueue(encodeSseEvent('batch_missing', { batchId }))
@@ -94,9 +103,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         if (nextPayload !== previousPayload) {
           logEvent('info', 'sse_batch_status_emitted', {
             batchId,
-            requestId: latestStatus.requestId,
+            requestId: currentRequestId(latestStatus),
             userEmail: session.user.email,
-            status: latestStatus.status,
+            ingesterStatus: latestStatus.ingester?.status ?? null,
+            documentSplitterStatus: latestStatus.documentSplitter?.status ?? null,
           })
           controller.enqueue(encodeSseEvent('batch_status', latestStatus))
           previousPayload = nextPayload
@@ -104,7 +114,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           controller.enqueue(encodeSseComment('keepalive'))
         }
 
-        if (latestStatus.status === 'completed' || latestStatus.status === 'failed') {
+        if (shouldCloseProcessStream(latestStatus)) {
           return
         }
 
@@ -114,12 +124,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       try {
         logEvent('info', 'sse_batch_status_emitted', {
           batchId,
-          requestId: initialStatus.requestId,
+          requestId: currentRequestId(initialStatus),
           userEmail: session.user.email,
-          status: initialStatus.status,
+          ingesterStatus: initialStatus.ingester?.status ?? null,
+          documentSplitterStatus: initialStatus.documentSplitter?.status ?? null,
         })
         controller.enqueue(encodeSseEvent('batch_status', initialStatus))
-        if (initialStatus.status === 'completed' || initialStatus.status === 'failed') {
+        if (shouldCloseProcessStream(initialStatus)) {
           closeStream()
           return
         }

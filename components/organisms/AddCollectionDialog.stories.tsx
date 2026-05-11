@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { COLLECTIONS_PATH } from '@constants/paths'
 import { AddCollectionDialog } from './AddCollectionDialog'
 
 const meta = {
@@ -10,7 +11,7 @@ const meta = {
     nextjs: {
       appDirectory: true,
       navigation: {
-        pathname: '/collections',
+        pathname: COLLECTIONS_PATH,
       },
     },
   },

@@ -9,7 +9,7 @@ status updates to the browser.
 The dashboard is the operator-facing control surface. The browser never talks
 to pipeline apps directly.
 
-For the currently implemented ingest example, see
+For the currently implemented process-page example, see
 [PIPELINE_INGEST_INTEGRATION.md](./PIPELINE_INGEST_INTEGRATION.md).
 
 ## Design Principles
@@ -107,7 +107,7 @@ Each pipeline app should have its own app-to-dashboard callback token.
 Example:
 
 ```txt
-Authorization: Bearer <INGESTER_CALLBACK_TOKEN>
+Authorization: Bearer <DATA_INGESTER_CALLBACK_TOKEN>
 ```
 
 Callback routes must stay outside the global Auth.js proxy matcher. If a
@@ -120,9 +120,11 @@ route handler.
 Pipeline execution state should live with the relevant domain record in shared
 storage.
 
-In the current ingest implementation, that state lives in:
+In the current process-page implementation, that state lives in:
 
+- `batches.processing_details.pipeline`
 - `batches.processing_details.ingester`
+- `batches.processing_details.document_splitter`
 
 Future pipeline apps should follow the same pattern and persist app-specific
 execution state in the appropriate `processing_details` object rather than
@@ -138,7 +140,7 @@ Recommended SSE behavior:
 - send an initial snapshot immediately
 - re-read shared status on a short server-side interval
 - emit only when the payload changes
-- close the stream on terminal state
+- close the stream only when the full requested process reaches terminal state
 
 This is simpler than websockets and fits the current one-way server-to-browser
 update needs.
@@ -183,14 +185,18 @@ Recommended conventions:
 
 Example route family:
 
+- `/api/process/start`
+- `/api/process/folders`
+- `/api/process/events`
 - `/api/pipeline/ingester/callback`
+- `/api/pipeline/document-splitter/callback`
 - `/api/pipeline/page-rotator/callback`
 - `/api/pipeline/ocr-processor/callback`
 - `/api/pipeline/metadata-extractor/callback`
 
 Example env family:
 
-- `INGESTER_CALLBACK_TOKEN`
+- `DATA_INGESTER_CALLBACK_TOKEN`
 - `PAGE_ROTATOR_TRIGGER_TOKEN`
 - `PAGE_ROTATOR_CALLBACK_TOKEN`
 - `OCR_PROCESSOR_TRIGGER_TOKEN`
@@ -200,7 +206,9 @@ Example env family:
 
 ## Current Scope
 
-The currently implemented concrete example is document ingest.
+The currently implemented concrete example is the process page, where ingest is
+the required first stage and `document-splitter` is the first optional
+downstream stage.
 
 See:
 

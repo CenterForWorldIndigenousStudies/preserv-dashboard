@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import type { CollectionWithMeta, Document } from '@lib/types'
 
+import { COLLECTIONS_PATH } from '@constants/paths'
+import type { CollectionWithMeta, Document } from '@lib/types'
 import { CollectionsAccordion } from './CollectionsAccordion'
+
 
 const UUIDS = {
   coll1: '00000001-0001-0001-0001-000000000001',
@@ -22,7 +24,7 @@ const meta = {
     nextjs: {
       appDirectory: true,
       navigation: {
-        pathname: '/collections',
+        pathname: COLLECTIONS_PATH,
       },
     },
   },

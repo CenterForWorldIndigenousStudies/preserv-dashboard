@@ -2,45 +2,66 @@
 
 import { useEffect, useMemo, useState, useTransition, type ReactElement } from 'react'
 import { useRouter } from 'next/navigation'
-import { Box, Paper, Stack, Typography } from '@mui/material'
+import { Box, Stack } from '@mui/material'
 
+import { PROCESS_EVENTS_PATH, PROCESS_FOLDERS_PATH, PROCESS_START_PATH } from '@constants/paths'
 import type { DriveFolderOption } from '@lib/googleDrive'
-import type { IngestBatchStatus } from '@lib/ingestBatches'
-import { IngestBatchFormPanel } from '@molecules/IngestBatchFormPanel'
-import { IngestBatchStatusCard } from '@molecules/IngestBatchStatusCard'
+import type { ProcessBatchStatus } from '@lib/processBatches'
 import { GoogleDriveFolderTree } from '@molecules/GoogleDriveFolderTree'
-import { IngestSelectedFoldersPanel } from '@molecules/IngestSelectedFoldersPanel'
+import { PipelineStageSelectorPanel } from '@molecules/PipelineStageSelectorPanel'
+import { ProcessBatchFormPanel } from '@molecules/ProcessBatchFormPanel'
+import { ProcessBatchStatusCard } from '@molecules/ProcessBatchStatusCard'
+import { ProcessSelectedFoldersPanel } from '@molecules/ProcessSelectedFoldersPanel'
 
-interface IngestDocumentsManagerProps {
-  initialBatches: IngestBatchStatus[]
+interface ProcessDocumentsManagerProps {
+  initialBatches: ProcessBatchStatus[]
 }
 
-interface IngestAcceptedResponse {
+interface ProcessAcceptedResponse {
   batch_id: string
   batch_name: string
 }
 
-function isTerminalStatus(status: string | null): boolean {
+function isStageTerminal(status: string | null | undefined): boolean {
   return status === 'completed' || status === 'failed'
 }
 
+function isProcessTerminal(batch: ProcessBatchStatus): boolean {
+  if (!isStageTerminal(batch.ingester?.status)) {
+    return false
+  }
+
+  if (batch.pipelineRequestedStages.length === 0) {
+    return true
+  }
+
+  return batch.pipelineRequestedStages.every((stage) => {
+    if (stage === 'document-splitter') {
+      return isStageTerminal(batch.documentSplitter?.status)
+    }
+
+    return false
+  })
+}
+
 function upsertBatchStatus(
-  batches: IngestBatchStatus[],
-  nextBatch: IngestBatchStatus,
-): IngestBatchStatus[] {
+  batches: ProcessBatchStatus[],
+  nextBatch: ProcessBatchStatus,
+): ProcessBatchStatus[] {
   const withoutExisting = batches.filter((batch) => batch.batchId !== nextBatch.batchId)
   return [nextBatch, ...withoutExisting].slice(0, 25)
 }
 
-export function IngestDocumentsManager({
+export function ProcessDocumentsManager({
   initialBatches,
-}: IngestDocumentsManagerProps): ReactElement {
+}: ProcessDocumentsManagerProps): ReactElement {
   const router = useRouter()
   const [isSubmitting, startSubmitTransition] = useTransition()
   const [isRefreshing, startRefreshTransition] = useTransition()
   const [batchName, setBatchName] = useState('')
   const [collectionName, setCollectionName] = useState('')
   const [collectionNotes, setCollectionNotes] = useState('')
+  const [requestedStages, setRequestedStages] = useState<string[]>([])
   const [recentBatches, setRecentBatches] = useState(initialBatches)
   const [rootFolders, setRootFolders] = useState<DriveFolderOption[]>([])
   const [childFoldersByParent, setChildFoldersByParent] = useState<Record<string, DriveFolderOption[]>>({})
@@ -48,7 +69,7 @@ export function IngestDocumentsManager({
   const [selectedFolders, setSelectedFolders] = useState<Record<string, DriveFolderOption>>({})
   const [foldersError, setFoldersError] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
-  const [acceptedResult, setAcceptedResult] = useState<IngestAcceptedResponse | null>(null)
+  const [acceptedResult, setAcceptedResult] = useState<ProcessAcceptedResponse | null>(null)
   const [activeBatchId, setActiveBatchId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -59,7 +80,7 @@ export function IngestDocumentsManager({
     void (async () => {
       try {
         setFoldersError(null)
-        const response = await fetch('/api/ingest/folders', { cache: 'no-store' })
+        const response = await fetch(`${PROCESS_FOLDERS_PATH}`, { cache: 'no-store' })
         const payload = (await response.json()) as { folders?: DriveFolderOption[]; error?: string }
         if (!response.ok) {
           throw new Error(payload.error ?? 'Failed to load folders.')
@@ -76,14 +97,14 @@ export function IngestDocumentsManager({
       return undefined
     }
 
-    const eventSource = new EventSource(`/api/ingest/events?batchId=${encodeURIComponent(activeBatchId)}`)
+    const eventSource = new EventSource(`${PROCESS_EVENTS_PATH}?batchId=${encodeURIComponent(activeBatchId)}`)
 
     eventSource.addEventListener('batch_status', (event) => {
       const message = event as MessageEvent<string>
-      const batch = JSON.parse(message.data) as IngestBatchStatus
+      const batch = JSON.parse(message.data) as ProcessBatchStatus
       setRecentBatches((current) => upsertBatchStatus(current, batch))
 
-      if (isTerminalStatus(batch.status)) {
+      if (isProcessTerminal(batch)) {
         setActiveBatchId((current) => (current === batch.batchId ? null : current))
         eventSource.close()
       }
@@ -111,7 +132,7 @@ export function IngestDocumentsManager({
       return
     }
 
-    const response = await fetch(`/api/ingest/folders?parentId=${encodeURIComponent(parentId)}`, {
+    const response = await fetch(`${PROCESS_FOLDERS_PATH}?parentId=${encodeURIComponent(parentId)}`, {
       cache: 'no-store',
     })
     const payload = (await response.json()) as { folders?: DriveFolderOption[]; error?: string }
@@ -158,14 +179,14 @@ export function IngestDocumentsManager({
     })
   }
 
-  function submitIngest(): void {
+  function submitProcess(): void {
     startSubmitTransition(() => {
       void (async () => {
         setSubmitError(null)
         setAcceptedResult(null)
 
         const selectedFolderIds = Object.keys(selectedFolders)
-        const response = await fetch('/api/ingest/start', {
+        const response = await fetch(PROCESS_START_PATH, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -175,6 +196,7 @@ export function IngestDocumentsManager({
             sourceFolderIds: selectedFolderIds,
             collectionName,
             collectionNotes,
+            requestedStages,
           }),
         })
         const payload = (await response.json()) as {
@@ -183,7 +205,7 @@ export function IngestDocumentsManager({
           batch_name?: string
         }
         if (!response.ok) {
-          setSubmitError(payload.error ?? 'Failed to start ingest.')
+          setSubmitError(payload.error ?? 'Failed to start processing.')
           return
         }
 
@@ -199,36 +221,47 @@ export function IngestDocumentsManager({
           upsertBatchStatus(current, {
             batchId: submittedBatchId,
             batchName: submittedBatchName,
-            requestId: null,
             startedBy: 'Current user',
             createdAt: submittedAt,
-            startedAt: null,
-            completedAt: null,
-            lastTransitionAt: submittedAt,
-            status: 'accepted',
-            processedCount: 0,
-            ingestedCount: 0,
-            duplicateCount: 0,
-            skippedSameOriginCount: 0,
-            sourceFolderIds: selectedFolderIds,
-            collectionName: collectionName.trim() || null,
-            collectionNotes: collectionNotes.trim() || null,
-            error: null,
-            callbackDeliveryStatus: null,
-            callbackNotifiedAt: null,
-            callbackReceivedAt: null,
-            callbackHttpStatus: null,
-            callbackErrorType: null,
-            callbackErrorMessage: null,
+            pipelineRequestedStages: requestedStages,
+            ingester: {
+              status: 'accepted',
+              requestId: null,
+              requestedByApp: 'preserv-dashboard',
+              initiatedAt: submittedAt,
+              startedAt: null,
+              completedAt: null,
+              lastTransitionAt: submittedAt,
+              error: null,
+              callbackDeliveryStatus: null,
+              callbackNotifiedAt: null,
+              callbackReceivedAt: null,
+              callbackHttpStatus: null,
+              callbackErrorType: null,
+              callbackErrorMessage: null,
+              processedCount: 0,
+              ingestedCount: 0,
+              duplicateCount: 0,
+              skippedSameOriginCount: 0,
+              splitCount: 0,
+              childCount: 0,
+              passedThroughCount: 0,
+              failedCount: 0,
+              sourceFolderIds: selectedFolderIds,
+              collectionName: collectionName.trim() || null,
+              collectionNotes: collectionNotes.trim() || null,
+            },
+            documentSplitter: null,
           }),
         )
         setActiveBatchId(submittedBatchId)
         setBatchName('')
         setCollectionName('')
         setCollectionNotes('')
+        setRequestedStages([])
         setSelectedFolders({})
       })().catch((error: unknown) => {
-        setSubmitError(error instanceof Error ? error.message : 'Failed to start ingest.')
+        setSubmitError(error instanceof Error ? error.message : 'Failed to start processing.')
       })
     })
   }
@@ -248,7 +281,7 @@ export function IngestDocumentsManager({
           },
         }}
       >
-        <IngestBatchFormPanel
+        <ProcessBatchFormPanel
           batchName={batchName}
           collectionName={collectionName}
           collectionNotes={collectionNotes}
@@ -260,15 +293,19 @@ export function IngestDocumentsManager({
           onBatchNameChange={setBatchName}
           onCollectionNameChange={setCollectionName}
           onCollectionNotesChange={setCollectionNotes}
-          onSubmit={submitIngest}
+          onSubmit={submitProcess}
           onRefresh={refreshStatuses}
         />
-        <IngestSelectedFoldersPanel folders={selectedFolderList} />
+        <Stack spacing={3}>
+          <PipelineStageSelectorPanel
+            selectedStages={requestedStages}
+            onSelectedStagesChange={setRequestedStages}
+          />
+          <ProcessSelectedFoldersPanel folders={selectedFolderList} />
+        </Stack>
       </Box>
 
       <GoogleDriveFolderTree
-        title="Browse Google Drive folders"
-        description="Select one or more source folders for the next ingest batch."
         rootFolders={rootFolders}
         childFoldersByParent={childFoldersByParent}
         expandedFolderIds={expandedFolderIds}
@@ -278,32 +315,11 @@ export function IngestDocumentsManager({
         onToggleFolderExpansion={toggleFolderExpansion}
       />
 
-      <section>
-        <Stack spacing={2}>
-          <div>
-            <Typography variant="caption" sx={{ color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.16em' }}>
-              Recent Ingests
-            </Typography>
-            <Typography variant="h5" sx={{ mt: 1 }}>
-              Current and recent ingest batches
-            </Typography>
-          </div>
-
-          {recentBatches.length === 0 ? (
-            <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, p: 4, textAlign: 'center' }}>
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                No ingest batches have been created yet.
-              </Typography>
-            </Paper>
-          ) : (
-            <Stack spacing={2}>
-              {recentBatches.map((batch) => (
-                <IngestBatchStatusCard key={batch.batchId} batch={batch} />
-              ))}
-            </Stack>
-          )}
-        </Stack>
-      </section>
+      <Stack spacing={3}>
+        {recentBatches.map((batch) => (
+          <ProcessBatchStatusCard key={batch.batchId} batch={batch} />
+        ))}
+      </Stack>
     </Stack>
   )
 }

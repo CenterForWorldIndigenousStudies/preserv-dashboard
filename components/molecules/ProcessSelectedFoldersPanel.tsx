@@ -3,13 +3,13 @@ import { Box, List, ListItem, Paper, Stack, Typography } from '@mui/material'
 
 import type { DriveFolderOption } from '@lib/googleDrive'
 
-interface IngestSelectedFoldersPanelProps {
+interface ProcessSelectedFoldersPanelProps {
   folders: DriveFolderOption[]
 }
 
-export function IngestSelectedFoldersPanel({
+export function ProcessSelectedFoldersPanel({
   folders,
-}: IngestSelectedFoldersPanelProps): ReactElement {
+}: ProcessSelectedFoldersPanelProps): ReactElement {
   return (
     <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, p: 3 }}>
       <Stack spacing={2}>

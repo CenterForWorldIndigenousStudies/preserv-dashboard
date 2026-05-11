@@ -7,11 +7,12 @@ import { Button } from '@atoms/Button'
 import { CreateTagDialog } from '@atoms/CreateTagDialog'
 import { IconPlus } from '@atoms/icons/IconPlus'
 import { IconX } from '@atoms/icons/IconX'
-import { TagSearchCombobox } from '@molecules/TagSearchCombobox'
+import { DOCUMENTS_PATH, TAGS_PATH } from '@constants/paths'
 import type { TagSuggestion } from '@lib/hooks/useTagSearch'
 import type { DocumentToTag } from '@lib/types'
 import { normalizeTagName } from '@lib/tag-utils'
-import { RemoveTagDialog } from './RemoveTagDialog'
+import { TagSearchCombobox } from '@molecules/TagSearchCombobox'
+import { RemoveTagDialog } from '@organisms/RemoveTagDialog'
 
 interface DocumentTagsEditorProps {
   documentId: string
@@ -44,7 +45,7 @@ export function DocumentTagsEditor({ documentId, initialTags }: DocumentTagsEdit
   async function addExistingTag(tag: TagSuggestion): Promise<void> {
     resetMessages()
 
-    const response = await fetch(`/api/documents/${documentId}/tags`, {
+    const response = await fetch(`${DOCUMENTS_PATH}/${documentId}/tags`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tagId: tag.id }),
@@ -70,7 +71,7 @@ export function DocumentTagsEditor({ documentId, initialTags }: DocumentTagsEdit
   async function createAndAttachTag(payload: { name: string; notes: string }): Promise<void> {
     resetMessages()
 
-    const response = await fetch(`/api/documents/${documentId}/tags`, {
+    const response = await fetch(`${DOCUMENTS_PATH}/${documentId}/tags`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -103,7 +104,7 @@ export function DocumentTagsEditor({ documentId, initialTags }: DocumentTagsEdit
     setUsageCount(null)
 
     try {
-      const response = await fetch(`/api/tags/${tag.tag_id}/usage-count`)
+      const response = await fetch(`${TAGS_PATH}/${tag.tag_id}/usage-count`)
       const payload = (await response.json()) as { count?: number; error?: string }
       if (!response.ok) {
         throw new Error(payload.error ?? 'Unable to check tag usage.')
@@ -122,12 +123,12 @@ export function DocumentTagsEditor({ documentId, initialTags }: DocumentTagsEdit
     }
 
     const response = options.deleteTagFromSystem
-      ? await fetch(`/api/tags/${tagToRemove.tag_id}`, {
+      ? await fetch(`${TAGS_PATH}/${tagToRemove.tag_id}`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ cascade: true }),
         })
-      : await fetch(`/api/documents/${documentId}/tags`, {
+      : await fetch(`${DOCUMENTS_PATH}/${documentId}/tags`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

@@ -12,7 +12,7 @@ At a high level it:
 - authenticates users with Auth.js and Google OAuth
 - uses MUI-based components and Storybook for UI development
 - connects to the shared preservation database through Prisma
-- triggers pipeline work such as document ingest and shows live ingest status
+- launches document-processing batches and shows live pipeline status
 
 ## Prerequisites
 
@@ -23,9 +23,10 @@ Tools an engineer needs before working with this project:
 - MariaDB access for runtime and integration tests (see <https://github.com/jonryser/mariadb_docker>)
 - Google OAuth credentials for Auth.js
 
-If you want the ingest screen working locally as well, you also need:
+If you want the process page working locally as well, you also need:
 
 - access to a running [`preserv-data-ingester`](https://github.com/CenterForWorldIndigenousStudies/preserv-data-ingester)
+- access to a running [`preserv-document-splitter`](https://github.com/CenterForWorldIndigenousStudies/preserv-document-splitter) if you want automatic splitter chaining
 - shared trigger and callback tokens
 - Google Drive service account credentials for the folder browser
 
@@ -134,6 +135,7 @@ Additional project documentation:
 
 - [Environment variables](documentation/ENV_VARS.md)
 - [Pipeline trigger and callback architecture](documentation/PIPELINE_TRIGGER_CALLBACK_ARCHITECTURE.md)
+- [Current process-page integration](documentation/PIPELINE_INGEST_INTEGRATION.md)
 - [Component architecture](documentation/ComponentArchitecture.md)
 - [Storybook deployment](documentation/DEPLOYING_STORYBOOK.md)
 - [Database connection guidance](documentation/db/CONNECTING_TO_DB.md)
