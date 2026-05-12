@@ -357,7 +357,7 @@ describe('documents queries (integration)', () => {
         const result = await getAllDocuments({
           pageSize: 100,
           search: 'Mary Filter',
-          statuses: ['approved'],
+          statuses: ['APPROVED'],
           documentType: 'duplicate',
           batch: 'Advanced Batch',
           collection: 'Overview Advanced Collection',

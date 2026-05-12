@@ -21,6 +21,7 @@ const defaultFilterOptions: OverviewFilterOptions = {
     'Indigenous Health Conference',
   ],
   accessLevels: ['open access', 'restricted', 'internal', 'confidential'],
+  statuses: ['APPROVED', 'NEEDS_REVIEW', 'REJECTED', 'VALIDATED'],
 }
 
 const meta: Meta<typeof OverviewAdvancedSearchModal> = {
@@ -41,7 +42,7 @@ export const WithActiveFilters: Story = {
   args: {
     filters: {
       author: 'Maria Gonzalez',
-      statuses: ['under_review', 'approved'],
+      statuses: ['NEEDS_REVIEW', 'APPROVED'],
       documentType: 'unique',
       batch: 'BATCH-2026-04',
       createdFrom: '2026-01-01',
@@ -59,6 +60,7 @@ export const NoCollections: Story = {
     filterOptions: {
       collections: [],
       accessLevels: ['open access', 'restricted'],
+      statuses: ['APPROVED', 'NEEDS_REVIEW'],
     },
   },
 }

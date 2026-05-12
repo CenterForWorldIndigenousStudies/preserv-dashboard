@@ -1,22 +1,25 @@
-import type {
-  AuditEntry,
-  BatchSummary,
-  CollectionWithMeta,
-  Document,
-  DocumentDetail,
-  DocumentsCursor,
-  DocumentsPageResult,
-  DocumentQueryParams,
-  DocumentQuality,
-  FailureItem,
-  PagedResult,
-  PipelineSummary,
-  ReadyForLibraryItem,
-  ReviewItem,
-  ReviewQueryParams,
-  ReviewQueueItem,
-  VersionFamily,
-  VersionFamilyDocument,
+import {
+  REVIEW_QUEUE_SORT_FIELDS,
+  type AuditEntry,
+  type BatchSummary,
+  type CollectionWithMeta,
+  type Document,
+  type DocumentDetail,
+  type DocumentsCursor,
+  type DocumentsPageResult,
+  type DocumentQueryParams,
+  type DocumentQuality,
+  type FailureItem,
+  type PagedResult,
+  type PipelineSummary,
+  type ReadyForLibraryItem,
+  type ReviewItem,
+  type ReviewQueryParams,
+  type ReviewQueueDocumentsQueryParams,
+  type ReviewQueueItem,
+  type ReviewQueueSortField,
+  type VersionFamily,
+  type VersionFamilyDocument,
 } from '@lib/types'
 import {
   normalizeOverviewAccessLevel,
@@ -58,6 +61,7 @@ interface OverviewDocumentRow {
   id_legacy: string | null
   source_id: string | null
   name: string | null
+  validation_status: string | null
   created_at: Date | string | null
   updated_at: Date | string | null
   is_duplicate: boolean | number | bigint | string | null
@@ -84,6 +88,7 @@ export interface DocumentsQueryParams extends OverviewAdvancedSearchFilters {
   orderBy?: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
   sortDirection?: 'asc' | 'desc'
   search?: string
+  requireValidationStatus?: boolean
   cursorValue?: string
   cursorId?: string
   cursorDirection?: 'next' | 'prev'
@@ -112,6 +117,34 @@ export async function getAllDocuments(
       createdTo: normalizeOverviewDateFilter(params.createdTo),
       collection: normalizeOverviewTextFilter(params.collection),
       accessLevel: normalizeOverviewAccessLevel(params.accessLevel),
+      requireValidationStatus: params.requireValidationStatus,
+      cursor: params.cursorValue && params.cursorId ? { value: params.cursorValue, id: params.cursorId } : null,
+      cursorDirection: params.cursorDirection,
+    },
+    client,
+  )
+}
+
+export async function getNeedsReviewDocuments(
+  params: DocumentsQueryParams = {},
+  client: QueryDbClient = db,
+): Promise<DocumentsPageResult> {
+  const page = normalizePageNumber(params.page)
+  const pageSize = params.pageSize && params.pageSize > 0 ? Math.min(params.pageSize, 1000) : 25
+
+  return getNeedsReviewDocumentsPage(
+    {
+      page,
+      pageSize,
+      orderBy: params.orderBy,
+      sortDirection: params.sortDirection,
+      search: normalizeOverviewTextFilter(params.search ?? params.author),
+      documentType: normalizeOverviewDocumentType(params.documentType),
+      batch: normalizeOverviewTextFilter(params.batch),
+      createdFrom: normalizeOverviewDateFilter(params.createdFrom),
+      createdTo: normalizeOverviewDateFilter(params.createdTo),
+      collection: normalizeOverviewTextFilter(params.collection),
+      accessLevel: normalizeOverviewAccessLevel(params.accessLevel),
       cursor: params.cursorValue && params.cursorId ? { value: params.cursorValue, id: params.cursorId } : null,
       cursorDirection: params.cursorDirection,
     },
@@ -120,6 +153,16 @@ export async function getAllDocuments(
 }
 
 const PAGE_SIZE = 20
+const REVIEW_QUEUE_DEFAULT_PAGE_SIZE = 25
+const REVIEW_QUEUE_MAX_PAGE_SIZE = 100
+const REVIEW_QUEUE_STATUS_REASONS: Record<string, string> = {
+  IN_PROGRESS: 'Validation in progress',
+  NEEDS_REVISION: 'Needs revision',
+}
+const REVIEW_QUEUE_METADATA_REASONS = {
+  needs_review: 'Needs review metadata',
+  sensitive: 'Sensitive metadata',
+} as const
 
 function normalizePageNumber(page?: number): number {
   if (!page || page < 1 || Number.isNaN(page)) {
@@ -130,6 +173,192 @@ function normalizePageNumber(page?: number): number {
 
 export function getPageSize(): number {
   return PAGE_SIZE
+}
+
+function normalizeReviewQueuePageSize(pageSize?: number): number {
+  if (!pageSize || pageSize < 1 || Number.isNaN(pageSize)) {
+    return REVIEW_QUEUE_DEFAULT_PAGE_SIZE
+  }
+
+  return Math.min(Math.floor(pageSize), REVIEW_QUEUE_MAX_PAGE_SIZE)
+}
+
+function normalizeReviewQueueSortBy(sortBy?: ReviewQueueSortField): ReviewQueueSortField {
+  if (!sortBy) {
+    return 'name'
+  }
+
+  return REVIEW_QUEUE_SORT_FIELDS.includes(sortBy) ? sortBy : 'name'
+}
+
+function normalizeReviewQueueSortDirection(direction?: 'asc' | 'desc'): 'asc' | 'desc' {
+  return direction === 'desc' ? 'desc' : 'asc'
+}
+
+function normalizeReviewQueueTextFilter(value?: string): string {
+  return value?.trim().toLowerCase() ?? ''
+}
+
+function isTruthyMetadataValue(value: string | null): boolean {
+  if (!value?.trim()) {
+    return false
+  }
+
+  const normalized = value.trim()
+  const lowered = normalized.toLowerCase()
+  if (['false', '0', 'no', 'null', ''].includes(lowered)) {
+    return false
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(normalized)
+
+    if (typeof parsed === 'boolean') {
+      return parsed
+    }
+
+    if (typeof parsed === 'string') {
+      return isTruthyMetadataValue(parsed)
+    }
+
+    if (parsed && typeof parsed === 'object' && 'value' in parsed) {
+      const objectValue = parsed.value
+      if (typeof objectValue === 'boolean') {
+        return objectValue
+      }
+
+      if (typeof objectValue === 'string') {
+        return isTruthyMetadataValue(objectValue)
+      }
+    }
+  } catch {
+    // Treat non-JSON truthy values like "yes" as true.
+  }
+
+  return true
+}
+
+function getReviewQueueReasons(params: {
+  validationStatus: string | null
+  needsReview: boolean
+  sensitive: boolean
+}): string[] {
+  const reasons: string[] = []
+  const normalizedStatus = params.validationStatus?.trim().toUpperCase() ?? ''
+
+  if (normalizedStatus in REVIEW_QUEUE_STATUS_REASONS) {
+    reasons.push(REVIEW_QUEUE_STATUS_REASONS[normalizedStatus])
+  }
+
+  if (params.needsReview) {
+    reasons.push(REVIEW_QUEUE_METADATA_REASONS.needs_review)
+  }
+
+  if (params.sensitive) {
+    reasons.push(REVIEW_QUEUE_METADATA_REASONS.sensitive)
+  }
+
+  return reasons
+}
+
+function matchesReviewQueueSearch(item: ReviewQueueItem, search: string): boolean {
+  if (!search) {
+    return true
+  }
+
+  const haystack = [
+    item.id,
+    item.name ?? '',
+    item.validation_status ?? '',
+    item.validation_type ?? '',
+    item.validator_name ?? '',
+    item.validator_email ?? '',
+    ...item.queue_reasons,
+  ]
+    .join(' ')
+    .toLowerCase()
+
+  return haystack.includes(search)
+}
+
+function matchesReviewQueueValidationStatus(item: ReviewQueueItem, validationStatus: string): boolean {
+  if (!validationStatus) {
+    return true
+  }
+
+  return (item.validation_status ?? '').toLowerCase().includes(validationStatus)
+}
+
+function compareNullableStrings(left: string | null, right: string | null, direction: 'asc' | 'desc'): number {
+  const leftMissing = !left?.trim()
+  const rightMissing = !right?.trim()
+
+  if (leftMissing && rightMissing) {
+    return 0
+  }
+
+  if (leftMissing) {
+    return 1
+  }
+
+  if (rightMissing) {
+    return -1
+  }
+
+  const leftValue = left ?? ''
+  const rightValue = right ?? ''
+  const comparison = leftValue.localeCompare(rightValue, undefined, { sensitivity: 'base' })
+  return direction === 'desc' ? -comparison : comparison
+}
+
+function compareBooleans(left: boolean, right: boolean, direction: 'asc' | 'desc'): number {
+  const comparison = Number(left) - Number(right)
+  return direction === 'desc' ? -comparison : comparison
+}
+
+function compareReviewQueueItems(
+  left: ReviewQueueItem,
+  right: ReviewQueueItem,
+  sortBy: ReviewQueueSortField,
+  direction: 'asc' | 'desc',
+): number {
+  let comparison: number
+
+  switch (sortBy) {
+    case 'id':
+      comparison = compareNullableStrings(left.id, right.id, direction)
+      break
+    case 'name':
+      comparison = compareNullableStrings(left.name, right.name, direction)
+      break
+    case 'validation_status':
+      comparison = compareNullableStrings(left.validation_status, right.validation_status, direction)
+      break
+    case 'validation_type':
+      comparison = compareNullableStrings(left.validation_type, right.validation_type, direction)
+      break
+    case 'validator_name':
+      comparison = compareNullableStrings(left.validator_name, right.validator_name, direction)
+      break
+    case 'validator_email':
+      comparison = compareNullableStrings(left.validator_email, right.validator_email, direction)
+      break
+    case 'needs_review':
+      comparison = compareBooleans(left.needs_review, right.needs_review, direction)
+      break
+    case 'sensitive':
+      comparison = compareBooleans(left.sensitive, right.sensitive, direction)
+      break
+    default:
+      comparison = 0
+      break
+  }
+
+  if (comparison !== 0) {
+    return comparison
+  }
+
+  return compareNullableStrings(left.id, right.id, 'asc')
 }
 
 interface CollectionRow {
@@ -811,6 +1040,7 @@ async function getOverviewDocumentsPage(
     createdTo?: string
     collection?: string
     accessLevel?: OverviewAccessLevelOption
+    requireValidationStatus?: boolean
     cursor?: DocumentsCursor | null
     cursorDirection?: 'next' | 'prev'
   },
@@ -833,6 +1063,7 @@ async function getOverviewDocumentsPage(
     cursor: params.cursor,
     cursorDirection,
     documentType: params.documentType,
+    requireValidationStatus: params.requireValidationStatus,
     searchTerm,
     sortDirection,
     sortExpression,
@@ -877,6 +1108,116 @@ async function getOverviewDocumentsPage(
           source_meta.value
         ) AS source_id,
         d.name,
+        dq.validation_status,
+        d.created_at,
+        d.updated_at,
+        CASE WHEN dup.document_id IS NULL THEN 0 ELSE 1 END AS is_duplicate,
+        ${sortExpression} AS sort_value
+      ${baseFromSql}
+      ${whereSql}
+      ${orderBySql}
+      LIMIT ${params.pageSize + 1}
+    `)
+
+  const hasMore = items.length > params.pageSize
+  const slicedItems = hasMore ? items.slice(0, params.pageSize) : items
+  const orderedItems = cursorDirection === 'prev' ? [...slicedItems].reverse() : slicedItems
+  const normalizedItems = orderedItems.map(normalizeOverviewDocumentRow)
+  const startCursor = buildDocumentsCursor(orderedItems[0], sortField)
+  const endCursor = buildDocumentsCursor(orderedItems.at(-1), sortField)
+
+  return {
+    data: normalizedItems,
+    pageInfo: {
+      page: params.page,
+      pageSize: params.pageSize,
+      hasNextPage: cursorDirection === 'prev' ? Boolean(params.cursor) : hasMore,
+      hasPreviousPage: params.page > 1,
+      startCursor,
+      endCursor,
+    },
+  }
+}
+
+async function getNeedsReviewDocumentsPage(
+  params: {
+    page: number
+    pageSize: number
+    orderBy?: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
+    sortDirection?: 'asc' | 'desc'
+    search?: string
+    documentType?: OverviewDocumentTypeOption
+    batch?: string
+    createdFrom?: string
+    createdTo?: string
+    collection?: string
+    accessLevel?: OverviewAccessLevelOption
+    cursor?: DocumentsCursor | null
+    cursorDirection?: 'next' | 'prev'
+  },
+  client: QueryDbClient = db,
+): Promise<DocumentsPageResult> {
+  const sortField =
+    params.orderBy && (DOCUMENTS_ORDERABLE_FIELDS as readonly string[]).includes(params.orderBy)
+      ? params.orderBy
+      : 'created_at'
+  const sortDirection = params.sortDirection === 'asc' ? 'asc' : 'desc'
+  const cursorDirection = params.cursorDirection === 'prev' ? 'prev' : 'next'
+  const searchTerm = params.search?.trim()
+  const sortExpression = Prisma.raw(OVERVIEW_SORT_EXPRESSIONS[sortField])
+  const whereSql = buildNeedsReviewDocumentsWhereSql({
+    accessLevel: params.accessLevel,
+    batch: params.batch,
+    collection: params.collection,
+    createdFrom: params.createdFrom,
+    createdTo: params.createdTo,
+    cursor: params.cursor,
+    cursorDirection,
+    documentType: params.documentType,
+    searchTerm,
+    sortDirection,
+    sortExpression,
+    sortField,
+  })
+  const orderBySql = buildOverviewDocumentsOrderBySql({
+    cursorDirection,
+    sortDirection,
+    sortExpression,
+  })
+
+  const baseFromSql = Prisma.sql`
+    FROM documents d
+    LEFT JOIN (
+      SELECT dtm.document_id, dtm.value
+      FROM document_to_metadata dtm
+      INNER JOIN metadata m ON m.id = dtm.metadata_id
+      WHERE m.name = 'source_id'
+    ) AS source_meta ON source_meta.document_id = d.id
+    LEFT JOIN (
+      SELECT DISTINCT dtt.document_id
+      FROM document_to_tags dtt
+      INNER JOIN tags t ON t.id = dtt.tag_id
+      WHERE t.name = 'duplicate_document'
+    ) AS dup ON dup.document_id = d.id
+    INNER JOIN document_quality dq ON dq.document_id = d.id
+    LEFT JOIN document_access da ON da.document_id = d.id
+    LEFT JOIN access_levels al ON al.id = da.access_level_id
+  `
+
+  const items = await client.$queryRaw<OverviewDocumentRow[]>(Prisma.sql`
+      SELECT
+        d.id,
+        d.filesize,
+        d.hash_binary,
+        d.hash_content,
+        d.id_legacy,
+        COALESCE(
+          JSON_UNQUOTE(JSON_EXTRACT(source_meta.value, '$.value')),
+          JSON_UNQUOTE(JSON_EXTRACT(source_meta.value, '$')),
+          source_meta.value
+        ) AS source_id,
+        d.name,
+        dq.validation_status,
         d.created_at,
         d.updated_at,
         CASE WHEN dup.document_id IS NULL THEN 0 ELSE 1 END AS is_duplicate,
@@ -916,6 +1257,7 @@ function buildOverviewDocumentsWhereSql(params: {
   createdTo?: string
   collection?: string
   accessLevel?: OverviewAccessLevelOption
+  requireValidationStatus?: boolean
   cursor?: DocumentsCursor | null
   cursorDirection: 'next' | 'prev'
   sortDirection: 'asc' | 'desc'
@@ -962,6 +1304,10 @@ function buildOverviewDocumentsWhereSql(params: {
     conditions.push(Prisma.sql`LOWER(al.level_name) = ${params.accessLevel}`)
   }
 
+  if (params.requireValidationStatus) {
+    conditions.push(Prisma.sql`dq.validation_status IS NOT NULL`)
+  }
+
   if (params.cursor) {
     conditions.push(
       buildOverviewDocumentsCursorConditionSql({
@@ -976,6 +1322,71 @@ function buildOverviewDocumentsWhereSql(params: {
 
   if (!conditions.length) {
     return Prisma.empty
+  }
+
+  return Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`
+}
+
+function buildNeedsReviewDocumentsWhereSql(params: {
+  searchTerm?: string
+  documentType?: OverviewDocumentTypeOption
+  batch?: string
+  createdFrom?: string
+  createdTo?: string
+  collection?: string
+  accessLevel?: OverviewAccessLevelOption
+  cursor?: DocumentsCursor | null
+  cursorDirection: 'next' | 'prev'
+  sortDirection: 'asc' | 'desc'
+  sortExpression: Prisma.Sql
+  sortField: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
+}): Prisma.Sql {
+  const conditions: Prisma.Sql[] = [Prisma.sql`dq.validation_status = 'NEEDS_REVIEW'`]
+
+  if (params.searchTerm) {
+    conditions.push(buildOverviewAuthorSearchConditionSql(params.searchTerm))
+  }
+
+  if (params.documentType === 'unique') {
+    conditions.push(Prisma.sql`dup.document_id IS NULL`)
+  }
+
+  if (params.documentType === 'duplicate') {
+    conditions.push(Prisma.sql`dup.document_id IS NOT NULL`)
+  }
+
+  if (params.batch) {
+    conditions.push(buildOverviewBatchConditionSql(params.batch))
+  }
+
+  if (params.createdFrom) {
+    conditions.push(Prisma.sql`d.created_at >= ${new Date(`${params.createdFrom}T00:00:00.000Z`)}`)
+  }
+
+  if (params.createdTo) {
+    conditions.push(
+      Prisma.sql`d.created_at < DATE_ADD(${new Date(`${params.createdTo}T00:00:00.000Z`)}, INTERVAL 1 DAY)`,
+    )
+  }
+
+  if (params.collection) {
+    conditions.push(buildOverviewCollectionConditionSql(params.collection))
+  }
+
+  if (params.accessLevel) {
+    conditions.push(Prisma.sql`LOWER(al.level_name) = ${params.accessLevel}`)
+  }
+
+  if (params.cursor) {
+    conditions.push(
+      buildOverviewDocumentsCursorConditionSql({
+        cursor: params.cursor,
+        cursorDirection: params.cursorDirection,
+        sortDirection: params.sortDirection,
+        sortExpression: params.sortExpression,
+        sortField: params.sortField,
+      }),
+    )
   }
 
   return Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`
@@ -1159,6 +1570,7 @@ function normalizeOverviewDocumentRow(row: OverviewDocumentRow): Document {
     id_legacy: row.id_legacy ?? null,
     source_id: row.source_id ?? null,
     name: row.name ?? null,
+    validation_status: row.validation_status ?? null,
     created_at: row.created_at ?? null,
     updated_at: row.updated_at ?? null,
     is_duplicate: Boolean(Number(row.is_duplicate ?? 0)),
@@ -1415,11 +1827,12 @@ export async function getFailures(): Promise<FailureItem[]> {
 }
 
 export async function getOverviewFilterOptions(): Promise<OverviewFilterOptions> {
-  const collections = await getDistinctCollectionTags()
+  const [collections, statuses] = await Promise.all([getDistinctCollectionTags(), getDistinctValidationStatuses()])
 
   return {
     collections: collections.filter((collection) => collection !== 'duplicate_document'),
     accessLevels: [...OVERVIEW_ACCESS_LEVEL_OPTIONS],
+    statuses,
   }
 }
 
@@ -1444,6 +1857,19 @@ export async function getDistinctCollectionTags(): Promise<string[]> {
     }
   }
   return Array.from(tagSet).sort()
+}
+
+export async function getDistinctValidationStatuses(): Promise<string[]> {
+  const rows = await db.document_quality.findMany({
+    distinct: ['validation_status'],
+    where: { validation_status: { not: null } },
+    select: { validation_status: true },
+    orderBy: { validation_status: 'asc' },
+  })
+
+  return rows
+    .map((row) => row.validation_status?.trim())
+    .filter((status): status is string => Boolean(status))
 }
 
 // ---------------------------------------------------------------------------
@@ -1479,83 +1905,116 @@ export async function getDistinctReviewFields(): Promise<string[]> {
 // Returns documents with validation_status IN ('IN_PROGRESS', 'NEEDS_REVISION')
 // OR documents that have a 'needs_review' metadata flag OR 'sensitive' metadata TRUE.
 // ---------------------------------------------------------------------------
-export async function getReviewQueueDocuments(): Promise<{
-  items: ReviewQueueItem[]
-  total: number
-}> {
-  // Find metadata ids for 'needs_review' and 'sensitive'
-  const [needsReviewMeta, sensitiveMeta] = await Promise.all([
-    db.metadata.findFirst({ where: { name: 'needs_review' } }),
-    db.metadata.findFirst({ where: { name: 'sensitive' } }),
+// eslint-disable-next-line complexity -- review queue aggregation combines multiple legacy signals in one query helper.
+export async function getReviewQueueDocuments(
+  params: ReviewQueueDocumentsQueryParams = {},
+  client: QueryDbClient = db,
+): Promise<PagedResult<ReviewQueueItem>> {
+  const page = normalizePageNumber(params.page)
+  const pageSize = normalizeReviewQueuePageSize(params.pageSize)
+  const search = normalizeReviewQueueTextFilter(params.search)
+  const validationStatus = normalizeReviewQueueTextFilter(params.validationStatus)
+  const sortBy = normalizeReviewQueueSortBy(params.sortBy)
+  const sortDirection = normalizeReviewQueueSortDirection(params.sortDirection)
+
+  const [needsReviewMeta, sensitiveMeta, qualityDocs] = await Promise.all([
+    client.metadata.findFirst({ where: { name: 'needs_review' }, select: { id: true } }),
+    client.metadata.findFirst({ where: { name: 'sensitive' }, select: { id: true } }),
+    client.$queryRaw<Array<{ document_id: string }>>(Prisma.sql`
+      SELECT document_id
+      FROM document_quality
+      WHERE validation_status IN ('IN_PROGRESS', 'NEEDS_REVISION')
+    `),
   ])
 
-  const needsReviewMetaId = needsReviewMeta?.id
-  const sensitiveMetaId = sensitiveMeta?.id
+  const needsReviewMetaId = needsReviewMeta?.id ?? null
+  const sensitiveMetaId = sensitiveMeta?.id ?? null
+  const qualityDocIds = new Set(qualityDocs.map((document) => document.document_id))
+  const metadataIds = [needsReviewMetaId, sensitiveMetaId].filter((value): value is string => Boolean(value))
 
-  // Get documents with IN_PROGRESS or NEEDS_REVISION validation_status.
-  // Use raw SQL because the generated Prisma enum does not include these legacy values.
-  const qualityDocs = await db.$queryRaw<Array<{ document_id: string }>>(Prisma.sql`
-    SELECT document_id
-    FROM document_quality
-    WHERE validation_status IN ('IN_PROGRESS', 'NEEDS_REVISION')
-  `)
+  const metadataRows =
+    metadataIds.length > 0
+      ? await client.document_to_metadata.findMany({
+          where: {
+            metadata_id: { in: metadataIds },
+          },
+          select: { document_id: true, metadata_id: true, value: true },
+        })
+      : []
 
-  const qualityDocIds = new Set(qualityDocs.map((d) => d.document_id))
+  const needsReviewDocIds = new Set<string>()
+  const sensitiveDocIds = new Set<string>()
 
-  // Get documents with needs_review or sensitive metadata
-  const metadataFilters: { metadata_id: string; value: { notIn: string[] } }[] = []
-  if (needsReviewMetaId) {
-    metadataFilters.push({ metadata_id: needsReviewMetaId, value: { notIn: ['', 'false', '0', 'no'] } })
+  for (const metadataRow of metadataRows) {
+    if (!isTruthyMetadataValue(metadataRow.value)) {
+      continue
+    }
+
+    if (metadataRow.metadata_id === needsReviewMetaId) {
+      needsReviewDocIds.add(metadataRow.document_id)
+    }
+
+    if (metadataRow.metadata_id === sensitiveMetaId) {
+      sensitiveDocIds.add(metadataRow.document_id)
+    }
   }
-  if (sensitiveMetaId) {
-    metadataFilters.push({ metadata_id: sensitiveMetaId, value: { notIn: ['', 'false', '0', 'no'] } })
-  }
 
-  let metadataDocIds = new Set<string>()
-  if (metadataFilters.length > 0) {
-    const metadataRows = await db.document_to_metadata.findMany({
-      where: {
-        OR: metadataFilters,
-      },
-      select: { document_id: true },
-    })
-    metadataDocIds = new Set(metadataRows.map((r) => r.document_id))
-  }
-
-  // Union of quality doc IDs and metadata doc IDs
-  const allDocIds = new Set([...qualityDocIds, ...metadataDocIds])
+  const allDocIds = new Set([...qualityDocIds, ...needsReviewDocIds, ...sensitiveDocIds])
 
   if (allDocIds.size === 0) {
     return { items: [], total: 0 }
   }
 
-  const documents = await db.documents.findMany({
+  const documents = await client.documents.findMany({
     where: { id: { in: [...allDocIds] } },
-    include: { document_quality: true, document_to_metadata: true },
+    include: {
+      document_quality: true,
+    },
   })
 
-  const items: ReviewQueueItem[] = documents.map((doc) => {
-    const q = doc.document_quality
-    // Determine needs_review and sensitive from metadata
-    const needsReview = doc.document_to_metadata.some(
-      (m) => m.metadata_id === needsReviewMetaId && m.value && !['', 'false', '0', 'no'].includes(m.value),
-    )
-    const sensitive = doc.document_to_metadata.some(
-      (m) => m.metadata_id === sensitiveMetaId && m.value && !['', 'false', '0', 'no'].includes(m.value),
-    )
-    return {
-      id: String(doc.id),
-      name: doc.name ?? null,
-      validation_status: q?.validation_status ?? null,
-      validation_type: q?.validation_type ?? null,
-      validator_name: q?.validator_name ?? null,
-      validator_email: q?.validator_email ?? null,
+  const items: ReviewQueueItem[] = []
+
+  for (const document of documents) {
+    const needsReview = needsReviewDocIds.has(document.id)
+    const sensitive = sensitiveDocIds.has(document.id)
+    const validationStatusValue = document.document_quality?.validation_status ?? null
+    const queueReasons = getReviewQueueReasons({
+      validationStatus: validationStatusValue,
+      needsReview,
+      sensitive,
+    })
+
+    if (queueReasons.length === 0) {
+      continue
+    }
+
+    items.push({
+      id: String(document.id),
+      name: document.name ?? null,
+      validation_status: validationStatusValue,
+      validation_type: document.document_quality?.validation_type ?? null,
+      validator_name: document.document_quality?.validator_name ?? null,
+      validator_email: document.document_quality?.validator_email ?? null,
       needs_review: needsReview,
       sensitive,
-    }
-  })
+      queue_reasons: queueReasons,
+    })
+  }
 
-  return { items, total: items.length }
+  const filteredItems = items
+    .filter((item) => matchesReviewQueueSearch(item, search))
+    .filter((item) => matchesReviewQueueValidationStatus(item, validationStatus))
+    .filter((item) => (params.needsReview === undefined ? true : item.needs_review === params.needsReview))
+    .filter((item) => (params.sensitive === undefined ? true : item.sensitive === params.sensitive))
+    .sort((left, right) => compareReviewQueueItems(left, right, sortBy, sortDirection))
+
+  const total = filteredItems.length
+  const offset = (page - 1) * pageSize
+
+  return {
+    items: filteredItems.slice(offset, offset + pageSize),
+    total,
+  }
 }
 
 // ---------------------------------------------------------------------------
