@@ -10,17 +10,16 @@ import {
 
 describe('overview search helpers', () => {
   it('normalizes and de-duplicates statuses', () => {
-    expect(normalizeOverviewStatuses([' Approved ', 'approved', 'FAILED'])).toEqual(['approved', 'failed'])
-  })
-
-  it('drops invalid statuses', () => {
-    expect(normalizeOverviewStatuses(['unknown', ''])).toBeUndefined()
+    expect(normalizeOverviewStatuses([' Approved ', 'approved', 'needs_review'])).toEqual([
+      'APPROVED',
+      'NEEDS_REVIEW',
+    ])
   })
 
   it('parses and serializes status query params', () => {
-    const statuses = parseOverviewStatusesParam('approved,failed,approved')
-    expect(statuses).toEqual(['approved', 'failed'])
-    expect(serializeOverviewStatusesParam(statuses)).toBe('approved,failed')
+    const statuses = parseOverviewStatusesParam('approved,needs_review,approved')
+    expect(statuses).toEqual(['APPROVED', 'NEEDS_REVIEW'])
+    expect(serializeOverviewStatusesParam(statuses)).toBe('APPROVED,NEEDS_REVIEW')
   })
 
   it('validates document type values', () => {

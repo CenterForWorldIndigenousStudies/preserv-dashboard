@@ -1,9 +1,11 @@
 export const OVERVIEW_STATUS_OPTIONS = [
-  'ingested',
-  'under_review',
-  'approved',
-  'failed',
-  'ingested_fedora',
+  'APPROVED',
+  'FORMAT_ERRORS',
+  'GENERAL_ERRORS',
+  'METADATA_ISSUES',
+  'NEEDS_REVIEW',
+  'REJECTED',
+  'VALIDATED',
 ] as const
 
 export const OVERVIEW_DOCUMENT_TYPE_OPTIONS = ['all', 'unique', 'duplicate'] as const
@@ -15,7 +17,7 @@ export const OVERVIEW_ACCESS_LEVEL_OPTIONS = [
   'confidential',
 ] as const
 
-export type OverviewStatusOption = (typeof OVERVIEW_STATUS_OPTIONS)[number]
+export type OverviewStatusOption = string
 export type OverviewDocumentTypeOption = (typeof OVERVIEW_DOCUMENT_TYPE_OPTIONS)[number]
 export type OverviewAccessLevelOption = (typeof OVERVIEW_ACCESS_LEVEL_OPTIONS)[number]
 
@@ -33,6 +35,7 @@ export interface OverviewAdvancedSearchFilters {
 export interface OverviewFilterOptions {
   collections: string[]
   accessLevels: OverviewAccessLevelOption[]
+  statuses: OverviewStatusOption[]
 }
 
 function firstSearchParam(value: string | string[] | undefined): string | undefined {
@@ -49,14 +52,19 @@ export function normalizeOverviewStatuses(value: string[] | undefined): Overview
     return undefined
   }
 
-  const validStatuses = new Set<string>(OVERVIEW_STATUS_OPTIONS)
-  const normalizedValues = Array.from(
-    new Set(
-      value
-        .map((statusValue) => statusValue.trim().toLowerCase())
-        .filter((statusValue) => validStatuses.has(statusValue)),
-    ),
-  ) as OverviewStatusOption[]
+  const seenStatuses = new Set<string>()
+  const normalizedValues: OverviewStatusOption[] = []
+
+  for (const statusValue of value) {
+    const normalizedStatus = statusValue.trim().toUpperCase()
+
+    if (!normalizedStatus || seenStatuses.has(normalizedStatus)) {
+      continue
+    }
+
+    seenStatuses.add(normalizedStatus)
+    normalizedValues.push(normalizedStatus)
+  }
 
   return normalizedValues.length > 0 ? normalizedValues : undefined
 }
