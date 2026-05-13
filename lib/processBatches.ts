@@ -179,7 +179,6 @@ function parseStageCountFields(stage: ProcessStageDetails): Pick<
   | 'passedThroughCount'
   | 'rotatedCount'
   | 'normalizedCount'
-  | 'passedThroughCount'
   | 'ocrCompletedCount'
   | 'skippedCount'
   | 'reviewNeededCount'
