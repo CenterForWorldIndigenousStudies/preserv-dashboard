@@ -74,6 +74,7 @@ const mockDocuments: Document[] = [
 const filterOptions: OverviewFilterOptions = {
   collections: ['Plateau', 'Southwest', 'Pacific Northwest'],
   accessLevels: ['open access', 'restricted', 'internal', 'confidential'],
+  statuses: ['APPROVED', 'NEEDS_REVIEW', 'REJECTED', 'VALIDATED'],
 }
 
 function buildPageResult(data: Document[]): DocumentsPageResult {
@@ -120,5 +121,18 @@ export const ManyResults: Story = {
       updated_at: new Date(Date.now() - i * 86400000),
     }))
     return <DocumentsTable initialData={buildPageResult(many)} filterOptions={filterOptions} />
+  },
+}
+
+export const ReviewQueueVariant: Story = {
+  args: {
+    initialData: buildPageResult(
+      mockDocuments.map((document, index) => ({
+        ...document,
+        validation_status: index === 0 ? 'NEEDS_REVIEW' : index === 1 ? 'APPROVED' : 'REJECTED',
+      })),
+    ),
+    filterOptions,
+    variant: 'reviewQueue',
   },
 }

@@ -8,13 +8,16 @@ import {
 } from 'material-react-table'
 import Link from 'next/link'
 
+import { Badge, type BadgeVariant } from '@atoms/Badges/Badge'
 import { FileSize } from '@atoms/FileSize'
 import { DateAtom } from '@atoms/Date'
 import { getDocumentsAction } from '@actions/documents'
+import { getNeedsReviewDocumentsAction } from '@actions/review-queue'
 import { OverviewAdvancedSearchModal } from '@organisms/OverviewAdvancedSearchModal'
 import {
   type OverviewAdvancedSearchFilters,
   type OverviewFilterOptions,
+  type OverviewStatusOption,
 } from '@lib/overview-search'
 import type { Document, DocumentsPageResult } from '@lib/types'
 import type { DocumentsQueryParams } from '@lib/queries'
@@ -26,9 +29,36 @@ interface DocumentsTableProps {
   initialData?: DocumentsPageResult
   initialQuery?: DocumentsQueryParams
   filterOptions: OverviewFilterOptions
+  variant?: 'overview' | 'reviewQueue'
+  fixedStatuses?: OverviewStatusOption[]
+  serverDriven?: boolean
 }
 
-export function DocumentsTable({ initialData, initialQuery, filterOptions }: DocumentsTableProps): ReactElement {
+function getValidationStatusBadgeVariant(status: string | null | undefined): BadgeVariant {
+  switch ((status ?? '').toUpperCase()) {
+    case 'APPROVED':
+    case 'VALIDATED':
+      return 'success'
+    case 'NEEDS_REVIEW':
+    case 'FORMAT_ERRORS':
+    case 'GENERAL_ERRORS':
+    case 'METADATA_ISSUES':
+    case 'REJECTED':
+      return 'danger'
+    default:
+      return 'neutral'
+  }
+}
+
+export function DocumentsTable({
+  initialData,
+  initialQuery,
+  filterOptions,
+  variant = 'overview',
+  fixedStatuses,
+  serverDriven = false,
+}: DocumentsTableProps): ReactElement {
+  const isReviewQueue = variant === 'reviewQueue'
   const {
     accessLevel,
     batch,
@@ -46,10 +76,20 @@ export function DocumentsTable({ initialData, initialQuery, filterOptions }: Doc
     setGlobalFilter,
     setOverviewFilters,
     setPageSize,
+    setSorting,
     sorting,
     goToNextPage,
     goToPreviousPage,
   } = useOverviewTableState(initialQuery)
+  const effectiveStatuses = fixedStatuses?.length ? fixedStatuses : statuses
+  const effectiveQueryParams = useMemo<DocumentsQueryParams>(
+    () => ({
+      ...queryParams,
+      statuses: effectiveStatuses,
+    }),
+    [effectiveStatuses, queryParams],
+  )
+  const fetchDocumentsAction = isReviewQueue ? getNeedsReviewDocumentsAction : getDocumentsAction
   const [data, setData] = useState<Document[]>(initialData?.data ?? [])
   const [pageInfo, setPageInfo] = useState<DocumentsPageResult['pageInfo']>(
     initialData?.pageInfo ?? {
@@ -99,6 +139,24 @@ export function DocumentsTable({ initialData, initialQuery, filterOptions }: Doc
           )
         },
       },
+      ...(isReviewQueue
+        ? [
+            {
+              accessorKey: 'validation_status',
+              header: 'Validation Status',
+              size: 180,
+              enableSorting: false,
+              Cell: ({ row }) => {
+                const value = row.original.validation_status
+                if (!value) {
+                  return <span className="txt-muted">--</span>
+                }
+
+                return <Badge variant={getValidationStatusBadgeVariant(value)}>{value}</Badge>
+              },
+            } satisfies MRT_ColumnDef<Document>,
+          ]
+        : []),
       {
         accessorKey: 'id_legacy',
         header: 'Legacy ID',
@@ -170,14 +228,25 @@ export function DocumentsTable({ initialData, initialQuery, filterOptions }: Doc
         Cell: ({ row }) => (row.original.is_duplicate ? 'True' : 'False'),
       },
     ],
-    [preservedOverviewHref],
+    [isReviewQueue, preservedOverviewHref],
   )
 
-  const shouldUseInitialData = canReuseInitialData(initialData, initialQuery, queryParams)
+  const effectiveInitialQuery = useMemo<DocumentsQueryParams | undefined>(() => {
+    if (!initialQuery) {
+      return undefined
+    }
+
+    return {
+      ...initialQuery,
+      statuses: fixedStatuses?.length ? fixedStatuses : initialQuery.statuses,
+    }
+  }, [fixedStatuses, initialQuery])
+
+  const shouldUseInitialData = canReuseInitialData(initialData, effectiveInitialQuery, effectiveQueryParams)
   const currentFilters: OverviewAdvancedSearchFilters = useMemo(
     () => ({
       author: globalFilter || undefined,
-      statuses: statuses ?? [],
+      statuses: effectiveStatuses ?? [],
       documentType,
       batch: batch || undefined,
       createdFrom: createdFrom || undefined,
@@ -185,19 +254,19 @@ export function DocumentsTable({ initialData, initialQuery, filterOptions }: Doc
       collection: collection || undefined,
       accessLevel,
     }),
-    [accessLevel, batch, collection, createdFrom, createdTo, documentType, globalFilter, statuses],
+    [accessLevel, batch, collection, createdFrom, createdTo, documentType, effectiveStatuses, globalFilter],
   )
 
   // Fetch new data when query params change
   useEffect(() => {
-    if (shouldUseInitialData) {
+    if (serverDriven || shouldUseInitialData) {
       return
     }
 
     let cancelled = false
     setIsLoading(true)
 
-    getDocumentsAction(queryParams)
+    fetchDocumentsAction(effectiveQueryParams)
       .then((result) => {
         if (cancelled) {
           return
@@ -214,8 +283,8 @@ export function DocumentsTable({ initialData, initialQuery, filterOptions }: Doc
 
         setData([])
         setPageInfo({
-          page: queryParams.page ?? 1,
-          pageSize: queryParams.pageSize ?? 25,
+          page: effectiveQueryParams.page ?? 1,
+          pageSize: effectiveQueryParams.pageSize ?? 25,
           hasNextPage: false,
           hasPreviousPage: false,
           startCursor: null,
@@ -227,7 +296,7 @@ export function DocumentsTable({ initialData, initialQuery, filterOptions }: Doc
     return () => {
       cancelled = true
     }
-  }, [queryParams, shouldUseInitialData])
+  }, [effectiveQueryParams, fetchDocumentsAction, serverDriven, shouldUseInitialData])
 
   const table = useMaterialReactTable({
     columns,
@@ -242,6 +311,7 @@ export function DocumentsTable({ initialData, initialQuery, filterOptions }: Doc
     manualSorting: true,
     manualFiltering: true,
     enableRowSelection: false,
+    onSortingChange: setSorting,
     muiTableBodyRowProps: ({ staticRowIndex }) => ({
       sx: { backgroundColor: staticRowIndex % 2 === 1 ? 'rgba(244,241,240,0.3)' : 'transparent' },
     }),
@@ -271,7 +341,16 @@ export function DocumentsTable({ initialData, initialQuery, filterOptions }: Doc
             onChange={(e) => setGlobalFilter(e.target.value)}
             className="px-3 py-1.5 border border-[#355834]/20 rounded-lg text-sm w-64 focus:outline-none focus:ring-2 focus:ring-[#355834]/30"
           />
-          <OverviewAdvancedSearchModal filters={currentFilters} filterOptions={filterOptions} onApply={setOverviewFilters} />
+          <OverviewAdvancedSearchModal
+            filters={currentFilters}
+            filterOptions={filterOptions}
+            onApply={(filters) => {
+              setOverviewFilters({
+                ...filters,
+                statuses: fixedStatuses?.length ? fixedStatuses : filters.statuses,
+              })
+            }}
+          />
         </div>
         <div className="flex items-center gap-2">
           <select
@@ -293,7 +372,7 @@ export function DocumentsTable({ initialData, initialQuery, filterOptions }: Doc
           Page {pageInfo.page} of {pageInfo.hasNextPage ? 'multiple' : pageInfo.page}{' '}
           {pageInfo.hasPreviousPage && page > 1 && (
             <button
-              onClick={() => goToPreviousPage(pageInfo.startCursor?.value ?? '')}
+              onClick={() => goToPreviousPage(pageInfo.startCursor)}
               className="ml-2 text-[#355834] hover:underline"
             >
               Previous
@@ -303,7 +382,7 @@ export function DocumentsTable({ initialData, initialQuery, filterOptions }: Doc
         <div className="text-sm text-[#231f20]/60">
           {pageInfo.hasNextPage && (
             <button
-              onClick={() => goToNextPage(pageInfo.endCursor?.value ?? '')}
+              onClick={() => goToNextPage(pageInfo.endCursor)}
               className="text-[#355834] hover:underline"
             >
               Next

@@ -18,7 +18,7 @@ vi.mock('@lib/editHistory', () => ({
   createEditHistoryEntry: vi.fn(),
 }))
 
-import { getAllDocuments, getDocuments } from '@lib/queries'
+import { getAllDocuments, getDocuments, getNeedsReviewDocuments } from '@lib/queries'
 
 // ---------------------------------------------------------------------------
 // Shared call inspection helpers
@@ -225,7 +225,7 @@ describe('getAllDocuments', () => {
 
     await getAllDocuments({
       search: 'Mary Ross',
-      statuses: ['approved', 'failed'],
+      statuses: ['APPROVED', 'NEEDS_REVIEW'],
       documentType: 'duplicate',
       batch: 'April batch',
       createdFrom: '2026-04-01',
@@ -243,10 +243,70 @@ describe('getAllDocuments', () => {
     expect(sql).toContain('d.created_at >=')
     expect(sql).toContain('DATE_ADD(')
   })
+
+  it('can require documents to already have validation status', async () => {
+    mockQueryRaw.mockResolvedValueOnce([])
+
+    await getAllDocuments({
+      requireValidationStatus: true,
+    })
+
+    expect(queryText(0)).toContain('dq.validation_status IS NOT NULL')
+  })
 })
 
 // ---------------------------------------------------------------------------
 // getDocuments — mocks Prisma
+// ---------------------------------------------------------------------------
+describe('getNeedsReviewDocuments', () => {
+  const defaultRow = {
+    id: 'doc-1',
+    filesize: null,
+    hash_binary: null,
+    hash_content: null,
+    id_legacy: null,
+    source_id: null,
+    name: null,
+    validation_status: 'NEEDS_REVIEW',
+    created_at: null,
+    updated_at: null,
+    is_duplicate: 0,
+    sort_value: null,
+  }
+
+  afterEach(() => {
+    mockQueryRaw.mockReset()
+  })
+
+  it('uses an inner join to document_quality with an exact NEEDS_REVIEW predicate', async () => {
+    mockQueryRaw.mockResolvedValueOnce([])
+
+    await getNeedsReviewDocuments()
+
+    const sql = queryText(0)
+    expect(sql).toContain('INNER JOIN document_quality dq ON dq.document_id = d.id')
+    expect(sql).toContain("dq.validation_status = 'NEEDS_REVIEW'")
+    expect(sql).not.toContain("LOWER(COALESCE(dq.validation_status, '')) IN")
+  })
+
+  it('preserves cursor pagination and sort order behavior', async () => {
+    mockQueryRaw.mockResolvedValueOnce([defaultRow])
+
+    const result = await getNeedsReviewDocuments({
+      page: 1,
+      pageSize: 25,
+      orderBy: 'created_at',
+      sortDirection: 'desc',
+    })
+
+    expect(result.data).toHaveLength(1)
+    expect(result.pageInfo.page).toBe(1)
+    expect(queryText(0)).toContain("ORDER BY COALESCE(d.created_at, TIMESTAMP('1000-01-01 00:00:00')) DESC, d.id ASC")
+  })
+})
+
+// ---------------------------------------------------------------------------
+// getDocuments â€” mocks Prisma
 // ---------------------------------------------------------------------------
 describe('getDocuments', () => {
   const defaultRow = {

@@ -9,6 +9,7 @@ import {
   type OverviewAdvancedSearchFilters,
 } from '@lib/overview-search'
 import type { DocumentsQueryParams } from '@lib/queries'
+import type { DocumentsCursor } from '@lib/types'
 
 // ---------------------------------------------------------------------------
 // Utility functions (server-safe, no React hooks)
@@ -53,6 +54,7 @@ function buildComparableQueryShape(queryParams: DocumentsQueryParams | undefined
     queryParams?.createdTo,
     queryParams?.collection,
     queryParams?.accessLevel,
+    queryParams?.requireValidationStatus ?? false,
     queryParams?.cursorValue,
     queryParams?.cursorId,
     queryParams?.cursorDirection,
@@ -138,6 +140,7 @@ export function useOverviewTableState(initialQuery?: DocumentsQueryParams) {
       createdTo,
       collection,
       accessLevel,
+      requireValidationStatus: initialQuery?.requireValidationStatus,
       cursorValue,
       cursorId,
       cursorDirection,
@@ -227,18 +230,18 @@ export function useOverviewTableState(initialQuery?: DocumentsQueryParams) {
       resetToFirstPage()
     },
     sorting,
-    goToNextPage: (endCursor: string) => {
-      if (!endCursor) return
+    goToNextPage: (endCursor: DocumentsCursor | null) => {
+      if (!endCursor?.value || !endCursor.id) return
       setPage((prev) => prev + 1)
-      setCursorValue(endCursor)
-      setCursorId(undefined)
+      setCursorValue(endCursor.value)
+      setCursorId(endCursor.id)
       setCursorDirection('next')
     },
-    goToPreviousPage: (startCursor: string) => {
-      if (!startCursor) return
+    goToPreviousPage: (startCursor: DocumentsCursor | null) => {
+      if (!startCursor?.value || !startCursor.id) return
       setPage((prev) => Math.max(1, prev - 1))
-      setCursorValue(startCursor)
-      setCursorId(undefined)
+      setCursorValue(startCursor.value)
+      setCursorId(startCursor.id)
       setCursorDirection('prev')
     },
   }

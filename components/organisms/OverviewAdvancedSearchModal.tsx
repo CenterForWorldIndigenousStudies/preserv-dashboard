@@ -5,7 +5,6 @@ import { Button } from '@atoms/Button'
 import { IconX } from '@atoms/icons/IconX'
 import {
   OVERVIEW_DOCUMENT_TYPE_OPTIONS,
-  OVERVIEW_STATUS_OPTIONS,
   type OverviewAccessLevelOption,
   type OverviewAdvancedSearchFilters,
   type OverviewFilterOptions,
@@ -203,7 +202,7 @@ export function OverviewAdvancedSearchModal({
           <div className="mt-5">
             <p className="text-sm font-medium text-ink">Status</p>
             <div className="mt-2 flex flex-wrap gap-2">
-              {OVERVIEW_STATUS_OPTIONS.map((status) => {
+              {filterOptions.statuses.map((status) => {
                 const isSelected = draftFilters.statuses?.includes(status) ?? false
                 return (
                   <button

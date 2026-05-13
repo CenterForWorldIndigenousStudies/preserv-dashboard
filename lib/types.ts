@@ -9,6 +9,7 @@ export interface Document {
   id_legacy: string | null
   source_id?: string | null
   name: string | null
+  validation_status?: string | null
   created_at: Date | string | null
   updated_at: Date | string | null
   is_duplicate?: boolean
@@ -178,6 +179,30 @@ export interface ReviewQueryParams {
   page?: number
 }
 
+export const REVIEW_QUEUE_SORT_FIELDS = [
+  'id',
+  'name',
+  'validation_status',
+  'validation_type',
+  'validator_name',
+  'validator_email',
+  'needs_review',
+  'sensitive',
+] as const
+
+export type ReviewQueueSortField = (typeof REVIEW_QUEUE_SORT_FIELDS)[number]
+
+export interface ReviewQueueDocumentsQueryParams {
+  page?: number
+  pageSize?: number
+  search?: string
+  sortBy?: ReviewQueueSortField
+  sortDirection?: 'asc' | 'desc'
+  validationStatus?: string
+  needsReview?: boolean
+  sensitive?: boolean
+}
+
 export interface FailureItem extends Document {
   failure_reason?: string | null
 }
@@ -206,6 +231,7 @@ export interface ReviewQueueItem {
   validator_email: string | null
   needs_review: boolean
   sensitive: boolean
+  queue_reasons: string[]
 }
 
 export interface ReadyForLibraryItem {
