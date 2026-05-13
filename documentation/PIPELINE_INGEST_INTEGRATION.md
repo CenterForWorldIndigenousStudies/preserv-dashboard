@@ -8,10 +8,10 @@ integration.
 In the current implementation:
 
 - ingest is the required first stage
-- `document-splitter` is the first optional downstream stage
+- `document-splitter` and `page-rotator` are optional downstream stages
 - the dashboard persists requested downstream stages in shared batch state
-- the dashboard auto-triggers `document-splitter` server-side after a
-  successful ingest when that stage was requested
+- the dashboard auto-triggers downstream stages server-side from pipeline
+  callbacks according to the requested stage set
 
 For the broader reusable pattern, see
 [PIPELINE_TRIGGER_CALLBACK_ARCHITECTURE.md](./PIPELINE_TRIGGER_CALLBACK_ARCHITECTURE.md).
@@ -25,10 +25,14 @@ The current process flow supports:
 - selecting optional downstream stages
 - sending the ingest request to `preserv-data-ingester`
 - streaming live process updates to the browser with SSE
-- recording callback receipt from both `preserv-data-ingester` and
-  `preserv-document-splitter`
+- recording callback receipt from `preserv-data-ingester`,
+  `preserv-document-splitter`, and `preserv-page-rotator`
 - auto-triggering `preserv-document-splitter` from the ingester callback when
   appropriate
+- auto-triggering `preserv-page-rotator` from the ingester callback when
+  splitter was not requested
+- auto-triggering `preserv-page-rotator` from the document-splitter callback
+  when both stages were requested
 - reading process state from the `batches` table
 
 The primary route is `/process-documents`.
@@ -50,6 +54,10 @@ User
   -> preserv-document-splitter background execution (optional)
   -> POST /api/pipeline/document-splitter/callback (optional)
   -> dashboard records callback receipt
+  -> preserv-page-rotator POST /rotate (optional)
+  -> preserv-page-rotator background execution (optional)
+  -> POST /api/pipeline/page-rotator/callback (optional)
+  -> dashboard records callback receipt
 ```
 
 ## Dashboard Components
@@ -66,7 +74,8 @@ Responsibilities:
 - let the user enter `batchName`
 - let the user select one or more source folders
 - collect optional collection name and notes
-- let the user opt into downstream stages such as `document-splitter`
+- let the user opt into downstream stages such as `document-splitter` and
+  `page-rotator`
 - submit the request to the dashboard backend
 - subscribe to live batch updates for the accepted batch over SSE
 
@@ -113,7 +122,7 @@ Incoming dashboard request shape:
   "sourceFolderIds": ["folder-1", "folder-2"],
   "collectionName": "Periodicals",
   "collectionNotes": "Optional notes",
-  "requestedStages": ["document-splitter"]
+  "requestedStages": ["document-splitter", "page-rotator"]
 }
 ```
 
@@ -127,7 +136,7 @@ Outgoing ingester request shape:
   "started_by": "user@example.org",
   "initiated_at": "2026-05-08T19:00:00Z",
   "source_folder_ids": ["folder-1", "folder-2"],
-  "requested_stages": ["document-splitter"],
+  "requested_stages": ["document-splitter", "page-rotator"],
   "collection": {
     "name": "Periodicals",
     "notes": "Optional notes"
@@ -162,6 +171,12 @@ Responsibilities:
   - ingest status is `completed`
   - `document-splitter` appears in `processing_details.pipeline.requested_stages`
   - `processing_details.document_splitter.status` is not already `queued`,
+    `running`, or `completed`
+- trigger `preserv-page-rotator` directly when:
+  - ingest status is `completed`
+  - `page-rotator` appears in `processing_details.pipeline.requested_stages`
+  - `document-splitter` was not requested
+  - `processing_details.page_rotator.status` is not already `queued`,
     `running`, or `completed`
 
 ### Document-splitter trigger
@@ -201,6 +216,48 @@ Responsibilities:
 - parse the callback payload
 - record callback receipt time in
   `batches.processing_details.document_splitter.callback.received_at`
+- trigger `preserv-page-rotator` when:
+  - `page-rotator` appears in `processing_details.pipeline.requested_stages`
+  - `processing_details.page_rotator.status` is not already `queued`,
+    `running`, or `completed`
+
+### Page-rotator trigger
+
+- [lib/pipelineTriggers.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/lib/pipelineTriggers.ts:1)
+
+Outgoing page-rotator request shape:
+
+```json
+{
+  "app": "preserv-dashboard",
+  "request_id": "new-uuid",
+  "batch_id": "existing-batch-id",
+  "started_by": "user@example.org",
+  "initiated_at": "2026-05-08T19:20:00Z",
+  "callback": {
+    "url": "https://dashboard.example.org/api/pipeline/page-rotator/callback",
+    "token": "shared-secret"
+  }
+}
+```
+
+The dashboard sends:
+
+```txt
+Authorization: Bearer <PAGE_ROTATOR_TRIGGER_TOKEN>
+```
+
+### Page-rotator callback route
+
+- [app/api/pipeline/page-rotator/callback/route.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/app/api/pipeline/page-rotator/callback/route.ts:1)
+
+Responsibilities:
+
+- bypass Auth.js session protection at the proxy layer
+- verify `Authorization: Bearer <PAGE_ROTATOR_CALLBACK_TOKEN>`
+- parse the callback payload
+- record callback receipt time in
+  `batches.processing_details.page_rotator.callback.received_at`
 
 ### SSE route
 
@@ -226,6 +283,7 @@ Process execution state lives in the related batch row under:
 - `batches.processing_details.pipeline`
 - `batches.processing_details.ingester`
 - `batches.processing_details.document_splitter`
+- `batches.processing_details.page_rotator`
 
 Current orchestration intent:
 
@@ -235,6 +293,7 @@ Current stage-specific callback receipt fields:
 
 - `processing_details.ingester.callback.received_at`
 - `processing_details.document_splitter.callback.received_at`
+- `processing_details.page_rotator.callback.received_at`
 
 ## Environment Variables
 
@@ -248,6 +307,9 @@ DATA_INGESTER_CALLBACK_TOKEN=replace-this-with-a-shared-secret
 DOCUMENT_SPLITTER_BASE_URL=https://your-document-splitter.example.com
 DOCUMENT_SPLITTER_TRIGGER_TOKEN=replace-this-with-a-shared-secret
 DOCUMENT_SPLITTER_CALLBACK_TOKEN=replace-this-with-a-shared-secret
+PAGE_ROTATOR_BASE_URL=https://your-page-rotator.example.com
+PAGE_ROTATOR_TRIGGER_TOKEN=replace-this-with-a-shared-secret
+PAGE_ROTATOR_CALLBACK_TOKEN=replace-this-with-a-shared-secret
 GOOGLE_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}'
 GOOGLE_SERVICE_ACCOUNT_FILE=/absolute/path/to/service_account.json
 GOOGLE_INGEST_SOURCE_ROOT_FOLDER_IDS=["folder-id-1","folder-id-2"]
@@ -268,6 +330,7 @@ The callback routes are intentionally excluded from the global Auth.js proxy:
 
 - `/api/pipeline/ingester/callback`
 - `/api/pipeline/document-splitter/callback`
+- `/api/pipeline/page-rotator/callback`
 
 That exclusion is implemented in:
 

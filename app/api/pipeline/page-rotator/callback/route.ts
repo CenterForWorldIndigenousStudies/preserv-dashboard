@@ -1,23 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { logEvent } from '@lib/observability'
-import {
-  shouldTriggerDocumentSplitter,
-  shouldTriggerOcrProcessor,
-  shouldTriggerPageRotator,
-  triggerDocumentSplitter,
-  triggerOcrProcessor,
-  triggerPageRotator,
-} from '@lib/pipelineTriggers'
-import {
-  getProcessBatchStatus,
-  markProcessStageCallbackReceived,
-} from '@lib/processBatches'
+import { shouldTriggerOcrProcessor, triggerOcrProcessor } from '@lib/pipelineTriggers'
+import { getProcessBatchStatus, markProcessStageCallbackReceived } from '@lib/processBatches'
 
 export const dynamic = 'force-dynamic'
 export const preferredRegion = 'sfo1'
 
-interface IngesterCallbackBody {
+interface PageRotatorCallbackBody {
   batch_id?: unknown
   request_id?: unknown
   status?: unknown
@@ -29,20 +19,20 @@ function parseBearerToken(authorization: string | null): string {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const expectedToken = process.env.DATA_INGESTER_CALLBACK_TOKEN?.trim()
+  const expectedToken = process.env.PAGE_ROTATOR_CALLBACK_TOKEN?.trim()
   if (!expectedToken) {
-    return NextResponse.json({ error: 'DATA_INGESTER_CALLBACK_TOKEN is not configured.' }, { status: 500 })
+    return NextResponse.json({ error: 'PAGE_ROTATOR_CALLBACK_TOKEN is not configured.' }, { status: 500 })
   }
 
   const actualToken = parseBearerToken(request.headers.get('authorization'))
   if (actualToken !== expectedToken) {
-    logEvent('warn', 'ingester_callback_unauthorized')
+    logEvent('warn', 'page_rotator_callback_unauthorized')
     return NextResponse.json({ error: 'Unauthorized callback.' }, { status: 401 })
   }
 
-  let body: IngesterCallbackBody
+  let body: PageRotatorCallbackBody
   try {
-    body = (await request.json()) as IngesterCallbackBody
+    body = (await request.json()) as PageRotatorCallbackBody
   } catch {
     return NextResponse.json({ error: 'Request body must be valid JSON.' }, { status: 400 })
   }
@@ -56,9 +46,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const receivedAtIso = new Date().toISOString()
-    await markProcessStageCallbackReceived(batchId, 'ingester', receivedAtIso)
-    logEvent('info', 'ingester_callback_received', {
+    await markProcessStageCallbackReceived(batchId, 'page_rotator', new Date().toISOString())
+    logEvent('info', 'page_rotator_callback_received', {
       batchId,
       requestId,
       status,
@@ -67,21 +56,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const batch = await getProcessBatchStatus(batchId)
     if (!batch) {
-      throw new Error(`Batch ${batchId} was not found after recording ingester callback.`)
+      throw new Error(`Batch ${batchId} was not found after recording page-rotator callback.`)
     }
 
-    if (shouldTriggerDocumentSplitter(batch)) {
-      await triggerDocumentSplitter(batch)
-    } else if (shouldTriggerPageRotator(batch)) {
-      await triggerPageRotator(batch)
-    } else if (shouldTriggerOcrProcessor(batch)) {
+    if (shouldTriggerOcrProcessor(batch)) {
       await triggerOcrProcessor(batch)
     }
-
     return new NextResponse(null, { status: 204 })
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Failed to record ingester callback.'
-    logEvent('error', 'ingester_callback_record_failed', {
+    const message = error instanceof Error ? error.message : 'Failed to record page-rotator callback.'
+    logEvent('error', 'page_rotator_callback_record_failed', {
       batchId,
       requestId,
       status,

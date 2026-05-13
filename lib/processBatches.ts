@@ -22,7 +22,15 @@ export interface ProcessStageStatus {
   splitCount: number
   childCount: number
   passedThroughCount: number
+  rotatedCount: number
+  normalizedCount: number
+  ocrCompletedCount: number
+  skippedCount: number
+  reviewNeededCount: number
   failedCount: number
+  currentPass: number
+  maxPasses: number
+  completedPasses: number[]
   sourceFolderIds: string[]
   collectionName: string | null
   collectionNotes: string | null
@@ -36,6 +44,8 @@ export interface ProcessBatchStatus {
   pipelineRequestedStages: string[]
   ingester: ProcessStageStatus | null
   documentSplitter: ProcessStageStatus | null
+  pageRotator: ProcessStageStatus | null
+  ocrProcessor: ProcessStageStatus | null
 }
 
 type SelectedBatchFields = {
@@ -77,7 +87,15 @@ interface ProcessStageDetails {
   split_count?: unknown
   child_count?: unknown
   passed_through_count?: unknown
+  rotated_count?: unknown
+  normalized_count?: unknown
+  ocr_completed_count?: unknown
+  skipped_count?: unknown
+  review_needed_count?: unknown
   failed_count?: unknown
+  current_pass?: unknown
+  max_passes?: unknown
+  completed_passes?: unknown
   error?: string | null
   callback?: ProcessStageCallbackDetails | null
 }
@@ -90,6 +108,8 @@ interface ProcessBatchDetails {
   pipeline?: ProcessPipelineDetails | null
   ingester?: ProcessStageDetails | null
   document_splitter?: ProcessStageDetails | null
+  page_rotator?: ProcessStageDetails | null
+  ocr_processor?: ProcessStageDetails | null
 }
 
 function parseProcessingDetails(raw: string | null): ProcessBatchDetails {
@@ -157,6 +177,11 @@ function parseStageCountFields(stage: ProcessStageDetails): Pick<
   | 'splitCount'
   | 'childCount'
   | 'passedThroughCount'
+  | 'rotatedCount'
+  | 'normalizedCount'
+  | 'ocrCompletedCount'
+  | 'skippedCount'
+  | 'reviewNeededCount'
   | 'failedCount'
 > {
   return {
@@ -167,6 +192,11 @@ function parseStageCountFields(stage: ProcessStageDetails): Pick<
     splitCount: parseNumber(stage.split_count),
     childCount: parseNumber(stage.child_count),
     passedThroughCount: parseNumber(stage.passed_through_count),
+    rotatedCount: parseNumber(stage.rotated_count),
+    normalizedCount: parseNumber(stage.normalized_count),
+    ocrCompletedCount: parseNumber(stage.ocr_completed_count),
+    skippedCount: parseNumber(stage.skipped_count),
+    reviewNeededCount: parseNumber(stage.review_needed_count),
     failedCount: parseNumber(stage.failed_count),
   }
 }
@@ -186,6 +216,8 @@ function parseStageStatus(stage: ProcessStageDetails | null | undefined): Proces
     return null
   }
 
+  const completedPasses = parseStringArray(stage.completed_passes).map((value) => Number(value)).filter(Number.isFinite)
+
   return {
     status: normalizeText(stage.status),
     requestId: normalizeText(stage.request_id ?? null),
@@ -197,6 +229,9 @@ function parseStageStatus(stage: ProcessStageDetails | null | undefined): Proces
     error: normalizeText(stage.error),
     ...parseStageCallbackFields(stage),
     ...parseStageCountFields(stage),
+    currentPass: parseNumber(stage.current_pass) || 1,
+    maxPasses: parseNumber(stage.max_passes) || 1,
+    completedPasses,
     sourceFolderIds: parseStringArray(stage.source_folder_ids),
     ...parseStageCollectionFields(stage),
   }
@@ -213,6 +248,8 @@ function toProcessBatchStatus(batch: SelectedBatchFields): ProcessBatchStatus {
     pipelineRequestedStages: parseStringArray(details.pipeline?.requested_stages),
     ingester: parseStageStatus(details.ingester),
     documentSplitter: parseStageStatus(details.document_splitter),
+    pageRotator: parseStageStatus(details.page_rotator),
+    ocrProcessor: parseStageStatus(details.ocr_processor),
   }
 }
 
@@ -220,7 +257,9 @@ function hasProcessState(batch: ProcessBatchStatus): boolean {
   return (
     batch.pipelineRequestedStages.length > 0 ||
     batch.ingester !== null ||
-    batch.documentSplitter !== null
+    batch.documentSplitter !== null ||
+    batch.pageRotator !== null ||
+    batch.ocrProcessor !== null
   )
 }
 
@@ -280,7 +319,7 @@ export async function setProcessBatchRequestedStages(batchId: string, requestedS
 
 export async function markProcessStageCallbackReceived(
   batchId: string,
-  stageKey: 'ingester' | 'document_splitter',
+  stageKey: 'ingester' | 'document_splitter' | 'page_rotator' | 'ocr_processor',
   receivedAtIso: string,
 ): Promise<void> {
   const batch = await db.batches.findUnique({

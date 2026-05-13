@@ -57,12 +57,29 @@ function StageMetrics({ stageName, stage }: { stageName: string; stage: ProcessS
           { label: 'Duplicates', value: stage.duplicateCount },
           { label: 'Same Origin Skips', value: stage.skippedSameOriginCount },
         ]
-      : [
-          { label: 'Processed', value: stage.processedCount },
-          { label: 'Split Docs', value: stage.splitCount },
-          { label: 'Child Docs', value: stage.childCount },
-          { label: 'Pass Through', value: stage.passedThroughCount },
-        ]
+        : stageName === 'Page Rotator'
+        ? [
+            { label: 'Processed', value: stage.processedCount },
+            { label: 'Rotated', value: stage.rotatedCount },
+            { label: 'Pass Through', value: stage.passedThroughCount },
+            { label: 'Review', value: stage.reviewNeededCount },
+            { label: 'Failed', value: stage.failedCount },
+          ]
+        : stageName === 'OCR Processor'
+          ? [
+              { label: 'Processed', value: stage.processedCount },
+              { label: 'OCR Complete', value: stage.ocrCompletedCount },
+              { label: 'Pass Through', value: stage.passedThroughCount },
+              { label: 'Review', value: stage.reviewNeededCount },
+              { label: 'Failed', value: stage.failedCount },
+            ]
+        : [
+            { label: 'Processed', value: stage.processedCount },
+            { label: 'Split Docs', value: stage.splitCount },
+            { label: 'Child Docs', value: stage.childCount },
+            { label: 'Pass Through', value: stage.passedThroughCount },
+            { label: 'Review', value: stage.reviewNeededCount },
+          ]
 
   return (
     <Box
@@ -130,6 +147,7 @@ function StageCard({
           <DetailRow label="Started" value={formatDateTime(stage.startedAt)} />
           <DetailRow label="Completed" value={formatDateTime(stage.completedAt)} />
           <DetailRow label="Last Transition" value={formatDateTime(stage.lastTransitionAt)} />
+          <DetailRow label="Pass" value={`${stage.currentPass} / ${stage.maxPasses}`} />
           <DetailRow label="Callback Delivery" value={stage.callbackDeliveryStatus ?? '—'} />
           <DetailRow label="Callback Received" value={formatDateTime(stage.callbackReceivedAt)} />
         </Box>
@@ -217,6 +235,8 @@ export function ProcessBatchStatusCard({
 
         <StageCard label="Ingest" stage={batch.ingester} />
         <StageCard label="Document Splitter" stage={batch.documentSplitter} />
+        <StageCard label="Page Rotator" stage={batch.pageRotator} />
+        <StageCard label="OCR Processor" stage={batch.ocrProcessor} />
       </Stack>
     </Paper>
   )

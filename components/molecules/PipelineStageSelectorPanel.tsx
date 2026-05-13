@@ -7,7 +7,7 @@ import {
   Typography,
 } from '@mui/material'
 
-import { DOCUMENT_SPLITTER_STAGE } from '@constants/pipeline'
+import { DOCUMENT_SPLITTER_STAGE, OCR_PROCESSOR_STAGE, PAGE_ROTATOR_STAGE } from '@constants/pipeline'
 
 interface PipelineStageSelectorPanelProps {
   selectedStages: string[]
@@ -20,6 +20,18 @@ const availableStages = [
     label: 'Document Splitter',
     description:
       'Automatically continue into document splitting after ingest completes successfully.',
+  },
+  {
+    id: PAGE_ROTATOR_STAGE,
+    label: 'Page Rotator',
+    description:
+      'Automatically continue into page rotation after ingest or after document splitting, depending on the selected stage set.',
+  },
+  {
+    id: OCR_PROCESSOR_STAGE,
+    label: 'OCR Processor',
+    description:
+      'Automatically continue into OCR after ingest, after document splitting, or after page rotation, depending on the selected stage set.',
   },
 ] as const
 

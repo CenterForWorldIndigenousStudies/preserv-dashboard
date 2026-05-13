@@ -13,6 +13,7 @@ const statusVariantMap = {
   completed: 'success',
   failed: 'danger',
   running: 'info',
+  review_needed: 'danger',
 } as const satisfies Record<string, BadgeVariant>
 
 export function PipelineStageStatusBadge({

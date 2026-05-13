@@ -102,6 +102,7 @@ These variables are used by:
 - [app/api/process/start/route.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/app/api/process/start/route.ts:1)
 - [app/api/pipeline/ingester/callback/route.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/app/api/pipeline/ingester/callback/route.ts:1)
 - [app/api/pipeline/document-splitter/callback/route.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/app/api/pipeline/document-splitter/callback/route.ts:1)
+- [app/api/pipeline/page-rotator/callback/route.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/app/api/pipeline/page-rotator/callback/route.ts:1)
 
 | Variable | Required | Default | Purpose |
 | --- | --- | --- | --- |
@@ -112,6 +113,9 @@ These variables are used by:
 | `DOCUMENT_SPLITTER_BASE_URL` | Yes for automatic splitter chaining | None | Base URL for the `preserv-document-splitter` app. The dashboard posts trigger requests to `${DOCUMENT_SPLITTER_BASE_URL}/split`. |
 | `DOCUMENT_SPLITTER_TRIGGER_TOKEN` | Yes for automatic splitter chaining | None | Bearer token used by the dashboard to authenticate server-to-server trigger requests into `preserv-document-splitter`. |
 | `DOCUMENT_SPLITTER_CALLBACK_TOKEN` | Yes for automatic splitter chaining and splitter callbacks | None | Shared bearer token used to authenticate `preserv-document-splitter` callback requests into the dashboard. |
+| `PAGE_ROTATOR_BASE_URL` | Yes for automatic page-rotator chaining | None | Base URL for the `preserv-page-rotator` app. The dashboard posts trigger requests to `${PAGE_ROTATOR_BASE_URL}/rotate`. |
+| `PAGE_ROTATOR_TRIGGER_TOKEN` | Yes for automatic page-rotator chaining | None | Bearer token used by the dashboard to authenticate server-to-server trigger requests into `preserv-page-rotator`. |
+| `PAGE_ROTATOR_CALLBACK_TOKEN` | Yes for automatic page-rotator chaining and callbacks | None | Shared bearer token used to authenticate `preserv-page-rotator` callback requests into the dashboard. |
 
 Notes:
 
@@ -127,6 +131,12 @@ Notes:
   - it sends the token to `preserv-document-splitter` as part of the callback
     payload
   - it verifies the same token when the splitter calls back
+- The dashboard uses `PAGE_ROTATOR_TRIGGER_TOKEN` in the `Authorization`
+  header when it calls `preserv-page-rotator`.
+- The dashboard uses `PAGE_ROTATOR_CALLBACK_TOKEN` in two places:
+  - it sends the token to `preserv-page-rotator` as part of the callback
+    payload
+  - it verifies the same token when the page rotator calls back
 - `DASHBOARD_BASE_URL` should point to a hostname reachable from the pipeline
   app environment. When local pipeline apps run in Docker, `localhost` is
   usually wrong and `http://host.docker.internal:3000` is typically the better
@@ -203,6 +213,9 @@ INGESTER_CALLBACK_TOKEN=replace-this-with-a-shared-secret
 DOCUMENT_SPLITTER_BASE_URL=http://localhost:8100
 DOCUMENT_SPLITTER_TRIGGER_TOKEN=replace-this-with-a-shared-secret
 DOCUMENT_SPLITTER_CALLBACK_TOKEN=replace-this-with-a-shared-secret
+PAGE_ROTATOR_BASE_URL=http://localhost:8002
+PAGE_ROTATOR_TRIGGER_TOKEN=replace-this-with-a-shared-secret
+PAGE_ROTATOR_CALLBACK_TOKEN=replace-this-with-a-shared-secret
 GOOGLE_SERVICE_ACCOUNT_FILE=/absolute/path/to/service_account.json
 ```
 
@@ -226,6 +239,8 @@ For Vercel deployments:
 - set `DATA_INGESTER_TRIGGER_TOKEN` to the shared dashboard -> ingester bearer token
 - set `DOCUMENT_SPLITTER_BASE_URL` to the deployed splitter URL
 - set `DOCUMENT_SPLITTER_TRIGGER_TOKEN` to the shared dashboard -> splitter bearer token
+- set `PAGE_ROTATOR_BASE_URL` to the deployed page-rotator URL
+- set `PAGE_ROTATOR_TRIGGER_TOKEN` to the shared dashboard -> page-rotator bearer token
 
 ## Security Notes
 

@@ -18,6 +18,8 @@ export const FAILED_PATH = `/failures` as const
 export const PIPELINE_PATH = `${API_PATH}/pipeline` as const
 export const DATA_INGESTER_CALLBACK_PATH = `${PIPELINE_PATH}/ingester/callback` as const
 export const DOCUMENT_SPLITTER_CALLBACK_PATH = `${PIPELINE_PATH}/document-splitter/callback` as const
+export const PAGE_ROTATOR_CALLBACK_PATH = `${PIPELINE_PATH}/page-rotator/callback` as const
+export const OCR_PROCESSOR_CALLBACK_PATH = `${PIPELINE_PATH}/ocr-processor/callback` as const
 
 export const PROCESS_PATH = `${API_PATH}/process` as const
 export const PROCESS_EVENTS_PATH = `${PROCESS_PATH}/events` as const
