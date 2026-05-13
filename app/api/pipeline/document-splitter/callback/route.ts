@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { logEvent } from '@lib/observability'
-import { markProcessStageCallbackReceived } from '@lib/processBatches'
+import {
+  shouldTriggerOcrProcessor,
+  shouldTriggerPageRotator,
+  triggerOcrProcessor,
+  triggerPageRotator,
+} from '@lib/pipelineTriggers'
+import {
+  getProcessBatchStatus,
+  markProcessStageCallbackReceived,
+} from '@lib/processBatches'
 
 export const dynamic = 'force-dynamic'
 export const preferredRegion = 'sfo1'
@@ -52,6 +61,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       status,
       errorMessage: errorMessage || null,
     })
+
+    const batch = await getProcessBatchStatus(batchId)
+    if (!batch) {
+      throw new Error(`Batch ${batchId} was not found after recording document-splitter callback.`)
+    }
+
+    if (shouldTriggerPageRotator(batch)) {
+      await triggerPageRotator(batch)
+    } else if (shouldTriggerOcrProcessor(batch)) {
+      await triggerOcrProcessor(batch)
+    }
     return new NextResponse(null, { status: 204 })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to record document-splitter callback.'

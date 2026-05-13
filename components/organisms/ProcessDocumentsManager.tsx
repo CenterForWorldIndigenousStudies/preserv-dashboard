@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Box, Stack } from '@mui/material'
 
 import { PROCESS_EVENTS_PATH, PROCESS_FOLDERS_PATH, PROCESS_START_PATH } from '@constants/paths'
+import { DOCUMENT_SPLITTER_STAGE, OCR_PROCESSOR_STAGE, PAGE_ROTATOR_STAGE } from '@constants/pipeline'
 import type { DriveFolderOption } from '@lib/googleDrive'
 import type { ProcessBatchStatus } from '@lib/processBatches'
 import { GoogleDriveFolderTree } from '@molecules/GoogleDriveFolderTree'
@@ -23,21 +24,64 @@ interface ProcessAcceptedResponse {
 }
 
 function isStageTerminal(status: string | null | undefined): boolean {
-  return status === 'completed' || status === 'failed'
+  return status === 'completed' || status === 'failed' || status === 'review_needed'
+}
+
+function isStageFullyTerminal(stage: ProcessBatchStatus['ingester']): boolean {
+  if (!stage || !isStageTerminal(stage.status)) {
+    return false
+  }
+
+  if (stage.status !== 'completed') {
+    return true
+  }
+
+  return stage.completedPasses.length >= stage.maxPasses
 }
 
 function isProcessTerminal(batch: ProcessBatchStatus): boolean {
-  if (!isStageTerminal(batch.ingester?.status)) {
+  if (!isStageFullyTerminal(batch.ingester)) {
     return false
+  }
+
+  if (batch.ingester?.status === 'failed') {
+    return true
   }
 
   if (batch.pipelineRequestedStages.length === 0) {
     return true
   }
 
+  if (
+    batch.pipelineRequestedStages.includes(DOCUMENT_SPLITTER_STAGE) &&
+    (batch.documentSplitter?.status === 'failed' || batch.documentSplitter?.status === 'review_needed')
+  ) {
+    return true
+  }
+
+  if (
+    batch.pipelineRequestedStages.includes(PAGE_ROTATOR_STAGE) &&
+    (batch.pageRotator?.status === 'failed' || batch.pageRotator?.status === 'review_needed')
+  ) {
+    return true
+  }
+
+  if (
+    batch.pipelineRequestedStages.includes(OCR_PROCESSOR_STAGE) &&
+    (batch.ocrProcessor?.status === 'failed' || batch.ocrProcessor?.status === 'review_needed')
+  ) {
+    return true
+  }
+
   return batch.pipelineRequestedStages.every((stage) => {
-    if (stage === 'document-splitter') {
-      return isStageTerminal(batch.documentSplitter?.status)
+    if (stage === DOCUMENT_SPLITTER_STAGE) {
+      return isStageFullyTerminal(batch.documentSplitter)
+    }
+    if (stage === PAGE_ROTATOR_STAGE) {
+      return isStageFullyTerminal(batch.pageRotator)
+    }
+    if (stage === OCR_PROCESSOR_STAGE) {
+      return isStageFullyTerminal(batch.ocrProcessor)
     }
 
     return false
@@ -246,12 +290,22 @@ export function ProcessDocumentsManager({
               splitCount: 0,
               childCount: 0,
               passedThroughCount: 0,
+              rotatedCount: 0,
+              normalizedCount: 0,
+              ocrCompletedCount: 0,
+              skippedCount: 0,
+              reviewNeededCount: 0,
               failedCount: 0,
+              currentPass: 1,
+              maxPasses: 1,
+              completedPasses: [],
               sourceFolderIds: selectedFolderIds,
               collectionName: collectionName.trim() || null,
               collectionNotes: collectionNotes.trim() || null,
             },
             documentSplitter: null,
+            pageRotator: null,
+            ocrProcessor: null,
           }),
         )
         setActiveBatchId(submittedBatchId)
