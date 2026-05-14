@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { logEvent } from '@lib/observability'
-import { markProcessStageCallbackReceived } from '@lib/processBatches'
+import { shouldTriggerContentDedup, triggerContentDedup } from '@lib/pipelineTriggers'
+import { getProcessBatchStatus, markProcessStageCallbackReceived } from '@lib/processBatches'
 
 export const dynamic = 'force-dynamic'
 export const preferredRegion = 'sfo1'
@@ -52,6 +53,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       status,
       errorMessage: errorMessage || null,
     })
+
+    const batch = await getProcessBatchStatus(batchId)
+    if (!batch) {
+      throw new Error(`Batch ${batchId} was not found after recording ocr-processor callback.`)
+    }
+
+    if (shouldTriggerContentDedup(batch)) {
+      await triggerContentDedup(batch)
+    }
     return new NextResponse(null, { status: 204 })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to record ocr-processor callback.'

@@ -8,7 +8,8 @@ integration.
 In the current implementation:
 
 - ingest is the required first stage
-- `document-splitter` and `page-rotator` are optional downstream stages
+- `document-splitter`, `page-rotator`, `ocr-processor`, and `content-dedup`
+  are optional downstream stages
 - the dashboard persists requested downstream stages in shared batch state
 - the dashboard auto-triggers downstream stages server-side from pipeline
   callbacks according to the requested stage set
@@ -26,7 +27,8 @@ The current process flow supports:
 - sending the ingest request to `preserv-data-ingester`
 - streaming live process updates to the browser with SSE
 - recording callback receipt from `preserv-data-ingester`,
-  `preserv-document-splitter`, and `preserv-page-rotator`
+  `preserv-document-splitter`, `preserv-page-rotator`,
+  `preserv-ocr-processor`, and `preserv-content-dedup`
 - auto-triggering `preserv-document-splitter` from the ingester callback when
   appropriate
 - auto-triggering `preserv-page-rotator` from the ingester callback when
@@ -331,6 +333,8 @@ The callback routes are intentionally excluded from the global Auth.js proxy:
 - `/api/pipeline/ingester/callback`
 - `/api/pipeline/document-splitter/callback`
 - `/api/pipeline/page-rotator/callback`
+- `/api/pipeline/ocr-processor/callback`
+- `/api/pipeline/content-dedup/callback`
 
 That exclusion is implemented in:
 

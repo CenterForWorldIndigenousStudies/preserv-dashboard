@@ -5,7 +5,12 @@ import { useRouter } from 'next/navigation'
 import { Box, Stack } from '@mui/material'
 
 import { PROCESS_EVENTS_PATH, PROCESS_FOLDERS_PATH, PROCESS_START_PATH } from '@constants/paths'
-import { DOCUMENT_SPLITTER_STAGE, OCR_PROCESSOR_STAGE, PAGE_ROTATOR_STAGE } from '@constants/pipeline'
+import {
+  CONTENT_DEDUP_STAGE,
+  DOCUMENT_SPLITTER_STAGE,
+  OCR_PROCESSOR_STAGE,
+  PAGE_ROTATOR_STAGE,
+} from '@constants/pipeline'
 import type { DriveFolderOption } from '@lib/googleDrive'
 import type { ProcessBatchStatus } from '@lib/processBatches'
 import { GoogleDriveFolderTree } from '@molecules/GoogleDriveFolderTree'
@@ -39,6 +44,43 @@ function isStageFullyTerminal(stage: ProcessBatchStatus['ingester']): boolean {
   return stage.completedPasses.length >= stage.maxPasses
 }
 
+function hasRequestedStageFailure(batch: ProcessBatchStatus): boolean {
+  return (
+    (batch.pipelineRequestedStages.includes(DOCUMENT_SPLITTER_STAGE) &&
+      (batch.documentSplitter?.status === 'failed' ||
+        batch.documentSplitter?.status === 'review_needed')) ||
+    (batch.pipelineRequestedStages.includes(PAGE_ROTATOR_STAGE) &&
+      (batch.pageRotator?.status === 'failed' ||
+        batch.pageRotator?.status === 'review_needed')) ||
+    (batch.pipelineRequestedStages.includes(OCR_PROCESSOR_STAGE) &&
+      (batch.ocrProcessor?.status === 'failed' ||
+        batch.ocrProcessor?.status === 'review_needed')) ||
+    (batch.pipelineRequestedStages.includes(CONTENT_DEDUP_STAGE) &&
+      (batch.contentDedup?.status === 'failed' ||
+        batch.contentDedup?.status === 'review_needed'))
+  )
+}
+
+function isRequestedStageFullyTerminal(
+  batch: ProcessBatchStatus,
+  stage: string,
+): boolean {
+  if (stage === DOCUMENT_SPLITTER_STAGE) {
+    return isStageFullyTerminal(batch.documentSplitter)
+  }
+  if (stage === PAGE_ROTATOR_STAGE) {
+    return isStageFullyTerminal(batch.pageRotator)
+  }
+  if (stage === OCR_PROCESSOR_STAGE) {
+    return isStageFullyTerminal(batch.ocrProcessor)
+  }
+  if (stage === CONTENT_DEDUP_STAGE) {
+    return isStageFullyTerminal(batch.contentDedup)
+  }
+
+  return false
+}
+
 function isProcessTerminal(batch: ProcessBatchStatus): boolean {
   if (!isStageFullyTerminal(batch.ingester)) {
     return false
@@ -52,40 +94,13 @@ function isProcessTerminal(batch: ProcessBatchStatus): boolean {
     return true
   }
 
-  if (
-    batch.pipelineRequestedStages.includes(DOCUMENT_SPLITTER_STAGE) &&
-    (batch.documentSplitter?.status === 'failed' || batch.documentSplitter?.status === 'review_needed')
-  ) {
+  if (hasRequestedStageFailure(batch)) {
     return true
   }
 
-  if (
-    batch.pipelineRequestedStages.includes(PAGE_ROTATOR_STAGE) &&
-    (batch.pageRotator?.status === 'failed' || batch.pageRotator?.status === 'review_needed')
-  ) {
-    return true
-  }
-
-  if (
-    batch.pipelineRequestedStages.includes(OCR_PROCESSOR_STAGE) &&
-    (batch.ocrProcessor?.status === 'failed' || batch.ocrProcessor?.status === 'review_needed')
-  ) {
-    return true
-  }
-
-  return batch.pipelineRequestedStages.every((stage) => {
-    if (stage === DOCUMENT_SPLITTER_STAGE) {
-      return isStageFullyTerminal(batch.documentSplitter)
-    }
-    if (stage === PAGE_ROTATOR_STAGE) {
-      return isStageFullyTerminal(batch.pageRotator)
-    }
-    if (stage === OCR_PROCESSOR_STAGE) {
-      return isStageFullyTerminal(batch.ocrProcessor)
-    }
-
-    return false
-  })
+  return batch.pipelineRequestedStages.every((stage) =>
+    isRequestedStageFullyTerminal(batch, stage),
+  )
 }
 
 function upsertBatchStatus(
@@ -286,6 +301,7 @@ export function ProcessDocumentsManager({
               processedCount: 0,
               ingestedCount: 0,
               duplicateCount: 0,
+              exactDuplicateCount: 0,
               skippedSameOriginCount: 0,
               splitCount: 0,
               childCount: 0,
@@ -293,6 +309,8 @@ export function ProcessDocumentsManager({
               rotatedCount: 0,
               normalizedCount: 0,
               ocrCompletedCount: 0,
+              versionedCount: 0,
+              resolvedCount: 0,
               skippedCount: 0,
               reviewNeededCount: 0,
               failedCount: 0,
@@ -306,6 +324,7 @@ export function ProcessDocumentsManager({
             documentSplitter: null,
             pageRotator: null,
             ocrProcessor: null,
+            contentDedup: null,
           }),
         )
         setActiveBatchId(submittedBatchId)

@@ -192,6 +192,7 @@ Example route family:
 - `/api/pipeline/document-splitter/callback`
 - `/api/pipeline/page-rotator/callback`
 - `/api/pipeline/ocr-processor/callback`
+- `/api/pipeline/content-dedup/callback`
 - `/api/pipeline/metadata-extractor/callback`
 
 Example env family:

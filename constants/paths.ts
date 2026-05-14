@@ -20,6 +20,7 @@ export const DATA_INGESTER_CALLBACK_PATH = `${PIPELINE_PATH}/ingester/callback` 
 export const DOCUMENT_SPLITTER_CALLBACK_PATH = `${PIPELINE_PATH}/document-splitter/callback` as const
 export const PAGE_ROTATOR_CALLBACK_PATH = `${PIPELINE_PATH}/page-rotator/callback` as const
 export const OCR_PROCESSOR_CALLBACK_PATH = `${PIPELINE_PATH}/ocr-processor/callback` as const
+export const CONTENT_DEDUP_CALLBACK_PATH = `${PIPELINE_PATH}/content-dedup/callback` as const
 
 export const PROCESS_PATH = `${API_PATH}/process` as const
 export const PROCESS_EVENTS_PATH = `${PROCESS_PATH}/events` as const

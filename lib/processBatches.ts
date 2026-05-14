@@ -18,6 +18,7 @@ export interface ProcessStageStatus {
   processedCount: number
   ingestedCount: number
   duplicateCount: number
+  exactDuplicateCount: number
   skippedSameOriginCount: number
   splitCount: number
   childCount: number
@@ -25,6 +26,8 @@ export interface ProcessStageStatus {
   rotatedCount: number
   normalizedCount: number
   ocrCompletedCount: number
+  versionedCount: number
+  resolvedCount: number
   skippedCount: number
   reviewNeededCount: number
   failedCount: number
@@ -46,6 +49,7 @@ export interface ProcessBatchStatus {
   documentSplitter: ProcessStageStatus | null
   pageRotator: ProcessStageStatus | null
   ocrProcessor: ProcessStageStatus | null
+  contentDedup: ProcessStageStatus | null
 }
 
 type SelectedBatchFields = {
@@ -83,6 +87,7 @@ interface ProcessStageDetails {
   processed_count?: unknown
   ingested_count?: unknown
   duplicate_count?: unknown
+  exact_duplicate_count?: unknown
   skipped_same_origin_count?: unknown
   split_count?: unknown
   child_count?: unknown
@@ -90,6 +95,8 @@ interface ProcessStageDetails {
   rotated_count?: unknown
   normalized_count?: unknown
   ocr_completed_count?: unknown
+  versioned_count?: unknown
+  resolved_count?: unknown
   skipped_count?: unknown
   review_needed_count?: unknown
   failed_count?: unknown
@@ -110,6 +117,7 @@ interface ProcessBatchDetails {
   document_splitter?: ProcessStageDetails | null
   page_rotator?: ProcessStageDetails | null
   ocr_processor?: ProcessStageDetails | null
+  content_dedup?: ProcessStageDetails | null
 }
 
 function parseProcessingDetails(raw: string | null): ProcessBatchDetails {
@@ -173,6 +181,7 @@ function parseStageCountFields(stage: ProcessStageDetails): Pick<
   | 'processedCount'
   | 'ingestedCount'
   | 'duplicateCount'
+  | 'exactDuplicateCount'
   | 'skippedSameOriginCount'
   | 'splitCount'
   | 'childCount'
@@ -180,6 +189,8 @@ function parseStageCountFields(stage: ProcessStageDetails): Pick<
   | 'rotatedCount'
   | 'normalizedCount'
   | 'ocrCompletedCount'
+  | 'versionedCount'
+  | 'resolvedCount'
   | 'skippedCount'
   | 'reviewNeededCount'
   | 'failedCount'
@@ -188,6 +199,7 @@ function parseStageCountFields(stage: ProcessStageDetails): Pick<
     processedCount: parseNumber(stage.processed_count),
     ingestedCount: parseNumber(stage.ingested_count),
     duplicateCount: parseNumber(stage.duplicate_count),
+    exactDuplicateCount: parseNumber(stage.exact_duplicate_count),
     skippedSameOriginCount: parseNumber(stage.skipped_same_origin_count),
     splitCount: parseNumber(stage.split_count),
     childCount: parseNumber(stage.child_count),
@@ -195,6 +207,8 @@ function parseStageCountFields(stage: ProcessStageDetails): Pick<
     rotatedCount: parseNumber(stage.rotated_count),
     normalizedCount: parseNumber(stage.normalized_count),
     ocrCompletedCount: parseNumber(stage.ocr_completed_count),
+    versionedCount: parseNumber(stage.versioned_count),
+    resolvedCount: parseNumber(stage.resolved_count),
     skippedCount: parseNumber(stage.skipped_count),
     reviewNeededCount: parseNumber(stage.review_needed_count),
     failedCount: parseNumber(stage.failed_count),
@@ -250,6 +264,7 @@ function toProcessBatchStatus(batch: SelectedBatchFields): ProcessBatchStatus {
     documentSplitter: parseStageStatus(details.document_splitter),
     pageRotator: parseStageStatus(details.page_rotator),
     ocrProcessor: parseStageStatus(details.ocr_processor),
+    contentDedup: parseStageStatus(details.content_dedup),
   }
 }
 
@@ -259,7 +274,8 @@ function hasProcessState(batch: ProcessBatchStatus): boolean {
     batch.ingester !== null ||
     batch.documentSplitter !== null ||
     batch.pageRotator !== null ||
-    batch.ocrProcessor !== null
+    batch.ocrProcessor !== null ||
+    batch.contentDedup !== null
   )
 }
 
@@ -317,9 +333,14 @@ export async function setProcessBatchRequestedStages(batchId: string, requestedS
   })
 }
 
-export async function markProcessStageCallbackReceived(
+async function updateProcessStageCallbackReceived(
   batchId: string,
-  stageKey: 'ingester' | 'document_splitter' | 'page_rotator' | 'ocr_processor',
+  stageKey:
+    | 'ingester'
+    | 'document_splitter'
+    | 'page_rotator'
+    | 'ocr_processor'
+    | 'content_dedup',
   receivedAtIso: string,
 ): Promise<void> {
   const batch = await db.batches.findUnique({
@@ -354,4 +375,17 @@ export async function markProcessStageCallbackReceived(
       processing_details: JSON.stringify(nextDetails),
     },
   })
+}
+
+export async function markProcessStageCallbackReceived(
+  batchId: string,
+  stageKey:
+    | 'ingester'
+    | 'document_splitter'
+    | 'page_rotator'
+    | 'ocr_processor'
+    | 'content_dedup',
+  receivedAtIso: string,
+): Promise<void> {
+  await updateProcessStageCallbackReceived(batchId, stageKey, receivedAtIso)
 }
