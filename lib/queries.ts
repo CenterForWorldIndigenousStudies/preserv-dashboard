@@ -14,6 +14,7 @@ import {
   type PipelineSummary,
   type ReadyForLibraryItem,
   type ReviewItem,
+  type ReviewQueueDecision,
   type ReviewQueryParams,
   type ReviewQueueDocumentsQueryParams,
   type ReviewQueueItem,
@@ -62,6 +63,8 @@ interface OverviewDocumentRow {
   source_id: string | null
   name: string | null
   validation_status: string | null
+  validation_timestamp?: bigint | number | string | null
+  validator_name?: string | null
   created_at: Date | string | null
   updated_at: Date | string | null
   is_duplicate: boolean | number | bigint | string | null
@@ -150,6 +153,60 @@ export async function getNeedsReviewDocuments(
     },
     client,
   )
+}
+
+export async function applyReviewQueueDecision(params: {
+  documentId: string
+  decision: ReviewQueueDecision
+  validationTimestamp?: number
+  validatorName?: string | null
+}): Promise<void> {
+  const documentId = params.documentId.trim()
+  if (!documentId) {
+    throw new Error('Document ID is required.')
+  }
+
+  const validationTimestamp = Number.isFinite(params.validationTimestamp)
+    ? Math.floor(params.validationTimestamp ?? 0)
+    : Math.floor(Date.now() / 1000)
+  const validatorName = params.validatorName?.trim() ?? ''
+  const newState = params.decision === 'APPROVED' ? 'approved' : 'rejected'
+
+  await db.$transaction(async (tx) => {
+    const qualityRecord = await tx.document_quality.findUnique({
+      where: { document_id: documentId },
+      select: { document_id: true },
+    })
+
+    if (!qualityRecord) {
+      throw new Error(`Document ${documentId} does not have a quality record.`)
+    }
+
+    const latestState = await tx.state_history.findFirst({
+      where: { document_id: documentId },
+      select: { new_state: true },
+      orderBy: [{ changed_at: 'desc' }, { id: 'desc' }],
+    })
+
+    await tx.state_history.create({
+      data: {
+        id: crypto.randomUUID(),
+        document_id: documentId,
+        previous_state: latestState?.new_state ?? null,
+        new_state: newState,
+        changed_at: new Date(),
+      },
+    })
+
+    await tx.document_quality.update({
+      where: { document_id: documentId },
+      data: {
+        validation_status: params.decision,
+        validation_timestamp: validationTimestamp,
+        validator_name: validatorName || undefined,
+      },
+    })
+  })
 }
 
 const PAGE_SIZE = 20
@@ -1109,6 +1166,8 @@ async function getOverviewDocumentsPage(
         ) AS source_id,
         d.name,
         dq.validation_status,
+        dq.validation_timestamp,
+        dq.validator_name,
         d.created_at,
         d.updated_at,
         CASE WHEN dup.document_id IS NULL THEN 0 ELSE 1 END AS is_duplicate,
@@ -1571,6 +1630,11 @@ function normalizeOverviewDocumentRow(row: OverviewDocumentRow): Document {
     source_id: row.source_id ?? null,
     name: row.name ?? null,
     validation_status: row.validation_status ?? null,
+    validation_timestamp:
+      row.validation_timestamp !== null && row.validation_timestamp !== undefined
+        ? Number(row.validation_timestamp)
+        : null,
+    validator_name: row.validator_name ?? null,
     created_at: row.created_at ?? null,
     updated_at: row.updated_at ?? null,
     is_duplicate: Boolean(Number(row.is_duplicate ?? 0)),
