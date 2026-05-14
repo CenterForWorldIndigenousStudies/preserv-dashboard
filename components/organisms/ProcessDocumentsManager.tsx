@@ -5,16 +5,20 @@ import { useRouter } from 'next/navigation'
 import { Box, Stack } from '@mui/material'
 
 import { PROCESS_EVENTS_PATH, PROCESS_FOLDERS_PATH, PROCESS_START_PATH } from '@constants/paths'
-import {
-  CONTENT_DEDUP_STAGE,
-  DOCUMENT_SPLITTER_STAGE,
-  OCR_PROCESSOR_STAGE,
-  PAGE_ROTATOR_STAGE,
-} from '@constants/pipeline'
+import { type ProfileId } from '@constants/pipeline'
 import type { DriveFolderOption } from '@lib/googleDrive'
+import { isPipelineBatchTerminal } from '@lib/pipelineExecution'
 import type { ProcessBatchStatus } from '@lib/processBatches'
+import {
+  createDefaultDraft,
+  draftToPipelineConfig,
+  expandPresetToDraft,
+  pipelineConfigToRequestedStages,
+  type PipelineSelectionDraft,
+} from '@lib/pipelineConfig'
 import { GoogleDriveFolderTree } from '@molecules/GoogleDriveFolderTree'
-import { PipelineStageSelectorPanel } from '@molecules/PipelineStageSelectorPanel'
+import { PipelineProfileSelector } from '@components/ProcessDocuments/PipelineProfileSelector'
+import { PipelineStepsModal } from '@components/ProcessDocuments/PipelineStepsModal'
 import { ProcessBatchFormPanel } from '@molecules/ProcessBatchFormPanel'
 import { ProcessBatchStatusCard } from '@molecules/ProcessBatchStatusCard'
 import { ProcessSelectedFoldersPanel } from '@molecules/ProcessSelectedFoldersPanel'
@@ -26,81 +30,6 @@ interface ProcessDocumentsManagerProps {
 interface ProcessAcceptedResponse {
   batch_id: string
   batch_name: string
-}
-
-function isStageTerminal(status: string | null | undefined): boolean {
-  return status === 'completed' || status === 'failed' || status === 'review_needed'
-}
-
-function isStageFullyTerminal(stage: ProcessBatchStatus['ingester']): boolean {
-  if (!stage || !isStageTerminal(stage.status)) {
-    return false
-  }
-
-  if (stage.status !== 'completed') {
-    return true
-  }
-
-  return stage.completedPasses.length >= stage.maxPasses
-}
-
-function hasRequestedStageFailure(batch: ProcessBatchStatus): boolean {
-  return (
-    (batch.pipelineRequestedStages.includes(DOCUMENT_SPLITTER_STAGE) &&
-      (batch.documentSplitter?.status === 'failed' ||
-        batch.documentSplitter?.status === 'review_needed')) ||
-    (batch.pipelineRequestedStages.includes(PAGE_ROTATOR_STAGE) &&
-      (batch.pageRotator?.status === 'failed' ||
-        batch.pageRotator?.status === 'review_needed')) ||
-    (batch.pipelineRequestedStages.includes(OCR_PROCESSOR_STAGE) &&
-      (batch.ocrProcessor?.status === 'failed' ||
-        batch.ocrProcessor?.status === 'review_needed')) ||
-    (batch.pipelineRequestedStages.includes(CONTENT_DEDUP_STAGE) &&
-      (batch.contentDedup?.status === 'failed' ||
-        batch.contentDedup?.status === 'review_needed'))
-  )
-}
-
-function isRequestedStageFullyTerminal(
-  batch: ProcessBatchStatus,
-  stage: string,
-): boolean {
-  if (stage === DOCUMENT_SPLITTER_STAGE) {
-    return isStageFullyTerminal(batch.documentSplitter)
-  }
-  if (stage === PAGE_ROTATOR_STAGE) {
-    return isStageFullyTerminal(batch.pageRotator)
-  }
-  if (stage === OCR_PROCESSOR_STAGE) {
-    return isStageFullyTerminal(batch.ocrProcessor)
-  }
-  if (stage === CONTENT_DEDUP_STAGE) {
-    return isStageFullyTerminal(batch.contentDedup)
-  }
-
-  return false
-}
-
-function isProcessTerminal(batch: ProcessBatchStatus): boolean {
-  if (!isStageFullyTerminal(batch.ingester)) {
-    return false
-  }
-
-  if (batch.ingester?.status === 'failed') {
-    return true
-  }
-
-  if (batch.pipelineRequestedStages.length === 0) {
-    return true
-  }
-
-  if (hasRequestedStageFailure(batch)) {
-    return true
-  }
-
-  return batch.pipelineRequestedStages.every((stage) =>
-    isRequestedStageFullyTerminal(batch, stage),
-  )
 }
 
 function upsertBatchStatus(
@@ -120,7 +49,8 @@ export function ProcessDocumentsManager({
   const [batchName, setBatchName] = useState('')
   const [collectionName, setCollectionName] = useState('')
   const [collectionNotes, setCollectionNotes] = useState('')
-  const [requestedStages, setRequestedStages] = useState<string[]>([])
+  const [pipelineDraft, setPipelineDraft] = useState<PipelineSelectionDraft>(createDefaultDraft)
+  const [isPipelineStepsModalOpen, setIsPipelineStepsModalOpen] = useState(false)
   const [recentBatches, setRecentBatches] = useState(initialBatches)
   const [rootFolders, setRootFolders] = useState<DriveFolderOption[]>([])
   const [childFoldersByParent, setChildFoldersByParent] = useState<Record<string, DriveFolderOption[]>>({})
@@ -163,7 +93,7 @@ export function ProcessDocumentsManager({
       const batch = JSON.parse(message.data) as ProcessBatchStatus
       setRecentBatches((current) => upsertBatchStatus(current, batch))
 
-      if (isProcessTerminal(batch)) {
+      if (isPipelineBatchTerminal(batch)) {
         setActiveBatchId((current) => (current === batch.batchId ? null : current))
         eventSource.close()
       }
@@ -245,6 +175,7 @@ export function ProcessDocumentsManager({
         setAcceptedResult(null)
 
         const selectedFolderIds = Object.keys(selectedFolders)
+        const config = draftToPipelineConfig(pipelineDraft)
         const response = await fetch(PROCESS_START_PATH, {
           method: 'POST',
           headers: {
@@ -255,7 +186,7 @@ export function ProcessDocumentsManager({
             sourceFolderIds: selectedFolderIds,
             collectionName,
             collectionNotes,
-            requestedStages,
+            pipelineConfig: config,
           }),
         })
         const payload = (await response.json()) as {
@@ -282,7 +213,8 @@ export function ProcessDocumentsManager({
             batchName: submittedBatchName,
             startedBy: 'Current user',
             createdAt: submittedAt,
-            pipelineRequestedStages: requestedStages,
+            pipelineRequestedStages: pipelineConfigToRequestedStages(config),
+            pipelineConfig: config,
             ingester: {
               status: 'accepted',
               requestId: null,
@@ -331,7 +263,7 @@ export function ProcessDocumentsManager({
         setBatchName('')
         setCollectionName('')
         setCollectionNotes('')
-        setRequestedStages([])
+        setPipelineDraft(createDefaultDraft())
         setSelectedFolders({})
       })().catch((error: unknown) => {
         setSubmitError(error instanceof Error ? error.message : 'Failed to start processing.')
@@ -370,9 +302,29 @@ export function ProcessDocumentsManager({
           onRefresh={refreshStatuses}
         />
         <Stack spacing={3}>
-          <PipelineStageSelectorPanel
-            selectedStages={requestedStages}
-            onSelectedStagesChange={setRequestedStages}
+          <PipelineProfileSelector
+            draft={pipelineDraft}
+            onProfileChange={(profileId: ProfileId) => {
+              setPipelineDraft(expandPresetToDraft(profileId))
+            }}
+            onConvertToCustom={() => {
+              setPipelineDraft((current) => ({
+                ...current,
+                profileId: 'custom',
+                mode: 'custom',
+              }))
+            }}
+            onOpenStepsModal={() => {
+              setIsPipelineStepsModalOpen(true)
+            }}
+          />
+          <PipelineStepsModal
+            open={isPipelineStepsModalOpen}
+            draft={pipelineDraft}
+            onClose={() => {
+              setIsPipelineStepsModalOpen(false)
+            }}
+            onDraftChange={setPipelineDraft}
           />
           <ProcessSelectedFoldersPanel folders={selectedFolderList} />
         </Stack>

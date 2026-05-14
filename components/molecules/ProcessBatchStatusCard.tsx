@@ -2,6 +2,7 @@ import type { ReactElement } from 'react'
 import { Box, List, ListItem, Paper, Stack, Typography } from '@mui/material'
 
 import { PipelineStageStatusBadge } from '@atoms/Badges/PipelineStageStatusBadge'
+import { PipelineTimelineCard } from '@components/ProcessDocuments/PipelineTimelineCard'
 import type {
   ProcessBatchStatus,
   ProcessStageStatus,
@@ -241,6 +242,8 @@ export function ProcessBatchStatusCard({
               : 'Ingest only'
           }
         />
+
+        <PipelineTimelineCard batch={batch} />
 
         <StageCard label="Ingest" stage={batch.ingester} />
         <StageCard label="Document Splitter" stage={batch.documentSplitter} />
