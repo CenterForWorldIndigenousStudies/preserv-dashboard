@@ -303,6 +303,21 @@ describe('getNeedsReviewDocuments', () => {
     expect(result.pageInfo.page).toBe(1)
     expect(queryText(0)).toContain("ORDER BY COALESCE(d.created_at, TIMESTAMP('1000-01-01 00:00:00')) DESC, d.id ASC")
   })
+
+  it('maps validator fields for review queue documents', async () => {
+    mockQueryRaw.mockResolvedValueOnce([
+      {
+        ...defaultRow,
+        validation_timestamp: BigInt(1747094400),
+        validator_name: 'Maria Reviewer',
+      },
+    ])
+
+    const result = await getNeedsReviewDocuments()
+
+    expect(result.data[0]?.validation_timestamp).toBe(1747094400)
+    expect(result.data[0]?.validator_name).toBe('Maria Reviewer')
+  })
 })
 
 // ---------------------------------------------------------------------------

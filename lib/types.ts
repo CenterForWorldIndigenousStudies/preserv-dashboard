@@ -10,10 +10,14 @@ export interface Document {
   source_id?: string | null
   name: string | null
   validation_status?: string | null
+  validation_timestamp?: string | number | null
+  validator_name?: string | null
   created_at: Date | string | null
   updated_at: Date | string | null
   is_duplicate?: boolean
 }
+
+export type ReviewQueueDecision = 'APPROVED' | 'REJECTED'
 
 export interface DocumentsCursor {
   id: string

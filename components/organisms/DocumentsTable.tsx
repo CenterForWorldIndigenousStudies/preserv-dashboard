@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState, type ReactElement } from 'react'
+import Alert from '@mui/material/Alert'
+import Snackbar from '@mui/material/Snackbar'
 import {
   MaterialReactTable,
   useMaterialReactTable,
@@ -9,17 +11,18 @@ import {
 import Link from 'next/link'
 
 import { Badge, type BadgeVariant } from '@atoms/Badges/Badge'
+import { Button } from '@atoms/Button'
 import { FileSize } from '@atoms/FileSize'
 import { DateAtom } from '@atoms/Date'
 import { getDocumentsAction } from '@actions/documents'
-import { getNeedsReviewDocumentsAction } from '@actions/review-queue'
+import { applyReviewQueueDecisionAction, getNeedsReviewDocumentsAction } from '@actions/review-queue'
 import { OverviewAdvancedSearchModal } from '@organisms/OverviewAdvancedSearchModal'
 import {
   type OverviewAdvancedSearchFilters,
   type OverviewFilterOptions,
   type OverviewStatusOption,
 } from '@lib/overview-search'
-import type { Document, DocumentsPageResult } from '@lib/types'
+import type { Document, DocumentsPageResult, ReviewQueueDecision } from '@lib/types'
 import type { DocumentsQueryParams } from '@lib/queries'
 import { useOverviewTableState, canReuseInitialData } from '@hooks/useOverviewTableState'
 
@@ -102,6 +105,19 @@ export function DocumentsTable({
     },
   )
   const [, setIsLoading] = useState(false)
+  const [activeDecision, setActiveDecision] = useState<{
+    documentId: string
+    decision: ReviewQueueDecision
+  } | null>(null)
+  const [toastState, setToastState] = useState<{
+    open: boolean
+    message: string
+    severity: 'success' | 'error'
+  }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  })
 
   const preservedOverviewHref = useMemo(() => {
     const currentSearch = searchParams.toString()
@@ -153,6 +169,65 @@ export function DocumentsTable({
                 }
 
                 return <Badge variant={getValidationStatusBadgeVariant(value)}>{value}</Badge>
+              },
+            } satisfies MRT_ColumnDef<Document>,
+            {
+              accessorKey: 'validator_name',
+              header: 'Validator Name',
+              size: 170,
+              enableSorting: false,
+              Cell: ({ row }) => row.original.validator_name ?? <span className="txt-muted">--</span>,
+            } satisfies MRT_ColumnDef<Document>,
+            {
+              accessorKey: 'validation_timestamp',
+              header: 'Validation Time',
+              size: 180,
+              enableSorting: false,
+              Cell: ({ row }) =>
+                row.original.validation_timestamp ? (
+                  <DateAtom value={row.original.validation_timestamp} />
+                ) : (
+                  <span className="txt-muted">--</span>
+                ),
+            } satisfies MRT_ColumnDef<Document>,
+            {
+              id: 'review_actions',
+              header: 'Actions',
+              size: 220,
+              enableSorting: false,
+              Cell: ({ row }) => {
+                const isApprovePending =
+                  activeDecision?.documentId === row.original.id && activeDecision.decision === 'APPROVED'
+                const isRejectPending =
+                  activeDecision?.documentId === row.original.id && activeDecision.decision === 'REJECTED'
+                const isPending = isApprovePending || isRejectPending
+
+                return (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      loading={isApprovePending}
+                      disabled={isPending}
+                      onClick={() => {
+                        void handleReviewDecision(row.original.id, 'APPROVED')
+                      }}
+                    >
+                      Approve
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      loading={isRejectPending}
+                      disabled={isPending}
+                      onClick={() => {
+                        void handleReviewDecision(row.original.id, 'REJECTED')
+                      }}
+                    >
+                      Reject
+                    </Button>
+                  </div>
+                )
               },
             } satisfies MRT_ColumnDef<Document>,
           ]
@@ -228,7 +303,7 @@ export function DocumentsTable({
         Cell: ({ row }) => (row.original.is_duplicate ? 'True' : 'False'),
       },
     ],
-    [isReviewQueue, preservedOverviewHref],
+    [activeDecision, isReviewQueue, preservedOverviewHref],
   )
 
   const effectiveInitialQuery = useMemo<DocumentsQueryParams | undefined>(() => {
@@ -256,6 +331,15 @@ export function DocumentsTable({
     }),
     [accessLevel, batch, collection, createdFrom, createdTo, documentType, effectiveStatuses, globalFilter],
   )
+
+  useEffect(() => {
+    if (!initialData || !shouldUseInitialData) {
+      return
+    }
+
+    setData(initialData.data)
+    setPageInfo(initialData.pageInfo)
+  }, [initialData, shouldUseInitialData])
 
   // Fetch new data when query params change
   useEffect(() => {
@@ -298,9 +382,41 @@ export function DocumentsTable({
     }
   }, [effectiveQueryParams, fetchDocumentsAction, serverDriven, shouldUseInitialData])
 
+  async function handleReviewDecision(documentId: string, decision: ReviewQueueDecision): Promise<void> {
+    setActiveDecision({ documentId, decision })
+
+    try {
+      const result = await applyReviewQueueDecisionAction(documentId, decision)
+
+      if (!result.ok) {
+        setToastState({
+          open: true,
+          message: result.error,
+          severity: 'error',
+        })
+        return
+      }
+
+      setData((current) => current.filter((item) => item.id !== documentId))
+      setToastState({
+        open: true,
+        message: result.message,
+        severity: 'success',
+      })
+    } catch (error: unknown) {
+      setToastState({
+        open: true,
+        message: error instanceof Error ? error.message : 'The review decision could not be saved.',
+        severity: 'error',
+      })
+    } finally {
+      setActiveDecision(null)
+    }
+  }
+
   const table = useMaterialReactTable({
     columns,
-    data: shouldUseInitialData && initialData ? initialData.data : data,
+    data,
     state: {
       pagination: { pageIndex: page - 1, pageSize },
       sorting,
@@ -390,6 +506,28 @@ export function DocumentsTable({
           )}
         </div>
       </div>
+      <Snackbar
+        open={toastState.open}
+        autoHideDuration={4000}
+        onClose={(_, reason) => {
+          if (reason === 'clickaway') {
+            return
+          }
+
+          setToastState((current) => ({ ...current, open: false }))
+        }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
+          severity={toastState.severity}
+          variant="filled"
+          onClose={() => {
+            setToastState((current) => ({ ...current, open: false }))
+          }}
+        >
+          {toastState.message}
+        </Alert>
+      </Snackbar>
     </div>
   )
 }
