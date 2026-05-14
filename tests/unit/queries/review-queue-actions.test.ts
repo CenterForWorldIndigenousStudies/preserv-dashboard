@@ -27,6 +27,26 @@ interface MockTransactionClient {
   }
 }
 
+interface StateHistoryCreateArgs {
+  data: {
+    document_id: string
+    previous_state: string | null
+    new_state: string
+    changed_at: Date
+  }
+}
+
+interface DocumentQualityUpdateArgs {
+  where: {
+    document_id: string
+  }
+  data: {
+    validation_status: string
+    validation_timestamp: number
+    validator_name?: string
+  }
+}
+
 function createTransactionClient(): MockTransactionClient {
   return {
     document_quality: {
@@ -68,7 +88,8 @@ describe('applyReviewQueueDecision', () => {
         new_state: 'approved',
       },
     })
-    expect(tx.state_history.create.mock.calls[0]?.[0].data.changed_at).toBeInstanceOf(Date)
+    const stateHistoryCreateArgs = tx.state_history.create.mock.calls[0]?.[0] as StateHistoryCreateArgs | undefined
+    expect(stateHistoryCreateArgs?.data.changed_at).toBeInstanceOf(Date)
 
     expect(tx.document_quality.update).toHaveBeenCalledWith({
       where: { document_id: 'doc-1' },
@@ -108,7 +129,8 @@ describe('applyReviewQueueDecision', () => {
         validation_timestamp: 1747094401,
       },
     })
-    expect(tx.document_quality.update.mock.calls[0]?.[0].data.validator_name).toBeUndefined()
+    const documentQualityUpdateArgs = tx.document_quality.update.mock.calls[0]?.[0] as DocumentQualityUpdateArgs | undefined
+    expect(documentQualityUpdateArgs?.data.validator_name).toBeUndefined()
   })
 
   it('fails before writing history when the document quality record is missing', async () => {
