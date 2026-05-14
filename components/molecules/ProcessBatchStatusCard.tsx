@@ -73,6 +73,15 @@ function StageMetrics({ stageName, stage }: { stageName: string; stage: ProcessS
               { label: 'Review', value: stage.reviewNeededCount },
               { label: 'Failed', value: stage.failedCount },
             ]
+        : stageName === 'Content Dedup'
+          ? [
+              { label: 'Processed', value: stage.processedCount },
+              { label: 'Exact Dups', value: stage.exactDuplicateCount },
+              { label: 'Versioned', value: stage.versionedCount },
+              { label: 'Resolved', value: stage.resolvedCount },
+              { label: 'Skipped', value: stage.skippedCount },
+              { label: 'Failed', value: stage.failedCount },
+            ]
         : [
             { label: 'Processed', value: stage.processedCount },
             { label: 'Split Docs', value: stage.splitCount },
@@ -237,6 +246,7 @@ export function ProcessBatchStatusCard({
         <StageCard label="Document Splitter" stage={batch.documentSplitter} />
         <StageCard label="Page Rotator" stage={batch.pageRotator} />
         <StageCard label="OCR Processor" stage={batch.ocrProcessor} />
+        <StageCard label="Content Dedup" stage={batch.contentDedup} />
       </Stack>
     </Paper>
   )

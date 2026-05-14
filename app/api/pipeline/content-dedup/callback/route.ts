@@ -1,18 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { logEvent } from '@lib/observability'
-import {
-  shouldTriggerContentDedup,
-  shouldTriggerOcrProcessor,
-  triggerContentDedup,
-  triggerOcrProcessor,
-} from '@lib/pipelineTriggers'
-import { getProcessBatchStatus, markProcessStageCallbackReceived } from '@lib/processBatches'
+import { markProcessStageCallbackReceived } from '@lib/processBatches'
 
 export const dynamic = 'force-dynamic'
 export const preferredRegion = 'sfo1'
 
-interface PageRotatorCallbackBody {
+interface ContentDedupCallbackBody {
   batch_id?: unknown
   request_id?: unknown
   status?: unknown
@@ -24,20 +18,23 @@ function parseBearerToken(authorization: string | null): string {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const expectedToken = process.env.PAGE_ROTATOR_CALLBACK_TOKEN?.trim()
+  const expectedToken = process.env.CONTENT_DEDUP_CALLBACK_TOKEN?.trim()
   if (!expectedToken) {
-    return NextResponse.json({ error: 'PAGE_ROTATOR_CALLBACK_TOKEN is not configured.' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'CONTENT_DEDUP_CALLBACK_TOKEN is not configured.' },
+      { status: 500 },
+    )
   }
 
   const actualToken = parseBearerToken(request.headers.get('authorization'))
   if (actualToken !== expectedToken) {
-    logEvent('warn', 'page_rotator_callback_unauthorized')
+    logEvent('warn', 'content_dedup_callback_unauthorized')
     return NextResponse.json({ error: 'Unauthorized callback.' }, { status: 401 })
   }
 
-  let body: PageRotatorCallbackBody
+  let body: ContentDedupCallbackBody
   try {
-    body = (await request.json()) as PageRotatorCallbackBody
+    body = (await request.json()) as ContentDedupCallbackBody
   } catch {
     return NextResponse.json({ error: 'Request body must be valid JSON.' }, { status: 400 })
   }
@@ -51,28 +48,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    await markProcessStageCallbackReceived(batchId, 'page_rotator', new Date().toISOString())
-    logEvent('info', 'page_rotator_callback_received', {
+    await markProcessStageCallbackReceived(batchId, 'content_dedup', new Date().toISOString())
+    logEvent('info', 'content_dedup_callback_received', {
       batchId,
       requestId,
       status,
       errorMessage: errorMessage || null,
     })
-
-    const batch = await getProcessBatchStatus(batchId)
-    if (!batch) {
-      throw new Error(`Batch ${batchId} was not found after recording page-rotator callback.`)
-    }
-
-    if (shouldTriggerOcrProcessor(batch)) {
-      await triggerOcrProcessor(batch)
-    } else if (shouldTriggerContentDedup(batch)) {
-      await triggerContentDedup(batch)
-    }
     return new NextResponse(null, { status: 204 })
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Failed to record page-rotator callback.'
-    logEvent('error', 'page_rotator_callback_record_failed', {
+    const message = error instanceof Error ? error.message : 'Failed to record content-dedup callback.'
+    logEvent('error', 'content_dedup_callback_record_failed', {
       batchId,
       requestId,
       status,

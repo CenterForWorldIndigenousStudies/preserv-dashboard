@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { logEvent } from '@lib/observability'
 import {
+  shouldTriggerContentDedup,
   shouldTriggerOcrProcessor,
   shouldTriggerPageRotator,
+  triggerContentDedup,
   triggerOcrProcessor,
   triggerPageRotator,
 } from '@lib/pipelineTriggers'
@@ -71,6 +73,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       await triggerPageRotator(batch)
     } else if (shouldTriggerOcrProcessor(batch)) {
       await triggerOcrProcessor(batch)
+    } else if (shouldTriggerContentDedup(batch)) {
+      await triggerContentDedup(batch)
     }
     return new NextResponse(null, { status: 204 })
   } catch (error: unknown) {

@@ -103,6 +103,8 @@ These variables are used by:
 - [app/api/pipeline/ingester/callback/route.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/app/api/pipeline/ingester/callback/route.ts:1)
 - [app/api/pipeline/document-splitter/callback/route.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/app/api/pipeline/document-splitter/callback/route.ts:1)
 - [app/api/pipeline/page-rotator/callback/route.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/app/api/pipeline/page-rotator/callback/route.ts:1)
+- [app/api/pipeline/ocr-processor/callback/route.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/app/api/pipeline/ocr-processor/callback/route.ts:1)
+- [app/api/pipeline/content-dedup/callback/route.ts](/Users/marygoldaross/projects/CenterForWorldIndigenousStudies/preserv-dashboard/app/api/pipeline/content-dedup/callback/route.ts:1)
 
 | Variable | Required | Default | Purpose |
 | --- | --- | --- | --- |

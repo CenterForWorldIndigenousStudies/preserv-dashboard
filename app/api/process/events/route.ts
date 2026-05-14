@@ -30,6 +30,7 @@ function sleep(milliseconds: number): Promise<void> {
 
 function currentRequestId(batch: ProcessBatchStatus): string | null {
   return (
+    batch.contentDedup?.requestId ??
     batch.ocrProcessor?.requestId ??
     batch.pageRotator?.requestId ??
     batch.documentSplitter?.requestId ??
@@ -115,6 +116,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
             documentSplitterStatus: latestStatus.documentSplitter?.status ?? null,
             pageRotatorStatus: latestStatus.pageRotator?.status ?? null,
             ocrProcessorStatus: latestStatus.ocrProcessor?.status ?? null,
+            contentDedupStatus: latestStatus.contentDedup?.status ?? null,
           })
           controller.enqueue(encodeSseEvent('batch_status', latestStatus))
           previousPayload = nextPayload
@@ -138,6 +140,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           documentSplitterStatus: initialStatus.documentSplitter?.status ?? null,
           pageRotatorStatus: initialStatus.pageRotator?.status ?? null,
           ocrProcessorStatus: initialStatus.ocrProcessor?.status ?? null,
+          contentDedupStatus: initialStatus.contentDedup?.status ?? null,
         })
         controller.enqueue(encodeSseEvent('batch_status', initialStatus))
         if (shouldCloseProcessStream(initialStatus)) {

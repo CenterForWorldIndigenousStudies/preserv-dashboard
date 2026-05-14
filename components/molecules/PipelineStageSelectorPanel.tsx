@@ -7,7 +7,12 @@ import {
   Typography,
 } from '@mui/material'
 
-import { DOCUMENT_SPLITTER_STAGE, OCR_PROCESSOR_STAGE, PAGE_ROTATOR_STAGE } from '@constants/pipeline'
+import {
+  CONTENT_DEDUP_STAGE,
+  DOCUMENT_SPLITTER_STAGE,
+  OCR_PROCESSOR_STAGE,
+  PAGE_ROTATOR_STAGE,
+} from '@constants/pipeline'
 
 interface PipelineStageSelectorPanelProps {
   selectedStages: string[]
@@ -32,6 +37,12 @@ const availableStages = [
     label: 'OCR Processor',
     description:
       'Automatically continue into OCR after ingest, after document splitting, or after page rotation, depending on the selected stage set.',
+  },
+  {
+    id: CONTENT_DEDUP_STAGE,
+    label: 'Content Dedup',
+    description:
+      'Automatically continue into content-based duplicate and version detection after the deepest requested upstream stage completes.',
   },
 ] as const
 
