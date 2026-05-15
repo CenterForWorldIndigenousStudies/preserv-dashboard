@@ -7,12 +7,11 @@ import type { MRT_ColumnDef } from 'material-react-table'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
-import { applyReviewQueueDecisionAction, getNeedsReviewDocumentsAction } from '@actions/review-queue'
-import { getDocumentsAction } from '@actions/documents'
 import { Badge, type BadgeVariant } from '@atoms/Badges/Badge'
 import { Button } from '@atoms/Button'
 import { DateAtom } from '@atoms/Date'
 import { FileSize } from '@atoms/FileSize'
+import { SourceId } from '@atoms/SourceId'
 import { useOverviewTableState } from '@hooks/useOverviewTableState'
 import {
   type OverviewAdvancedSearchFilters,
@@ -48,6 +47,27 @@ function getValidationStatusBadgeVariant(status: string | null | undefined): Bad
     default:
       return 'neutral'
   }
+}
+
+async function fetchDocumentsTablePage(
+  params: DocumentsQueryParams,
+  isReviewQueue: boolean,
+): Promise<DocumentsPageResult> {
+  if (isReviewQueue) {
+    const { getNeedsReviewDocumentsAction } = await import('@actions/review-queue')
+    return getNeedsReviewDocumentsAction(params)
+  }
+
+  const { getDocumentsAction } = await import('@actions/documents')
+  return getDocumentsAction(params)
+}
+
+async function applyReviewQueueDecisionForDocument(
+  documentId: string,
+  decision: ReviewQueueDecision,
+): Promise<{ ok: true; message: string } | { ok: false; error: string }> {
+  const { applyReviewQueueDecisionAction } = await import('@actions/review-queue')
+  return applyReviewQueueDecisionAction(documentId, decision)
 }
 
 export function DocumentsTable({
@@ -129,7 +149,7 @@ export function DocumentsTable({
     setActiveDecision({ documentId, decision })
 
     try {
-      const result = await applyReviewQueueDecisionAction(documentId, decision)
+      const result = await applyReviewQueueDecisionForDocument(documentId, decision)
 
       if (!result.ok) {
         setToastState({
@@ -235,7 +255,7 @@ export function DocumentsTable({
         accessorKey: 'source_id',
         header: 'Source ID',
         size: 150,
-        Cell: ({ renderedCellValue }) => String((renderedCellValue as string | null) ?? '') || '—',
+        Cell: ({ renderedCellValue }) => <SourceId value={renderedCellValue as string | null | undefined} />,
       },
       {
         accessorKey: 'filesize',
@@ -344,8 +364,7 @@ export function DocumentsTable({
               }
             : undefined,
           fetcher: async (query) => {
-            const action = isReviewQueue ? getNeedsReviewDocumentsAction : getDocumentsAction
-            return action({
+            return fetchDocumentsTablePage({
               page: query.page,
               pageSize: query.pageSize,
               orderBy: query.orderBy as DocumentsQueryParams['orderBy'],
@@ -363,7 +382,7 @@ export function DocumentsTable({
               cursorValue: query.cursorValue,
               cursorId: query.cursorId,
               cursorDirection: query.cursorDirection,
-            })
+            }, isReviewQueue)
           },
         }}
         controller={{
