@@ -10,6 +10,7 @@ import {
   getCollectionDocuments,
   getDocumentsForCollection,
   getDocumentsNotInCollection,
+  getOverviewFilterOptions,
 } from '@lib/queries'
 import { resetTestDatabase } from '../support/test-db'
 import { withRollbackTransaction } from '../support/transaction'
@@ -34,6 +35,37 @@ describe('collection queries (integration)', () => {
           expect(typeof col.collection_name).toBe('string')
           expect(typeof col.document_count).toBe('number')
         }
+      })
+    })
+
+    it('returns overview collection filter options from collections, not arbitrary tags', async () => {
+      await withRollbackTransaction(async (tx) => {
+        const strayTag = await tx.tags.create({
+          data: {
+            id: 'overview-filter-stray-tag-0000001',
+            name: 'Not A Collection Tag',
+          },
+        })
+        const document = await tx.documents.create({
+          data: {
+            id: 'overview-filter-doc-0000000000001',
+            id_legacy: 'overview-filter-doc-legacy-1',
+            name: 'Overview Filter Document',
+            hash_binary: 'overview-filter-hash-1',
+            hash_content: 'overview-filter-content-1',
+            filesize: BigInt(1),
+          },
+        })
+        await tx.document_to_tags.create({
+          data: {
+            id: 'overview-filter-link-0000000000001',
+            document_id: document.id,
+            tag_id: strayTag.id,
+          },
+        })
+
+        const filterOptions = await getOverviewFilterOptions()
+        expect(filterOptions.collections).not.toContain('Not A Collection Tag')
       })
     })
   })

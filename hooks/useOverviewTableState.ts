@@ -47,6 +47,7 @@ function buildComparableQueryShape(queryParams: DocumentsQueryParams | undefined
     queryParams?.orderBy,
     queryParams?.sortDirection,
     queryParams?.search,
+    queryParams?.tag,
     serializeOverviewStatusesParam(queryParams?.statuses),
     queryParams?.documentType,
     queryParams?.batch,
@@ -72,6 +73,7 @@ function syncSearchParam(nextParams: URLSearchParams, key: string, value: string
 
 function syncOverviewFilterSearchParams(nextParams: URLSearchParams, queryParams: DocumentsQueryParams): void {
   syncSearchParam(nextParams, 'search', queryParams.search)
+  syncSearchParam(nextParams, 'tag', queryParams.tag)
   syncSearchParam(nextParams, 'statuses', serializeOverviewStatusesParam(queryParams.statuses))
   syncSearchParam(nextParams, 'documentType', queryParams.documentType && queryParams.documentType !== 'all' ? queryParams.documentType : undefined)
   syncSearchParam(nextParams, 'batch', queryParams.batch)
@@ -112,6 +114,7 @@ export function useOverviewTableState(initialQuery?: DocumentsQueryParams) {
   const [pageSize, setPageSize] = useState(initialQuery?.pageSize ?? 25)
   const [sorting, setSorting] = useState<MRT_SortingState>(buildInitialSorting(initialQuery))
   const [globalFilter, setGlobalFilter] = useState(initialQuery?.search ?? '')
+  const [tag, setTag] = useState(initialQuery?.tag)
   const [statuses, setStatuses] = useState(initialQuery?.statuses)
   const [documentType, setDocumentType] = useState(initialQuery?.documentType ?? 'all')
   const [batch, setBatch] = useState(initialQuery?.batch)
@@ -133,6 +136,7 @@ export function useOverviewTableState(initialQuery?: DocumentsQueryParams) {
       sortDirection: sorting[0] ? (sorting[0].desc ? 'desc' : 'asc') : undefined,
       search: globalFilter || undefined,
       author: globalFilter || undefined,
+      tag,
       statuses,
       documentType,
       batch,
@@ -145,7 +149,7 @@ export function useOverviewTableState(initialQuery?: DocumentsQueryParams) {
       cursorId,
       cursorDirection,
     }),
-    [accessLevel, batch, collection, createdFrom, createdTo, cursorDirection, cursorId, cursorValue, documentType, globalFilter, page, pageSize, sorting, statuses],
+    [accessLevel, batch, collection, createdFrom, createdTo, cursorDirection, cursorId, cursorValue, documentType, globalFilter, page, pageSize, sorting, statuses, tag],
   )
 
   useEffect(() => {
@@ -206,12 +210,14 @@ export function useOverviewTableState(initialQuery?: DocumentsQueryParams) {
     queryParams,
     searchParams,
     statuses,
+    tag,
     setGlobalFilter: (nextValue: string) => {
       setGlobalFilter(nextValue)
       resetToFirstPage()
     },
     setOverviewFilters: (filters: OverviewAdvancedSearchFilters) => {
       setGlobalFilter(filters.author ?? '')
+      setTag(filters.tag)
       setStatuses(filters.statuses)
       setDocumentType(filters.documentType ?? 'all')
       setBatch(filters.batch)

@@ -35,6 +35,7 @@ function parseReviewQueueQueryParams(
   const orderBy = firstSearchParam(params.orderBy) as DocumentsQueryParams['orderBy']
   const sortDirection = firstSearchParam(params.sortDirection) as DocumentsQueryParams['sortDirection']
   const search = normalizeOverviewTextFilter(firstSearchParam(params.search))
+  const tag = normalizeOverviewTextFilter(firstSearchParam(params.tag))
   const batch = normalizeOverviewTextFilter(firstSearchParam(params.batch))
   const collection = normalizeOverviewTextFilter(firstSearchParam(params.collection))
   const createdFrom = normalizeOverviewDateFilter(firstSearchParam(params.createdFrom))
@@ -52,6 +53,7 @@ function parseReviewQueueQueryParams(
     sortDirection: sortDirection === 'asc' ? 'asc' : sortDirection === 'desc' ? 'desc' : undefined,
     search,
     author: search,
+    tag,
     statuses: ['NEEDS_REVIEW'],
     documentType,
     batch,

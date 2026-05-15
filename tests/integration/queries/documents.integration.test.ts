@@ -111,6 +111,24 @@ describe('documents queries (integration)', () => {
     return batch
   }
 
+  const createTestBatchWithOverrides = async (
+    tx: Prisma.TransactionClient,
+    overrides: {
+      id_legacy?: string | null
+      name?: string | null
+    } = {},
+  ): Promise<{ id: string; id_legacy: string | null; name: string | null }> => {
+    const { token } = makeIds()
+    return await tx.batches.create({
+      data: {
+        id: `b${token}`,
+        id_legacy: overrides.id_legacy ?? `legacy-${token}`,
+        name: overrides.name ?? `Batch ${token}`,
+      },
+      select: { id: true, id_legacy: true, name: true },
+    })
+  }
+
   const createTestTag = async (tx: Prisma.TransactionClient, name: string): Promise<{ id: string }> => {
     const { token } = makeIds()
     const tag = await tx.tags.create({
@@ -405,6 +423,107 @@ describe('documents queries (integration)', () => {
         const resultIds = result.data.map((document) => document.id)
         expect(resultIds).toContain(matchingDoc.id)
         expect(resultIds).not.toContain(nonMatchingDoc.id)
+      })
+    }, 15000)
+
+    it('filters by linked batch origin, legacy id, and legacy_batch_origin metadata when batch name is empty', async () => {
+      await withRollbackTransaction(async (tx) => {
+        const matchingDoc = await createTestDocument(tx, { name: 'BATCH_LINKED_MATCH' })
+        const nonMatchingDoc = await createTestDocument(tx, { name: 'BATCH_LINKED_MISS' })
+        const batch = await createTestBatchWithOverrides(tx, {
+          id_legacy: 'registry-batch-legacy-20260514',
+          name: null,
+        })
+        const legacyBatchOriginMetadata =
+          (await tx.batch_metadata.findFirst({
+            where: { name: 'legacy_batch_origin' },
+            select: { id: true },
+          })) ??
+          (await tx.batch_metadata.create({
+            data: {
+              id: 'legacy-batch-origin-metadata-0001',
+              name: 'legacy_batch_origin',
+            },
+            select: { id: true },
+          }))
+
+        await tx.document_to_batches.create({
+          data: {
+            id: `bo-${matchingDoc.id}`.slice(0, 36),
+            document_id: matchingDoc.id,
+            batch_id: batch.id,
+            batch_origin: 'General Inventory Batch Origin',
+          },
+        })
+        await tx.batch_to_batches_metadata.create({
+          data: {
+            id: `bbm-${batch.id}`.slice(0, 36),
+            batch_id: batch.id,
+            batch_metadata_id: legacyBatchOriginMetadata.id,
+            value: JSON.stringify('Historic Batch Origin Label'),
+            value_type: 'string',
+          },
+        })
+
+        const batchOriginResult = await getAllDocuments({
+          pageSize: 100,
+          batch: 'Inventory Batch Origin',
+        }, tx)
+
+        const batchOriginIds = new Set(batchOriginResult.data.map((document) => document.id))
+        expect(batchOriginIds.has(matchingDoc.id)).toBe(true)
+        expect(batchOriginIds.has(nonMatchingDoc.id)).toBe(false)
+
+        const batchLegacyResult = await getAllDocuments({
+          pageSize: 100,
+          batch: 'legacy-20260514',
+        }, tx)
+
+        const batchLegacyIds = new Set(batchLegacyResult.data.map((document) => document.id))
+        expect(batchLegacyIds.has(matchingDoc.id)).toBe(true)
+        expect(batchLegacyIds.has(nonMatchingDoc.id)).toBe(false)
+
+        const batchMetadataResult = await getAllDocuments({
+          pageSize: 100,
+          batch: 'Historic Batch Origin',
+        }, tx)
+
+        const batchMetadataIds = new Set(batchMetadataResult.data.map((document) => document.id))
+        expect(batchMetadataIds.has(matchingDoc.id)).toBe(true)
+        expect(batchMetadataIds.has(nonMatchingDoc.id)).toBe(false)
+      })
+    }, 15000)
+
+    it('filters by fuzzy-matched tags in advanced search', async () => {
+      await withRollbackTransaction(async (tx) => {
+        const matchingDoc = await createTestDocument(tx, { name: 'FUZZY_TAG_MATCH' })
+        const nonMatchingDoc = await createTestDocument(tx, { name: 'FUZZY_TAG_MISS' })
+        const matchingTag = await createTestTag(tx, 'aboriginal governance')
+        const otherTag = await createTestTag(tx, 'coastal fisheries')
+
+        await tx.document_to_tags.createMany({
+          data: [
+            {
+              id: `ftm-${matchingDoc.id}`.slice(0, 36),
+              document_id: matchingDoc.id,
+              tag_id: matchingTag.id,
+            },
+            {
+              id: `fto-${nonMatchingDoc.id}`.slice(0, 36),
+              document_id: nonMatchingDoc.id,
+              tag_id: otherTag.id,
+            },
+          ],
+        })
+
+        const result = await getAllDocuments({
+          pageSize: 100,
+          tag: 'aborijinal',
+        }, tx)
+
+        const resultIds = new Set(result.data.map((document) => document.id))
+        expect(resultIds.has(matchingDoc.id)).toBe(true)
+        expect(resultIds.has(nonMatchingDoc.id)).toBe(false)
       })
     }, 15000)
   })
