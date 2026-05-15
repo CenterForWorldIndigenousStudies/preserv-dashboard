@@ -1,22 +1,16 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react'
-import { type Updater } from '@tanstack/react-table'
+import type { Updater } from '@tanstack/react-table'
 import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Checkbox from '@mui/material/Checkbox'
 import Paper from '@mui/material/Paper'
-import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
-import {
-  MaterialReactTable,
-  useMaterialReactTable,
-  type MRT_ColumnDef,
-  type MRT_SortingState,
-} from 'material-react-table'
+import type { MRT_ColumnDef, MRT_RowSelectionState, MRT_SortingState } from 'material-react-table'
 
 import { DateAtom } from '@atoms/Date'
 import { FileSize } from '@atoms/FileSize'
+import { DocumentDataTable } from '@organisms/document-table/DocumentDataTable'
+import type { DocumentTableController, DocumentTableFetchResult } from '@organisms/document-table/types'
 import type { Document } from '@lib/types'
 
 export type SelectionSortField = 'name' | 'id_legacy' | 'filesize' | 'created_at'
@@ -122,15 +116,58 @@ function toSortingState(sortState: SelectionSortState): MRT_SortingState {
   return [{ id: sortState.field, desc: sortState.direction === 'desc' }]
 }
 
-function getNextSortField(currentSorting: MRT_SortingState, updater: Updater<MRT_SortingState>): SelectionSortField | null {
+function getNextSortField(
+  currentSorting: MRT_SortingState,
+  updater: Updater<MRT_SortingState>,
+): SelectionSortField | null {
   const nextSorting = typeof updater === 'function' ? updater(currentSorting) : updater
   const nextField = nextSorting[0]?.id ?? currentSorting[0]?.id
 
   return nextField ? (nextField as SelectionSortField) : null
 }
 
+function buildSelectionPageInfo(page: number, pageSize: number, total: number) {
+  const hasNextPage = page * pageSize < total
+
+  return {
+    pageSize,
+    hasNextPage,
+    hasPreviousPage: page > 1,
+    startCursor: page > 1 ? { id: `page-${page - 1}`, value: String(page - 1) } : null,
+    endCursor: hasNextPage ? { id: `page-${page + 1}`, value: String(page + 1) } : null,
+  }
+}
+
+function buildClientModeResult(
+  documents: Document[],
+  query: {
+    page: number
+    pageSize: number
+    search?: string
+    orderBy?: string
+    sortDirection?: 'asc' | 'desc'
+  },
+): DocumentTableFetchResult<Document> {
+  const filteredDocuments = filterDocuments(documents, query.search ?? '')
+  const sortedDocuments = query.orderBy
+    ? sortDocuments(filteredDocuments, {
+        field: query.orderBy as SelectionSortField,
+        direction: query.sortDirection === 'desc' ? 'desc' : 'asc',
+      })
+    : filteredDocuments
+  const offset = (query.page - 1) * query.pageSize
+
+  return {
+    data: sortedDocuments.slice(offset, offset + query.pageSize),
+    totalCount: sortedDocuments.length,
+    pageInfo: buildSelectionPageInfo(query.page, query.pageSize, sortedDocuments.length),
+  }
+}
+
 export function SelectionTable(props: SelectionTableProps): ReactElement {
   const serverMode = isServerModeProps(props)
+  const [clientPage, setClientPage] = useState(1)
+  const [clientPageSize, setClientPageSize] = useState(25)
   const [localSearch, setLocalSearch] = useState(props.searchValue)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -164,170 +201,143 @@ export function SelectionTable(props: SelectionTableProps): ReactElement {
     }
   }, [localSearch, props, serverMode])
 
-  const searchValue = serverMode ? localSearch : props.searchValue
-  const sorting = useMemo(() => toSortingState(props.sortState), [props.sortState])
-
-  const data = useMemo(() => {
-    if (serverMode) {
-      return props.documents
-    }
-
-    return filterDocuments(props.documents, props.searchValue)
-  }, [props.documents, props.searchValue, serverMode])
-
   const columns = useMemo<MRT_ColumnDef<Document>[]>(
     () => [
-      {
-        id: 'selection',
-        header: 'Select',
-        enableSorting: false,
-        grow: false,
-        size: 72,
-        Cell: ({ row }) => (
-          <Checkbox
-            checked={props.isChecked(row.original.id)}
-            onChange={(event) => props.onToggle(row.original.id, event.target.checked)}
-          />
-        ),
-        muiTableBodyCellProps: {
-          padding: 'checkbox',
-        },
-        muiTableHeadCellProps: {
-          padding: 'checkbox',
-        },
-      },
       {
         accessorKey: 'name',
         header: 'Name',
         size: 320,
-        sortDescFirst: false,
-        sortingFn: (left, right) => compareDocuments(left.original, right.original, 'name'),
         Cell: ({ row }) => row.original.name ?? 'Untitled document',
       },
       {
         accessorKey: 'id_legacy',
         header: 'Legacy ID',
         size: 220,
-        sortDescFirst: false,
-        sortingFn: (left, right) => compareDocuments(left.original, right.original, 'id_legacy'),
         Cell: ({ row }) => row.original.id_legacy ?? '-',
       },
       {
         accessorKey: 'filesize',
         header: 'File Size',
         size: 140,
-        sortDescFirst: false,
-        sortingFn: (left, right) => compareDocuments(left.original, right.original, 'filesize'),
         Cell: ({ row }) => <FileSize value={row.original.filesize} />,
-        muiTableBodyCellProps: {
-          align: 'right',
-        },
-        muiTableHeadCellProps: {
-          align: 'right',
-        },
       },
       {
         accessorKey: 'created_at',
         header: 'Created',
         size: 180,
-        sortDescFirst: false,
-        sortingFn: (left, right) => compareDocuments(left.original, right.original, 'created_at'),
         Cell: ({ row }) => <DateAtom value={row.original.created_at} />,
       },
     ],
-    [props],
+    [],
   )
 
-  const table = useMaterialReactTable({
-    columns,
-    data,
-    enableBottomToolbar: false,
-    enableColumnActions: false,
-    enableColumnFilters: false,
-    enableColumnOrdering: false,
-    enableDensityToggle: false,
-    enableFullScreenToggle: false,
-    enableGlobalFilter: false,
-    enableHiding: false,
-    enableMultiSort: false,
-    enablePagination: false,
-    enableRowVirtualization: true,
-    enableSorting: true,
-    enableStickyHeader: true,
-    getRowId: (row) => row.id,
-    localization: {
-      noRecordsToDisplay: props.emptyMessage ?? 'No documents found.',
-    },
-    manualFiltering: true,
-    manualPagination: serverMode,
-    manualSorting: serverMode,
-    muiTableBodyRowProps: ({ staticRowIndex }) => ({
-      sx: {
-        backgroundColor: staticRowIndex % 2 === 1 ? 'rgba(244,241,240,0.3)' : 'transparent',
-      },
-    }),
-    muiTableContainerProps: {
-      sx: {
-        height: '100%',
-        maxHeight: 'none',
-        overflow: 'auto',
-      },
-    },
-    muiTableHeadCellProps: {
-      sx: {
-        backgroundColor: '#f4f1f0',
-        color: '#231f20',
-        fontWeight: 600,
-        fontSize: '0.75rem',
-        letterSpacing: '0.1em',
-        textTransform: 'uppercase',
-      },
-    },
-    muiTablePaperProps: {
-      elevation: 0,
-      sx: {
-        backgroundColor: 'transparent',
-        boxShadow: 'none',
-        display: 'flex',
-        flex: 1,
-        flexDirection: 'column',
-        minHeight: 0,
-      },
-    },
-    muiTableProps: {
-      size: 'small',
-      sx: {
-        tableLayout: 'fixed',
-      },
-    },
-    onSortingChange: (updater) => {
-      const nextField = getNextSortField(sorting, updater)
-      if (!nextField) {
-        return
-      }
+  const rowSelection = useMemo<MRT_RowSelectionState>(() => {
+    const selectionEntries = props.documents
+      .filter((document) => props.isChecked(document.id))
+      .map((document) => [document.id, true] as const)
 
-      if (serverMode) {
-        props.onSort(nextField)
-        return
-      }
+    return Object.fromEntries(selectionEntries)
+  }, [props])
 
-      props.onSortChange(nextField)
-    },
-    rowVirtualizerOptions: {
-      estimateSize: () => 52,
-      overscan: 10,
-    },
-    state: {
-      globalFilter: searchValue,
+  const controller = useMemo<DocumentTableController<Record<string, never>>>(() => {
+    if (serverMode) {
+      const sorting = toSortingState(props.sortState)
+
+      return {
+        currentQueryKey: JSON.stringify([
+          props.page,
+          props.pageSize,
+          props.searchValue,
+          props.sortState.field,
+          props.sortState.direction,
+          props.total,
+          props.documents.map((document) => document.id),
+        ]),
+        filters: {},
+        page: props.page,
+        pageSize: props.pageSize,
+        query: {
+          page: props.page,
+          pageSize: props.pageSize,
+          search: props.searchValue || undefined,
+          orderBy: props.sortState.field,
+          sortDirection: props.sortState.direction,
+          filters: {},
+        },
+        search: localSearch,
+        sorting,
+        setFilters: () => undefined,
+        setPageSize: () => undefined,
+        setSearch: (value: string) => {
+          setLocalSearch(value)
+        },
+        setSorting: (updater) => {
+          const nextField = getNextSortField(sorting, updater)
+          if (!nextField) {
+            return
+          }
+
+          props.onSort(nextField)
+        },
+        goToNextPage: () => {
+          props.onPageChange(props.page + 1)
+        },
+        goToPreviousPage: () => {
+          props.onPageChange(Math.max(1, props.page - 1))
+        },
+      }
+    }
+
+    const sorting = toSortingState(props.sortState)
+
+    return {
+      currentQueryKey: JSON.stringify([
+        clientPage,
+        clientPageSize,
+        props.searchValue,
+        props.sortState.field,
+        props.sortState.direction,
+        props.documents.map((document) => document.id),
+      ]),
+      filters: {},
+      page: clientPage,
+      pageSize: clientPageSize,
+      query: {
+        page: clientPage,
+        pageSize: clientPageSize,
+        search: props.searchValue || undefined,
+        orderBy: props.sortState.field,
+        sortDirection: props.sortState.direction,
+        filters: {},
+      },
+      search: props.searchValue,
       sorting,
-    },
-  })
+      setFilters: () => undefined,
+      setPageSize: (value: number) => {
+        setClientPageSize(value)
+        setClientPage(1)
+      },
+      setSearch: (value: string) => {
+        props.onSearchChange(value)
+        setClientPage(1)
+      },
+      setSorting: (updater) => {
+        const nextField = getNextSortField(sorting, updater)
+        if (!nextField) {
+          return
+        }
 
-  const total = serverMode ? props.total : data.length
-  const page = serverMode ? props.page : 1
-  const pageSize = serverMode ? props.pageSize : Math.max(data.length, 1)
-  const start = total === 0 ? 0 : (page - 1) * pageSize + 1
-  const end = total === 0 ? 0 : Math.min(page * pageSize, total)
+        props.onSortChange(nextField)
+        setClientPage(1)
+      },
+      goToNextPage: () => {
+        setClientPage((currentPage) => currentPage + 1)
+      },
+      goToPreviousPage: () => {
+        setClientPage((currentPage) => Math.max(1, currentPage - 1))
+      },
+    }
+  }, [clientPage, clientPageSize, localSearch, props, serverMode])
 
   return (
     <Paper
@@ -343,51 +353,68 @@ export function SelectionTable(props: SelectionTableProps): ReactElement {
     >
       <Box sx={{ borderBottom: '1px solid rgba(53,88,52,0.125)', p: 2 }}>
         <Typography sx={{ color: '#231f20', fontSize: '1rem', fontWeight: 600 }}>{props.title}</Typography>
-        <TextField
-          fullWidth
-          size="small"
-          label={props.searchLabel}
-          value={searchValue}
-          onChange={(event) => {
-            if (serverMode) {
-              setLocalSearch(event.target.value)
-              return
-            }
+      </Box>
 
-            props.onSearchChange(event.target.value)
+      <Box sx={{ flex: 1, minHeight: 0, p: 2 }}>
+        <DocumentDataTable<Document, Record<string, never>>
+          definition={{
+            tableId: serverMode ? 'selection-table-server' : 'selection-table-client',
+            columns,
+            fetcher: (query) => {
+              if (serverMode) {
+                return Promise.resolve({
+                  data: props.documents,
+                  totalCount: props.total,
+                  pageInfo: buildSelectionPageInfo(props.page, props.pageSize, props.total),
+                })
+              }
+
+              return Promise.resolve(buildClientModeResult(props.documents, query))
+            },
           }}
-          sx={{ mt: 2 }}
+          controller={controller}
+          initialData={
+            serverMode
+              ? {
+                  data: props.documents,
+                  totalCount: props.total,
+                  pageInfo: buildSelectionPageInfo(props.page, props.pageSize, props.total),
+                }
+              : buildClientModeResult(props.documents, {
+                  page: 1,
+                  pageSize: 25,
+                  search: props.searchValue || undefined,
+                  orderBy: props.sortState.field,
+                  sortDirection: props.sortState.direction,
+                })
+          }
+          initialQuery={{
+            page: 1,
+            pageSize: 25,
+            search: props.searchValue || undefined,
+            orderBy: props.sortState.field,
+            sortDirection: props.sortState.direction,
+            filters: {},
+          }}
+          searchPlaceholder={props.searchLabel}
+          emptyMessage={props.emptyMessage ?? 'No documents found.'}
+          enableRowSelection
+          rowSelection={rowSelection}
+          onRowSelectionChange={(updater) => {
+            const nextSelection =
+              typeof updater === 'function' ? updater(rowSelection) : updater
+
+            props.documents.forEach((document) => {
+              const previousChecked = Boolean(rowSelection[document.id])
+              const nextChecked = Boolean(nextSelection[document.id])
+
+              if (previousChecked !== nextChecked) {
+                props.onToggle(document.id, nextChecked)
+              }
+            })
+          }}
         />
       </Box>
-
-      <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-        <MaterialReactTable table={table} />
-      </Box>
-
-      {serverMode ? (
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            px: 2,
-            py: 1.5,
-            borderTop: '1px solid rgba(53,88,52,0.125)',
-          }}
-        >
-          <Typography variant="body2">
-            Showing {start}-{end} of {total}
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button size="small" variant="outlined" disabled={page <= 1} onClick={() => props.onPageChange(page - 1)}>
-              Prev
-            </Button>
-            <Button size="small" variant="outlined" disabled={end >= total} onClick={() => props.onPageChange(page + 1)}>
-              Next
-            </Button>
-          </Box>
-        </Box>
-      ) : null}
     </Paper>
   )
 }

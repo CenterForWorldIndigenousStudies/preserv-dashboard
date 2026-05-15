@@ -19,7 +19,11 @@ interface PipelineStageSelectorPanelProps {
   onSelectedStagesChange: (stages: string[]) => void
 }
 
-const availableStages = [
+const availableStages: ReadonlyArray<{
+  id: string
+  label: string
+  description: string
+}> = [
   {
     id: DOCUMENT_SPLITTER_STAGE,
     label: 'Document Splitter',
@@ -44,7 +48,7 @@ const availableStages = [
     description:
       'Automatically continue into content-based duplicate and version detection after the deepest requested upstream stage completes.',
   },
-] as const
+]
 
 export function PipelineStageSelectorPanel({
   selectedStages,

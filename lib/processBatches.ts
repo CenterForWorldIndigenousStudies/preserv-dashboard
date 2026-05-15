@@ -1,4 +1,9 @@
 import { db } from '@lib/db'
+import {
+  parsePipelineConfig,
+  pipelineConfigToRequestedStages,
+  type PipelineConfig,
+} from '@lib/pipelineConfig'
 
 export interface ProcessStageStatus {
   status: string | null
@@ -45,6 +50,7 @@ export interface ProcessBatchStatus {
   startedBy: string | null
   createdAt: string | null
   pipelineRequestedStages: string[]
+  pipelineConfig: PipelineConfig | null
   ingester: ProcessStageStatus | null
   documentSplitter: ProcessStageStatus | null
   pageRotator: ProcessStageStatus | null
@@ -109,6 +115,7 @@ interface ProcessStageDetails {
 
 interface ProcessPipelineDetails {
   requested_stages?: unknown
+  config?: unknown
 }
 
 interface ProcessBatchDetails {
@@ -260,6 +267,7 @@ function toProcessBatchStatus(batch: SelectedBatchFields): ProcessBatchStatus {
     startedBy: normalizeText(batch.started_by),
     createdAt: toIsoString(batch.created_at),
     pipelineRequestedStages: parseStringArray(details.pipeline?.requested_stages),
+    pipelineConfig: parsePipelineConfig(details.pipeline?.config),
     ingester: parseStageStatus(details.ingester),
     documentSplitter: parseStageStatus(details.document_splitter),
     pageRotator: parseStageStatus(details.page_rotator),
@@ -304,6 +312,55 @@ export async function getProcessBatchStatus(batchId: string): Promise<ProcessBat
   })
 
   return batch ? toProcessBatchStatus(batch) : null
+}
+
+export async function setProcessBatchPipelineConfig(
+  batchId: string,
+  pipelineConfig: PipelineConfig,
+): Promise<void> {
+  const batch = await db.batches.findUnique({
+    where: { id: batchId },
+    select: { id: true, processing_details: true },
+  })
+
+  if (!batch) {
+    throw new Error(`Batch ${batchId} was not found`)
+  }
+
+  const details = parseProcessingDetails(batch.processing_details)
+  const requestedStages = pipelineConfigToRequestedStages(pipelineConfig)
+
+  const nextDetails: ProcessBatchDetails = {
+    ...details,
+    pipeline: {
+      ...(details.pipeline ?? {}),
+      requested_stages: requestedStages,
+      config: pipelineConfig,
+    },
+  }
+
+  await db.batches.update({
+    where: { id: batchId },
+    data: {
+      processing_details: JSON.stringify(nextDetails),
+    },
+  })
+}
+
+export async function getProcessBatchPipelineConfig(
+  batchId: string,
+): Promise<PipelineConfig | null> {
+  const batch = await db.batches.findUnique({
+    where: { id: batchId },
+    select: { id: true, processing_details: true },
+  })
+
+  if (!batch) {
+    return null
+  }
+
+  const details = parseProcessingDetails(batch.processing_details)
+  return (details.pipeline?.config as ReturnType<typeof getProcessBatchPipelineConfig>) ?? null
 }
 
 export async function setProcessBatchRequestedStages(batchId: string, requestedStages: string[]): Promise<void> {

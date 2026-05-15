@@ -125,30 +125,30 @@ describe('getAllDocuments', () => {
     expect(call.values.at(-1)).toBe(26)
   })
 
-  it('respects custom pageSize', async () => {
+  it('normalizes unsupported low page sizes up to 25', async () => {
     mockQueryRaw.mockResolvedValueOnce([])
 
     await getAllDocuments({ page: 3, pageSize: 10 })
 
     const call = queryCall(0)
-    expect(call.values.at(-1)).toBe(11)
+    expect(call.values.at(-1)).toBe(26)
   })
 
-  it('caps pageSize at 1000', async () => {
+  it('clamps oversized document table page sizes down to 500', async () => {
     mockQueryRaw.mockResolvedValueOnce([])
 
     await getAllDocuments({ pageSize: 5000 })
 
     const call = queryCall(0)
-    expect(call.values.at(-1)).toBe(1001)
+    expect(call.values.at(-1)).toBe(501)
   })
 
-  it('orders by created_at desc by default', async () => {
+  it('orders by name asc, updated_at asc, and id asc by default', async () => {
     mockQueryRaw.mockResolvedValueOnce([])
 
     await getAllDocuments()
 
-    expect(queryText(0)).toContain("ORDER BY COALESCE(d.created_at, TIMESTAMP('1000-01-01 00:00:00')) DESC, d.id ASC")
+    expect(queryText(0)).toContain("ORDER BY\n        COALESCE(d.name, '') ASC,\n        COALESCE(d.updated_at, TIMESTAMP('1000-01-01 00:00:00')) ASC,\n        d.id ASC")
   })
 
   it('respects orderBy and sortDirection', async () => {

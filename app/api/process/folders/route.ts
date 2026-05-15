@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { auth } from '@root/auth'
+import { getDashboardSession } from '@root/auth'
 import { listChildDriveFolders, listRootDriveFolders } from '@lib/googleDrive'
 import { logEvent } from '@lib/observability'
 
@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 export const preferredRegion = 'sfo1'
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const session = await auth()
+  const session = await getDashboardSession()
   const userEmail = session?.user?.email?.trim()
   if (!userEmail) {
     return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })

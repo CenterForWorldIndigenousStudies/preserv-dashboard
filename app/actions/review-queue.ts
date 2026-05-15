@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { applyReviewQueueDecision, getNeedsReviewDocuments, getReviewQueueDocuments, type DocumentsQueryParams } from '@lib/queries'
 import type { ReviewQueueDecision, ReviewQueueDocumentsQueryParams } from '@lib/types'
-import { auth } from '../../auth'
+import { getDashboardSession } from '../../auth'
 
 export async function getReviewQueueAction(params: ReviewQueueDocumentsQueryParams = {}) {
   return getReviewQueueDocuments(params)
@@ -22,7 +22,7 @@ export async function applyReviewQueueDecisionAction(
     return { ok: false, error: 'Document ID is required.' }
   }
 
-  const session = await auth()
+  const session = await getDashboardSession()
   const validatorName = session?.user?.name?.trim() || null
 
   try {

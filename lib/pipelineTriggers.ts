@@ -13,13 +13,14 @@ import {
   PAGE_ROTATOR_STAGE,
 } from '@constants/pipeline'
 import { DASHBOARD_BASE_URL } from '@constants/server'
-import { logEvent } from '@lib/observability'
 import {
-  type ProcessBatchStatus,
-  type ProcessStageStatus,
-} from '@lib/processBatches'
-
-const NON_RETRIGGERABLE_STATUSES = new Set(['queued', 'running', 'review_needed', 'failed'])
+  getNextEligibleExecutionStep,
+  getPipelineConfigForBatch,
+  isPipelineBatchTerminal,
+} from '@lib/pipelineExecution'
+import { logEvent } from '@lib/observability'
+import { type ProcessBatchStatus } from '@lib/processBatches'
+import type { PipelineExecutionStep } from '@lib/pipelineConfig'
 
 function normalizeRequestedStages(value: unknown): string[] {
   if (!Array.isArray(value)) {
@@ -45,198 +46,41 @@ export function normalizeRequestedProcessStages(value: unknown): string[] {
   )
 }
 
+function isNextEligibleStep(
+  batch: ProcessBatchStatus,
+  stage: PipelineExecutionStep['service'],
+  pass?: 1 | 2,
+): boolean {
+  const nextStep = getNextEligibleExecutionStep(batch)
+  if (!nextStep) {
+    return false
+  }
+
+  return nextStep.service === stage && nextStep.pass === pass
+}
+
 export function shouldTriggerDocumentSplitter(batch: ProcessBatchStatus): boolean {
-  const ingestStatus = batch.ingester?.status ?? null
-  if (ingestStatus !== 'completed') {
-    return false
-  }
-
-  if (!batch.pipelineRequestedStages.includes(DOCUMENT_SPLITTER_STAGE)) {
-    return false
-  }
-
-  const splitter = batch.documentSplitter
-  const splitterStatus = splitter?.status ?? null
-  if (NON_RETRIGGERABLE_STATUSES.has(splitterStatus ?? '')) {
-    return false
-  }
-
-  const completedPasses = splitter?.completedPasses.length ?? 0
-  const maxPasses = splitter?.maxPasses ?? (batch.pipelineRequestedStages.includes(PAGE_ROTATOR_STAGE) ? 2 : 1)
-  if (completedPasses >= maxPasses) {
-    return false
-  }
-
-  if (completedPasses === 0) {
-    return true
-  }
-
-  if (!batch.pipelineRequestedStages.includes(PAGE_ROTATOR_STAGE)) {
-    return false
-  }
-
-  return (batch.pageRotator?.completedPasses.length ?? 0) >= completedPasses
+  getPipelineConfigForBatch(batch)
+  return isNextEligibleStep(batch, DOCUMENT_SPLITTER_STAGE, 1) || isNextEligibleStep(batch, DOCUMENT_SPLITTER_STAGE, 2)
 }
 
 export function shouldTriggerPageRotator(batch: ProcessBatchStatus): boolean {
-  const ingestStatus = batch.ingester?.status ?? null
-  if (ingestStatus !== 'completed') {
-    return false
-  }
-
-  if (!batch.pipelineRequestedStages.includes(PAGE_ROTATOR_STAGE)) {
-    return false
-  }
-
-  const pageRotator = batch.pageRotator
-  const pageRotatorStatus = pageRotator?.status ?? null
-  if (NON_RETRIGGERABLE_STATUSES.has(pageRotatorStatus ?? '')) {
-    return false
-  }
-
-  const completedPasses = pageRotator?.completedPasses.length ?? 0
-  const maxPasses = pageRotator?.maxPasses ?? (batch.pipelineRequestedStages.includes(DOCUMENT_SPLITTER_STAGE) ? 2 : 1)
-  if (completedPasses >= maxPasses) {
-    return false
-  }
-
-  if (!batch.pipelineRequestedStages.includes(DOCUMENT_SPLITTER_STAGE)) {
-    return completedPasses === 0
-  }
-
-  const splitterCompletedPasses = batch.documentSplitter?.completedPasses.length ?? 0
-  return splitterCompletedPasses > completedPasses
+  getPipelineConfigForBatch(batch)
+  return isNextEligibleStep(batch, PAGE_ROTATOR_STAGE, 1) || isNextEligibleStep(batch, PAGE_ROTATOR_STAGE, 2)
 }
 
 export function shouldTriggerOcrProcessor(batch: ProcessBatchStatus): boolean {
-  const ingestStatus = batch.ingester?.status ?? null
-  if (ingestStatus !== 'completed') {
-    return false
-  }
-
-  if (!batch.pipelineRequestedStages.includes(OCR_PROCESSOR_STAGE)) {
-    return false
-  }
-
-  if (batch.pipelineRequestedStages.includes(PAGE_ROTATOR_STAGE)) {
-    const pageRotator = batch.pageRotator
-    if (!pageRotator || pageRotator.status !== 'completed' || pageRotator.completedPasses.length < pageRotator.maxPasses) {
-      return false
-    }
-  } else if (batch.pipelineRequestedStages.includes(DOCUMENT_SPLITTER_STAGE)) {
-    const splitter = batch.documentSplitter
-    if (!splitter || splitter.status !== 'completed' || splitter.completedPasses.length < splitter.maxPasses) {
-      return false
-    }
-  }
-
-  const ocrProcessorStatus = batch.ocrProcessor?.status ?? null
-  return !NON_RETRIGGERABLE_STATUSES.has(ocrProcessorStatus ?? '') && ocrProcessorStatus !== 'completed'
+  getPipelineConfigForBatch(batch)
+  return isNextEligibleStep(batch, OCR_PROCESSOR_STAGE)
 }
 
 export function shouldTriggerContentDedup(batch: ProcessBatchStatus): boolean {
-  const ingestStatus = batch.ingester?.status ?? null
-  if (ingestStatus !== 'completed') {
-    return false
-  }
-
-  if (!batch.pipelineRequestedStages.includes(CONTENT_DEDUP_STAGE)) {
-    return false
-  }
-
-  if (batch.pipelineRequestedStages.includes(OCR_PROCESSOR_STAGE)) {
-    if (batch.ocrProcessor?.status !== 'completed') {
-      return false
-    }
-  } else if (batch.pipelineRequestedStages.includes(PAGE_ROTATOR_STAGE)) {
-    const pageRotator = batch.pageRotator
-    if (
-      !pageRotator ||
-      pageRotator.status !== 'completed' ||
-      pageRotator.completedPasses.length < pageRotator.maxPasses
-    ) {
-      return false
-    }
-  } else if (batch.pipelineRequestedStages.includes(DOCUMENT_SPLITTER_STAGE)) {
-    const splitter = batch.documentSplitter
-    if (
-      !splitter ||
-      splitter.status !== 'completed' ||
-      splitter.completedPasses.length < splitter.maxPasses
-    ) {
-      return false
-    }
-  }
-
-  const contentDedupStatus = batch.contentDedup?.status ?? null
-  return (
-    !NON_RETRIGGERABLE_STATUSES.has(contentDedupStatus ?? '') &&
-    contentDedupStatus !== 'completed'
-  )
-}
-
-export function isStageTerminal(stage: ProcessStageStatus | null): boolean {
-  return stage?.status === 'completed' || stage?.status === 'failed' || stage?.status === 'review_needed'
-}
-
-function hasRequestedStageFailure(batch: ProcessBatchStatus): boolean {
-  return (
-    (batch.pipelineRequestedStages.includes(DOCUMENT_SPLITTER_STAGE) &&
-      (batch.documentSplitter?.status === 'failed' ||
-        batch.documentSplitter?.status === 'review_needed')) ||
-    (batch.pipelineRequestedStages.includes(PAGE_ROTATOR_STAGE) &&
-      (batch.pageRotator?.status === 'failed' ||
-        batch.pageRotator?.status === 'review_needed')) ||
-    (batch.pipelineRequestedStages.includes(OCR_PROCESSOR_STAGE) &&
-      (batch.ocrProcessor?.status === 'failed' ||
-        batch.ocrProcessor?.status === 'review_needed')) ||
-    (batch.pipelineRequestedStages.includes(CONTENT_DEDUP_STAGE) &&
-      (batch.contentDedup?.status === 'failed' ||
-        batch.contentDedup?.status === 'review_needed'))
-  )
-}
-
-function isRequestedStageTerminal(batch: ProcessBatchStatus, stage: string): boolean {
-  if (stage === DOCUMENT_SPLITTER_STAGE) {
-    return isStageTerminal(batch.documentSplitter)
-  }
-  if (stage === PAGE_ROTATOR_STAGE) {
-    return isStageTerminal(batch.pageRotator)
-  }
-  if (stage === OCR_PROCESSOR_STAGE) {
-    return isStageTerminal(batch.ocrProcessor)
-  }
-  if (stage === CONTENT_DEDUP_STAGE) {
-    return isStageTerminal(batch.contentDedup)
-  }
-
-  return false
+  getPipelineConfigForBatch(batch)
+  return isNextEligibleStep(batch, CONTENT_DEDUP_STAGE)
 }
 
 export function shouldCloseProcessStream(batch: ProcessBatchStatus): boolean {
-  if (!batch.ingester) {
-    return false
-  }
-
-  if (!isStageTerminal(batch.ingester)) {
-    return false
-  }
-
-  if (batch.ingester.status === 'failed') {
-    return true
-  }
-
-  if (batch.pipelineRequestedStages.length === 0) {
-    return true
-  }
-
-  if (hasRequestedStageFailure(batch)) {
-    return true
-  }
-
-  return batch.pipelineRequestedStages.every((stage) =>
-    isRequestedStageTerminal(batch, stage),
-  )
+  return isPipelineBatchTerminal(batch)
 }
 
 export async function triggerDocumentSplitter(batch: ProcessBatchStatus): Promise<void> {

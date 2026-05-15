@@ -17,6 +17,11 @@ export interface Document {
   is_duplicate?: boolean
 }
 
+export interface DocumentTableRow {
+  id: string
+  name: string | null
+}
+
 export type ReviewQueueDecision = 'APPROVED' | 'REJECTED'
 
 export interface DocumentsCursor {
@@ -33,10 +38,12 @@ export interface DocumentsPageInfo {
   endCursor: DocumentsCursor | null
 }
 
-export interface DocumentsPageResult {
-  data: Document[]
+export interface DocumentTablePageResult<TRow extends DocumentTableRow = DocumentTableRow> {
+  data: TRow[]
   pageInfo: DocumentsPageInfo
 }
+
+export type DocumentsPageResult = DocumentTablePageResult<Document>
 
 export interface DocumentQuality {
   id: string

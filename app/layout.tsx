@@ -1,10 +1,23 @@
 import type { Metadata } from 'next'
 import type { ReactElement, ReactNode } from 'react'
+import { Rethink_Sans, Work_Sans } from 'next/font/google'
 
 import './globals.css'
 import LayoutBody from '@components/LayoutBody'
 import Providers from '@components/Providers'
-import { auth } from '@root/auth'
+import { getDashboardSession } from '@root/auth'
+
+const rethinkSans = Rethink_Sans({
+  subsets: ['latin'],
+  variable: '--font-rethink-sans',
+  display: 'swap',
+})
+
+const workSans = Work_Sans({
+  subsets: ['latin'],
+  variable: '--font-work-sans',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'CWIS Preservation Pipeline Dashboard',
@@ -18,18 +31,12 @@ export default async function RootLayout({
 }: Readonly<{
   children: ReactNode
 }>): Promise<ReactElement> {
-  const session = await auth()
+  const session = await getDashboardSession()
 
   return (
-    <html lang="en">
-      <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Work+Sans:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="en" className={`${rethinkSans.variable} ${workSans.variable}`}>
       <body className="font-sans antialiased">
-        <Providers>
+        <Providers session={session}>
           <LayoutBody isAuthenticated={!!session}>{children}</LayoutBody>
         </Providers>
       </body>
