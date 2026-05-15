@@ -23,6 +23,7 @@ export type OverviewAccessLevelOption = (typeof OVERVIEW_ACCESS_LEVEL_OPTIONS)[n
 
 export interface OverviewAdvancedSearchFilters {
   author?: string
+  tag?: string
   statuses?: OverviewStatusOption[]
   documentType?: OverviewDocumentTypeOption
   batch?: string

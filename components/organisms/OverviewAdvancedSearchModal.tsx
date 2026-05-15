@@ -42,6 +42,7 @@ export function OverviewAdvancedSearchModal({
   const activeFilterCount = useMemo(() => {
     let count = 0
     if (filters.author) count += 1
+    if (filters.tag) count += 1
     if (filters.statuses?.length) count += 1
     if (filters.documentType && filters.documentType !== 'all') count += 1
     if (filters.batch) count += 1
@@ -65,6 +66,7 @@ export function OverviewAdvancedSearchModal({
   const applyFilters = useCallback(() => {
     onApply({
       author: draftFilters.author?.trim() || undefined,
+      tag: draftFilters.tag?.trim() || undefined,
       statuses: draftFilters.statuses?.length ? draftFilters.statuses : undefined,
       documentType: draftFilters.documentType ?? 'all',
       batch: draftFilters.batch?.trim() || undefined,
@@ -150,6 +152,17 @@ export function OverviewAdvancedSearchModal({
                 value={draftFilters.batch ?? ''}
                 onChange={(event) => setDraftFilters((previousFilters) => ({ ...previousFilters, batch: event.target.value }))}
                 placeholder="Partial batch name"
+                className="rounded-xl border border-moss/20 bg-sand/40 px-3 py-2 focus:border-moss focus:outline-none focus:ring-1 focus:ring-moss"
+              />
+            </label>
+
+            <label className="flex flex-col gap-2 text-sm text-ink">
+              <span className="font-medium">Tag</span>
+              <input
+                type="text"
+                value={draftFilters.tag ?? ''}
+                onChange={(event) => setDraftFilters((previousFilters) => ({ ...previousFilters, tag: event.target.value }))}
+                placeholder="Tag name or close match"
                 className="rounded-xl border border-moss/20 bg-sand/40 px-3 py-2 focus:border-moss focus:outline-none focus:ring-1 focus:ring-moss"
               />
             </label>

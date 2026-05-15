@@ -38,7 +38,7 @@ import {
 import { db } from '@lib/db'
 import { createEditHistoryEntry } from '@lib/editHistory'
 import { Prisma, PrismaClient } from '@lib/prisma/generated/client'
-import { buildNameHash, normalizeTagName } from '@lib/tag-utils'
+import { buildNameHash, getTagSearchCandidateLimit, normalizeTagName, scoreTags } from '@lib/tag-utils'
 
 // Fields on the documents model used for orderBy/filtering
 const DOCUMENTS_ORDERABLE_FIELDS = [
@@ -90,6 +90,8 @@ const DEFAULT_DOCUMENT_TABLE_PAGE_SIZE: (typeof DOCUMENT_TABLE_PAGE_SIZES)[numbe
 const DEFAULT_OVERVIEW_SORT_FIELD: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number] = 'name'
 const DEFAULT_OVERVIEW_SECONDARY_SORT_FIELD: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number] = 'updated_at'
 const DEFAULT_OVERVIEW_SORT_TIMESTAMP = new Date('1000-01-01T00:00:00.000Z')
+const OVERVIEW_TAG_SEARCH_LIMIT = 25
+const OVERVIEW_TAG_SEARCH_MIN_SCORE = 25
 
 export interface DocumentsQueryParams extends OverviewAdvancedSearchFilters {
   page?: number
@@ -148,6 +150,7 @@ export async function getAllDocuments(
       orderBy: params.orderBy,
       sortDirection: params.sortDirection,
       search: normalizeOverviewTextFilter(params.search ?? params.author),
+      tagIds: await resolveOverviewTagIds(normalizeOverviewTextFilter(params.tag), client),
       statuses: normalizeOverviewStatuses(params.statuses),
       documentType: normalizeOverviewDocumentType(params.documentType),
       batch: normalizeOverviewTextFilter(params.batch),
@@ -177,6 +180,7 @@ export async function getNeedsReviewDocuments(
       orderBy: params.orderBy,
       sortDirection: params.sortDirection,
       search: normalizeOverviewTextFilter(params.search ?? params.author),
+      tagIds: await resolveOverviewTagIds(normalizeOverviewTextFilter(params.tag), client),
       documentType: normalizeOverviewDocumentType(params.documentType),
       batch: normalizeOverviewTextFilter(params.batch),
       createdFrom: normalizeOverviewDateFilter(params.createdFrom),
@@ -188,6 +192,30 @@ export async function getNeedsReviewDocuments(
     },
     client,
   )
+}
+
+async function resolveOverviewTagIds(
+  tagTerm: string | undefined,
+  client: QueryDbClient,
+): Promise<string[] | undefined> {
+  if (!tagTerm) {
+    return undefined
+  }
+
+  const candidates = await client.tags.findMany({
+    orderBy: { name: 'asc' },
+    take: getTagSearchCandidateLimit(OVERVIEW_TAG_SEARCH_LIMIT),
+    select: {
+      id: true,
+      name: true,
+      notes: true,
+    },
+  })
+
+  const matches = scoreTags(candidates, tagTerm, OVERVIEW_TAG_SEARCH_LIMIT)
+  return matches
+    .filter((tag) => tag.score >= OVERVIEW_TAG_SEARCH_MIN_SCORE)
+    .map((tag) => tag.id)
 }
 
 export async function applyReviewQueueDecision(params: {
@@ -1139,6 +1167,7 @@ async function getOverviewDocumentsPage(
     orderBy?: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
     sortDirection?: 'asc' | 'desc'
     search?: string
+    tagIds?: string[]
     statuses?: OverviewStatusOption[]
     documentType?: OverviewDocumentTypeOption
     batch?: string
@@ -1182,6 +1211,7 @@ async function getOverviewDocumentsPage(
     sortExpression,
     sortField,
     statuses: params.statuses,
+    tagIds: params.tagIds,
   })
   const orderBySql = buildOverviewDocumentsOrderBySql({
     cursorDirection,
@@ -1262,6 +1292,7 @@ async function getNeedsReviewDocumentsPage(
     orderBy?: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
     sortDirection?: 'asc' | 'desc'
     search?: string
+    tagIds?: string[]
     documentType?: OverviewDocumentTypeOption
     batch?: string
     createdFrom?: string
@@ -1301,6 +1332,7 @@ async function getNeedsReviewDocumentsPage(
     sortDirection,
     sortExpression,
     sortField,
+    tagIds: params.tagIds,
   })
   const orderBySql = buildOverviewDocumentsOrderBySql({
     cursorDirection,
@@ -1374,6 +1406,7 @@ async function getNeedsReviewDocumentsPage(
 
 function buildOverviewDocumentsWhereSql(params: {
   searchTerm?: string
+  tagIds?: string[]
   statuses?: OverviewStatusOption[]
   documentType?: OverviewDocumentTypeOption
   batch?: string
@@ -1393,6 +1426,10 @@ function buildOverviewDocumentsWhereSql(params: {
 
   if (params.searchTerm) {
     conditions.push(buildOverviewAuthorSearchConditionSql(params.searchTerm))
+  }
+
+  if (params.tagIds) {
+    conditions.push(buildOverviewTagConditionSql(params.tagIds))
   }
 
   if (params.statuses?.length) {
@@ -1455,6 +1492,7 @@ function buildOverviewDocumentsWhereSql(params: {
 
 function buildNeedsReviewDocumentsWhereSql(params: {
   searchTerm?: string
+  tagIds?: string[]
   documentType?: OverviewDocumentTypeOption
   batch?: string
   createdFrom?: string
@@ -1472,6 +1510,10 @@ function buildNeedsReviewDocumentsWhereSql(params: {
 
   if (params.searchTerm) {
     conditions.push(buildOverviewAuthorSearchConditionSql(params.searchTerm))
+  }
+
+  if (params.tagIds) {
+    conditions.push(buildOverviewTagConditionSql(params.tagIds))
   }
 
   if (params.documentType === 'unique') {
@@ -1581,7 +1623,34 @@ function buildOverviewBatchConditionSql(batchTerm: string): Prisma.Sql {
       FROM document_to_batches dtb
       INNER JOIN batches b ON b.id = dtb.batch_id
       WHERE dtb.document_id = d.id
-        AND LOWER(COALESCE(b.name, '')) LIKE ${likeValue}
+        AND (
+          LOWER(COALESCE(b.name, '')) LIKE ${likeValue}
+          OR LOWER(COALESCE(b.id_legacy, '')) LIKE ${likeValue}
+          OR LOWER(COALESCE(dtb.batch_origin, '')) LIKE ${likeValue}
+          OR EXISTS (
+            SELECT 1
+            FROM batch_to_batches_metadata btbm
+            INNER JOIN batch_metadata bm ON bm.id = btbm.batch_metadata_id
+            WHERE btbm.batch_id = b.id
+              AND LOWER(bm.name) = 'legacy_batch_origin'
+              AND LOWER(COALESCE(btbm.value, '')) LIKE ${likeValue}
+          )
+        )
+    )
+  `
+}
+
+function buildOverviewTagConditionSql(tagIds: string[]): Prisma.Sql {
+  if (tagIds.length === 0) {
+    return Prisma.sql`1 = 0`
+  }
+
+  return Prisma.sql`
+    EXISTS (
+      SELECT 1
+      FROM document_to_tags dtt
+      WHERE dtt.document_id = d.id
+        AND dtt.tag_id IN (${Prisma.join(tagIds)})
     )
   `
 }
@@ -2027,36 +2096,46 @@ export async function getFailures(): Promise<FailureItem[]> {
 }
 
 export async function getOverviewFilterOptions(): Promise<OverviewFilterOptions> {
-  const [collections, statuses] = await Promise.all([getDistinctCollectionTags(), getDistinctValidationStatuses()])
+  const [collections, statuses] = await Promise.all([
+    getDistinctCollections(),
+    getDistinctValidationStatuses(),
+  ])
 
   return {
-    collections: collections.filter((collection) => collection !== 'duplicate_document'),
+    collections,
     accessLevels: [...OVERVIEW_ACCESS_LEVEL_OPTIONS],
     statuses,
   }
 }
 
 // ---------------------------------------------------------------------------
-// getDistinctCollectionTags
-// Returns distinct tag names by querying the tags + document_to_tags join.
-// The documents table has no `collection_tags` column.
+// getDistinctCollections
+// Returns collection names from the collections table joined through tags.
+// These are the only values that should appear in the overview collection
+// filter; arbitrary tags are not collections.
 // ---------------------------------------------------------------------------
-export async function getDistinctCollectionTags(): Promise<string[]> {
-  const rows = await db.tags.findMany({
+export async function getDistinctCollections(): Promise<string[]> {
+  const rows = await db.collections.findMany({
     include: {
-      document_to_tags: {
-        select: { document_id: true },
+      tags: {
+        select: { name: true },
+      },
+    },
+    orderBy: {
+      tags: {
+        name: 'asc',
       },
     },
   })
 
-  const tagSet = new Set<string>()
-  for (const tag of rows) {
-    if (tag.document_to_tags.length > 0) {
-      tagSet.add(tag.name)
+  const collectionSet = new Set<string>()
+  for (const row of rows) {
+    const name = row.tags?.name?.trim()
+    if (name) {
+      collectionSet.add(name)
     }
   }
-  return Array.from(tagSet).sort()
+  return Array.from(collectionSet)
 }
 
 export async function getDistinctValidationStatuses(): Promise<string[]> {

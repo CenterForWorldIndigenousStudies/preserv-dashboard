@@ -74,6 +74,7 @@ export function DocumentsTable({
     queryParams,
     searchParams,
     statuses,
+    tag,
     setGlobalFilter,
     setOverviewFilters,
     setPageSize,
@@ -112,6 +113,7 @@ export function DocumentsTable({
   const currentFilters: OverviewAdvancedSearchFilters = useMemo(
     () => ({
       author: globalFilter || undefined,
+      tag: tag || undefined,
       statuses: effectiveStatuses ?? [],
       documentType,
       batch: batch || undefined,
@@ -120,7 +122,7 @@ export function DocumentsTable({
       collection: collection || undefined,
       accessLevel,
     }),
-    [accessLevel, batch, collection, createdFrom, createdTo, documentType, effectiveStatuses, globalFilter],
+    [accessLevel, batch, collection, createdFrom, createdTo, documentType, effectiveStatuses, globalFilter, tag],
   )
 
   async function handleReviewDecision(documentId: string, decision: ReviewQueueDecision): Promise<void> {
@@ -350,6 +352,7 @@ export function DocumentsTable({
               sortDirection: query.sortDirection,
               search: query.search,
               author: query.filters.author ?? query.search,
+              tag: query.filters.tag,
               statuses: fixedStatuses?.length ? fixedStatuses : query.filters.statuses,
               documentType: query.filters.documentType,
               batch: query.filters.batch,
