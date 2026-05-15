@@ -284,6 +284,85 @@ erDiagram
 - `collections` is indexed and unique on `tag_id`.
 - Association tables use composite unique constraints to prevent duplicate links.
 
+## Meaningful Metadata
+
+The schema is intentionally generic: document metadata names live in `metadata`, and the actual
+values live in `document_to_metadata`. That means the dashboard should not treat every metadata key
+as equally important. Some keys are part of the shared pipeline contract and have stable meaning
+across services; others are legacy/import values preserved for provenance and troubleshooting.
+
+### Canonical Document Metadata
+
+These keys are the current shared source of truth defined in `preserv-db` and are the safest keys
+for dashboard features to depend on when showing document lineage and managed Google Drive
+artifacts.
+
+| Metadata Name | Meaning | Typical Producer | Dashboard Use |
+| --- | --- | --- | --- |
+| `source_id` | Google Drive file ID for the current managed document artifact. | `preserv-data-ingester`, `preserv-document-splitter`, `preserv-page-rotator`, `preserv-ocr-processor` | Build the current file link, identify the current stored artifact. |
+| `source_folder_id` | Google Drive folder ID containing the current managed document artifact. | Same as above | Build the managed folder link, trace where the current artifact lives. |
+| `origin_url` | Original upstream Google Drive file URL for this document lineage. | `preserv-data-ingester`, `preserv-data-combiner` | Show provenance, link back to the original source file when needed. |
+| `origin_source_id` | Original upstream Google Drive file ID for this document lineage. | `preserv-data-ingester` | Stable original-source identity, useful when comparing imported vs managed artifacts. |
+| `origin_parent_source_id` | Original upstream parent Google Drive folder ID for this document lineage. | `preserv-data-ingester` | Group or filter by original source folder. |
+| `origin_parent_name` | Original upstream parent Google Drive folder name for this document lineage. | `preserv-data-ingester` | Human-readable display of original source location. |
+
+Practical rule:
+
+- if the dashboard needs the current managed file, prefer `source_id`
+- if the dashboard needs original provenance, prefer the `origin_*` keys
+
+### Legacy And Import Metadata
+
+These keys are still meaningful, but they are not the current managed-artifact contract. They are
+mainly preserved from inventory or registry sources so the dashboard can show what the original
+spreadsheet or registry said.
+
+| Metadata Name | Meaning | Typical Producer | Dashboard Use |
+| --- | --- | --- | --- |
+| `legacy_canonical_id` | Original `original_id` value from the General Inventory spreadsheet. | `preserv-data-combiner` | Show old source-system identity without confusing it with current Drive IDs. |
+| `legacy_format_origin` | Original `Format_Origin` value from the General Inventory spreadsheet. | `preserv-data-combiner` | Show the spreadsheet’s claimed format alongside actual `mime_type` / extension. |
+| `legacy_file_size_origin` | Original `Size_Origin` value from the General Inventory spreadsheet. | `preserv-data-combiner` | Show the spreadsheet’s recorded size when it differs from actual Drive size. |
+| `legacy_batch_origin` | Original `Batch_Origin` value from the General Inventory spreadsheet. | `preserv-data-combiner` | Useful in batch search, troubleshooting, and historical context. |
+
+Practical rule:
+
+- if a value starts with `legacy_`, treat it as preserved historical context, not as the current
+  operational source of truth
+
+### Related Non-Metadata Columns
+
+Some values that look similar to metadata are actually first-class columns and should be read from
+their tables directly instead of from `document_to_metadata`.
+
+| Location | Meaning | Notes |
+| --- | --- | --- |
+| `documents.filesize` | Current file size in bytes. | Preferred over legacy size metadata. |
+| `documents.name` | Current document name. | Primary display name. |
+| `documents.id_legacy` | Legacy document identifier stored as a first-class column. | Separate from `legacy_canonical_id` metadata. |
+| `document_to_batches.batch_origin` | Per-link batch origin text. | Useful for batch filtering and tracing document membership. |
+| `batches.id_legacy` | Registry-derived legacy batch identifier. | Stable batch identity from Master Registries. |
+| `batches.name` | Human-readable batch name when available. | Not guaranteed to contain General Inventory `Batch_Origin`. |
+
+### Query Pattern
+
+To get document metadata, join:
+
+- `documents`
+- `document_to_metadata`
+- `metadata`
+
+For batch metadata, join:
+
+- `batches`
+- `batch_to_batches_metadata`
+- `batch_metadata`
+
+In practice, most dashboard queries should:
+
+- use first-class columns where they exist
+- use canonical metadata keys for current Drive/provenance fields
+- use `legacy_*` metadata only for historical context, validation, or advanced search
+
 ## Table Reference
 
 ### documents
