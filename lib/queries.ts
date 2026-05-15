@@ -1980,7 +1980,7 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
       filesize: bigint | number | null
       hash_binary: string | null
       hash_content: string | null
-      id_legacy: string
+      id_legacy: string | null
       name: string | null
       created_at: Date | null
       updated_at: Date | null
