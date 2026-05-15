@@ -116,10 +116,10 @@ model document_quality {
   validation_timestamp BigInt?
   validator_name       String?                             @db.VarChar(255)
   validator_email      String?                             @db.VarChar(255)
+  reprocess            Boolean                             @default(false)
   current_status       String?                             @db.VarChar(36)
   created_at           DateTime?                           @default(now()) @db.DateTime(0)
   updated_at           DateTime?                           @default(now()) @db.DateTime(0)
-  reprocess            Boolean                             @default(false)
   state_history        state_history?                      @relation(fields: [current_status], references: [id], onUpdate: Restrict, map: "fk_document_quality_current_status")
   documents            documents                           @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_quality_document_id")
 
@@ -229,7 +229,7 @@ model documents {
   filesize               BigInt?
   hash_binary            String?                  @db.VarChar(255)
   hash_content           String?                  @db.VarChar(255)
-  id_legacy              String                   @unique(map: "uk_documents_id_legacy") @db.VarChar(255)
+  id_legacy              String?                  @unique(map: "uk_documents_id_legacy") @db.VarChar(255)
   name                   String?                  @db.VarChar(255)
   created_at             DateTime?                @default(now()) @db.DateTime(0)
   updated_at             DateTime?                @default(now()) @db.DateTime(0)
