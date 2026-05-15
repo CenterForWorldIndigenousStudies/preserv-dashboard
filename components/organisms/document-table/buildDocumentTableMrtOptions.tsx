@@ -4,13 +4,17 @@ interface BuildDocumentTableMrtOptionsInput<TData extends MRT_RowData> {
   columns: MRT_ColumnDef<TData>[]
   data: TData[]
   emptyMessage: string
+  styleVariant?: 'default' | 'reviewQueueDense'
 }
 
 export function buildDocumentTableMrtOptions<TData extends MRT_RowData>({
   columns,
   data,
   emptyMessage,
+  styleVariant = 'default',
 }: BuildDocumentTableMrtOptionsInput<TData>): Partial<MRT_TableOptions<TData>> {
+  const isReviewQueueDense = styleVariant === 'reviewQueueDense'
+
   return {
     columns,
     data,
@@ -34,10 +38,18 @@ export function buildDocumentTableMrtOptions<TData extends MRT_RowData>({
         fontSize: '0.75rem',
         textTransform: 'uppercase',
         letterSpacing: '0.1em',
+        px: isReviewQueueDense ? 1.5 : undefined,
+        py: isReviewQueueDense ? 1.25 : undefined,
       },
     },
     muiTableBodyCellProps: {
-      sx: { color: '#231f20', fontSize: '0.875rem' },
+      sx: {
+        color: '#231f20',
+        fontSize: '0.875rem',
+        px: isReviewQueueDense ? 1.5 : undefined,
+        py: isReviewQueueDense ? 1.25 : undefined,
+        verticalAlign: isReviewQueueDense ? 'top' : undefined,
+      },
     },
     muiTableBodyProps: {
       sx: {
@@ -46,7 +58,11 @@ export function buildDocumentTableMrtOptions<TData extends MRT_RowData>({
       },
     },
     muiTableContainerProps: {
-      sx: { borderRadius: '0.75rem', border: '1px solid rgba(53,88,52,0.125)' },
+      sx: {
+        borderRadius: '0.75rem',
+        border: '1px solid rgba(53,88,52,0.125)',
+        maxHeight: isReviewQueueDense ? '70vh' : undefined,
+      },
     },
   }
 }

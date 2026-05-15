@@ -39,6 +39,7 @@ interface DocumentDataTableProps<TData extends MRT_RowData & { id: string }, TFi
   onRowSelectionChange?: (updater: MRT_Updater<MRT_RowSelectionState>) => void
   enableRowSelection?: boolean
   getRowId?: (row: TData) => string
+  styleVariant?: 'default' | 'reviewQueueDense'
 }
 
 function emptyPageInfo(pageSize: number) {
@@ -64,6 +65,7 @@ export function DocumentDataTable<TData extends MRT_RowData & { id: string }, TF
   onRowSelectionChange,
   enableRowSelection = false,
   getRowId,
+  styleVariant = 'default',
 }: DocumentDataTableProps<TData, TFilters>): ReactElement {
   const internalController = useDocumentTableController<TFilters>({ initialQuery })
   const controller = providedController ?? internalController
@@ -139,6 +141,7 @@ export function DocumentDataTable<TData extends MRT_RowData & { id: string }, TF
       columns,
       data,
       emptyMessage,
+      styleVariant,
     }),
     enableRowSelection,
     getRowId: getRowId ?? ((row) => row.id),

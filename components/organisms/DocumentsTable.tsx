@@ -49,6 +49,203 @@ function getValidationStatusBadgeVariant(status: string | null | undefined): Bad
   }
 }
 
+function truncateDocumentMetadata(value: string | null | undefined, maxLength: number): string | null {
+  const normalizedValue = value?.trim()
+  if (!normalizedValue) {
+    return null
+  }
+
+  if (normalizedValue.length <= maxLength) {
+    return normalizedValue
+  }
+
+  return `${normalizedValue.slice(0, maxLength)}...`
+}
+
+function formatShortDocumentId(documentId: string): string {
+  return documentId.slice(0, 8)
+}
+
+function buildReviewQueueColumns(preservedOverviewHref: string): MRT_ColumnDef<Document>[] {
+  return [
+    {
+      accessorKey: 'name',
+      header: 'Document',
+      size: 420,
+      Cell: ({ row }) => {
+        const name = row.original.name?.trim()
+        const legacyId = truncateDocumentMetadata(row.original.id_legacy, 20)
+        const sourceId = truncateDocumentMetadata(row.original.source_id, 20)
+
+        return (
+          <div className="flex flex-col gap-1">
+            {name ? (
+              <Link
+                href={{
+                  pathname: `/documents/${row.original.id}`,
+                  query: { from: preservedOverviewHref },
+                }}
+                className="leading-tight font-medium text-moss hover:underline"
+              >
+                {name}
+              </Link>
+            ) : (
+              <span className="leading-tight font-medium text-ink">{`Untitled document`}</span>
+            )}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink/60">
+              <span className="font-mono uppercase tracking-[0.08em]">{`ID ${formatShortDocumentId(row.original.id)}`}</span>
+              {legacyId ? <span title={row.original.id_legacy ?? undefined}>{`Legacy ${legacyId}`}</span> : null}
+              {sourceId ? <span title={row.original.source_id ?? undefined}>{`Source ${sourceId}`}</span> : null}
+            </div>
+          </div>
+        )
+      },
+    },
+    {
+      accessorKey: 'validation_status',
+      header: 'Validation Status',
+      size: 190,
+      enableSorting: false,
+      Cell: ({ row }) => {
+        const value = row.original.validation_status
+        if (!value) {
+          return <span className="txt-muted">--</span>
+        }
+
+        return <Badge variant={getValidationStatusBadgeVariant(value)}>{value}</Badge>
+      },
+    },
+    {
+      id: 'review_details',
+      header: 'Review Details',
+      size: 220,
+      enableSorting: false,
+      Cell: ({ row }) => {
+        const validatorName = row.original.validator_name?.trim()
+
+        return (
+          <div className="flex flex-col gap-1">
+            <span className={validatorName ? 'text-sm text-ink' : 'txt-muted text-sm'}>
+              {validatorName || '--'}
+            </span>
+            {row.original.validation_timestamp ? (
+              <DateAtom value={row.original.validation_timestamp} className="text-xs text-ink/60" />
+            ) : (
+              <span className="txt-muted text-xs">No validation time</span>
+            )}
+          </div>
+        )
+      },
+    },
+  ]
+}
+
+function buildOverviewColumns(preservedOverviewHref: string): MRT_ColumnDef<Document>[] {
+  return [
+    {
+      accessorKey: 'name',
+      header: 'Name',
+      size: 280,
+      Cell: ({ row }) => {
+        const value = row.original.name
+        if (!value) {
+          return '--'
+        }
+
+        return (
+          <Link
+            href={{
+              pathname: `/documents/${row.original.id}`,
+              query: { from: preservedOverviewHref },
+            }}
+            style={{ color: '#355834' }}
+          >
+            {value}
+          </Link>
+        )
+      },
+    },
+    {
+      accessorKey: 'id_legacy',
+      header: 'Legacy ID',
+      size: 180,
+      Cell: ({ renderedCellValue }) => {
+        const value = String((renderedCellValue as string | null) ?? '')
+        if (!value) {
+          return '--'
+        }
+        return <span title={value}>{value.length > 30 ? `${value.slice(0, 30)}...` : value}</span>
+      },
+    },
+    {
+      accessorKey: 'source_id',
+      header: 'Source ID',
+      size: 150,
+      Cell: ({ renderedCellValue }) => <SourceId value={renderedCellValue as string | null | undefined} />,
+    },
+    {
+      accessorKey: 'filesize',
+      header: 'Size',
+      size: 110,
+      Cell: ({ renderedCellValue }) => (
+        <FileSize value={renderedCellValue as bigint | number | null | undefined} />
+      ),
+    },
+    {
+      accessorKey: 'hash_binary',
+      header: 'Binary Hash',
+      size: 180,
+      Cell: ({ renderedCellValue }) => {
+        const value = String((renderedCellValue as string | null) ?? '')
+        if (!value) {
+          return '--'
+        }
+
+        return (
+          <span style={{ fontFamily: 'monospace', fontSize: '0.75rem' }} title={value}>
+            {value.length > 20 ? `${value.slice(0, 20)}...` : value}
+          </span>
+        )
+      },
+    },
+    {
+      accessorKey: 'hash_content',
+      header: 'Content Hash',
+      size: 180,
+      Cell: ({ renderedCellValue }) => {
+        const value = String((renderedCellValue as string | null) ?? '')
+        if (!value) {
+          return '--'
+        }
+
+        return (
+          <span style={{ fontFamily: 'monospace', fontSize: '0.75rem' }} title={value}>
+            {value.length > 20 ? `${value.slice(0, 20)}...` : value}
+          </span>
+        )
+      },
+    },
+    {
+      accessorKey: 'created_at',
+      header: 'Created',
+      size: 160,
+      Cell: ({ renderedCellValue }) => <DateAtom value={renderedCellValue as Document['created_at']} />,
+    },
+    {
+      accessorKey: 'updated_at',
+      header: 'Updated',
+      size: 160,
+      Cell: ({ renderedCellValue }) => <DateAtom value={renderedCellValue as Document['updated_at']} />,
+    },
+    {
+      accessorKey: 'is_duplicate',
+      header: 'Is Duplicate',
+      size: 120,
+      Cell: ({ row }) => (row.original.is_duplicate ? 'True' : 'False'),
+    },
+  ]
+}
+
 async function fetchDocumentsTablePage(
   params: DocumentsQueryParams,
   isReviewQueue: boolean,
@@ -178,147 +375,8 @@ export function DocumentsTable({
   }
 
   const columns = useMemo<MRT_ColumnDef<Document>[]>(
-    () => [
-      {
-        accessorKey: 'name',
-        header: 'Name',
-        size: 280,
-        Cell: ({ row }) => {
-          const value = row.original.name
-          if (!value) {
-            return '—'
-          }
-
-          return (
-            <Link
-              href={{
-                pathname: `/documents/${row.original.id}`,
-                query: { from: preservedOverviewHref },
-              }}
-              style={{ color: '#355834' }}
-            >
-              {value}
-            </Link>
-          )
-        },
-      },
-      ...(isReviewQueue
-        ? [
-            {
-              accessorKey: 'validation_status',
-              header: 'Validation Status',
-              size: 180,
-              enableSorting: false,
-              Cell: ({ row }) => {
-                const value = row.original.validation_status
-                if (!value) {
-                  return <span className="txt-muted">--</span>
-                }
-
-                return <Badge variant={getValidationStatusBadgeVariant(value)}>{value}</Badge>
-              },
-            } satisfies MRT_ColumnDef<Document>,
-            {
-              accessorKey: 'validator_name',
-              header: 'Validator Name',
-              size: 170,
-              enableSorting: false,
-              Cell: ({ row }) => row.original.validator_name ?? <span className="txt-muted">--</span>,
-            } satisfies MRT_ColumnDef<Document>,
-            {
-              accessorKey: 'validation_timestamp',
-              header: 'Validation Time',
-              size: 180,
-              enableSorting: false,
-              Cell: ({ row }) =>
-                row.original.validation_timestamp ? (
-                  <DateAtom value={row.original.validation_timestamp} />
-                ) : (
-                  <span className="txt-muted">--</span>
-                ),
-            } satisfies MRT_ColumnDef<Document>,
-          ]
-        : []),
-      {
-        accessorKey: 'id_legacy',
-        header: 'Legacy ID',
-        size: 180,
-        Cell: ({ renderedCellValue }) => {
-          const value = String((renderedCellValue as string | null) ?? '')
-          if (!value) {
-            return '—'
-          }
-          return <span title={value}>{value.length > 30 ? `${value.slice(0, 30)}...` : value}</span>
-        },
-      },
-      {
-        accessorKey: 'source_id',
-        header: 'Source ID',
-        size: 150,
-        Cell: ({ renderedCellValue }) => <SourceId value={renderedCellValue as string | null | undefined} />,
-      },
-      {
-        accessorKey: 'filesize',
-        header: 'Size',
-        size: 110,
-        Cell: ({ renderedCellValue }) => (
-          <FileSize value={renderedCellValue as bigint | number | null | undefined} />
-        ),
-      },
-      {
-        accessorKey: 'hash_binary',
-        header: 'Binary Hash',
-        size: 180,
-        Cell: ({ renderedCellValue }) => {
-          const value = String((renderedCellValue as string | null) ?? '')
-          if (!value) {
-            return '—'
-          }
-
-          return (
-            <span style={{ fontFamily: 'monospace', fontSize: '0.75rem' }} title={value}>
-              {value.length > 20 ? `${value.slice(0, 20)}...` : value}
-            </span>
-          )
-        },
-      },
-      {
-        accessorKey: 'hash_content',
-        header: 'Content Hash',
-        size: 180,
-        Cell: ({ renderedCellValue }) => {
-          const value = String((renderedCellValue as string | null) ?? '')
-          if (!value) {
-            return '—'
-          }
-
-          return (
-            <span style={{ fontFamily: 'monospace', fontSize: '0.75rem' }} title={value}>
-              {value.length > 20 ? `${value.slice(0, 20)}...` : value}
-            </span>
-          )
-        },
-      },
-      {
-        accessorKey: 'created_at',
-        header: 'Created',
-        size: 160,
-        Cell: ({ renderedCellValue }) => <DateAtom value={renderedCellValue as Document['created_at']} />,
-      },
-      {
-        accessorKey: 'updated_at',
-        header: 'Updated',
-        size: 160,
-        Cell: ({ renderedCellValue }) => <DateAtom value={renderedCellValue as Document['updated_at']} />,
-      },
-      {
-        accessorKey: 'is_duplicate',
-        header: 'Is Duplicate',
-        size: 120,
-        Cell: ({ row }) => (row.original.is_duplicate ? 'True' : 'False'),
-      },
-    ],
-    [activeDecision, isReviewQueue, preservedOverviewHref],
+    () => (isReviewQueue ? buildReviewQueueColumns(preservedOverviewHref) : buildOverviewColumns(preservedOverviewHref)),
+    [isReviewQueue, preservedOverviewHref],
   )
 
   return (
@@ -364,25 +422,28 @@ export function DocumentsTable({
               }
             : undefined,
           fetcher: async (query) => {
-            return fetchDocumentsTablePage({
-              page: query.page,
-              pageSize: query.pageSize,
-              orderBy: query.orderBy as DocumentsQueryParams['orderBy'],
-              sortDirection: query.sortDirection,
-              search: query.search,
-              author: query.filters.author ?? query.search,
-              tag: query.filters.tag,
-              statuses: fixedStatuses?.length ? fixedStatuses : query.filters.statuses,
-              documentType: query.filters.documentType,
-              batch: query.filters.batch,
-              createdFrom: query.filters.createdFrom,
-              createdTo: query.filters.createdTo,
-              collection: query.filters.collection,
-              accessLevel: query.filters.accessLevel,
-              cursorValue: query.cursorValue,
-              cursorId: query.cursorId,
-              cursorDirection: query.cursorDirection,
-            }, isReviewQueue)
+            return fetchDocumentsTablePage(
+              {
+                page: query.page,
+                pageSize: query.pageSize,
+                orderBy: query.orderBy as DocumentsQueryParams['orderBy'],
+                sortDirection: query.sortDirection,
+                search: query.search,
+                author: query.filters.author ?? query.search,
+                tag: query.filters.tag,
+                statuses: fixedStatuses?.length ? fixedStatuses : query.filters.statuses,
+                documentType: query.filters.documentType,
+                batch: query.filters.batch,
+                createdFrom: query.filters.createdFrom,
+                createdTo: query.filters.createdTo,
+                collection: query.filters.collection,
+                accessLevel: query.filters.accessLevel,
+                cursorValue: query.cursorValue,
+                cursorId: query.cursorId,
+                cursorDirection: query.cursorDirection,
+              },
+              isReviewQueue,
+            )
           },
         }}
         controller={{
@@ -437,6 +498,7 @@ export function DocumentsTable({
             : 'No documents found.'
         }
         searchPlaceholder="Search by name, legacy ID, batch..."
+        styleVariant={isReviewQueue ? 'reviewQueueDense' : 'default'}
         leadingToolbarSlot={
           <DocumentTableAdvancedSearchTrigger
             activeFilterCount={[
