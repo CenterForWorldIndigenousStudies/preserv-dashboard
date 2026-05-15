@@ -1,9 +1,9 @@
 'use client'
 
-import { useMemo, useState, type ReactElement } from 'react'
+import { useEffect, useMemo, useState, type ReactElement } from 'react'
 import Alert from '@mui/material/Alert'
 import Snackbar from '@mui/material/Snackbar'
-import type { MRT_ColumnDef } from 'material-react-table'
+import type { MRT_ColumnDef, MRT_RowSelectionState, MRT_Updater } from 'material-react-table'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
@@ -31,6 +31,19 @@ interface DocumentsTableProps {
   variant?: 'overview' | 'reviewQueue'
   fixedStatuses?: OverviewStatusOption[]
   serverDriven?: boolean
+}
+
+interface ReviewQueueSelectionProps {
+  enableRowSelection: boolean
+  rowSelection?: MRT_RowSelectionState
+  onRowSelectionChange?: (updater: MRT_Updater<MRT_RowSelectionState>) => void
+  excludedRowIds?: readonly string[]
+}
+
+interface ReviewQueueBatchApproveButtonProps {
+  batchApprovePending: boolean
+  selectedCount: number
+  onApprove: () => void
 }
 
 function getValidationStatusBadgeVariant(status: string | null | undefined): BadgeVariant {
@@ -174,6 +187,7 @@ function buildOverviewColumns(preservedOverviewHref: string): MRT_ColumnDef<Docu
         if (!value) {
           return '--'
         }
+
         return <span title={value}>{value.length > 30 ? `${value.slice(0, 30)}...` : value}</span>
       },
     },
@@ -267,6 +281,60 @@ async function applyReviewQueueDecisionForDocument(
   return applyReviewQueueDecisionAction(documentId, decision)
 }
 
+async function applyReviewQueueBatchApproveForDocuments(documentIds: string[]) {
+  const { applyReviewQueueBatchApproveAction } = await import('@actions/review-queue')
+  return applyReviewQueueBatchApproveAction(documentIds)
+}
+
+function getDocumentsTableEmptyMessage(isReviewQueue: boolean): string {
+  return isReviewQueue ? 'No documents matched the current review queue filters.' : 'No documents found.'
+}
+
+function getReviewQueueSelectionProps(
+  isReviewQueue: boolean,
+  reviewQueueRowSelection: MRT_RowSelectionState,
+  setReviewQueueRowSelection: (updater: MRT_Updater<MRT_RowSelectionState>) => void,
+  optimisticallyHiddenDocumentIds: string[],
+): ReviewQueueSelectionProps {
+  if (!isReviewQueue) {
+    return {
+      enableRowSelection: false,
+    }
+  }
+
+  return {
+    enableRowSelection: true,
+    rowSelection: reviewQueueRowSelection,
+    onRowSelectionChange: setReviewQueueRowSelection,
+    excludedRowIds: optimisticallyHiddenDocumentIds,
+  }
+}
+
+function getReviewQueueBatchApproveButton(
+  isReviewQueue: boolean,
+  {
+    batchApprovePending,
+    selectedCount,
+    onApprove,
+  }: ReviewQueueBatchApproveButtonProps,
+): ReactElement | undefined {
+  if (!isReviewQueue) {
+    return undefined
+  }
+
+  return (
+    <Button
+      variant="secondary"
+      size="sm"
+      loading={batchApprovePending}
+      disabled={batchApprovePending || selectedCount === 0}
+      onClick={onApprove}
+    >
+      {`Approve selected (${selectedCount})`}
+    </Button>
+  )
+}
+
 export function DocumentsTable({
   initialData,
   initialQuery,
@@ -312,6 +380,9 @@ export function DocumentsTable({
     documentId: string
     decision: ReviewQueueDecision
   } | null>(null)
+  const [reviewQueueRowSelection, setReviewQueueRowSelection] = useState<MRT_RowSelectionState>({})
+  const [batchApprovePending, setBatchApprovePending] = useState(false)
+  const [optimisticallyHiddenDocumentIds, setOptimisticallyHiddenDocumentIds] = useState<string[]>([])
   const [toastState, setToastState] = useState<{
     open: boolean
     message: string
@@ -341,6 +412,32 @@ export function DocumentsTable({
     }),
     [accessLevel, batch, collection, createdFrom, createdTo, documentType, effectiveStatuses, globalFilter, tag],
   )
+  const reviewQueueQueryKey = useMemo(() => JSON.stringify(effectiveQueryParams), [effectiveQueryParams])
+  const selectedReviewQueueDocumentIds = useMemo(
+    () =>
+      Object.entries(reviewQueueRowSelection)
+        .filter(([, isSelected]) => isSelected)
+        .map(([documentId]) => documentId),
+    [reviewQueueRowSelection],
+  )
+  const reviewQueueSelectionProps = useMemo(
+    () =>
+      getReviewQueueSelectionProps(
+        isReviewQueue,
+        reviewQueueRowSelection,
+        setReviewQueueRowSelection,
+        optimisticallyHiddenDocumentIds,
+      ),
+    [isReviewQueue, optimisticallyHiddenDocumentIds, reviewQueueRowSelection],
+  )
+
+  useEffect(() => {
+    if (!isReviewQueue) {
+      return
+    }
+
+    setReviewQueueRowSelection({})
+  }, [isReviewQueue, reviewQueueQueryKey])
 
   async function handleReviewDecision(documentId: string, decision: ReviewQueueDecision): Promise<void> {
     setActiveDecision({ documentId, decision })
@@ -374,6 +471,57 @@ export function DocumentsTable({
     }
   }
 
+  async function handleBatchApprove(): Promise<void> {
+    if (!isReviewQueue || selectedReviewQueueDocumentIds.length === 0) {
+      return
+    }
+
+    setBatchApprovePending(true)
+
+    try {
+      const result = await applyReviewQueueBatchApproveForDocuments(selectedReviewQueueDocumentIds)
+
+      if (result.approvedIds.length > 0) {
+        setOptimisticallyHiddenDocumentIds((currentIds) => [...new Set([...currentIds, ...result.approvedIds])])
+        setReviewQueueRowSelection({})
+      }
+
+      if (!result.ok) {
+        setToastState({
+          open: true,
+          message: result.error,
+          severity: 'error',
+        })
+        return
+      }
+
+      setToastState({
+        open: true,
+        message:
+          result.failed.length > 0
+            ? `${result.message} Failed IDs: ${result.failed.map((failure) => failure.documentId).join(', ')}.`
+            : result.message,
+        severity: 'success',
+      })
+    } catch (error: unknown) {
+      setToastState({
+        open: true,
+        message: error instanceof Error ? error.message : 'The selected documents could not be approved.',
+        severity: 'error',
+      })
+    } finally {
+      setBatchApprovePending(false)
+    }
+  }
+
+  const trailingToolbarSlot = getReviewQueueBatchApproveButton(isReviewQueue, {
+    batchApprovePending,
+    selectedCount: selectedReviewQueueDocumentIds.length,
+    onApprove: () => {
+      void handleBatchApprove()
+    },
+  })
+
   const columns = useMemo<MRT_ColumnDef<Document>[]>(
     () => (isReviewQueue ? buildReviewQueueColumns(preservedOverviewHref) : buildOverviewColumns(preservedOverviewHref)),
     [isReviewQueue, preservedOverviewHref],
@@ -391,7 +539,7 @@ export function DocumentsTable({
                   activeDecision?.documentId === row.id && activeDecision.decision === 'APPROVED'
                 const isRejectPending =
                   activeDecision?.documentId === row.id && activeDecision.decision === 'REJECTED'
-                const isPending = isApprovePending || isRejectPending
+                const isPending = isApprovePending || isRejectPending || batchApprovePending
 
                 return (
                   <div className="flex items-center gap-2">
@@ -492,13 +640,10 @@ export function DocumentsTable({
           cursorDirection: effectiveQueryParams.cursorDirection,
           filters: currentFilters,
         }}
-        emptyMessage={
-          isReviewQueue
-            ? 'No documents matched the current review queue filters.'
-            : 'No documents found.'
-        }
+        emptyMessage={getDocumentsTableEmptyMessage(isReviewQueue)}
         searchPlaceholder="Search by name, legacy ID, batch..."
         styleVariant={isReviewQueue ? 'reviewQueueDense' : 'default'}
+        {...reviewQueueSelectionProps}
         leadingToolbarSlot={
           <DocumentTableAdvancedSearchTrigger
             activeFilterCount={[
@@ -525,6 +670,7 @@ export function DocumentsTable({
             />
           </DocumentTableAdvancedSearchTrigger>
         }
+        trailingToolbarSlot={trailingToolbarSlot}
       />
       <Snackbar
         open={toastState.open}

@@ -5,6 +5,25 @@ import { applyReviewQueueDecision, getNeedsReviewDocuments, getReviewQueueDocume
 import type { ReviewQueueDecision, ReviewQueueDocumentsQueryParams } from '@lib/types'
 import { getDashboardSession } from '../../auth'
 
+interface ReviewQueueBatchApproveFailure {
+  documentId: string
+  error: string
+}
+
+export type ReviewQueueBatchApproveActionResult =
+  | {
+      ok: true
+      approvedIds: string[]
+      failed: ReviewQueueBatchApproveFailure[]
+      message: string
+    }
+  | {
+      ok: false
+      approvedIds: string[]
+      failed: ReviewQueueBatchApproveFailure[]
+      error: string
+    }
+
 export async function getReviewQueueAction(params: ReviewQueueDocumentsQueryParams = {}) {
   return getReviewQueueDocuments(params)
 }
@@ -43,5 +62,62 @@ export async function applyReviewQueueDecisionAction(
       ok: false,
       error: error instanceof Error ? error.message : 'The review decision could not be saved.',
     }
+  }
+}
+
+export async function applyReviewQueueBatchApproveAction(
+  documentIds: string[],
+): Promise<ReviewQueueBatchApproveActionResult> {
+  const normalizedDocumentIds = [...new Set(documentIds.map((documentId) => documentId.trim()).filter(Boolean))]
+
+  if (normalizedDocumentIds.length === 0) {
+    return {
+      ok: false,
+      approvedIds: [],
+      failed: [],
+      error: 'Select at least one document to approve.',
+    }
+  }
+
+  const results = await Promise.all(
+    normalizedDocumentIds.map(async (documentId) => ({
+      documentId,
+      result: await applyReviewQueueDecisionAction(documentId, 'APPROVED'),
+    })),
+  )
+
+  const approvedIds = results
+    .filter((entry) => entry.result.ok)
+    .map((entry) => entry.documentId)
+  const failed = results.flatMap<ReviewQueueBatchApproveFailure>((entry) =>
+    entry.result.ok ? [] : [{ documentId: entry.documentId, error: entry.result.error }],
+  )
+
+  if (approvedIds.length === 0) {
+    return {
+      ok: false,
+      approvedIds: [],
+      failed,
+      error:
+        failed.length === 1
+          ? failed[0]?.error ?? 'No selected documents could be approved.'
+          : 'No selected documents could be approved.',
+    }
+  }
+
+  if (failed.length > 0) {
+    return {
+      ok: true,
+      approvedIds,
+      failed,
+      message: `${approvedIds.length} documents approved. ${failed.length} failed.`,
+    }
+  }
+
+  return {
+    ok: true,
+    approvedIds,
+    failed: [],
+    message: `${approvedIds.length} documents approved.`,
   }
 }

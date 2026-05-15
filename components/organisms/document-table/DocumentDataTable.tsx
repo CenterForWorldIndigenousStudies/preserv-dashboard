@@ -39,6 +39,7 @@ interface DocumentDataTableProps<TData extends MRT_RowData & { id: string }, TFi
   onRowSelectionChange?: (updater: MRT_Updater<MRT_RowSelectionState>) => void
   enableRowSelection?: boolean
   getRowId?: (row: TData) => string
+  excludedRowIds?: readonly string[]
   styleVariant?: 'default' | 'reviewQueueDense'
 }
 
@@ -65,6 +66,7 @@ export function DocumentDataTable<TData extends MRT_RowData & { id: string }, TF
   onRowSelectionChange,
   enableRowSelection = false,
   getRowId,
+  excludedRowIds,
   styleVariant = 'default',
 }: DocumentDataTableProps<TData, TFilters>): ReactElement {
   const internalController = useDocumentTableController<TFilters>({ initialQuery })
@@ -134,12 +136,21 @@ export function DocumentDataTable<TData extends MRT_RowData & { id: string }, TF
     ]
   }, [definition])
 
+  const excludedRowIdSet = useMemo(() => new Set(excludedRowIds ?? []), [excludedRowIds])
+  const visibleData = useMemo(
+    () =>
+      excludedRowIdSet.size === 0
+        ? data
+        : data.filter((row) => !(getRowId ? excludedRowIdSet.has(getRowId(row)) : excludedRowIdSet.has(row.id))),
+    [data, excludedRowIdSet, getRowId],
+  )
+
   const table = useMaterialReactTable({
     columns,
-    data,
+    data: visibleData,
     ...buildDocumentTableMrtOptions({
       columns,
-      data,
+      data: visibleData,
       emptyMessage,
       styleVariant,
     }),
