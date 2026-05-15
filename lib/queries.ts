@@ -85,6 +85,12 @@ const OVERVIEW_SORT_EXPRESSIONS: Record<(typeof DOCUMENTS_ORDERABLE_FIELDS)[numb
   is_duplicate: 'CASE WHEN dup.document_id IS NULL THEN 0 ELSE 1 END',
 }
 
+const DOCUMENT_TABLE_PAGE_SIZES = [25, 50, 100, 250, 500] as const
+const DEFAULT_DOCUMENT_TABLE_PAGE_SIZE: (typeof DOCUMENT_TABLE_PAGE_SIZES)[number] = 25
+const DEFAULT_OVERVIEW_SORT_FIELD: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number] = 'name'
+const DEFAULT_OVERVIEW_SECONDARY_SORT_FIELD: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number] = 'updated_at'
+const DEFAULT_OVERVIEW_SORT_TIMESTAMP = new Date('1000-01-01T00:00:00.000Z')
+
 export interface DocumentsQueryParams extends OverviewAdvancedSearchFilters {
   page?: number
   pageSize?: number
@@ -97,6 +103,35 @@ export interface DocumentsQueryParams extends OverviewAdvancedSearchFilters {
   cursorDirection?: 'next' | 'prev'
 }
 
+export function normalizeDocumentTablePageSize(pageSize?: number): number {
+  if (!pageSize || pageSize < 1 || Number.isNaN(pageSize)) {
+    return DEFAULT_DOCUMENT_TABLE_PAGE_SIZE
+  }
+
+  const normalizedPageSize = Math.floor(pageSize)
+  let resolvedPageSize: (typeof DOCUMENT_TABLE_PAGE_SIZES)[number] = DEFAULT_DOCUMENT_TABLE_PAGE_SIZE
+
+  for (const supportedPageSize of DOCUMENT_TABLE_PAGE_SIZES) {
+    if (normalizedPageSize < supportedPageSize) {
+      break
+    }
+
+    resolvedPageSize = supportedPageSize
+  }
+
+  return resolvedPageSize
+}
+
+function isOverviewSortField(value?: DocumentsQueryParams['orderBy']): value is (typeof DOCUMENTS_ORDERABLE_FIELDS)[number] {
+  return !!value && (DOCUMENTS_ORDERABLE_FIELDS as readonly string[]).includes(value)
+}
+
+function normalizeOverviewSortField(
+  value?: DocumentsQueryParams['orderBy'],
+): (typeof DOCUMENTS_ORDERABLE_FIELDS)[number] {
+  return isOverviewSortField(value) ? value : DEFAULT_OVERVIEW_SORT_FIELD
+}
+
 export type QueryDbClient = PrismaClient | Prisma.TransactionClient
 
 export async function getAllDocuments(
@@ -104,7 +139,7 @@ export async function getAllDocuments(
   client: QueryDbClient = db,
 ): Promise<DocumentsPageResult> {
   const page = normalizePageNumber(params.page)
-  const pageSize = params.pageSize && params.pageSize > 0 ? Math.min(params.pageSize, 1000) : 25
+  const pageSize = normalizeDocumentTablePageSize(params.pageSize)
 
   return getOverviewDocumentsPage(
     {
@@ -133,7 +168,7 @@ export async function getNeedsReviewDocuments(
   client: QueryDbClient = db,
 ): Promise<DocumentsPageResult> {
   const page = normalizePageNumber(params.page)
-  const pageSize = params.pageSize && params.pageSize > 0 ? Math.min(params.pageSize, 1000) : 25
+  const pageSize = normalizeDocumentTablePageSize(params.pageSize)
 
   return getNeedsReviewDocumentsPage(
     {
@@ -821,10 +856,9 @@ function normalizeCollectionDocumentPageSize(pageSize?: number): number {
   return Math.min(Math.floor(pageSize), 100)
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- normalizeCollectionDocumentSortField is kept for future use with server-side sorting
-function normalizeCollectionDocumentSortField(_sortField?: string): CollectionDocumentSortField {
-  return COLLECTION_DOCUMENT_SORT_FIELDS.includes(_sortField as CollectionDocumentSortField)
-    ? (_sortField as CollectionDocumentSortField)
+function normalizeCollectionDocumentSortField(sortField?: string): CollectionDocumentSortField {
+  return COLLECTION_DOCUMENT_SORT_FIELDS.includes(sortField as CollectionDocumentSortField)
+    ? (sortField as CollectionDocumentSortField)
     : 'name'
 }
 
@@ -840,8 +874,23 @@ function buildCollectionDocumentRowsSql(params: {
   const page = normalizeCollectionDocumentPage(params.page)
   const pageSize = normalizeCollectionDocumentPageSize(params.pageSize)
   const offset = (page - 1) * pageSize
+  const sortField = normalizeCollectionDocumentSortField(params.sortField)
+  const sortDirection = params.sortDirection === 'desc' ? Prisma.sql`DESC` : Prisma.sql`ASC`
+  const sortExpression =
+    sortField === 'filesize'
+      ? Prisma.sql`f.filesize`
+      : sortField === 'id_legacy'
+        ? Prisma.sql`f.id_legacy`
+        : sortField === 'created_at'
+          ? Prisma.sql`f.created_at`
+          : Prisma.sql`f.name`
   const searchCondition = params.search?.trim()
-    ? Prisma.sql`AND LOWER(COALESCE(d.name, '')) LIKE ${`%${params.search.trim().toLowerCase()}%`}`
+    ? Prisma.sql`
+        AND (
+          LOWER(COALESCE(d.name, '')) LIKE ${`%${params.search.trim().toLowerCase()}%`}
+          OR LOWER(COALESCE(d.id_legacy, '')) LIKE ${`%${params.search.trim().toLowerCase()}%`}
+        )
+      `
     : Prisma.empty
 
   if (params.mode === 'in') {
@@ -867,7 +916,7 @@ function buildCollectionDocumentRowsSql(params: {
       SELECT f.*, totals.total
       FROM filtered f
       CROSS JOIN (SELECT COUNT(*) AS total FROM filtered) totals
-      ORDER BY f.id ASC
+      ORDER BY ${sortExpression} ${sortDirection}, f.id ASC
       LIMIT ${pageSize} OFFSET ${offset}
     `
   }
@@ -894,7 +943,7 @@ function buildCollectionDocumentRowsSql(params: {
     SELECT f.*, totals.total
     FROM filtered f
     CROSS JOIN (SELECT COUNT(*) AS total FROM filtered) totals
-    ORDER BY f.id ASC
+    ORDER BY ${sortExpression} ${sortDirection}, f.id ASC
     LIMIT ${pageSize} OFFSET ${offset}
   `
 }
@@ -1103,14 +1152,20 @@ async function getOverviewDocumentsPage(
   },
   client: QueryDbClient = db,
 ): Promise<DocumentsPageResult> {
-  const sortField =
-    params.orderBy && (DOCUMENTS_ORDERABLE_FIELDS as readonly string[]).includes(params.orderBy)
-      ? params.orderBy
-      : 'created_at'
-  const sortDirection = params.sortDirection === 'asc' ? 'asc' : 'desc'
+  const hasExplicitSort = isOverviewSortField(params.orderBy)
+  const usesDefaultSort = !hasExplicitSort
+  const sortField = normalizeOverviewSortField(params.orderBy)
+  const sortDirection = usesDefaultSort
+    ? 'asc'
+    : params.sortDirection === 'asc'
+      ? 'asc'
+      : 'desc'
   const cursorDirection = params.cursorDirection === 'prev' ? 'prev' : 'next'
   const searchTerm = params.search?.trim()
   const sortExpression = Prisma.raw(OVERVIEW_SORT_EXPRESSIONS[sortField])
+  const defaultSecondarySortExpression = usesDefaultSort
+    ? Prisma.raw(OVERVIEW_SORT_EXPRESSIONS[DEFAULT_OVERVIEW_SECONDARY_SORT_FIELD])
+    : undefined
   const whereSql = buildOverviewDocumentsWhereSql({
     accessLevel: params.accessLevel,
     batch: params.batch,
@@ -1119,6 +1174,7 @@ async function getOverviewDocumentsPage(
     createdTo: params.createdTo,
     cursor: params.cursor,
     cursorDirection,
+    defaultSecondarySortExpression,
     documentType: params.documentType,
     requireValidationStatus: params.requireValidationStatus,
     searchTerm,
@@ -1129,6 +1185,7 @@ async function getOverviewDocumentsPage(
   })
   const orderBySql = buildOverviewDocumentsOrderBySql({
     cursorDirection,
+    defaultSecondarySortExpression,
     sortDirection,
     sortExpression,
   })
@@ -1182,8 +1239,8 @@ async function getOverviewDocumentsPage(
   const slicedItems = hasMore ? items.slice(0, params.pageSize) : items
   const orderedItems = cursorDirection === 'prev' ? [...slicedItems].reverse() : slicedItems
   const normalizedItems = orderedItems.map(normalizeOverviewDocumentRow)
-  const startCursor = buildDocumentsCursor(orderedItems[0], sortField)
-  const endCursor = buildDocumentsCursor(orderedItems.at(-1), sortField)
+  const startCursor = buildDocumentsCursor(orderedItems[0], sortField, usesDefaultSort)
+  const endCursor = buildDocumentsCursor(orderedItems.at(-1), sortField, usesDefaultSort)
 
   return {
     data: normalizedItems,
@@ -1216,14 +1273,20 @@ async function getNeedsReviewDocumentsPage(
   },
   client: QueryDbClient = db,
 ): Promise<DocumentsPageResult> {
-  const sortField =
-    params.orderBy && (DOCUMENTS_ORDERABLE_FIELDS as readonly string[]).includes(params.orderBy)
-      ? params.orderBy
-      : 'created_at'
-  const sortDirection = params.sortDirection === 'asc' ? 'asc' : 'desc'
+  const hasExplicitSort = isOverviewSortField(params.orderBy)
+  const usesDefaultSort = !hasExplicitSort
+  const sortField = normalizeOverviewSortField(params.orderBy)
+  const sortDirection = usesDefaultSort
+    ? 'asc'
+    : params.sortDirection === 'asc'
+      ? 'asc'
+      : 'desc'
   const cursorDirection = params.cursorDirection === 'prev' ? 'prev' : 'next'
   const searchTerm = params.search?.trim()
   const sortExpression = Prisma.raw(OVERVIEW_SORT_EXPRESSIONS[sortField])
+  const defaultSecondarySortExpression = usesDefaultSort
+    ? Prisma.raw(OVERVIEW_SORT_EXPRESSIONS[DEFAULT_OVERVIEW_SECONDARY_SORT_FIELD])
+    : undefined
   const whereSql = buildNeedsReviewDocumentsWhereSql({
     accessLevel: params.accessLevel,
     batch: params.batch,
@@ -1232,6 +1295,7 @@ async function getNeedsReviewDocumentsPage(
     createdTo: params.createdTo,
     cursor: params.cursor,
     cursorDirection,
+    defaultSecondarySortExpression,
     documentType: params.documentType,
     searchTerm,
     sortDirection,
@@ -1240,6 +1304,7 @@ async function getNeedsReviewDocumentsPage(
   })
   const orderBySql = buildOverviewDocumentsOrderBySql({
     cursorDirection,
+    defaultSecondarySortExpression,
     sortDirection,
     sortExpression,
   })
@@ -1291,8 +1356,8 @@ async function getNeedsReviewDocumentsPage(
   const slicedItems = hasMore ? items.slice(0, params.pageSize) : items
   const orderedItems = cursorDirection === 'prev' ? [...slicedItems].reverse() : slicedItems
   const normalizedItems = orderedItems.map(normalizeOverviewDocumentRow)
-  const startCursor = buildDocumentsCursor(orderedItems[0], sortField)
-  const endCursor = buildDocumentsCursor(orderedItems.at(-1), sortField)
+  const startCursor = buildDocumentsCursor(orderedItems[0], sortField, usesDefaultSort)
+  const endCursor = buildDocumentsCursor(orderedItems.at(-1), sortField, usesDefaultSort)
 
   return {
     data: normalizedItems,
@@ -1319,6 +1384,7 @@ function buildOverviewDocumentsWhereSql(params: {
   requireValidationStatus?: boolean
   cursor?: DocumentsCursor | null
   cursorDirection: 'next' | 'prev'
+  defaultSecondarySortExpression?: Prisma.Sql
   sortDirection: 'asc' | 'desc'
   sortExpression: Prisma.Sql
   sortField: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
@@ -1372,6 +1438,7 @@ function buildOverviewDocumentsWhereSql(params: {
       buildOverviewDocumentsCursorConditionSql({
         cursor: params.cursor,
         cursorDirection: params.cursorDirection,
+        defaultSecondarySortExpression: params.defaultSecondarySortExpression,
         sortDirection: params.sortDirection,
         sortExpression: params.sortExpression,
         sortField: params.sortField,
@@ -1396,6 +1463,7 @@ function buildNeedsReviewDocumentsWhereSql(params: {
   accessLevel?: OverviewAccessLevelOption
   cursor?: DocumentsCursor | null
   cursorDirection: 'next' | 'prev'
+  defaultSecondarySortExpression?: Prisma.Sql
   sortDirection: 'asc' | 'desc'
   sortExpression: Prisma.Sql
   sortField: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
@@ -1441,6 +1509,7 @@ function buildNeedsReviewDocumentsWhereSql(params: {
       buildOverviewDocumentsCursorConditionSql({
         cursor: params.cursor,
         cursorDirection: params.cursorDirection,
+        defaultSecondarySortExpression: params.defaultSecondarySortExpression,
         sortDirection: params.sortDirection,
         sortExpression: params.sortExpression,
         sortField: params.sortField,
@@ -1534,6 +1603,7 @@ function buildOverviewCollectionConditionSql(collection: string): Prisma.Sql {
 function buildOverviewDocumentsCursorConditionSql(params: {
   cursor: DocumentsCursor
   cursorDirection: 'next' | 'prev'
+  defaultSecondarySortExpression?: Prisma.Sql
   sortDirection: 'asc' | 'desc'
   sortExpression: Prisma.Sql
   sortField: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
@@ -1544,6 +1614,25 @@ function buildOverviewDocumentsCursorConditionSql(params: {
   const primaryComparator = Prisma.raw(usesAscendingPrimary ? '>' : '<')
   const secondaryComparator = Prisma.raw(movesForward ? '>' : '<')
   const cursorValue = coerceDocumentsCursorValue(params.sortField, params.cursor.value)
+
+  if (params.defaultSecondarySortExpression) {
+    const compositeCursorValue = coerceDefaultOverviewCursorValue(params.cursor.value)
+
+    return Prisma.sql`
+      (
+        ${params.sortExpression} ${primaryComparator} ${compositeCursorValue.primary}
+        OR (
+          ${params.sortExpression} = ${compositeCursorValue.primary}
+          AND ${params.defaultSecondarySortExpression} ${primaryComparator} ${compositeCursorValue.secondary}
+        )
+        OR (
+          ${params.sortExpression} = ${compositeCursorValue.primary}
+          AND ${params.defaultSecondarySortExpression} = ${compositeCursorValue.secondary}
+          AND d.id ${secondaryComparator} ${params.cursor.id}
+        )
+      )
+    `
+  }
 
   return Prisma.sql`
     (
@@ -1558,6 +1647,7 @@ function buildOverviewDocumentsCursorConditionSql(params: {
 
 function buildOverviewDocumentsOrderBySql(params: {
   cursorDirection: 'next' | 'prev'
+  defaultSecondarySortExpression?: Prisma.Sql
   sortDirection: 'asc' | 'desc'
   sortExpression: Prisma.Sql
 }): Prisma.Sql {
@@ -1571,6 +1661,15 @@ function buildOverviewDocumentsOrderBySql(params: {
         : 'DESC'
   const secondaryDirection = params.cursorDirection === 'prev' ? 'DESC' : 'ASC'
 
+  if (params.defaultSecondarySortExpression) {
+    return Prisma.sql`
+      ORDER BY
+        ${params.sortExpression} ${Prisma.raw(primaryDirection)},
+        ${params.defaultSecondarySortExpression} ${Prisma.raw(primaryDirection)},
+        d.id ${Prisma.raw(secondaryDirection)}
+    `
+  }
+
   return Prisma.sql`
     ORDER BY ${params.sortExpression} ${Prisma.raw(primaryDirection)}, d.id ${Prisma.raw(secondaryDirection)}
   `
@@ -1579,13 +1678,16 @@ function buildOverviewDocumentsOrderBySql(params: {
 function buildDocumentsCursor(
   row: OverviewDocumentRow | undefined,
   sortField: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number],
+  usesDefaultSort = false,
 ): DocumentsCursor | null {
   if (!row) {
     return null
   }
   return {
     id: String(row.id),
-    value: serializeDocumentsCursorValue(sortField, row.sort_value),
+    value: usesDefaultSort
+      ? serializeDefaultOverviewCursorValue(row)
+      : serializeDocumentsCursorValue(sortField, row.sort_value),
   }
 }
 
@@ -1618,6 +1720,40 @@ function coerceDocumentsCursorValue(
   }
 
   return value
+}
+
+function serializeDefaultOverviewCursorValue(row: OverviewDocumentRow): string {
+  return JSON.stringify({
+    primary: String(row.sort_value ?? ''),
+    secondary:
+      row.updated_at instanceof Date
+        ? row.updated_at.toISOString()
+        : row.updated_at
+          ? new Date(String(row.updated_at)).toISOString()
+          : '',
+  })
+}
+
+function coerceDefaultOverviewCursorValue(value: string): {
+  primary: string
+  secondary: Date
+} {
+  try {
+    const parsed = JSON.parse(value) as {
+      primary?: string
+      secondary?: string
+    }
+
+    return {
+      primary: parsed.primary ?? '',
+      secondary: parsed.secondary ? new Date(parsed.secondary) : DEFAULT_OVERVIEW_SORT_TIMESTAMP,
+    }
+  } catch {
+    return {
+      primary: value,
+      secondary: DEFAULT_OVERVIEW_SORT_TIMESTAMP,
+    }
+  }
 }
 
 function normalizeOverviewDocumentRow(row: OverviewDocumentRow): Document {

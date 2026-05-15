@@ -3,16 +3,16 @@
 import { useMemo, useState, type ReactElement } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Accordion, AccordionDetails, AccordionSummary, Box, Chip, CircularProgress, Typography } from '@mui/material'
+import { Accordion, AccordionDetails, AccordionSummary, Box, Chip, Typography } from '@mui/material'
+import type { MRT_ColumnDef } from 'material-react-table'
 
 import { deleteCollectionAction, getDocumentsForCollectionAction } from '@actions/collections'
 import { Button } from '@atoms/Button'
 import { IconX } from '@atoms/icons/IconX'
-import { CollectionDocumentManager } from '@organisms/CollectionDocumentManager'
-import { TagDeleteFlowDialog } from '@organisms/TagDeleteFlowDialog'
-import { MaterialReactTable, useMaterialReactTable, type MRT_ColumnDef } from 'material-react-table'
-
 import { DateAtom } from '@atoms/Date'
+import { CollectionDocumentManager } from '@organisms/CollectionDocumentManager'
+import { DocumentDataTable } from '@organisms/document-table/DocumentDataTable'
+import { TagDeleteFlowDialog } from '@organisms/TagDeleteFlowDialog'
 import type { CollectionWithMeta, Document } from '@lib/types'
 
 interface CollectionsAccordionProps {
@@ -25,18 +25,27 @@ interface CollectionManagerState {
   initialAction: 'add' | 'remove'
 }
 
-function CollectionDocumentsTable({ documents }: { documents: Document[] }): ReactElement {
+function buildCollectionDocumentsPageInfo(page: number, pageSize: number, total: number) {
+  const hasNextPage = page * pageSize < total
+
+  return {
+    pageSize,
+    hasNextPage,
+    hasPreviousPage: page > 1,
+    startCursor: page > 1 ? { id: `page-${page - 1}`, value: String(page - 1) } : null,
+    endCursor: hasNextPage ? { id: `page-${page + 1}`, value: String(page + 1) } : null,
+  }
+}
+
+function CollectionDocumentsTable({
+  collectionId,
+  documentCount,
+}: {
+  collectionId: string
+  documentCount: number
+}): ReactElement {
   const columns = useMemo<MRT_ColumnDef<Document>[]>(
     () => [
-      {
-        accessorKey: 'id',
-        header: 'ID',
-        size: 120,
-        Cell: ({ renderedCellValue }) => {
-          const value = String((renderedCellValue as string | null) ?? '')
-          return <span title={value}>{value.length > 8 ? `${value.slice(0, 8)}...` : value}</span>
-        },
-      },
       {
         accessorKey: 'name',
         header: 'Name',
@@ -77,87 +86,59 @@ function CollectionDocumentsTable({ documents }: { documents: Document[] }): Rea
     [],
   )
 
-  const table = useMaterialReactTable({
-    columns,
-    data: documents,
-    enablePagination: false,
-    enableSorting: false,
-    enableColumnActions: false,
-    enableDensityToggle: false,
-    enableFullScreenToggle: false,
-    enableHiding: false,
-    enableGlobalFilter: false,
-    muiTableHeadCellProps: {
-      sx: {
-        backgroundColor: '#f4f1f0',
-        color: '#231f20',
-        fontWeight: 600,
-        fontSize: '0.75rem',
-        textTransform: 'uppercase',
-        letterSpacing: '0.1em',
-        borderBottom: '2px solid #355834',
-      },
-    },
-    muiTableBodyCellProps: {
-      sx: { color: '#231f20', fontSize: '0.875rem' },
-    },
-    muiTableBodyProps: {
-      sx: {
-        '& tr:nth-of-type(even)': { backgroundColor: 'rgba(244,241,240,0.3)' },
-        '& tr:hover': { backgroundColor: 'rgba(53,88,52,0.06)' },
-      },
-    },
-    muiTableContainerProps: {
-      sx: { borderRadius: '0.75rem', border: '1px solid rgba(53,88,52,0.125)' },
-    },
-    localization: {
-      noRecordsToDisplay: 'No documents associated with this collection.',
-    },
-    getRowId: (row) => row.id,
-  })
+  return (
+    <DocumentDataTable<Document, Record<string, never>>
+      definition={{
+        tableId: `collection-documents-${collectionId}`,
+        columns,
+        fetcher: async (query) => {
+          const result = await getDocumentsForCollectionAction(collectionId, {
+            page: query.page,
+            pageSize: query.pageSize,
+            search: query.search,
+            sortField: query.orderBy as 'name' | 'id_legacy' | 'filesize' | 'created_at' | undefined,
+            sortDirection: query.sortDirection,
+          })
 
-  return <MaterialReactTable table={table} />
+          return {
+            data: result.documents,
+            totalCount: result.total,
+            pageInfo: buildCollectionDocumentsPageInfo(query.page, query.pageSize, result.total),
+          }
+        },
+      }}
+      initialData={
+        documentCount === 0
+          ? {
+              data: [],
+              totalCount: 0,
+              pageInfo: {
+                pageSize: 25,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+                endCursor: null,
+              },
+            }
+          : undefined
+      }
+      initialQuery={{
+        page: 1,
+        pageSize: 25,
+        filters: {},
+      }}
+      emptyMessage="No documents associated with this collection."
+      searchPlaceholder="Search collection documents"
+    />
+  )
 }
 
 export function CollectionsAccordion({ collections }: CollectionsAccordionProps): ReactElement {
   const router = useRouter()
   const [managerState, setManagerState] = useState<CollectionManagerState | null>(null)
   const [expandedCollections, setExpandedCollections] = useState<Set<string>>(new Set())
-  const [collectionDocuments, setCollectionDocuments] = useState<Map<string, Document[]>>(new Map())
-  const [loadingCollections, setLoadingCollections] = useState<Set<string>>(new Set())
-  const [errorCollections, setErrorCollections] = useState<Map<string, string>>(new Map())
   const [collectionToDelete, setCollectionToDelete] = useState<CollectionWithMeta | null>(null)
   const [isDeletingCollection, setIsDeletingCollection] = useState(false)
-
-  const loadCollectionDocuments = useMemo(
-    () =>
-      async (collectionId: string) => {
-        if (collectionDocuments.has(collectionId) || loadingCollections.has(collectionId)) {
-          return
-        }
-
-        setLoadingCollections((prev) => new Set(prev).add(collectionId))
-        setErrorCollections((prev) => {
-          const next = new Map(prev)
-          next.delete(collectionId)
-          return next
-        })
-
-        try {
-          const result = await getDocumentsForCollectionAction(collectionId)
-          setCollectionDocuments((prev) => new Map(prev).set(collectionId, result.documents))
-        } catch {
-          setErrorCollections((prev) => new Map(prev).set(collectionId, 'Unable to load documents.'))
-        } finally {
-          setLoadingCollections((prev) => {
-            const next = new Set(prev)
-            next.delete(collectionId)
-            return next
-          })
-        }
-      },
-    [collectionDocuments, loadingCollections],
-  )
 
   const handleAccordionChange = (collectionId: string) => (_event: React.SyntheticEvent, expanded: boolean) => {
     setExpandedCollections((prev) => {
@@ -169,9 +150,6 @@ export function CollectionsAccordion({ collections }: CollectionsAccordionProps)
       }
       return next
     })
-    if (expanded) {
-      void loadCollectionDocuments(collectionId)
-    }
   }
 
   async function handleDeleteCollection(deleteTagFromSystem: boolean): Promise<void> {
@@ -204,9 +182,6 @@ export function CollectionsAccordion({ collections }: CollectionsAccordionProps)
       <div className="space-y-4">
         {collections.map((collection) => {
           const isExpanded = expandedCollections.has(collection.id)
-          const isLoading = loadingCollections.has(collection.id)
-          const docs = collectionDocuments.get(collection.id)
-          const error = errorCollections.get(collection.id)
 
           return (
             <Accordion
@@ -300,41 +275,19 @@ export function CollectionsAccordion({ collections }: CollectionsAccordionProps)
                     Delete collection
                   </Button>
                 </Box>
-                {isLoading ? (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 2 }}>
-                    <CircularProgress size={16} sx={{ color: '#355834' }} />
-                    <Typography sx={{ color: 'rgba(35,31,32,0.6)', fontSize: '0.875rem' }}>
-                      Loading documents…
-                    </Typography>
-                  </Box>
-                ) : error ? (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 1 }}>
-                    <Typography sx={{ color: '#b71c1c', fontSize: '0.875rem' }}>{error}</Typography>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => {
-                        setErrorCollections((prev) => {
-                          const next = new Map(prev)
-                          next.delete(collection.id)
-                          return next
-                        })
-                        void loadCollectionDocuments(collection.id)
-                      }}
-                    >
-                      Retry
-                    </Button>
-                  </Box>
-                ) : !isExpanded && collection.document_count === 0 ? (
+                {!isExpanded && collection.document_count === 0 ? (
                   <Typography sx={{ color: 'rgba(35,31,32,0.7)', fontSize: '0.95rem' }}>
                     No documents associated with this collection.
                   </Typography>
-                ) : !isExpanded ? null : !docs || docs.length === 0 ? (
+                ) : !isExpanded ? null : collection.document_count === 0 ? (
                   <Typography sx={{ color: 'rgba(35,31,32,0.7)', fontSize: '0.95rem' }}>
                     No documents associated with this collection.
                   </Typography>
                 ) : (
-                  <CollectionDocumentsTable documents={docs} />
+                  <CollectionDocumentsTable
+                    collectionId={collection.id}
+                    documentCount={collection.document_count}
+                  />
                 )}
               </AccordionDetails>
             </Accordion>

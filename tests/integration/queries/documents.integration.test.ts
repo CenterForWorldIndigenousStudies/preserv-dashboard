@@ -168,21 +168,59 @@ describe('documents queries (integration)', () => {
 
     it('paginates correctly with cursors', async () => {
       await withRollbackTransaction(async (tx) => {
-        await createTestDocument(tx, { name: 'Page Test 1' })
-        await createTestDocument(tx, { name: 'Page Test 2' })
-        await createTestDocument(tx, { name: 'Page Test 3' })
+        const batchName = 'CURSOR_PAGINATION_BATCH_20260514'
+        const batch = await createTestBatch(tx, batchName)
 
-        const page1 = await getAllDocuments({ page: 1, pageSize: 2 }, tx)
+        await Promise.all(
+          Array.from({ length: 30 }, async (_, offset) => {
+            const index = offset + 1
+            const document = await createTestDocument(tx, {
+              name: `CURSOR_PAGINATION_TEST_20260514_${String(index).padStart(2, '0')}`,
+            })
+
+            await tx.document_to_batches.create({
+              data: {
+                id: `db-${document.id}-${batch.id}`.slice(0, 36),
+                document_id: document.id,
+                batch_id: batch.id,
+              },
+            })
+          }),
+        )
+
+        const page1 = await getAllDocuments({
+          page: 1,
+          pageSize: 25,
+          batch: batchName,
+          orderBy: 'name',
+          sortDirection: 'asc',
+        }, tx)
         const page2 = await getAllDocuments({
           page: 2,
-          pageSize: 2,
+          pageSize: 25,
+          batch: batchName,
+          orderBy: 'name',
+          sortDirection: 'asc',
           cursorValue: page1.pageInfo.endCursor?.value,
           cursorId: page1.pageInfo.endCursor?.id,
           cursorDirection: 'next',
         }, tx)
 
-        expect(page1.data.length).toBeLessThanOrEqual(2)
-        expect(page2.data.length).toBeLessThanOrEqual(2)
+        expect(page1.data).toHaveLength(25)
+        expect(page2.data).toHaveLength(5)
+        expect(page1.pageInfo.hasNextPage).toBe(true)
+        expect(page2.pageInfo.hasPreviousPage).toBe(true)
+
+        const page1Batch = await tx.document_to_batches.findMany({
+          where: { document_id: { in: page1.data.map((document) => document.id) } },
+          select: { batch_id: true },
+        })
+        const page2Batch = await tx.document_to_batches.findMany({
+          where: { document_id: { in: page2.data.map((document) => document.id) } },
+          select: { batch_id: true },
+        })
+        expect(page1Batch.every((row) => row.batch_id === batch.id)).toBe(true)
+        expect(page2Batch.every((row) => row.batch_id === batch.id)).toBe(true)
 
         const page1Ids = new Set(page1.data.map((d) => d.id))
         const overlap = page2.data.filter((d) => page1Ids.has(d.id))

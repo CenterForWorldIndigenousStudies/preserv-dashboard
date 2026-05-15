@@ -1,54 +1,71 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import {
-  MaterialReactTable,
-  useMaterialReactTable,
-  type MRT_ColumnDef,
-  type MRT_PaginationState,
-  type MRT_SortingState,
-} from 'material-react-table'
+import { useMemo, type ReactElement } from 'react'
+import type { MRT_ColumnDef } from 'material-react-table'
 import Link from 'next/link'
+
 import { getReadyForLibraryAction } from '@actions/ready-for-library'
-import type { ReadyForLibraryItem } from '@lib/types'
 import { DateAtom } from '@atoms/Date'
+import { DocumentDataTable } from '@organisms/document-table/DocumentDataTable'
+import type { ReadyForLibraryItem } from '@lib/types'
 
 interface ReadyForLibraryTableProps {
   initialData?: { items: ReadyForLibraryItem[]; total: number }
 }
 
-export function ReadyForLibraryTable({ initialData }: ReadyForLibraryTableProps) {
-  const [pagination, setPagination] = useState<MRT_PaginationState>({ pageIndex: 0, pageSize: 25 })
-  const [sorting, setSorting] = useState<MRT_SortingState>([])
-  const [globalFilter, setGlobalFilter] = useState('')
-  const [rowCount, setRowCount] = useState(initialData?.total ?? 0)
-  const [data, setData] = useState<ReadyForLibraryItem[]>(initialData?.items ?? [])
+function normalizeReadyForLibrarySearch(value: string | undefined): string {
+  return value?.trim().toLowerCase() ?? ''
+}
 
-  const queryParams = useMemo(() => ({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize }), [pagination])
+function getReadyForLibrarySortValue(item: ReadyForLibraryItem, orderBy: string): number | string {
+  switch (orderBy) {
+    case 'validation_timestamp':
+      return Number(item.validation_timestamp ?? 0)
+    case 'metadata_complete':
+      return Number(item.metadata_complete)
+    case 'access_level':
+      return String(item.access_level ?? '').toLowerCase()
+    case 'validation_status':
+      return String(item.validation_status ?? '').toLowerCase()
+    case 'name':
+    default:
+      return String(item.name ?? '').toLowerCase()
+  }
+}
 
-  const shouldUseInitialData = initialData && pagination.pageIndex === 0 && !sorting.length && !globalFilter
+function sortReadyForLibraryItems(
+  items: ReadyForLibraryItem[],
+  orderBy?: string,
+  sortDirection?: 'asc' | 'desc',
+): ReadyForLibraryItem[] {
+  if (!orderBy) {
+    return items
+  }
 
+  const multiplier = sortDirection === 'desc' ? -1 : 1
+  return [...items].sort((left, right) => {
+    const leftValue = getReadyForLibrarySortValue(left, orderBy)
+    const rightValue = getReadyForLibrarySortValue(right, orderBy)
+
+    if (leftValue < rightValue) return -1 * multiplier
+    if (leftValue > rightValue) return 1 * multiplier
+    return String(left.id).localeCompare(String(right.id))
+  })
+}
+
+export function ReadyForLibraryTable({ initialData }: ReadyForLibraryTableProps): ReactElement {
   const columns = useMemo<MRT_ColumnDef<ReadyForLibraryItem>[]>(
     () => [
-      {
-        accessorKey: 'id',
-        header: 'ID',
-        size: 120,
-        Cell: ({ renderedCellValue }) => {
-          const val = String((renderedCellValue as string | null) ?? '')
-          return <span title={val}>{val.length > 8 ? `${val.slice(0, 8)}...` : val}</span>
-        },
-      },
       {
         accessorKey: 'name',
         header: 'Name',
         size: 280,
         Cell: ({ row }) => {
-          const val = row.original.name
-          if (!val) return '—'
+          const value = row.original.name
+          if (!value) return '—'
           return (
             <Link href={`/documents/${row.original.id}`} style={{ color: '#355834' }}>
-              {val}
+              {value}
             </Link>
           )
         },
@@ -63,7 +80,9 @@ export function ReadyForLibraryTable({ initialData }: ReadyForLibraryTableProps)
         accessorKey: 'validation_timestamp',
         header: 'Validation Timestamp',
         size: 180,
-        Cell: ({ renderedCellValue }) => <DateAtom value={renderedCellValue as ReadyForLibraryItem['validation_timestamp']} />,
+        Cell: ({ renderedCellValue }) => (
+          <DateAtom value={renderedCellValue as ReadyForLibraryItem['validation_timestamp']} />
+        ),
       },
       {
         accessorKey: 'access_level',
@@ -76,119 +95,72 @@ export function ReadyForLibraryTable({ initialData }: ReadyForLibraryTableProps)
         header: 'Metadata Complete',
         size: 160,
         Cell: ({ renderedCellValue }) => {
-          const val = renderedCellValue as boolean
-          return val ? (
-            <span
-              style={{
-                borderRadius: '9999px',
-                backgroundColor: '#355834',
-                color: 'white',
-                padding: '2px 12px',
-                fontSize: '0.75rem',
-                fontWeight: 500,
-              }}
-            >
-              Complete
-            </span>
-          ) : (
-            <span
-              style={{
-                borderRadius: '9999px',
-                backgroundColor: '#9e3f2f',
-                color: 'white',
-                padding: '2px 12px',
-                fontSize: '0.75rem',
-                fontWeight: 500,
-              }}
-            >
-              Incomplete
-            </span>
-          )
+          const value = Boolean(renderedCellValue)
+          return value ? 'Complete' : 'Incomplete'
         },
       },
     ],
     [],
   )
 
-  useEffect(() => {
-    if (shouldUseInitialData) {
-      setData(initialData.items)
-      setRowCount(initialData.total)
-      return
-    }
+  return (
+    <DocumentDataTable<ReadyForLibraryItem, Record<string, never>>
+      definition={{
+        tableId: 'ready-for-library-documents',
+        columns,
+        fetcher: async (query) => {
+          const result = await getReadyForLibraryAction()
+          const normalizedSearch = normalizeReadyForLibrarySearch(query.search)
+          const filteredItems = normalizedSearch
+            ? result.items.filter((item) =>
+                String(item.name ?? '')
+                  .toLowerCase()
+                  .includes(normalizedSearch),
+              )
+            : result.items
+          const sortedItems = sortReadyForLibraryItems(
+            filteredItems,
+            query.orderBy,
+            query.sortDirection,
+          )
+          const offset = (query.page - 1) * query.pageSize
+          const pagedItems = sortedItems.slice(offset, offset + query.pageSize)
 
-    let cancelled = false
-    getReadyForLibraryAction()
-      .then((result: { items: ReadyForLibraryItem[]; total: number }) => {
-        if (!cancelled) {
-          setData(result.items)
-          setRowCount(result.total)
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setData([])
-          setRowCount(0)
-        }
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [queryParams, shouldUseInitialData, initialData])
-
-  const table = useMaterialReactTable({
-    columns,
-    data,
-    rowCount,
-    manualPagination: true,
-    manualSorting: true,
-    manualFiltering: true,
-    onPaginationChange: setPagination,
-    onSortingChange: setSorting,
-    onGlobalFilterChange: setGlobalFilter,
-    state: { pagination, sorting, globalFilter },
-    muiPaginationProps: {
-      rowsPerPageOptions: [10, 25, 50, 100],
-      variant: 'outlined',
-    },
-    muiTableHeadCellProps: {
-      sx: {
-        backgroundColor: '#f4f1f0',
-        color: '#231f20',
-        fontWeight: 600,
-        fontSize: '0.75rem',
-        textTransform: 'uppercase',
-        letterSpacing: '0.1em',
-        borderBottom: '2px solid #355834',
-      },
-    },
-    muiTableBodyCellProps: {
-      sx: { color: '#231f20', fontSize: '0.875rem' },
-    },
-    muiTableBodyProps: {
-      sx: {
-        '& tr:nth-of-type(even)': { backgroundColor: 'rgba(244,241,240,0.3)' },
-        '& tr:hover': { backgroundColor: 'rgba(53,88,52,0.06)' },
-      },
-    },
-    muiTableContainerProps: {
-      sx: { borderRadius: '0.75rem', border: '1px solid rgba(53,88,52,0.125)' },
-    },
-    muiSearchTextFieldProps: {
-      placeholder: 'Search ready for library...',
-      sx: {
-        '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(53,88,52,0.25)' },
-        '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#355834' },
-      },
-    },
-    localization: {
-      noRecordsToDisplay: 'No documents ready for library ingest.',
-      search: 'Search',
-      of: 'of',
-      rowsPerPage: 'Rows per page',
-    },
-    getRowId: (row) => row.id,
-  })
-
-  return <MaterialReactTable table={table} />
+          return {
+            data: pagedItems,
+            totalCount: sortedItems.length,
+            pageInfo: {
+              pageSize: query.pageSize,
+              hasNextPage: offset + query.pageSize < sortedItems.length,
+              hasPreviousPage: query.page > 1,
+              startCursor: null,
+              endCursor: null,
+            },
+          }
+        },
+      }}
+      initialData={
+        initialData
+          ? {
+              data: initialData.items.slice(0, 25),
+              totalCount: initialData.total,
+              pageInfo: {
+                pageSize: 25,
+                hasNextPage: initialData.total > 25,
+                hasPreviousPage: false,
+                startCursor: null,
+                endCursor: null,
+              },
+            }
+          : undefined
+      }
+      initialQuery={{
+        page: 1,
+        pageSize: 25,
+        filters: {},
+      }}
+      emptyMessage="No documents ready for library ingest."
+      searchPlaceholder="Search ready for library..."
+    />
+  )
 }

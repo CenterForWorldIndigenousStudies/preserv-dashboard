@@ -1,4 +1,4 @@
-import { auth } from '../auth'
+import { getDashboardSession } from '../auth'
 import { db } from '@lib/db'
 import type { Prisma, PrismaClient } from '@lib/prisma/generated/client'
 
@@ -25,7 +25,7 @@ export async function createEditHistoryEntry(
 ): Promise<void> {
   const client = maybeParams ? (clientOrParams as EditHistoryClient) : db
   const params = maybeParams ?? (clientOrParams as CreateEditHistoryEntryParams)
-  const session = await auth()
+  const session = await getDashboardSession()
   const editorEmail = session?.user?.email ?? 'unknown@system.local'
 
   await client.edit_history.create({

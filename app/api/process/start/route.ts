@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 
 import { DATA_INGESTER_CALLBACK_PATH } from '@constants/paths'
 import { DASHBOARD_BASE_URL } from '@constants/server'
-import { auth } from '@root/auth'
+import { getDashboardSession } from '@root/auth'
 import { logEvent } from '@lib/observability'
 import {
   parsePipelineConfig,
@@ -125,7 +125,7 @@ function requireIngesterTriggerConfig(): IngesterTriggerConfig {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const session = await auth()
+  const session = await getDashboardSession()
   const startedBy = session?.user?.email?.trim()
   if (!startedBy) {
     return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })

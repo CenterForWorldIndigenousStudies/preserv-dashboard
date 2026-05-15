@@ -1,32 +1,29 @@
 'use client'
 
-import { useEffect, useMemo, useState, type ReactElement } from 'react'
+import { useMemo, useState, type ReactElement } from 'react'
 import Alert from '@mui/material/Alert'
 import Snackbar from '@mui/material/Snackbar'
-import {
-  MaterialReactTable,
-  useMaterialReactTable,
-  type MRT_ColumnDef,
-} from 'material-react-table'
+import type { MRT_ColumnDef } from 'material-react-table'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
+import { applyReviewQueueDecisionAction, getNeedsReviewDocumentsAction } from '@actions/review-queue'
+import { getDocumentsAction } from '@actions/documents'
 import { Badge, type BadgeVariant } from '@atoms/Badges/Badge'
 import { Button } from '@atoms/Button'
-import { FileSize } from '@atoms/FileSize'
 import { DateAtom } from '@atoms/Date'
-import { getDocumentsAction } from '@actions/documents'
-import { applyReviewQueueDecisionAction, getNeedsReviewDocumentsAction } from '@actions/review-queue'
-import { OverviewAdvancedSearchModal } from '@organisms/OverviewAdvancedSearchModal'
+import { FileSize } from '@atoms/FileSize'
+import { useOverviewTableState } from '@hooks/useOverviewTableState'
 import {
   type OverviewAdvancedSearchFilters,
   type OverviewFilterOptions,
   type OverviewStatusOption,
 } from '@lib/overview-search'
-import type { Document, DocumentsPageResult, ReviewQueueDecision } from '@lib/types'
 import type { DocumentsQueryParams } from '@lib/queries'
-import { useOverviewTableState, canReuseInitialData } from '@hooks/useOverviewTableState'
-
-const PAGE_SIZE_OPTIONS = [10, 25, 50, 100]
+import type { Document, DocumentsPageResult, ReviewQueueDecision } from '@lib/types'
+import { DocumentTableAdvancedSearchTrigger } from '@molecules/DocumentTableAdvancedSearchTrigger'
+import { DocumentDataTable } from '@organisms/document-table/DocumentDataTable'
+import { OverviewAdvancedSearchModal } from '@organisms/OverviewAdvancedSearchModal'
 
 interface DocumentsTableProps {
   initialData?: DocumentsPageResult
@@ -59,8 +56,9 @@ export function DocumentsTable({
   filterOptions,
   variant = 'overview',
   fixedStatuses,
-  serverDriven = false,
+  serverDriven: _serverDriven = false,
 }: DocumentsTableProps): ReactElement {
+  const router = useRouter()
   const isReviewQueue = variant === 'reviewQueue'
   const {
     accessLevel,
@@ -92,19 +90,6 @@ export function DocumentsTable({
     }),
     [effectiveStatuses, queryParams],
   )
-  const fetchDocumentsAction = isReviewQueue ? getNeedsReviewDocumentsAction : getDocumentsAction
-  const [data, setData] = useState<Document[]>(initialData?.data ?? [])
-  const [pageInfo, setPageInfo] = useState<DocumentsPageResult['pageInfo']>(
-    initialData?.pageInfo ?? {
-      page,
-      pageSize,
-      hasNextPage: false,
-      hasPreviousPage: false,
-      startCursor: null,
-      endCursor: null,
-    },
-  )
-  const [, setIsLoading] = useState(false)
   const [activeDecision, setActiveDecision] = useState<{
     documentId: string
     decision: ReviewQueueDecision
@@ -124,24 +109,64 @@ export function DocumentsTable({
     return currentSearch ? `${pathname}?${currentSearch}` : pathname
   }, [pathname, searchParams])
 
+  const currentFilters: OverviewAdvancedSearchFilters = useMemo(
+    () => ({
+      author: globalFilter || undefined,
+      statuses: effectiveStatuses ?? [],
+      documentType,
+      batch: batch || undefined,
+      createdFrom: createdFrom || undefined,
+      createdTo: createdTo || undefined,
+      collection: collection || undefined,
+      accessLevel,
+    }),
+    [accessLevel, batch, collection, createdFrom, createdTo, documentType, effectiveStatuses, globalFilter],
+  )
+
+  async function handleReviewDecision(documentId: string, decision: ReviewQueueDecision): Promise<void> {
+    setActiveDecision({ documentId, decision })
+
+    try {
+      const result = await applyReviewQueueDecisionAction(documentId, decision)
+
+      if (!result.ok) {
+        setToastState({
+          open: true,
+          message: result.error,
+          severity: 'error',
+        })
+        return
+      }
+
+      setToastState({
+        open: true,
+        message: result.message,
+        severity: 'success',
+      })
+      router.refresh()
+    } catch (error: unknown) {
+      setToastState({
+        open: true,
+        message: error instanceof Error ? error.message : 'The review decision could not be saved.',
+        severity: 'error',
+      })
+    } finally {
+      setActiveDecision(null)
+    }
+  }
+
   const columns = useMemo<MRT_ColumnDef<Document>[]>(
     () => [
-      {
-        accessorKey: 'id',
-        header: 'ID',
-        size: 120,
-        Cell: ({ renderedCellValue }) => {
-          const val = String((renderedCellValue as string | null) ?? '')
-          return <span title={val}>{val.length > 8 ? `${val.slice(0, 8)}...` : val}</span>
-        },
-      },
       {
         accessorKey: 'name',
         header: 'Name',
         size: 280,
         Cell: ({ row }) => {
-          const val = row.original.name
-          if (!val) return '—'
+          const value = row.original.name
+          if (!value) {
+            return '—'
+          }
+
           return (
             <Link
               href={{
@@ -150,7 +175,7 @@ export function DocumentsTable({
               }}
               style={{ color: '#355834' }}
             >
-              {val}
+              {value}
             </Link>
           )
         },
@@ -190,46 +215,6 @@ export function DocumentsTable({
                   <span className="txt-muted">--</span>
                 ),
             } satisfies MRT_ColumnDef<Document>,
-            {
-              id: 'review_actions',
-              header: 'Actions',
-              size: 220,
-              enableSorting: false,
-              Cell: ({ row }) => {
-                const isApprovePending =
-                  activeDecision?.documentId === row.original.id && activeDecision.decision === 'APPROVED'
-                const isRejectPending =
-                  activeDecision?.documentId === row.original.id && activeDecision.decision === 'REJECTED'
-                const isPending = isApprovePending || isRejectPending
-
-                return (
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      loading={isApprovePending}
-                      disabled={isPending}
-                      onClick={() => {
-                        void handleReviewDecision(row.original.id, 'APPROVED')
-                      }}
-                    >
-                      Approve
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      loading={isRejectPending}
-                      disabled={isPending}
-                      onClick={() => {
-                        void handleReviewDecision(row.original.id, 'REJECTED')
-                      }}
-                    >
-                      Reject
-                    </Button>
-                  </div>
-                )
-              },
-            } satisfies MRT_ColumnDef<Document>,
           ]
         : []),
       {
@@ -237,9 +222,11 @@ export function DocumentsTable({
         header: 'Legacy ID',
         size: 180,
         Cell: ({ renderedCellValue }) => {
-          const val = String((renderedCellValue as string | null) ?? '')
-          if (!val) return '—'
-          return <span title={val}>{val.length > 30 ? `${val.slice(0, 30)}...` : val}</span>
+          const value = String((renderedCellValue as string | null) ?? '')
+          if (!value) {
+            return '—'
+          }
+          return <span title={value}>{value.length > 30 ? `${value.slice(0, 30)}...` : value}</span>
         },
       },
       {
@@ -261,11 +248,14 @@ export function DocumentsTable({
         header: 'Binary Hash',
         size: 180,
         Cell: ({ renderedCellValue }) => {
-          const val = String((renderedCellValue as string | null) ?? '')
-          if (!val) return '—'
+          const value = String((renderedCellValue as string | null) ?? '')
+          if (!value) {
+            return '—'
+          }
+
           return (
-            <span style={{ fontFamily: 'monospace', fontSize: '0.75rem' }} title={val}>
-              {val.length > 20 ? `${val.slice(0, 20)}...` : val}
+            <span style={{ fontFamily: 'monospace', fontSize: '0.75rem' }} title={value}>
+              {value.length > 20 ? `${value.slice(0, 20)}...` : value}
             </span>
           )
         },
@@ -275,11 +265,14 @@ export function DocumentsTable({
         header: 'Content Hash',
         size: 180,
         Cell: ({ renderedCellValue }) => {
-          const val = String((renderedCellValue as string | null) ?? '')
-          if (!val) return '—'
+          const value = String((renderedCellValue as string | null) ?? '')
+          if (!value) {
+            return '—'
+          }
+
           return (
-            <span style={{ fontFamily: 'monospace', fontSize: '0.75rem' }} title={val}>
-              {val.length > 20 ? `${val.slice(0, 20)}...` : val}
+            <span style={{ fontFamily: 'monospace', fontSize: '0.75rem' }} title={value}>
+              {value.length > 20 ? `${value.slice(0, 20)}...` : value}
             </span>
           )
         },
@@ -306,206 +299,149 @@ export function DocumentsTable({
     [activeDecision, isReviewQueue, preservedOverviewHref],
   )
 
-  const effectiveInitialQuery = useMemo<DocumentsQueryParams | undefined>(() => {
-    if (!initialQuery) {
-      return undefined
-    }
-
-    return {
-      ...initialQuery,
-      statuses: fixedStatuses?.length ? fixedStatuses : initialQuery.statuses,
-    }
-  }, [fixedStatuses, initialQuery])
-
-  const shouldUseInitialData = canReuseInitialData(initialData, effectiveInitialQuery, effectiveQueryParams)
-  const currentFilters: OverviewAdvancedSearchFilters = useMemo(
-    () => ({
-      author: globalFilter || undefined,
-      statuses: effectiveStatuses ?? [],
-      documentType,
-      batch: batch || undefined,
-      createdFrom: createdFrom || undefined,
-      createdTo: createdTo || undefined,
-      collection: collection || undefined,
-      accessLevel,
-    }),
-    [accessLevel, batch, collection, createdFrom, createdTo, documentType, effectiveStatuses, globalFilter],
-  )
-
-  useEffect(() => {
-    if (!initialData || !shouldUseInitialData) {
-      return
-    }
-
-    setData(initialData.data)
-    setPageInfo(initialData.pageInfo)
-  }, [initialData, shouldUseInitialData])
-
-  // Fetch new data when query params change
-  useEffect(() => {
-    if (serverDriven || shouldUseInitialData) {
-      return
-    }
-
-    let cancelled = false
-    setIsLoading(true)
-
-    fetchDocumentsAction(effectiveQueryParams)
-      .then((result) => {
-        if (cancelled) {
-          return
-        }
-
-        setData(result.data)
-        setPageInfo(result.pageInfo)
-        setIsLoading(false)
-      })
-      .catch(() => {
-        if (cancelled) {
-          return
-        }
-
-        setData([])
-        setPageInfo({
-          page: effectiveQueryParams.page ?? 1,
-          pageSize: effectiveQueryParams.pageSize ?? 25,
-          hasNextPage: false,
-          hasPreviousPage: false,
-          startCursor: null,
-          endCursor: null,
-        })
-        setIsLoading(false)
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [effectiveQueryParams, fetchDocumentsAction, serverDriven, shouldUseInitialData])
-
-  async function handleReviewDecision(documentId: string, decision: ReviewQueueDecision): Promise<void> {
-    setActiveDecision({ documentId, decision })
-
-    try {
-      const result = await applyReviewQueueDecisionAction(documentId, decision)
-
-      if (!result.ok) {
-        setToastState({
-          open: true,
-          message: result.error,
-          severity: 'error',
-        })
-        return
-      }
-
-      setData((current) => current.filter((item) => item.id !== documentId))
-      setToastState({
-        open: true,
-        message: result.message,
-        severity: 'success',
-      })
-    } catch (error: unknown) {
-      setToastState({
-        open: true,
-        message: error instanceof Error ? error.message : 'The review decision could not be saved.',
-        severity: 'error',
-      })
-    } finally {
-      setActiveDecision(null)
-    }
-  }
-
-  const table = useMaterialReactTable({
-    columns,
-    data,
-    state: {
-      pagination: { pageIndex: page - 1, pageSize },
-      sorting,
-      globalFilter,
-    },
-    pageCount: -1,
-    manualPagination: true,
-    manualSorting: true,
-    manualFiltering: true,
-    enableRowSelection: false,
-    onSortingChange: setSorting,
-    muiTableBodyRowProps: ({ staticRowIndex }) => ({
-      sx: { backgroundColor: staticRowIndex % 2 === 1 ? 'rgba(244,241,240,0.3)' : 'transparent' },
-    }),
-    muiTableHeadCellProps: {
-      sx: {
-        backgroundColor: '#f4f1f0',
-        color: '#231f20',
-        fontWeight: 600,
-        fontSize: '0.75rem',
-        letterSpacing: '0.1em',
-        textTransform: 'uppercase',
-      },
-    },
-    muiTableBodyCellProps: {
-      sx: { color: '#231f20' },
-    },
-  })
-
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            placeholder="Search by name, legacy ID, batch..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            className="px-3 py-1.5 border border-[#355834]/20 rounded-lg text-sm w-64 focus:outline-none focus:ring-2 focus:ring-[#355834]/30"
-          />
-          <OverviewAdvancedSearchModal
-            filters={currentFilters}
-            filterOptions={filterOptions}
-            onApply={(filters) => {
-              setOverviewFilters({
-                ...filters,
-                statuses: fixedStatuses?.length ? fixedStatuses : filters.statuses,
-              })
-            }}
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <select
-            value={pageSize}
-            onChange={(e) => setPageSize(Number(e.target.value))}
-            className="px-3 py-1.5 border border-[#355834]/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#355834]/30"
+      <DocumentDataTable<Document, OverviewAdvancedSearchFilters>
+        definition={{
+          tableId: isReviewQueue ? 'review-queue-documents' : 'overview-documents',
+          columns,
+          renderRowActions: isReviewQueue
+            ? (row) => {
+                const isApprovePending =
+                  activeDecision?.documentId === row.id && activeDecision.decision === 'APPROVED'
+                const isRejectPending =
+                  activeDecision?.documentId === row.id && activeDecision.decision === 'REJECTED'
+                const isPending = isApprovePending || isRejectPending
+
+                return (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      loading={isApprovePending}
+                      disabled={isPending}
+                      onClick={() => {
+                        void handleReviewDecision(row.id, 'APPROVED')
+                      }}
+                    >
+                      Approve
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      loading={isRejectPending}
+                      disabled={isPending}
+                      onClick={() => {
+                        void handleReviewDecision(row.id, 'REJECTED')
+                      }}
+                    >
+                      Reject
+                    </Button>
+                  </div>
+                )
+              }
+            : undefined,
+          fetcher: async (query) => {
+            const action = isReviewQueue ? getNeedsReviewDocumentsAction : getDocumentsAction
+            return action({
+              page: query.page,
+              pageSize: query.pageSize,
+              orderBy: query.orderBy as DocumentsQueryParams['orderBy'],
+              sortDirection: query.sortDirection,
+              search: query.search,
+              author: query.filters.author ?? query.search,
+              statuses: fixedStatuses?.length ? fixedStatuses : query.filters.statuses,
+              documentType: query.filters.documentType,
+              batch: query.filters.batch,
+              createdFrom: query.filters.createdFrom,
+              createdTo: query.filters.createdTo,
+              collection: query.filters.collection,
+              accessLevel: query.filters.accessLevel,
+              cursorValue: query.cursorValue,
+              cursorId: query.cursorId,
+              cursorDirection: query.cursorDirection,
+            })
+          },
+        }}
+        controller={{
+          currentQueryKey: JSON.stringify(effectiveQueryParams),
+          filters: currentFilters,
+          page,
+          pageSize,
+          query: {
+            page,
+            pageSize,
+            orderBy: effectiveQueryParams.orderBy,
+            sortDirection: effectiveQueryParams.sortDirection,
+            search: globalFilter || undefined,
+            cursorValue: effectiveQueryParams.cursorValue,
+            cursorId: effectiveQueryParams.cursorId,
+            cursorDirection: effectiveQueryParams.cursorDirection,
+            filters: currentFilters,
+          },
+          search: globalFilter,
+          sorting,
+          setFilters: (filters) => {
+            setOverviewFilters({
+              ...filters,
+              statuses: fixedStatuses?.length ? fixedStatuses : filters.statuses,
+            })
+          },
+          setPageSize,
+          setSearch: setGlobalFilter,
+          setSorting,
+          goToNextPage: (cursor) => {
+            goToNextPage(cursor ?? null)
+          },
+          goToPreviousPage: (cursor) => {
+            goToPreviousPage(cursor ?? null)
+          },
+        }}
+        initialData={initialData}
+        initialQuery={{
+          page: effectiveQueryParams.page ?? 1,
+          pageSize: effectiveQueryParams.pageSize ?? 25,
+          orderBy: effectiveQueryParams.orderBy,
+          sortDirection: effectiveQueryParams.sortDirection,
+          search: effectiveQueryParams.search,
+          cursorValue: effectiveQueryParams.cursorValue,
+          cursorId: effectiveQueryParams.cursorId,
+          cursorDirection: effectiveQueryParams.cursorDirection,
+          filters: currentFilters,
+        }}
+        emptyMessage={
+          isReviewQueue
+            ? 'No documents matched the current review queue filters.'
+            : 'No documents found.'
+        }
+        searchPlaceholder="Search by name, legacy ID, batch..."
+        leadingToolbarSlot={
+          <DocumentTableAdvancedSearchTrigger
+            activeFilterCount={[
+              currentFilters.author,
+              currentFilters.statuses?.length ? 'statuses' : undefined,
+              currentFilters.documentType && currentFilters.documentType !== 'all'
+                ? currentFilters.documentType
+                : undefined,
+              currentFilters.batch,
+              currentFilters.createdFrom || currentFilters.createdTo ? 'dates' : undefined,
+              currentFilters.collection,
+              currentFilters.accessLevel,
+            ].filter(Boolean).length}
           >
-            {PAGE_SIZE_OPTIONS.map((size) => (
-              <option key={size} value={size}>
-                {size} rows
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-      <MaterialReactTable table={table} />
-      <div className="flex items-center justify-between mt-4">
-        <div className="text-sm text-[#231f20]/60">
-          Page {pageInfo.page} of {pageInfo.hasNextPage ? 'multiple' : pageInfo.page}{' '}
-          {pageInfo.hasPreviousPage && page > 1 && (
-            <button
-              onClick={() => goToPreviousPage(pageInfo.startCursor)}
-              className="ml-2 text-[#355834] hover:underline"
-            >
-              Previous
-            </button>
-          )}
-        </div>
-        <div className="text-sm text-[#231f20]/60">
-          {pageInfo.hasNextPage && (
-            <button
-              onClick={() => goToNextPage(pageInfo.endCursor)}
-              className="text-[#355834] hover:underline"
-            >
-              Next
-            </button>
-          )}
-        </div>
-      </div>
+            <OverviewAdvancedSearchModal
+              filters={currentFilters}
+              filterOptions={filterOptions}
+              onApply={(filters) => {
+                setOverviewFilters({
+                  ...filters,
+                  statuses: fixedStatuses?.length ? fixedStatuses : filters.statuses,
+                })
+              }}
+            />
+          </DocumentTableAdvancedSearchTrigger>
+        }
+      />
       <Snackbar
         open={toastState.open}
         autoHideDuration={4000}

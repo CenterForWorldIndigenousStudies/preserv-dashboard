@@ -1,7 +1,23 @@
-import NextAuth from 'next-auth'
+import NextAuth, { type Session } from 'next-auth'
 import Google from 'next-auth/providers/google'
 
-export const { auth, handlers, signIn, signOut } = NextAuth({
+const AUTH_BYPASS_TOKEN_VALUE = 'dev-bypass'
+
+export function isAuthBypassEnabled(): boolean {
+  return process.env.AUTH_BYPASS_TOKEN?.trim() === AUTH_BYPASS_TOKEN_VALUE
+}
+
+function buildBypassSession(): Session {
+  return {
+    user: {
+      name: 'Local Developer',
+      email: 'dev-bypass@local.dev',
+    },
+    expires: '9999-12-31T23:59:59.999Z',
+  }
+}
+
+const nextAuth = NextAuth({
   trustHost: true,
   providers: [Google],
   pages: {
@@ -10,8 +26,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
   },
   callbacks: {
     authorized({ auth }) {
-      const bypassToken = process.env.AUTH_BYPASS_TOKEN
-      if (bypassToken === 'dev-bypass') {
+      if (isAuthBypassEnabled()) {
         return true
       }
 
@@ -29,3 +44,18 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     },
   },
 })
+
+export const { auth, handlers, signIn, signOut } = nextAuth
+
+export async function getDashboardSession(): Promise<Session | null> {
+  const session = await auth()
+  if (session) {
+    return session
+  }
+
+  if (isAuthBypassEnabled()) {
+    return buildBypassSession()
+  }
+
+  return null
+}

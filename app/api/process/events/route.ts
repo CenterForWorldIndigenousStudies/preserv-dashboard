@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { auth } from '@root/auth'
+import { getDashboardSession } from '@root/auth'
 import { logEvent } from '@lib/observability'
 import {
   getProcessBatchStatus,
@@ -40,7 +40,7 @@ function currentRequestId(batch: ProcessBatchStatus): string | null {
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const session = await auth()
+  const session = await getDashboardSession()
   if (!session?.user?.email) {
     return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })
   }

@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 
 import { COMPONENT_LIBRARY_PATH, SIGNIN_PATH } from '@constants/paths'
-import { auth } from '@root/auth'
+import { getDashboardSession } from '@root/auth'
 
 function buildStorybookUrl(): string {
   const baseUrl = process.env.STORYBOOK_URL
@@ -13,7 +13,7 @@ function buildStorybookUrl(): string {
 }
 
 export default async function ComponentLibraryPage() {
-  const session = await auth()
+  const session = await getDashboardSession()
   if (!session) {
     redirect(`${SIGNIN_PATH}?callbackUrl=${COMPONENT_LIBRARY_PATH}`)
   }

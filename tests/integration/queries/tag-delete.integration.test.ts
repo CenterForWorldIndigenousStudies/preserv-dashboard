@@ -4,6 +4,7 @@ import { db } from '@lib/db'
 import { deleteCollectionWithOptionsInTransaction, deleteTagInTransaction } from '@lib/queries'
 vi.mock('../../../auth', () => ({
   auth: () => Promise.resolve({ user: { email: 'test@example.com' } }),
+  getDashboardSession: () => Promise.resolve({ user: { email: 'test@example.com' } }),
 }))
 
 import { resetTestDatabase } from '../support/test-db'

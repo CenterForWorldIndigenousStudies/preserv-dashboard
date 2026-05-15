@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 
-import { auth } from '@root/auth'
+import { getDashboardSession } from '@root/auth'
 
 import { SignInContent } from './SignInContent'
 
@@ -18,7 +18,7 @@ function SignInFallback() {
 }
 
 export default async function SignInPage() {
-  const session = await auth()
+  const session = await getDashboardSession()
 
   if (session) {
     redirect('/')

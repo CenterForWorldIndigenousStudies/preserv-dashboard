@@ -74,3 +74,5 @@ lib/prisma/generated
 !.vscode/extensions.json
 !.vscode/cspell.json
 !pdb.code-workspace
+
+no_commit

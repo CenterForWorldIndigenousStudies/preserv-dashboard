@@ -5,7 +5,7 @@ import { Rethink_Sans, Work_Sans } from 'next/font/google'
 import './globals.css'
 import LayoutBody from '@components/LayoutBody'
 import Providers from '@components/Providers'
-import { auth } from '@root/auth'
+import { getDashboardSession } from '@root/auth'
 
 const rethinkSans = Rethink_Sans({
   subsets: ['latin'],
@@ -31,12 +31,12 @@ export default async function RootLayout({
 }: Readonly<{
   children: ReactNode
 }>): Promise<ReactElement> {
-  const session = await auth()
+  const session = await getDashboardSession()
 
   return (
     <html lang="en" className={`${rethinkSans.variable} ${workSans.variable}`}>
       <body className="font-sans antialiased">
-        <Providers>
+        <Providers session={session}>
           <LayoutBody isAuthenticated={!!session}>{children}</LayoutBody>
         </Providers>
       </body>

@@ -19,7 +19,14 @@ if (fs.existsSync(testEnvPath)) {
 export default defineConfig({
   resolve: {
     alias: {
+      '@actions': path.resolve(dirname, 'app/actions'),
+      '@atoms': path.resolve(dirname, 'components/atoms'),
+      '@components': path.resolve(dirname, 'components'),
+      '@constants': path.resolve(dirname, 'constants'),
+      '@hooks': path.resolve(dirname, 'hooks'),
       '@lib': path.resolve(dirname, 'lib'),
+      '@molecules': path.resolve(dirname, 'components/molecules'),
+      '@organisms': path.resolve(dirname, 'components/organisms'),
     },
   },
   test: {
