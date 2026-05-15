@@ -40,6 +40,7 @@ interface DocumentDataTableProps<TData extends MRT_RowData & { id: string }, TFi
   enableRowSelection?: boolean
   getRowId?: (row: TData) => string
   excludedRowIds?: readonly string[]
+  styleVariant?: 'default' | 'reviewQueueDense'
 }
 
 function emptyPageInfo(pageSize: number) {
@@ -66,6 +67,7 @@ export function DocumentDataTable<TData extends MRT_RowData & { id: string }, TF
   enableRowSelection = false,
   getRowId,
   excludedRowIds,
+  styleVariant = 'default',
 }: DocumentDataTableProps<TData, TFilters>): ReactElement {
   const internalController = useDocumentTableController<TFilters>({ initialQuery })
   const controller = providedController ?? internalController
@@ -150,6 +152,7 @@ export function DocumentDataTable<TData extends MRT_RowData & { id: string }, TF
       columns,
       data: visibleData,
       emptyMessage,
+      styleVariant,
     }),
     enableRowSelection,
     getRowId: getRowId ?? ((row) => row.id),

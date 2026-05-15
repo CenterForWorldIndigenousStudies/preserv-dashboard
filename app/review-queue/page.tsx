@@ -48,7 +48,7 @@ function parseReviewQueueQueryParams(
 
   return {
     page: Number.isFinite(page) && page > 0 ? page : 1,
-    pageSize: Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 25,
+    pageSize: Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 50,
     orderBy,
     sortDirection: sortDirection === 'asc' ? 'asc' : sortDirection === 'desc' ? 'desc' : undefined,
     search,
