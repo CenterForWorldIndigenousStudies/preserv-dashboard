@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { logEvent } from '@lib/observability'
 import {
+  shouldTriggerDocumentSplitter,
+  shouldTriggerPageRotator,
   shouldTriggerContentDedup,
   shouldTriggerOcrProcessor,
+  triggerDocumentSplitter,
+  triggerPageRotator,
   triggerContentDedup,
   triggerOcrProcessor,
 } from '@lib/pipelineTriggers'
@@ -64,7 +68,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       throw new Error(`Batch ${batchId} was not found after recording page-rotator callback.`)
     }
 
-    if (shouldTriggerOcrProcessor(batch)) {
+    if (shouldTriggerDocumentSplitter(batch)) {
+      await triggerDocumentSplitter(batch)
+    } else if (shouldTriggerPageRotator(batch)) {
+      await triggerPageRotator(batch)
+    } else if (shouldTriggerOcrProcessor(batch)) {
       await triggerOcrProcessor(batch)
     } else if (shouldTriggerContentDedup(batch)) {
       await triggerContentDedup(batch)
