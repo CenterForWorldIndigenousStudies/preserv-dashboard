@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { DOCUMENTS_PATH } from '@constants/paths'
+import { DOCUMENTS_API_PATH } from '@constants/paths'
 import { MermaidDiagram } from '@organisms/MermaidDiagram'
 
 const meta: Meta<typeof MermaidDiagram> = {
@@ -41,7 +41,7 @@ export const SequenceDiagram: Story = {
       participant DB as MySQL
       participant DR as Drive Backup
 
-      D->>P: POST ${DOCUMENTS_PATH}
+      D->>P: POST ${DOCUMENTS_API_PATH}
       P->>DB: INSERT document
       P->>DR: Upload to Drive
       DR-->>P: file_id

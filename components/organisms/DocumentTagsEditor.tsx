@@ -7,7 +7,7 @@ import { Button } from '@atoms/Button'
 import { CreateTagDialog } from '@atoms/CreateTagDialog'
 import { IconPlus } from '@atoms/icons/IconPlus'
 import { IconX } from '@atoms/icons/IconX'
-import { DOCUMENTS_PATH, TAGS_PATH } from '@constants/paths'
+import { DOCUMENTS_API_PATH, TAGS_PATH } from '@constants/paths'
 import type { TagSuggestion } from '@lib/hooks/useTagSearch'
 import type { DocumentToTag } from '@lib/types'
 import { normalizeTagName } from '@lib/tag-utils'
@@ -45,7 +45,7 @@ export function DocumentTagsEditor({ documentId, initialTags }: DocumentTagsEdit
   async function addExistingTag(tag: TagSuggestion): Promise<void> {
     resetMessages()
 
-    const response = await fetch(`${DOCUMENTS_PATH}/${documentId}/tags`, {
+    const response = await fetch(`${DOCUMENTS_API_PATH}/${documentId}/tags`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tagId: tag.id }),
@@ -71,7 +71,7 @@ export function DocumentTagsEditor({ documentId, initialTags }: DocumentTagsEdit
   async function createAndAttachTag(payload: { name: string; notes: string }): Promise<void> {
     resetMessages()
 
-    const response = await fetch(`${DOCUMENTS_PATH}/${documentId}/tags`, {
+    const response = await fetch(`${DOCUMENTS_API_PATH}/${documentId}/tags`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -128,7 +128,7 @@ export function DocumentTagsEditor({ documentId, initialTags }: DocumentTagsEdit
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ cascade: true }),
         })
-      : await fetch(`${DOCUMENTS_PATH}/${documentId}/tags`, {
+      : await fetch(`${DOCUMENTS_API_PATH}/${documentId}/tags`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

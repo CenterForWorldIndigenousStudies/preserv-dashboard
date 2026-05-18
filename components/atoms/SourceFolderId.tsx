@@ -5,21 +5,21 @@ import type { ReactElement } from 'react'
 import { isLikelyGoogleDriveId } from '@lib/google'
 import { truncateString } from '@lib/strings'
 
-interface SourceIdProps {
+interface SourceFolderIdProps {
   value: string | null | undefined
   maxTruncationLength?: number
 }
 
-export function SourceId({ value, maxTruncationLength = 0 }: SourceIdProps): ReactElement {
+export function SourceFolderId({ value, maxTruncationLength = 0 }: SourceFolderIdProps): ReactElement {
   const normalizedValue = value?.trim() || '-'
-  const truncatedSourceId = truncateString(normalizedValue, maxTruncationLength)
+  const truncatedSourceFolderId = truncateString(normalizedValue, maxTruncationLength)
 
-  console.log('SourceId render', { value, normalizedValue, truncatedSourceId })
+  console.log('SourceFolderId render', { value, normalizedValue, truncatedSourceFolderId })
   if (!isLikelyGoogleDriveId(normalizedValue)) {
-    return <span>{truncatedSourceId}</span>
+    return <span>{truncatedSourceFolderId}</span>
   }
 
-  const href = `https://drive.google.com/file/d/${normalizedValue}/view`
+  const href = `https://drive.google.com/drive/folders/${normalizedValue}`
 
   return (
     <a
@@ -29,7 +29,7 @@ export function SourceId({ value, maxTruncationLength = 0 }: SourceIdProps): Rea
       className="text-moss hover:underline"
       title={href}
     >
-      {truncatedSourceId}
+      {truncatedSourceFolderId}
     </a>
   )
 }

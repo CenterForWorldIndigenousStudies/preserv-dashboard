@@ -1997,7 +1997,9 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
     created_at: row.created_at ?? null,
     updated_at: row.updated_at ?? null,
     is_canonical: isCanonical,
-    is_duplicate: row.document_to_tags.some((tagLink) => tagLink.tags.name === 'duplicate_document'),
+    is_duplicate: isCanonical
+      ? false
+      : row.document_to_tags.some((tagLink) => tagLink.tags.name === 'duplicate_document'),
   })
 
   const mapVersionFamily = (): VersionFamily | null => {
@@ -2006,15 +2008,22 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
       return null
     }
 
-    const familyDocuments: VersionFamilyDocument[] = [
-      mapVersionFamilyDocument(group.documents, true),
-      ...group.document_versions.map((versionRow) => mapVersionFamilyDocument(versionRow.documents, false)),
-    ]
+    const canonicalDocument = mapVersionFamilyDocument(group.documents, true)
+    const familyDocumentsById = new Map<string, VersionFamilyDocument>([
+      [canonicalDocument.id, canonicalDocument],
+    ])
+    for (const versionRow of group.document_versions) {
+      const mapped = mapVersionFamilyDocument(versionRow.documents, false)
+      if (mapped.id === canonicalDocument.id) {
+        continue
+      }
+      familyDocumentsById.set(mapped.id, mapped)
+    }
 
     return {
       version_group_id: String(group.id),
       canonical_document_id: String(group.canonical_document_id),
-      documents: familyDocuments,
+      documents: Array.from(familyDocumentsById.values()),
     }
   }
 

@@ -213,6 +213,7 @@ model document_versions {
   version_group_id String         @db.VarChar(36)
   notes            String?        @db.Text
   changes_summary  String?        @db.Text
+  similarity_score Float?         @db.Float
   analyzed_at      BigInt?
   created_at       DateTime?      @default(now()) @db.DateTime(0)
   updated_at       DateTime?      @default(now()) @db.DateTime(0)

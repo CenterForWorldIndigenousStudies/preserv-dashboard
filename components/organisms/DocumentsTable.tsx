@@ -4,14 +4,13 @@ import { useEffect, useMemo, useState, type ReactElement } from 'react'
 import Alert from '@mui/material/Alert'
 import Snackbar from '@mui/material/Snackbar'
 import type { MRT_ColumnDef, MRT_RowSelectionState, MRT_Updater } from 'material-react-table'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 import { Badge, type BadgeVariant } from '@atoms/Badges/Badge'
 import { Button } from '@atoms/Button'
 import { DateAtom } from '@atoms/Date'
 import { FileSize } from '@atoms/FileSize'
-import { SourceId } from '@atoms/SourceId'
+import { DOCUMENTS_PATH } from '@constants/paths'
 import { useOverviewTableState } from '@hooks/useOverviewTableState'
 import {
   type OverviewAdvancedSearchFilters,
@@ -19,7 +18,9 @@ import {
   type OverviewStatusOption,
 } from '@lib/overview-search'
 import type { DocumentsQueryParams } from '@lib/queries'
+import { truncateString } from '@lib/strings'
 import type { Document, DocumentsPageResult, ReviewQueueDecision } from '@lib/types'
+import { DocumentNameBlock } from '@molecules/DocumentNameBlock'
 import { DocumentTableAdvancedSearchTrigger } from '@molecules/DocumentTableAdvancedSearchTrigger'
 import { DocumentDataTable } from '@organisms/document-table/DocumentDataTable'
 import { OverviewAdvancedSearchModal } from '@organisms/OverviewAdvancedSearchModal'
@@ -62,55 +63,15 @@ function getValidationStatusBadgeVariant(status: string | null | undefined): Bad
   }
 }
 
-function truncateDocumentMetadata(value: string | null | undefined, maxLength: number): string | null {
-  const normalizedValue = value?.trim()
-  if (!normalizedValue) {
-    return null
-  }
-
-  if (normalizedValue.length <= maxLength) {
-    return normalizedValue
-  }
-
-  return `${normalizedValue.slice(0, maxLength)}...`
-}
-
-function formatShortDocumentId(documentId: string): string {
-  return documentId.slice(0, 8)
-}
-
 function buildReviewQueueColumns(preservedOverviewHref: string): MRT_ColumnDef<Document>[] {
   return [
     {
       accessorKey: 'name',
       header: 'Document',
       size: 420,
-      Cell: ({ row }) => {
-        const name = row.original.name?.trim()
-        const legacyId = truncateDocumentMetadata(row.original.id_legacy, 20)
-        const sourceId = truncateDocumentMetadata(row.original.source_id, 20)
-
+      Cell: ({ row: {original: { id, id_legacy, name, source_id }} }) => {
         return (
-          <div className="flex flex-col gap-1">
-            {name ? (
-              <Link
-                href={{
-                  pathname: `/documents/${row.original.id}`,
-                  query: { from: preservedOverviewHref },
-                }}
-                className="leading-tight font-medium text-moss hover:underline"
-              >
-                {name}
-              </Link>
-            ) : (
-              <span className="leading-tight font-medium text-ink">{`Untitled document`}</span>
-            )}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink/60">
-              <span className="font-mono uppercase tracking-[0.08em]">{`ID ${formatShortDocumentId(row.original.id)}`}</span>
-              {legacyId ? <span title={row.original.id_legacy ?? undefined}>{`Legacy ${legacyId}`}</span> : null}
-              {sourceId ? <span title={row.original.source_id ?? undefined}>{`Source ${sourceId}`}</span> : null}
-            </div>
-          </div>
+          <DocumentNameBlock name={name} id={id} legacyId={id_legacy} sourceId={source_id} href={`${DOCUMENTS_PATH}/${id}?from=${preservedOverviewHref}`} />
         )
       },
     },
@@ -119,13 +80,12 @@ function buildReviewQueueColumns(preservedOverviewHref: string): MRT_ColumnDef<D
       header: 'Validation Status',
       size: 190,
       enableSorting: false,
-      Cell: ({ row }) => {
-        const value = row.original.validation_status
-        if (!value) {
-          return <span className="txt-muted">--</span>
+      Cell: ({ row: {original: { validation_status } } }) => {
+        if (!validation_status) {
+          return <span className="txt-muted">{`-`}</span>
         }
 
-        return <Badge variant={getValidationStatusBadgeVariant(value)}>{value}</Badge>
+        return <Badge variant={getValidationStatusBadgeVariant(validation_status)}>{validation_status}</Badge>
       },
     },
     {
@@ -133,18 +93,18 @@ function buildReviewQueueColumns(preservedOverviewHref: string): MRT_ColumnDef<D
       header: 'Review Details',
       size: 220,
       enableSorting: false,
-      Cell: ({ row }) => {
-        const validatorName = row.original.validator_name?.trim()
+      Cell: ({ row: {original: { validator_name, validation_timestamp } } }) => {
+        const validatorName = validator_name?.trim()
 
         return (
           <div className="flex flex-col gap-1">
             <span className={validatorName ? 'text-sm text-ink' : 'txt-muted text-sm'}>
-              {validatorName || '--'}
+              {validatorName || '-'}
             </span>
-            {row.original.validation_timestamp ? (
-              <DateAtom value={row.original.validation_timestamp} className="text-xs text-ink/60" />
+            {validation_timestamp ? (
+              <DateAtom value={validation_timestamp} className="text-xs text-ink/60" />
             ) : (
-              <span className="txt-muted text-xs">No validation time</span>
+              <span className="txt-muted text-xs">{`No validation time`}</span>
             )}
           </div>
         )
@@ -157,45 +117,13 @@ function buildOverviewColumns(preservedOverviewHref: string): MRT_ColumnDef<Docu
   return [
     {
       accessorKey: 'name',
-      header: 'Name',
-      size: 280,
-      Cell: ({ row }) => {
-        const value = row.original.name
-        if (!value) {
-          return '--'
-        }
-
+      header: 'Document',
+      size: 420,
+      Cell: ({ row: {original: { id, id_legacy, name, source_id }} }) => {
         return (
-          <Link
-            href={{
-              pathname: `/documents/${row.original.id}`,
-              query: { from: preservedOverviewHref },
-            }}
-            style={{ color: '#355834' }}
-          >
-            {value}
-          </Link>
+          <DocumentNameBlock name={name} id={id} legacyId={id_legacy} sourceId={source_id} href={`${DOCUMENTS_PATH}/${id}?from=${preservedOverviewHref}`} />
         )
       },
-    },
-    {
-      accessorKey: 'id_legacy',
-      header: 'Legacy ID',
-      size: 180,
-      Cell: ({ renderedCellValue }) => {
-        const value = String((renderedCellValue as string | null) ?? '')
-        if (!value) {
-          return '--'
-        }
-
-        return <span title={value}>{value.length > 30 ? `${value.slice(0, 30)}...` : value}</span>
-      },
-    },
-    {
-      accessorKey: 'source_id',
-      header: 'Source ID',
-      size: 150,
-      Cell: ({ renderedCellValue }) => <SourceId value={renderedCellValue as string | null | undefined} />,
     },
     {
       accessorKey: 'filesize',
@@ -212,12 +140,12 @@ function buildOverviewColumns(preservedOverviewHref: string): MRT_ColumnDef<Docu
       Cell: ({ renderedCellValue }) => {
         const value = String((renderedCellValue as string | null) ?? '')
         if (!value) {
-          return '--'
+          return '-'
         }
 
         return (
           <span style={{ fontFamily: 'monospace', fontSize: '0.75rem' }} title={value}>
-            {value.length > 20 ? `${value.slice(0, 20)}...` : value}
+            {truncateString(value, 12)}
           </span>
         )
       },
@@ -234,7 +162,7 @@ function buildOverviewColumns(preservedOverviewHref: string): MRT_ColumnDef<Docu
 
         return (
           <span style={{ fontFamily: 'monospace', fontSize: '0.75rem' }} title={value}>
-            {value.length > 20 ? `${value.slice(0, 20)}...` : value}
+            {truncateString(value, 12)}
           </span>
         )
       },
@@ -255,7 +183,7 @@ function buildOverviewColumns(preservedOverviewHref: string): MRT_ColumnDef<Docu
       accessorKey: 'is_duplicate',
       header: 'Is Duplicate',
       size: 120,
-      Cell: ({ row }) => (row.original.is_duplicate ? 'True' : 'False'),
+      Cell: ({ row: { original: { is_duplicate } } }) => (is_duplicate ? 'True' : 'False'),
     },
   ]
 }

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type MouseEvent, type ReactElement } from 'react'
 import { Button } from '@atoms/Button'
 import { IconX } from '@atoms/icons/IconX'
-import { DOCUMENTS_PATH } from '@constants/paths'
+import { DOCUMENTS_API_PATH } from '@constants/paths'
 import { TagPill } from '@molecules/TagPill'
 
 interface AssignCollectionButtonProps {
@@ -51,7 +51,7 @@ export function AssignCollectionButton({ documentId, currentTags }: AssignCollec
     setIsFetchingTags(true)
     setError(null)
 
-    fetch(`${DOCUMENTS_PATH}/${documentId}/collections`)
+    fetch(`${DOCUMENTS_API_PATH}/${documentId}/collections`)
       .then(async (res): Promise<CollectionTagsResponse> => res.json() as Promise<CollectionTagsResponse>)
       .then((data) => {
         if (data.error) {
@@ -97,7 +97,7 @@ export function AssignCollectionButton({ documentId, currentTags }: AssignCollec
     setError(null)
 
     try {
-      const res = await fetch(`${DOCUMENTS_PATH}/${documentId}`, {
+      const res = await fetch(`${DOCUMENTS_API_PATH}/${documentId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ collection_tags: tagsToSave }),
