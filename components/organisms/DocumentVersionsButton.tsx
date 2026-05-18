@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react'
+import { Chip, Stack } from '@mui/material'
 import {
   MaterialReactTable,
   useMaterialReactTable,
@@ -12,6 +13,7 @@ import { DateAtom } from '@atoms/Date'
 import { FileSize } from '@atoms/FileSize'
 import { Button } from '@atoms/Button'
 import { IconX } from '@atoms/icons/IconX'
+import { DOCUMENTS_PATH } from '@constants/paths'
 import type { VersionFamily, VersionFamilyDocument } from '@lib/types'
 
 interface DocumentVersionsButtonProps {
@@ -136,9 +138,24 @@ export function DocumentVersionsButton({ versionFamily }: DocumentVersionsButton
           const value = row.original.name
           if (!value) return '—'
           return (
-            <Link href={`/documents/${row.original.id}`} style={{ color: '#355834' }}>
-              {value}
-            </Link>
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+              <Link href={`${DOCUMENTS_PATH}/${row.original.id}`} style={{ color: '#355834' }}>
+                {value}
+              </Link>
+              {row.original.is_canonical ? (
+                <Chip
+                  label="Canonical"
+                  size="small"
+                  variant="outlined"
+                  color="success"
+                  sx={{
+                    fontWeight: 700,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                  }}
+                />
+              ) : null}
+            </Stack>
           )
         },
       },
@@ -235,15 +252,24 @@ export function DocumentVersionsButton({ versionFamily }: DocumentVersionsButton
       sx: { color: '#231f20', fontSize: '0.875rem' },
     },
     muiTableBodyRowProps: ({ row }) => ({
-      sx: row.original.is_duplicate
+      sx: row.original.is_canonical
         ? {
-            backgroundColor: 'rgba(184, 96, 80, 0.12)',
-            '&:hover td': { backgroundColor: 'rgba(184, 96, 80, 0.18)' },
+            backgroundColor: 'rgba(53,88,52,0.12)',
+            '& td': {
+              borderTop: '1px solid rgba(53,88,52,0.18)',
+              borderBottom: '1px solid rgba(53,88,52,0.18)',
+            },
+            '&:hover td': { backgroundColor: 'rgba(53,88,52,0.18)' },
           }
-        : {
-            '&:nth-of-type(even) td': { backgroundColor: 'rgba(244,241,240,0.3)' },
-            '&:hover td': { backgroundColor: 'rgba(53,88,52,0.06)' },
-          },
+        : row.original.is_duplicate
+          ? {
+              backgroundColor: 'rgba(184, 96, 80, 0.12)',
+              '&:hover td': { backgroundColor: 'rgba(184, 96, 80, 0.18)' },
+            }
+          : {
+              '&:nth-of-type(even) td': { backgroundColor: 'rgba(244,241,240,0.3)' },
+              '&:hover td': { backgroundColor: 'rgba(53,88,52,0.06)' },
+            },
     }),
     muiTableContainerProps: {
       sx: { borderRadius: '0.75rem', border: '1px solid rgba(53,88,52,0.125)' },
@@ -271,7 +297,7 @@ export function DocumentVersionsButton({ versionFamily }: DocumentVersionsButton
             <div>
               <h3 className="text-lg font-semibold text-ink">Document Versions</h3>
               <p className="mt-2 text-sm text-ink/70">
-                The canonical document is always pinned to the top. Duplicate variants are highlighted.
+                The canonical document is pinned to the top and highlighted separately from duplicate variants.
               </p>
             </div>
             <button

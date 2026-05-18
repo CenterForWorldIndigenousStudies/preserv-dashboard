@@ -187,6 +187,7 @@ erDiagram
         varchar version_group_id FK
         text notes
         text changes_summary
+        float similarity_score
         bigint analyzed_at
         timestamp created_at
         timestamp updated_at
@@ -264,8 +265,10 @@ erDiagram
   identifiers.
 - `document_quality.validation_timestamp` and `document_versions.analyzed_at` are `BIGINT` unix
   timestamps. Most other temporal columns are SQL `TIMESTAMP`.
-- `document_to_metadata.value_type` and `batch_to_batches_metadata.value_type` are hints about the
-  logical type of the JSON payload in `value`.
+- `document_to_metadata.value` and `batch_to_batches_metadata.value` typically store typed payloads
+  in the shared wrapper shape `{"value": <typed_value>}`.
+- `document_to_metadata.value_type` and `batch_to_batches_metadata.value_type` describe the logical
+  type of that inner typed value.
 - `state_history` is an append-only event table. `document_quality.current_status` points to one row
   in that history.
 - `state_history` prevents exact duplicate transitions with a composite unique constraint on
@@ -305,11 +308,14 @@ artifacts.
 | `origin_source_id` | Original upstream Google Drive file ID for this document lineage. | `preserv-data-ingester` | Stable original-source identity, useful when comparing imported vs managed artifacts. |
 | `origin_parent_source_id` | Original upstream parent Google Drive folder ID for this document lineage. | `preserv-data-ingester` | Group or filter by original source folder. |
 | `origin_parent_name` | Original upstream parent Google Drive folder name for this document lineage. | `preserv-data-ingester` | Human-readable display of original source location. |
+| `comment_pipeline` | Structured pipeline comments keyed by service run identity. | Pipeline services that persist review/failure context | Show per-run processing notes, review reasons, and failure context without overloading `document_quality.comment`. |
+| `content_dedup_text_source_id` | Google Drive file ID of the document artifact used as the text source for content deduplication. | `preserv-content-dedup` | Trace which managed artifact was actually hashed and compared during content deduplication. |
 
 Practical rule:
 
 - if the dashboard needs the current managed file, prefer `source_id`
 - if the dashboard needs original provenance, prefer the `origin_*` keys
+- if the dashboard needs per-service processing or failure notes, prefer `comment_pipeline`
 
 ### Legacy And Import Metadata
 
@@ -328,6 +334,16 @@ Practical rule:
 
 - if a value starts with `legacy_`, treat it as preserved historical context, not as the current
   operational source of truth
+
+### Operational Processing Metadata
+
+These keys are not the primary lineage contract, but they are part of the active processing model
+and are useful for troubleshooting, audit, and operational displays.
+
+| Metadata Name | Meaning | Typical Producer | Dashboard Use |
+| --- | --- | --- | --- |
+| `content_hash_algorithm` | Algorithm used to generate the current content hash. | `preserv-content-dedup` | Explain how `documents.hash_content` was derived. |
+| `content_hash_timestamp` | Timestamp of the content-hash generation event. | `preserv-content-dedup` | Show when the current content hash was last computed. |
 
 ### Related Non-Metadata Columns
 
@@ -576,8 +592,8 @@ Document metadata values.
 | `id` | `VARCHAR(36)` | Primary key. |
 | `document_id` | `VARCHAR(36)` | FK to `documents.id`. |
 | `metadata_id` | `VARCHAR(36)` | FK to `metadata.id`. |
-| `value` | `JSON` | Metadata payload. |
-| `value_type` | `VARCHAR(50)` | Logical type hint for `value`. |
+| `value` | `JSON` | Typed metadata payload, typically stored as `{"value": <typed_value>}`. |
+| `value_type` | `VARCHAR(50)` | Logical type of the inner typed value in `value`. |
 | `created_at` | `TIMESTAMP` | Row creation time. |
 | `updated_at` | `TIMESTAMP` | Row update time. |
 
@@ -629,8 +645,8 @@ Batch metadata values.
 | `id` | `VARCHAR(36)` | Primary key. |
 | `batch_id` | `VARCHAR(36)` | FK to `batches.id`. |
 | `batch_metadata_id` | `VARCHAR(36)` | FK to `batch_metadata.id`. |
-| `value` | `JSON` | Metadata payload. |
-| `value_type` | `VARCHAR(50)` | Logical type hint for `value`. |
+| `value` | `JSON` | Typed metadata payload, typically stored as `{"value": <typed_value>}`. |
+| `value_type` | `VARCHAR(50)` | Logical type of the inner typed value in `value`. |
 | `created_at` | `TIMESTAMP` | Row creation time. |
 | `updated_at` | `TIMESTAMP` | Row update time. |
 
@@ -679,6 +695,7 @@ Document membership in a version family.
 | `version_group_id` | `VARCHAR(36)` | FK to `version_groups.id`. |
 | `notes` | `TEXT` | Version note. |
 | `changes_summary` | `TEXT` | Summary of changes relative to canonical. |
+| `similarity_score` | `FLOAT` | Similarity to the canonical document for content-dedup families. Typically `NULL` for the canonical member row. |
 | `analyzed_at` | `BIGINT` | Unix timestamp. |
 | `created_at` | `TIMESTAMP` | Row creation time. |
 | `updated_at` | `TIMESTAMP` | Row update time. |

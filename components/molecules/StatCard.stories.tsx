@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { DOCUMENTS_PATH, FAILED_PATH, REVIEWS_PATH } from '@constants/paths'
+import { DOCUMENTS_API_PATH, FAILED_PATH, REVIEWS_PATH } from '@constants/paths'
 import { StatCard } from '@molecules/StatCard'
 
 const meta: Meta<typeof StatCard> = {
@@ -54,14 +54,14 @@ export const CollectionSize: Story = {
   args: {
     title: 'Collection Size',
     value: 8754693120,
-    href: DOCUMENTS_PATH,
+    href: DOCUMENTS_API_PATH,
   },
 }
 
 export const AllCards: Story = {
   render: () => (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <StatCard title="Total Documents" value={12847} href={DOCUMENTS_PATH} />
+      <StatCard title="Total Documents" value={12847} href={DOCUMENTS_API_PATH} />
       <StatCard title="Pending Review" value={342} href={REVIEWS_PATH} />
       <StatCard title="Failed Pipeline" value={7} href={FAILED_PATH} />
     </div>

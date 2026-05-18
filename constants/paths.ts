@@ -11,7 +11,8 @@ export const COMPONENT_LIBRARY_PATH = '/component-library' as const
 
 export const DB_SCHEMA_PATH = '/db' as const
 
-export const DOCUMENTS_PATH = `${API_PATH}/documents` as const
+export const DOCUMENTS_API_PATH = `${API_PATH}/documents` as const
+export const DOCUMENTS_PATH = '/documents' as const
 
 export const FAILED_PATH = `/failures` as const
 

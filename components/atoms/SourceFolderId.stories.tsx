@@ -1,18 +1,18 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { SourceId } from './SourceId'
+import { SourceFolderId } from './SourceFolderId'
 
 const meta = {
-  title: 'Atoms/SourceId',
-  component: SourceId,
+  title: 'Atoms/SourceFolderId',
+  component: SourceFolderId,
   tags: ['autodocs'],
   args: {
-    value: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
+    value: '1ZdR3L5sY2q8uVf9X0aB6cDEfGhIjKlmN',
     maxTruncationLength: 0,
   },
   argTypes: {
     value: {
       control: 'text',
-      description: 'A Google Drive file ID, plain text fallback, or empty value.',
+      description: 'A Google Drive folder ID, plain text fallback, or empty value.',
     },
     maxTruncationLength: {
       control: 'number',
@@ -24,7 +24,7 @@ const meta = {
       default: 'sand',
     },
   },
-} satisfies Meta<typeof SourceId>
+} satisfies Meta<typeof SourceFolderId>
 
 export default meta
 type Story = StoryObj<typeof meta>
@@ -34,7 +34,7 @@ export const GoogleDriveLink: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Renders a Google Drive link when the value looks like a Drive file ID.',
+        story: 'Renders a Google Drive link when the value looks like a Drive folder ID.',
       },
     },
   },
@@ -47,7 +47,7 @@ export const PlainTextFallback: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Renders plain text when the value does not look like a Google Drive file ID.',
+        story: 'Renders plain text when the value does not look like a Google Drive folder ID.',
       },
     },
   },

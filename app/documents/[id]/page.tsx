@@ -2,6 +2,8 @@ import Link from 'next/link'
 import type { ReactElement } from 'react'
 import { DateAtom } from '@atoms/Date'
 import { FileSize } from '@atoms/FileSize'
+import { SourceId } from '@atoms/SourceId'
+import { SourceFolderId } from '@atoms/SourceFolderId'
 import { NoDataState } from '@organisms/NoDataState'
 import { PageHeader } from '@organisms/PageHeader'
 import { AuditHistoryTable } from '@organisms/AuditHistoryTable'
@@ -35,10 +37,10 @@ function resolveOverviewHref(searchParams: Record<string, string | string[] | un
 const documentFieldLabels: Array<{ key: string; label: string }> = [
   { key: 'id', label: 'Document ID' },
   { key: 'name', label: 'Name' },
-  { key: 'id_legacy', label: 'Legacy ID' },
+  { key: 'idLegacy', label: 'Legacy ID' },
   { key: 'filesize', label: 'File Size' },
-  { key: 'hash_binary', label: 'Hash (Binary)' },
-  { key: 'hash_content', label: 'Hash (Content)' },
+  { key: 'hashBinary', label: 'Hash (Binary)' },
+  { key: 'hashContent', label: 'Hash (Content)' },
   { key: 'created_at', label: 'Created At' },
   { key: 'updated_at', label: 'Updated At' },
 ]
@@ -82,10 +84,10 @@ export default async function DocumentDetailPage({
     const documentFieldValues = {
       id: document.id,
       name: document.name ?? '—',
-      id_legacy: document.id_legacy ?? '—',
+      idLegacy: document.id_legacy ?? '—',
       filesize: document.filesize,
-      hash_binary: document.hash_binary ?? '—',
-      hash_content: document.hash_content ?? '—',
+      hashBinary: document.hash_binary ?? '—',
+      hashContent: document.hash_content ?? '—',
       created_at: document.created_at,
       updated_at: document.updated_at,
     } as Record<string, string | bigint | number | null | undefined>
@@ -165,13 +167,17 @@ export default async function DocumentDetailPage({
                     </tr>
                   </thead>
                   <tbody>
-                    {detail.metadata.map((field, i) => (
+                    {detail.metadata.map(({ name, value, value_type }, i) => (
                       <tr key={i}>
-                        <td className={`${detailTableBodyCellClassName} font-medium`}>{field.name}</td>
+                        <td className={`${detailTableBodyCellClassName} font-medium`}>{name}</td>
                         <td className={detailTableBodyCellClassName}>
                           {(() => {
-                            const parsed = parseMetadataValue(field.value, field.value_type)
-                            return parsed.display
+                            const parsed = parseMetadataValue(value, value_type)
+                            return name === 'source_id' ? (
+                              <SourceId value={parsed.display as string} />
+                            ) : name === 'source_folder_id' || name === 'origin_source_id' ? (
+                              <SourceFolderId value={parsed.display as string} />
+                            ) : parsed.display
                           })()}
                         </td>
                       </tr>
