@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react'
-import { Stack, Tooltip, Typography } from '@mui/material'
+import { Stack } from '@mui/material'
 
 import { IdElement } from '@atoms/IdElement'
 import { SourceId } from '@atoms/SourceId'
