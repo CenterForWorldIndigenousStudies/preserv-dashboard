@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import type { BatchSummary } from '@lib/types'
+import type { BatchSummary } from 'types/batches'
 
 import { BatchSummaryTable } from './BatchSummaryTable'
 

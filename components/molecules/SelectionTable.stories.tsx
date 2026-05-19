@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { useState } from 'react'
-import type { Document } from '@lib/types'
+import type { Document } from 'types/documents'
 
 import {
   SelectionTable,

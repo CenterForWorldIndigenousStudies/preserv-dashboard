@@ -11,7 +11,7 @@ import { DateAtom } from '@atoms/Date'
 import { FileSize } from '@atoms/FileSize'
 import { DocumentDataTable } from '@organisms/document-table/DocumentDataTable'
 import type { DocumentTableController, DocumentTableFetchResult } from '@organisms/document-table/types'
-import type { Document } from '@lib/types'
+import type { Document } from 'types/documents'
 
 export type SelectionSortField = 'name' | 'id_legacy' | 'filesize' | 'created_at'
 export type SelectionSortDirection = 'asc' | 'desc'

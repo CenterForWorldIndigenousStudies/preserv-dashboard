@@ -9,7 +9,7 @@ import {
   type OverviewAdvancedSearchFilters,
 } from '@lib/overview-search'
 import type { DocumentsQueryParams } from '@lib/queries'
-import type { DocumentsCursor } from '@lib/types'
+import type { DocumentsCursor } from 'types/pagination'
 
 // ---------------------------------------------------------------------------
 // Utility functions (server-safe, no React hooks)

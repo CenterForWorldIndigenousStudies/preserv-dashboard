@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import type { ReviewItem } from '@lib/types'
+import type { ReviewItem } from 'types/documents'
 
 import { ReviewHistoryTable } from './ReviewHistoryTable'
 

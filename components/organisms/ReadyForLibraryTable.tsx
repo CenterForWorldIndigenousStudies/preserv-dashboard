@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { getReadyForLibraryAction } from '@actions/ready-for-library'
 import { DateAtom } from '@atoms/Date'
 import { DocumentDataTable } from '@organisms/document-table/DocumentDataTable'
-import type { ReadyForLibraryItem } from '@lib/types'
+import type { ReadyForLibraryItem } from 'types/documents'
 
 interface ReadyForLibraryTableProps {
   initialData?: { items: ReadyForLibraryItem[]; total: number }

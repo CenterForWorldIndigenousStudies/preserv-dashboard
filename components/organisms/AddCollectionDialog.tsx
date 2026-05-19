@@ -12,7 +12,7 @@ import { createCollectionAction, createCollectionWithNewTagAction } from '@actio
 import { Button } from '@atoms/Button'
 import { TagSearchCombobox } from '@molecules/TagSearchCombobox'
 import type { TagSuggestion } from '@lib/hooks/useTagSearch'
-import type { CollectionWithMeta } from '@lib/types'
+import type { CollectionWithMeta } from 'types/collections'
 
 interface AddCollectionDialogProps {
   open: boolean

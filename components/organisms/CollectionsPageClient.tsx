@@ -6,7 +6,7 @@ import { IconPlus } from '@atoms/icons/IconPlus'
 import { CollectionsAccordion } from '@organisms/CollectionsAccordion'
 import { PageHeader } from '@organisms/PageHeader'
 import { AddCollectionDialog } from '@organisms/AddCollectionDialog'
-import type { CollectionWithMeta } from '@lib/types'
+import type { CollectionWithMeta } from 'types/collections'
 
 interface CollectionsPageClientProps {
   collections: CollectionWithMeta[]

@@ -10,7 +10,7 @@ import {
   getDocumentsNotInCollection,
   removeDocumentsFromCollection,
 } from '@lib/queries'
-import type { PaginatedDocumentsResult } from '@lib/types'
+import type { PaginatedDocumentsResult } from 'types/pagination'
 
 interface CollectionDocumentsParams {
   search?: string

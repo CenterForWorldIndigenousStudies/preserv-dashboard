@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 
 import { COLLECTIONS_PATH } from '@constants/paths'
-import type { CollectionWithMeta, Document } from '@lib/types'
+import type { CollectionWithMeta } from 'types/collections'
+import type { Document } from 'types/documents'
 import { CollectionsAccordion } from './CollectionsAccordion'
 
 
