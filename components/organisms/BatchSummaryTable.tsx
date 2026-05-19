@@ -21,7 +21,7 @@ import {
 
 import { KeyValueRow } from '@molecules/KeyValueRow'
 import { NestedValueRenderer } from '@molecules/NestedValueRenderer'
-import type { BatchSummary } from '@lib/types'
+import type { BatchSummary } from 'types/batches'
 
 interface BatchSummaryTableProps {
   data: BatchSummary[]

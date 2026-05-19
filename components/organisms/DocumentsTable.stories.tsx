@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { DocumentsTable } from '@components/organisms/DocumentsTable'
 import type { OverviewFilterOptions } from '@lib/overview-search'
-import type { Document, DocumentsPageResult } from '@lib/types'
+import type { Document } from 'types/documents'
+import type { DocumentsPageResult } from 'types/pagination'
 
 /**
  * Browser-safe UUID replacement for Storybook stories.

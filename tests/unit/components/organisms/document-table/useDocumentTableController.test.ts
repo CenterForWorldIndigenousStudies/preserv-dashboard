@@ -6,7 +6,7 @@ import type {
   DocumentTableQuery,
   DocumentTableSelectionState,
 } from '@components/organisms/document-table/types'
-import type { Document } from '@lib/types'
+import type { Document } from 'types/documents'
 
 describe('document table contract', () => {
   it('supports caller supplied fetchers and cursor page info', () => {

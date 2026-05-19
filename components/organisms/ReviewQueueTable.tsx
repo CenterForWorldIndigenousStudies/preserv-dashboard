@@ -19,7 +19,8 @@ import {
 import Link from 'next/link'
 import { getReviewQueueAction } from '@actions/review-queue'
 import { Badge, type BadgeVariant } from '@atoms/Badges/Badge'
-import type { PagedResult, ReviewQueueDocumentsQueryParams, ReviewQueueItem, ReviewQueueSortField } from '@lib/types'
+import type { PagedResult } from 'types/pagination'
+import type { ReviewQueueDocumentsQueryParams, ReviewQueueItem, ReviewQueueSortField } from 'types/reviewQueue'
 
 interface ReviewQueueTableProps {
   initialData?: PagedResult<ReviewQueueItem>

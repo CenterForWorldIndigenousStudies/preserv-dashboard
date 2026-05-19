@@ -9,7 +9,8 @@ import {
   removeDocumentsFromCollectionAction,
 } from '@actions/collections'
 import { sortDocuments, DEFAULT_SELECTION_SORT, type SelectionSortState } from '@molecules/SelectionTable'
-import type { Document, PaginatedDocumentsResult } from '@lib/types'
+import type { Document } from 'types/documents'
+import type { PaginatedDocumentsResult } from 'types/pagination'
 
 export type CollectionManagerAction = 'add' | 'remove'
 

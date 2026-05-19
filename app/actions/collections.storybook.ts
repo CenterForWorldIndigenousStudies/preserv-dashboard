@@ -1,4 +1,4 @@
-import type { PaginatedDocumentsResult } from '@lib/types'
+import type { PaginatedDocumentsResult } from 'types/pagination'
 
 export function getDocumentsForCollectionAction(_collectionId: string): Promise<PaginatedDocumentsResult> {
   return Promise.resolve({ documents: [], total: 0 })

@@ -1,28 +1,4 @@
 import {
-  REVIEW_QUEUE_SORT_FIELDS,
-  type AuditEntry,
-  type BatchSummary,
-  type CollectionWithMeta,
-  type Document,
-  type DocumentDetail,
-  type DocumentsCursor,
-  type DocumentsPageResult,
-  type DocumentQueryParams,
-  type DocumentQuality,
-  type FailureItem,
-  type PagedResult,
-  type PipelineSummary,
-  type ReadyForLibraryItem,
-  type ReviewItem,
-  type ReviewQueueDecision,
-  type ReviewQueryParams,
-  type ReviewQueueDocumentsQueryParams,
-  type ReviewQueueItem,
-  type ReviewQueueSortField,
-  type VersionFamily,
-  type VersionFamilyDocument,
-} from '@lib/types'
-import {
   normalizeOverviewAccessLevel,
   normalizeOverviewDateFilter,
   normalizeOverviewDocumentType,
@@ -35,10 +11,33 @@ import {
   type OverviewFilterOptions,
   type OverviewStatusOption,
 } from '@lib/overview-search'
+import { REVIEW_QUEUE_SORT_FIELDS } from '@constants/reviewQueue'
 import { db } from '@lib/db'
 import { createEditHistoryEntry } from '@lib/editHistory'
-import { Prisma, PrismaClient } from '@lib/prisma/generated/client'
+import { Prisma, PrismaClient, type document_quality_validation_status as DocumentQualityValidationStatus } from '@lib/prisma/generated/client'
 import { buildNameHash, getTagSearchCandidateLimit, normalizeTagName, scoreTags } from '@lib/tag-utils'
+import type { BatchSummary } from 'types/batches'
+import type { CollectionWithMeta } from 'types/collections'
+import type {
+  AuditEntry,
+  Document,
+  DocumentDetail,
+  DocumentQuality,
+  DocumentQueryParams,
+  FailureItem,
+  ReadyForLibraryItem,
+  ReviewItem,
+  VersionFamily,
+  VersionFamilyDocument,
+} from 'types/documents'
+import type { DocumentsCursor, DocumentsPageResult, PagedResult } from 'types/pagination'
+import type { PipelineSummary } from 'types/pipeline'
+import {
+  type ReviewQueryParams,
+  type ReviewQueueDocumentsQueryParams,
+  type ReviewQueueItem,
+  type ReviewQueueSortField,
+} from 'types/reviewQueue'
 
 // Fields on the documents model used for orderBy/filtering
 const DOCUMENTS_ORDERABLE_FIELDS = [
@@ -220,7 +219,7 @@ async function resolveOverviewTagIds(
 
 export async function applyReviewQueueDecision(params: {
   documentId: string
-  decision: ReviewQueueDecision
+  decision: 'APPROVED' | 'REJECTED'
   validationTimestamp?: number
   validatorName?: string | null
 }): Promise<void> {
@@ -234,6 +233,7 @@ export async function applyReviewQueueDecision(params: {
     : Math.floor(Date.now() / 1000)
   const validatorName = params.validatorName?.trim() ?? ''
   const newState = params.decision === 'APPROVED' ? 'approved' : 'rejected'
+  const nextValidationStatus: DocumentQualityValidationStatus = params.decision
 
   await db.$transaction(async (tx) => {
     const qualityRecord = await tx.document_quality.findUnique({
@@ -264,7 +264,7 @@ export async function applyReviewQueueDecision(params: {
     await tx.document_quality.update({
       where: { document_id: documentId },
       data: {
-        validation_status: params.decision,
+        validation_status: nextValidationStatus,
         validation_timestamp: validationTimestamp,
         validator_name: validatorName || undefined,
       },
@@ -2048,6 +2048,7 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
       version_group_id: String(v.version_group_id),
       notes: v.notes ?? null,
       changes_summary: v.changes_summary ?? null,
+      similarity_score: v.similarity_score ?? null,
       created_at: v.created_at ?? null,
       updated_at: v.updated_at ?? null,
       analyzed_at: v.analyzed_at !== null && v.analyzed_at !== undefined ? Number(v.analyzed_at) : null,

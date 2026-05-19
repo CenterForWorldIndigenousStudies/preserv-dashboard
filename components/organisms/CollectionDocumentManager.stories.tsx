@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { CollectionDocumentManager } from '@organisms/CollectionDocumentManager'
-import type { Document, PaginatedDocumentsResult } from '@lib/types'
+import type { Document } from 'types/documents'
+import type { PaginatedDocumentsResult } from 'types/pagination'
 import type { SelectionSortField } from '@molecules/SelectionTable'
 
 const NAME_POOL = [

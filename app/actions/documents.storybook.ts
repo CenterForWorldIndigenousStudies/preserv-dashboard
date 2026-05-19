@@ -1,4 +1,4 @@
-import type { DocumentsPageResult } from '@lib/types'
+import type { DocumentsPageResult } from 'types/pagination'
 import type { DocumentsQueryParams } from '@lib/queries'
 
 const EMPTY_RESULT: DocumentsPageResult = {

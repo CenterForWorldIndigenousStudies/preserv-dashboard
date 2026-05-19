@@ -14,7 +14,7 @@ import { FileSize } from '@atoms/FileSize'
 import { Button } from '@atoms/Button'
 import { IconX } from '@atoms/icons/IconX'
 import { DOCUMENTS_PATH } from '@constants/paths'
-import type { VersionFamily, VersionFamilyDocument } from '@lib/types'
+import type { VersionFamily, VersionFamilyDocument } from 'types/documents'
 
 interface DocumentVersionsButtonProps {
   versionFamily: VersionFamily

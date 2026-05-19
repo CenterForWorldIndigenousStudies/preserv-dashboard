@@ -8,7 +8,7 @@ import {
 } from 'material-react-table'
 import { DateAtom } from '@atoms/Date'
 import { StateBadge } from '@atoms/Badges/StateBadge'
-import type { ReviewItem } from '@lib/types'
+import type { ReviewItem } from 'types/documents'
 
 const mrtTableHeadCellSx = {
   backgroundColor: '#f4f1f0',

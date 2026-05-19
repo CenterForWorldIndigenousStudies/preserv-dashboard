@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import type { AuditEntry } from '@lib/types'
+import type { AuditEntry } from 'types/documents'
 
 import { AuditHistoryTable } from './AuditHistoryTable'
 

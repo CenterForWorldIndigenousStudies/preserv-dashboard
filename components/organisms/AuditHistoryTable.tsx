@@ -7,7 +7,7 @@ import {
   type MRT_ColumnDef,
 } from 'material-react-table'
 import { DateAtom } from '@atoms/Date'
-import type { AuditEntry } from '@lib/types'
+import type { AuditEntry } from 'types/documents'
 
 const mrtTableHeadCellSx = {
   backgroundColor: '#f4f1f0',

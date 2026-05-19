@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import type { ReadyForLibraryItem } from '@lib/types'
+import type { ReadyForLibraryItem } from 'types/documents'
 
 import { ReadyForLibraryTable } from './ReadyForLibraryTable'
 

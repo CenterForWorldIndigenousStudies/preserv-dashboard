@@ -13,7 +13,8 @@ import { DateAtom } from '@atoms/Date'
 import { CollectionDocumentManager } from '@organisms/CollectionDocumentManager'
 import { DocumentDataTable } from '@organisms/document-table/DocumentDataTable'
 import { TagDeleteFlowDialog } from '@organisms/TagDeleteFlowDialog'
-import type { CollectionWithMeta, Document } from '@lib/types'
+import type { CollectionWithMeta } from 'types/collections'
+import type { Document } from 'types/documents'
 
 interface CollectionsAccordionProps {
   collections: CollectionWithMeta[]

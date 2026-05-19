@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import type { VersionFamily, VersionFamilyDocument } from '@lib/types'
+import type { VersionFamily, VersionFamilyDocument } from 'types/documents'
 
 import { DocumentVersionsButton } from './DocumentVersionsButton'
 

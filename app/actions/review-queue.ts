@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { applyReviewQueueDecision, getNeedsReviewDocuments, getReviewQueueDocuments, type DocumentsQueryParams } from '@lib/queries'
-import type { ReviewQueueDecision, ReviewQueueDocumentsQueryParams } from '@lib/types'
+import type { ReviewQueueDecision, ReviewQueueDocumentsQueryParams } from 'types/reviewQueue'
 import { getDashboardSession } from '../../auth'
 
 interface ReviewQueueBatchApproveFailure {
