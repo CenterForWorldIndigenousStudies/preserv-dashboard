@@ -61,7 +61,6 @@ describe('getReviewQueueDocuments', () => {
         name: 'Alpha document',
         document_quality: {
           validation_status: 'IN_PROGRESS',
-          validation_type: 'METADATA',
           validator_name: 'A Reviewer',
           validator_email: 'a@example.com',
         },
@@ -71,7 +70,6 @@ describe('getReviewQueueDocuments', () => {
         name: 'Sensitive document',
         document_quality: {
           validation_status: 'APPROVED',
-          validation_type: 'MANUAL',
           validator_name: null,
           validator_email: null,
         },
@@ -107,7 +105,6 @@ describe('getReviewQueueDocuments', () => {
         name: 'Gamma review',
         document_quality: {
           validation_status: 'APPROVED',
-          validation_type: 'MANUAL',
           validator_name: 'Maya Reviewer',
           validator_email: 'maya@example.com',
         },
@@ -117,7 +114,6 @@ describe('getReviewQueueDocuments', () => {
         name: 'Alpha review',
         document_quality: {
           validation_status: 'NEEDS_REVISION',
-          validation_type: 'FORMAT',
           validator_name: 'A Reviewer',
           validator_email: 'a@example.com',
         },
@@ -127,7 +123,6 @@ describe('getReviewQueueDocuments', () => {
         name: 'Beta review',
         document_quality: {
           validation_status: 'IN_PROGRESS',
-          validation_type: 'METADATA',
           validator_name: 'B Reviewer',
           validator_email: 'b@example.com',
         },

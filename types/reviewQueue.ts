@@ -29,7 +29,6 @@ export interface ReviewQueueItem {
   id: string
   name: string | null
   validation_status: string | null
-  validation_type: string | null
   validator_name: string | null
   validator_email: string | null
   needs_review: boolean

@@ -37,7 +37,6 @@ erDiagram
         text comment_additional
         varchar metadata_sufficiency
         varchar validation_status
-        varchar validation_type
         bigint validation_timestamp
         varchar validator_name
         varchar validator_email
@@ -441,7 +440,6 @@ One quality/validation record per document.
 | `comment_additional` | `TEXT` | Additional quality note. |
 | `metadata_sufficiency` | `VARCHAR(255)` | Sufficiency assessment. |
 | `validation_status` | `VARCHAR(255)` | Validation outcome/status. |
-| `validation_type` | `VARCHAR(255)` | Type of validation performed. |
 | `validation_timestamp` | `BIGINT` | Unix timestamp. |
 | `validator_name` | `VARCHAR(255)` | Validator display name. |
 | `validator_email` | `VARCHAR(255)` | Validator email. |

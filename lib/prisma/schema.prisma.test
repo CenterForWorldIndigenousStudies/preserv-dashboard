@@ -73,7 +73,6 @@ model document_quality {
   id                   String                                @id @db.VarChar(36)
   document_id          String                                @unique(map: "unique_document_quality") @db.VarChar(36)
   page_count           Int?
-  validation_type      document_quality_validation_type?
   validation_status    document_quality_validation_status?
   validator            String?                               @db.VarChar(255)
   validation_timestamp DateTime?                             @db.DateTime(0)
@@ -270,12 +269,6 @@ model version_groups {
   @@index([canonical_document_id], map: "canonical_document_id")
   @@index([document_id], map: "document_id")
   @@index([group_id], map: "idx_group_id")
-}
-
-enum document_quality_validation_type {
-  AI_ONLY
-  AI_WITH_HUMAN_REVIEW
-  HUMAN_ONLY
 }
 
 enum document_to_authors_contributor_type {
