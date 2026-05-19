@@ -27,6 +27,42 @@ import { DocumentTableAdvancedSearchTrigger } from '@molecules/DocumentTableAdva
 import { DocumentDataTable } from '@organisms/document-table/DocumentDataTable'
 import { OverviewAdvancedSearchModal } from '@organisms/OverviewAdvancedSearchModal'
 
+// ---------------------------------------------------------------------------
+// Review Queue context persistence helpers (sessionStorage-backed)
+// Isolated to Review Queue variant only, auto-cleanup on filter change
+// ---------------------------------------------------------------------------
+
+const REVIEW_QUEUE_SELECTION_STORAGE_PREFIX = 'rq-row-selection'
+
+function getReviewQueueSelectionKey(queryKey: string): string {
+  return `${REVIEW_QUEUE_SELECTION_STORAGE_PREFIX}:${queryKey}`
+}
+
+function saveReviewQueueSelection(queryKey: string, selection: MRT_RowSelectionState): void {
+  try {
+    sessionStorage.setItem(getReviewQueueSelectionKey(queryKey), JSON.stringify(selection))
+  } catch {
+    // Silent fail if storage is unavailable
+  }
+}
+
+function restoreReviewQueueSelection(queryKey: string): MRT_RowSelectionState {
+  try {
+    const stored = sessionStorage.getItem(getReviewQueueSelectionKey(queryKey))
+    return stored ? (JSON.parse(stored) as MRT_RowSelectionState) : {}
+  } catch {
+    return {}
+  }
+}
+
+function restoreScrollPosition(savedPosition: number): void {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: savedPosition, behavior: 'auto' })
+    })
+  })
+}
+
 interface DocumentsTableProps {
   initialData?: DocumentsPageResult
   initialQuery?: DocumentsQueryParams
@@ -361,16 +397,30 @@ export function DocumentsTable({
     [isReviewQueue, optimisticallyHiddenDocumentIds, reviewQueueRowSelection],
   )
 
+  // Initialize row selection from sessionStorage for Review Queue
+  // Falls back to empty selection if unavailable or different query context
   useEffect(() => {
     if (!isReviewQueue) {
       return
     }
 
-    setReviewQueueRowSelection({})
+    const restored = restoreReviewQueueSelection(reviewQueueQueryKey)
+    setReviewQueueRowSelection(restored)
   }, [isReviewQueue, reviewQueueQueryKey])
+
+  // Persist row selection to sessionStorage whenever it changes
+  // Scoped by query key to prevent leakage across filter states
+  useEffect(() => {
+    if (!isReviewQueue) {
+      return
+    }
+
+    saveReviewQueueSelection(reviewQueueQueryKey, reviewQueueRowSelection)
+  }, [isReviewQueue, reviewQueueQueryKey, reviewQueueRowSelection])
 
   async function handleReviewDecision(documentId: string, decision: ReviewQueueDecision): Promise<void> {
     setActiveDecision({ documentId, decision })
+    const scrollPos = window.scrollY
 
     try {
       const result = await applyReviewQueueDecisionForDocument(documentId, decision)
@@ -390,6 +440,10 @@ export function DocumentsTable({
         severity: 'success',
       })
       router.refresh()
+      // Restore scroll position after refresh completes
+      if (isReviewQueue) {
+        restoreScrollPosition(scrollPos)
+      }
     } catch (error: unknown) {
       setToastState({
         open: true,
@@ -407,6 +461,7 @@ export function DocumentsTable({
     }
 
     setBatchApprovePending(true)
+    const scrollPos = window.scrollY
 
     try {
       const result = await applyReviewQueueBatchApproveForDocuments(selectedReviewQueueDocumentIds)
@@ -433,6 +488,9 @@ export function DocumentsTable({
             : result.message,
         severity: 'success',
       })
+      router.refresh()
+      // Restore scroll position after refresh completes
+      restoreScrollPosition(scrollPos)
     } catch (error: unknown) {
       setToastState({
         open: true,
