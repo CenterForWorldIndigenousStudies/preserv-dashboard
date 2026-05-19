@@ -157,12 +157,6 @@ export function ReviewQueueTable({ initialData }: ReviewQueueTableProps) {
         },
       },
       {
-        accessorKey: 'validation_type',
-        header: 'Validation Type',
-        size: 170,
-        Cell: ({ renderedCellValue }) => String((renderedCellValue as string | null) ?? '--'),
-      },
-      {
         accessorKey: 'needs_review',
         header: 'Needs Review',
         size: 140,

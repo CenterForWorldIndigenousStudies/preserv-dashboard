@@ -390,7 +390,6 @@ function matchesReviewQueueSearch(item: ReviewQueueItem, search: string): boolea
     item.id,
     item.name ?? '',
     item.validation_status ?? '',
-    item.validation_type ?? '',
     item.validator_name ?? '',
     item.validator_email ?? '',
     ...item.queue_reasons,
@@ -453,9 +452,6 @@ function compareReviewQueueItems(
       break
     case 'validation_status':
       comparison = compareNullableStrings(left.validation_status, right.validation_status, direction)
-      break
-    case 'validation_type':
-      comparison = compareNullableStrings(left.validation_type, right.validation_type, direction)
       break
     case 'validator_name':
       comparison = compareNullableStrings(left.validator_name, right.validator_name, direction)
@@ -1961,7 +1957,6 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
       comment_additional: row.comment_additional ?? null,
       metadata_sufficiency: row.metadata_sufficiency ?? null,
       validation_status: row.validation_status ?? null,
-      validation_type: row.validation_type ?? null,
       validation_timestamp:
         row.validation_timestamp !== null && row.validation_timestamp !== undefined
           ? Number(row.validation_timestamp)
@@ -2281,7 +2276,6 @@ export async function getReviewQueueDocuments(
       id: String(document.id),
       name: document.name ?? null,
       validation_status: validationStatusValue,
-      validation_type: document.document_quality?.validation_type ?? null,
       validator_name: document.document_quality?.validator_name ?? null,
       validator_email: document.document_quality?.validator_email ?? null,
       needs_review: needsReview,

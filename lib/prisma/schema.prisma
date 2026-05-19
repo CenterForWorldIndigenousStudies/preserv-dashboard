@@ -112,7 +112,6 @@ model document_quality {
   comment_additional   String?                             @db.Text
   metadata_sufficiency String?                             @db.VarChar(255)
   validation_status    document_quality_validation_status?
-  validation_type      String?                             @db.VarChar(255)
   validation_timestamp BigInt?
   validator_name       String?                             @db.VarChar(255)
   validator_email      String?                             @db.VarChar(255)
