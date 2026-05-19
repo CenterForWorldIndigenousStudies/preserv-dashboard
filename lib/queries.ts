@@ -1370,6 +1370,8 @@ async function getNeedsReviewDocumentsPage(
         ) AS source_id,
         d.name,
         dq.validation_status,
+        dq.validation_timestamp,
+        dq.validator_name,
         d.created_at,
         d.updated_at,
         CASE WHEN dup.document_id IS NULL THEN 0 ELSE 1 END AS is_duplicate,

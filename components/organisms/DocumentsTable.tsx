@@ -133,17 +133,17 @@ function buildReviewQueueColumns(preservedOverviewHref: string): MRT_ColumnDef<D
       enableSorting: false,
       Cell: ({ row: {original: { validator_name, validation_timestamp } } }) => {
         const validatorName = validator_name?.trim()
+        const hasHumanReviewContext = Boolean(validatorName || validation_timestamp)
 
         return (
           <div className="flex flex-col gap-1">
-            <span className={validatorName ? 'text-sm text-ink' : 'txt-muted text-sm'}>
-              {validatorName || '-'}
+            {hasHumanReviewContext ? <Badge variant="neutral">Human reviewed</Badge> : null}
+            <span className={validatorName || hasHumanReviewContext ? 'text-sm text-ink' : 'txt-muted text-sm'}>
+              {validatorName || (hasHumanReviewContext ? 'Reviewer not recorded' : '-')}
             </span>
             {validation_timestamp ? (
               <DateAtom value={validation_timestamp} className="text-xs text-ink/60" />
-            ) : (
-              <span className="txt-muted text-xs">{`No validation time`}</span>
-            )}
+            ) : null}
           </div>
         )
       },
