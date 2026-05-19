@@ -16,7 +16,7 @@ export interface Document {
   is_duplicate?: boolean
 }
 
-export interface DocumentQuality extends Omit<DbDocumentQuality, 'validation_timestamp'> {
+export interface DocumentQuality extends Omit<DbDocumentQuality, 'validation_timestamp' | 'reprocess'> {
   validation_timestamp: string | number | null
 }
 
