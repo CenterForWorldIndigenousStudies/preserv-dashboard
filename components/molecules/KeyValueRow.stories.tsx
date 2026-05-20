@@ -1,4 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+
+import { DateAtom } from '@atoms/Date'
 import { KeyValueRow } from './KeyValueRow'
 
 const meta = {
@@ -35,6 +37,13 @@ export const BooleanValue: Story = {
   args: {
     label: 'metadata_complete',
     value: true,
+  },
+}
+
+export const ReactElementValue: Story = {
+  args: {
+    label: 'started_at',
+    value: <DateAtom value="2026-05-19T14:30:00Z" />,
   },
 }
 

@@ -19,6 +19,7 @@ import {
   type MRT_SortingState,
 } from 'material-react-table'
 
+import { DateAtom } from '@atoms/Date'
 import { KeyValueRow } from '@molecules/KeyValueRow'
 import { NestedValueRenderer } from '@molecules/NestedValueRenderer'
 import type { BatchSummary } from 'types/batches'
@@ -30,17 +31,12 @@ interface BatchSummaryTableProps {
 interface BatchSummaryGroup {
   batch_id: string
   batch_name: string | null
-  batch_id_legacy: string | null
   propertyCount: number
 }
 
 // ---------------------------------------------------------------------------
 // Local utilities for BatchSummary-specific data access
 // ---------------------------------------------------------------------------
-
-function truncateBatchId(batchId: string): string {
-  return batchId.length > 12 ? `${batchId.slice(0, 12)}...` : batchId
-}
 
 function parsePropertyValue(value: unknown): unknown {
   if (typeof value !== 'string') {
@@ -63,27 +59,6 @@ function parsePropertyValue(value: unknown): unknown {
   }
 }
 
-function findNestedValueByKey(value: unknown, targetKey: string): unknown {
-  if (Array.isArray(value)) {
-    for (const item of value as unknown[]) {
-      const found = findNestedValueByKey(item, targetKey)
-      if (found !== undefined) return found
-    }
-    return undefined
-  }
-  if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-    const record = value as Record<string, unknown>
-    if (targetKey in record) {
-      return record[targetKey]
-    }
-    for (const nestedValue of Object.values(record)) {
-      const found = findNestedValueByKey(nestedValue, targetKey)
-      if (found !== undefined) return found
-    }
-  }
-  return undefined
-}
-
 // ---------------------------------------------------------------------------
 // BatchDetailPanel — renders a single batch's metadata in an accordion pane
 // ---------------------------------------------------------------------------
@@ -91,15 +66,7 @@ function findNestedValueByKey(value: unknown, targetKey: string): unknown {
 function BatchDetailPanel({ rows }: { rows: BatchSummary[] }): React.ReactElement {
   const batchName = rows[0]?.batch_name ?? null
   const batchId = rows[0]?.batch_id ?? '-'
-  const batchIdLegacy = rows[0]?.batch_id_legacy ?? null
-
-  const startedAt = rows.reduce<unknown>((found, row) => {
-    if (found !== undefined) return found
-    if (row.property_key === 'started_at') {
-      return row.property_value
-    }
-    return findNestedValueByKey(parsePropertyValue(row.property_value), 'started_at')
-  }, undefined)
+  const startedAt = rows[0]?.started_at ?? 'Unknown'
 
   return (
     <Box
@@ -127,10 +94,9 @@ function BatchDetailPanel({ rows }: { rows: BatchSummary[] }): React.ReactElemen
             Batch Info
           </Typography>
           <Stack divider={<Divider flexItem sx={{ borderColor: 'rgba(53,88,52,0.08)' }} />}>
-            <KeyValueRow label="batch_id" value={batchId} />
-            <KeyValueRow label="Batch ID (Legacy)" value={batchIdLegacy} />
-            <KeyValueRow label="batch_name" value={batchName} />
-            <KeyValueRow label="started_at" value={startedAt} />
+            <KeyValueRow label="ID" value={batchId} />
+            <KeyValueRow label="Name" value={batchName} />
+            <KeyValueRow label="Started At" value={<DateAtom value={startedAt} />} />
           </Stack>
         </Box>
 
@@ -232,7 +198,6 @@ export function BatchSummaryTable({ data }: BatchSummaryTableProps) {
     return Array.from(groupedBatches.entries()).map(([batchId, rows]) => ({
       batch_id: batchId,
       batch_name: rows[0]?.batch_name ?? null,
-      batch_id_legacy: rows[0]?.batch_id_legacy ?? null,
       propertyCount: rows.length,
     }))
   }, [groupedBatches])
@@ -256,26 +221,6 @@ export function BatchSummaryTable({ data }: BatchSummaryTableProps) {
               }}
             />
           </Box>
-        ),
-      },
-      {
-        accessorKey: 'batch_id',
-        header: 'Batch ID',
-        size: 180,
-        Cell: ({ row }) => (
-          <Typography sx={{ fontFamily: 'monospace', color: '#231f20' }} title={row.original.batch_id}>
-            {truncateBatchId(row.original.batch_id)}
-          </Typography>
-        ),
-      },
-      {
-        accessorKey: 'batch_id_legacy',
-        header: 'Legacy Batch ID',
-        size: 180,
-        Cell: ({ row }) => (
-          <Typography sx={{ fontFamily: 'monospace', color: '#231f20' }}>
-            {row.original.batch_id_legacy ?? '-'}
-          </Typography>
         ),
       },
     ],

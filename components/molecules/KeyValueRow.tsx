@@ -1,3 +1,4 @@
+import { isValidElement, type ReactNode } from 'react'
 import { Box, Typography, type TypographyProps } from '@mui/material'
 import { isPrimitiveValue } from './NestedValueRenderer'
 
@@ -49,6 +50,13 @@ function formatDisplayValue(value: unknown): string {
   return '-'
 }
 
+function renderDisplayValue(value: unknown): ReactNode {
+  if (isValidElement(value)) {
+    return value
+  }
+  return formatDisplayValue(value)
+}
+
 // ---------------------------------------------------------------------------
 // KeyValueRow — Label + value pair for structured data display
 // ---------------------------------------------------------------------------
@@ -79,7 +87,7 @@ export function KeyValueRow({
   labelVariant = 'body2',
   valueSx,
 }: KeyValueRowProps): React.ReactElement {
-  const displayValue = formatDisplayValue(value)
+  const displayValue = renderDisplayValue(value)
   const useMonospace = typeof value === 'string' && value.length > 32
 
   return (
