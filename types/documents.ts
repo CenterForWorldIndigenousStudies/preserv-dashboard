@@ -11,6 +11,8 @@ export interface Document {
   validation_status?: string | null
   validation_timestamp?: string | number | null
   validator_name?: string | null
+  validation_comment?: string | null
+  validation_comment_additional?: string | null
   created_at: Date | string | null
   updated_at: Date | string | null
   is_duplicate?: boolean

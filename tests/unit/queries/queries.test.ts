@@ -310,6 +310,8 @@ describe('getNeedsReviewDocuments', () => {
         ...defaultRow,
         validation_timestamp: BigInt(1747094400),
         validator_name: 'Maria Reviewer',
+        validation_comment: 'Needs a second look.',
+        validation_comment_additional: 'Check the appendix pages.',
       },
     ])
 
@@ -317,6 +319,8 @@ describe('getNeedsReviewDocuments', () => {
 
     expect(result.data[0]?.validation_timestamp).toBe(1747094400)
     expect(result.data[0]?.validator_name).toBe('Maria Reviewer')
+    expect(result.data[0]?.validation_comment).toBe('Needs a second look.')
+    expect(result.data[0]?.validation_comment_additional).toBe('Check the appendix pages.')
   })
 })
 

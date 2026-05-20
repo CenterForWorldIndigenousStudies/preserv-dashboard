@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react'
 import Alert from '@mui/material/Alert'
 import Snackbar from '@mui/material/Snackbar'
+import Tooltip from '@mui/material/Tooltip'
 import type { MRT_ColumnDef, MRT_RowSelectionState, MRT_Updater } from 'material-react-table'
 import { useRouter } from 'next/navigation'
 
@@ -101,6 +102,27 @@ function getValidationStatusBadgeVariant(status: string | null | undefined): Bad
   }
 }
 
+function normalizeReviewQueueComment(value: string | null | undefined): string | null {
+  const normalizedValue = value?.trim()
+  return normalizedValue ? normalizedValue : null
+}
+
+function buildReviewQueueCommentTooltipContent(document: Pick<Document, 'validation_comment' | 'validation_comment_additional'>): ReactElement | null {
+  const validationComment = normalizeReviewQueueComment(document.validation_comment)
+  const validationCommentAdditional = normalizeReviewQueueComment(document.validation_comment_additional)
+
+  if (!validationComment && !validationCommentAdditional) {
+    return null
+  }
+
+  return (
+    <>
+      {validationComment ? <div>{`Comment: ${validationComment}`}</div> : null}
+      {validationCommentAdditional ? <div>{`Additional information: ${validationCommentAdditional}`}</div> : null}
+    </>
+  )
+}
+
 function buildReviewQueueColumns(preservedOverviewHref: string): MRT_ColumnDef<Document>[] {
   return [
     {
@@ -131,13 +153,31 @@ function buildReviewQueueColumns(preservedOverviewHref: string): MRT_ColumnDef<D
       header: 'Review Details',
       size: 220,
       enableSorting: false,
-      Cell: ({ row: {original: { validator_name, validation_timestamp } } }) => {
+      Cell: ({ row: {original} }) => {
+        const { validation_comment, validation_comment_additional, validation_timestamp, validator_name } = original
         const validatorName = validator_name?.trim()
         const hasHumanReviewContext = Boolean(validatorName || validation_timestamp)
+        const commentTooltipContent = buildReviewQueueCommentTooltipContent({
+          validation_comment,
+          validation_comment_additional,
+        })
+        const reviewContextBadge = hasHumanReviewContext ? (
+          <Badge variant="neutral">Human reviewed</Badge>
+        ) : commentTooltipContent ? (
+          <Badge variant="neutral">Comments</Badge>
+        ) : null
 
         return (
           <div className="flex flex-col gap-1">
-            {hasHumanReviewContext ? <Badge variant="neutral">Human reviewed</Badge> : null}
+            {reviewContextBadge ? (
+              commentTooltipContent ? (
+                <Tooltip title={commentTooltipContent} enterDelay={400}>
+                  <span>{reviewContextBadge}</span>
+                </Tooltip>
+              ) : (
+                reviewContextBadge
+              )
+            ) : null}
             <span className={validatorName || hasHumanReviewContext ? 'text-sm text-ink' : 'txt-muted text-sm'}>
               {validatorName || (hasHumanReviewContext ? 'Reviewer not recorded' : '-')}
             </span>

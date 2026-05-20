@@ -64,6 +64,8 @@ interface OverviewDocumentRow {
   validation_status: string | null
   validation_timestamp?: bigint | number | string | null
   validator_name?: string | null
+  validation_comment?: string | null
+  validation_comment_additional?: string | null
   created_at: Date | string | null
   updated_at: Date | string | null
   is_duplicate: boolean | number | bigint | string | null
@@ -1372,6 +1374,8 @@ async function getNeedsReviewDocumentsPage(
         dq.validation_status,
         dq.validation_timestamp,
         dq.validator_name,
+        dq.comment AS validation_comment,
+        dq.comment_additional AS validation_comment_additional,
         d.created_at,
         d.updated_at,
         CASE WHEN dup.document_id IS NULL THEN 0 ELSE 1 END AS is_duplicate,
@@ -1838,6 +1842,8 @@ function normalizeOverviewDocumentRow(row: OverviewDocumentRow): Document {
         ? Number(row.validation_timestamp)
         : null,
     validator_name: row.validator_name ?? null,
+    validation_comment: row.validation_comment ?? null,
+    validation_comment_additional: row.validation_comment_additional ?? null,
     created_at: row.created_at ?? null,
     updated_at: row.updated_at ?? null,
     is_duplicate: Boolean(Number(row.is_duplicate ?? 0)),
