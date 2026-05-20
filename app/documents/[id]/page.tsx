@@ -173,9 +173,21 @@ export default async function DocumentDetailPage({
                         <td className={detailTableBodyCellClassName}>
                           {(() => {
                             const parsed = parseMetadataValue(value, value_type)
-                            return name === 'source_id' ? (
+                            return [
+                              'source_id',
+                              'origin_source_id',
+                              'split_parent_document_id',
+                              'rotation_source_document_id',
+                              'ocr_version_document_id',
+                              'content_dedup_text_source_id',
+                              'fedora_publication_source_document_id',
+                              'fedora_csv_source_id'
+                            ].includes(name) ? (
                               <SourceId value={parsed.display as string} />
-                            ) : name === 'source_folder_id' || name === 'origin_source_id' ? (
+                            ) : [
+                              'source_folder_id',
+                              'origin_parent_source_id'
+                            ].includes(name) ? (
                               <SourceFolderId value={parsed.display as string} />
                             ) : parsed.display
                           })()}

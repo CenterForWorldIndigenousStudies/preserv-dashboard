@@ -1957,7 +1957,6 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
       document_id: String(row.document_id),
       comment: row.comment ?? null,
       comment_additional: row.comment_additional ?? null,
-      metadata_sufficiency: row.metadata_sufficiency ?? null,
       validation_status: row.validation_status ?? null,
       validation_timestamp:
         row.validation_timestamp !== null && row.validation_timestamp !== undefined
@@ -2221,11 +2220,11 @@ export async function getReviewQueueDocuments(
   const metadataRows =
     metadataIds.length > 0
       ? await client.document_to_metadata.findMany({
-          where: {
-            metadata_id: { in: metadataIds },
-          },
-          select: { document_id: true, metadata_id: true, value: true },
-        })
+        where: {
+          metadata_id: { in: metadataIds },
+        },
+        select: { document_id: true, metadata_id: true, value: true },
+      })
       : []
 
   const needsReviewDocIds = new Set<string>()
@@ -2433,11 +2432,12 @@ export async function getBatchSummary(): Promise<BatchSummary[]> {
   const rows = await db.batches.findMany({
     select: {
       id: true,
-      id_legacy: true,
       name: true,
       processing_details: true,
+      started_at: true,
       document_to_batches: {
         select: {
+          cost: true,
           processing_time_seconds: true,
         },
       },
@@ -2446,32 +2446,57 @@ export async function getBatchSummary(): Promise<BatchSummary[]> {
 
   const result: BatchSummary[] = []
 
-  for (const batch of rows) {
-    const details = parseBatchProcessingDetails(batch.processing_details)
+  for (const {document_to_batches, id, name, processing_details, started_at} of rows) {
+    const details = parseBatchProcessingDetails(processing_details)
 
     for (const [property_key, property_value] of Object.entries(details)) {
       result.push({
-        batch_id: batch.id,
-        batch_name: batch.name ?? null,
-        batch_id_legacy: batch.id_legacy ?? null,
+        batch_id: id,
+        batch_name: name ?? null,
+        started_at,
         property_key,
         property_value,
       })
     }
 
-    const totalProcessingTime = batch.document_to_batches.reduce(
-      (sum, dtb) => sum + (dtb.processing_time_seconds ?? 0),
-      0,
+    const totalCost = document_to_batches.reduce(
+      (sum, dtb) => sum + Number(dtb.cost ?? 0),
+      0.0,
     )
 
+    const totalProcessingTime = getTotalProcessingTime({document_to_batches, processing_details: details})
+
     result.push({
-      batch_id: batch.id,
-      batch_name: batch.name ?? null,
-      batch_id_legacy: batch.id_legacy ?? null,
-      property_key: 'processing_time_seconds',
-      property_value: totalProcessingTime,
+      batch_id: id,
+      batch_name: name ?? null,
+      started_at,
+      property_key: 'Total Cost',
+      property_value: `$${totalCost.toFixed(2)}`,
+    })
+
+    result.push({
+      batch_id: id,
+      batch_name: name ?? null,
+      started_at,
+      property_key: 'Processing Time (seconds)',
+      property_value: totalProcessingTime || "Unknown",
     })
   }
 
   return result
+}
+
+function getTotalProcessingTime({document_to_batches, processing_details}: {
+  document_to_batches: {
+    cost: Prisma.Decimal | null;
+    processing_time_seconds: number | null;
+  }[],
+  processing_details: Record<string, string | number | boolean | null>
+}) {
+  const speed = parseBatchProcessingDetails(processing_details.batch_statistics as string).speed
+  if (speed) return speed
+  return document_to_batches.reduce(
+      (sum, dtb) => sum + (dtb.processing_time_seconds ?? 0),
+      0,
+    )
 }

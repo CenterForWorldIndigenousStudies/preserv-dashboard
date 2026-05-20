@@ -35,7 +35,6 @@ erDiagram
         varchar document_id FK, UK
         text comment
         text comment_additional
-        varchar metadata_sufficiency
         varchar validation_status
         bigint validation_timestamp
         varchar validator_name
@@ -264,7 +263,7 @@ erDiagram
   identifiers.
 - `document_quality.validation_timestamp` and `document_versions.analyzed_at` are `BIGINT` unix
   timestamps. Most other temporal columns are SQL `TIMESTAMP`.
-- `document_to_metadata.value` and `batch_to_batches_metadata.value` typically store typed payloads
+- `document_to_metadata.value` and `batch_to_batches_metadata.value` store typed payloads
   in the shared wrapper shape `{"value": <typed_value>}`.
 - `document_to_metadata.value_type` and `batch_to_batches_metadata.value_type` describe the logical
   type of that inner typed value.
@@ -322,7 +321,7 @@ These keys are still meaningful, but they are not the current managed-artifact c
 mainly preserved from inventory or registry sources so the dashboard can show what the original
 spreadsheet or registry said.
 
-| Metadata Name | Meaning | Typical Producer | Dashboard Use |
+| Metadata Name | Meaning | Producer | Dashboard Use |
 | --- | --- | --- | --- |
 | `legacy_canonical_id` | Original `original_id` value from the General Inventory spreadsheet. | `preserv-data-combiner` | Show old source-system identity without confusing it with current Drive IDs. |
 | `legacy_format_origin` | Original `Format_Origin` value from the General Inventory spreadsheet. | `preserv-data-combiner` | Show the spreadsheet’s claimed format alongside actual `mime_type` / extension. |
@@ -355,8 +354,8 @@ their tables directly instead of from `document_to_metadata`.
 | `documents.name` | Current document name. | Primary display name. |
 | `documents.id_legacy` | Legacy document identifier stored as a first-class column. | Separate from `legacy_canonical_id` metadata. |
 | `document_to_batches.batch_origin` | Per-link batch origin text. | Useful for batch filtering and tracing document membership. |
+| `batches.name` | Unique batch name. |  |
 | `batches.id_legacy` | Registry-derived legacy batch identifier. | Stable batch identity from Master Registries. |
-| `batches.name` | Human-readable batch name when available. | Not guaranteed to contain General Inventory `Batch_Origin`. |
 
 ### Query Pattern
 
@@ -438,7 +437,6 @@ One quality/validation record per document.
 | `document_id` | `VARCHAR(36)` | FK to `documents.id`. Unique. |
 | `comment` | `TEXT` | Primary quality note. |
 | `comment_additional` | `TEXT` | Additional quality note. |
-| `metadata_sufficiency` | `VARCHAR(255)` | Sufficiency assessment. |
 | `validation_status` | `VARCHAR(255)` | Validation outcome/status. |
 | `validation_timestamp` | `BIGINT` | Unix timestamp. |
 | `validator_name` | `VARCHAR(255)` | Validator display name. |
