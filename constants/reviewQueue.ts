@@ -7,3 +7,9 @@ export const REVIEW_QUEUE_SORT_FIELDS = [
   'needs_review',
   'sensitive',
 ] as const
+
+export const REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES = [
+  'NEEDS_REVIEW',
+  'METADATA_ISSUES',
+  'FORMAT_ERRORS',
+] as const

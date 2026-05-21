@@ -278,15 +278,42 @@ describe('getNeedsReviewDocuments', () => {
     mockQueryRaw.mockReset()
   })
 
-  it('uses an inner join to document_quality with an exact NEEDS_REVIEW predicate', async () => {
+  it('uses an inner join to document_quality with the default review queue status scope', async () => {
     mockQueryRaw.mockResolvedValueOnce([])
 
     await getNeedsReviewDocuments()
 
     const sql = queryText(0)
     expect(sql).toContain('INNER JOIN document_quality dq ON dq.document_id = d.id')
-    expect(sql).toContain("dq.validation_status = 'NEEDS_REVIEW'")
-    expect(sql).not.toContain("LOWER(COALESCE(dq.validation_status, '')) IN")
+    expect(sql).toContain("LOWER(COALESCE(dq.validation_status, '')) IN")
+    expect(queryCall(0).values).toContain('needs_review')
+    expect(queryCall(0).values).toContain('metadata_issues')
+    expect(queryCall(0).values).toContain('format_errors')
+  })
+
+  it('narrows review queue queries to an explicit approved status subset', async () => {
+    mockQueryRaw.mockResolvedValueOnce([])
+
+    await getNeedsReviewDocuments({
+      statuses: ['FORMAT_ERRORS'],
+    })
+
+    expect(queryCall(0).values).toContain('format_errors')
+    expect(queryCall(0).values).not.toContain('needs_review')
+    expect(queryCall(0).values).not.toContain('metadata_issues')
+  })
+
+  it('falls back to the default review queue scope when given statuses outside the approved slice', async () => {
+    mockQueryRaw.mockResolvedValueOnce([])
+
+    await getNeedsReviewDocuments({
+      statuses: ['APPROVED'],
+    })
+
+    expect(queryCall(0).values).toContain('needs_review')
+    expect(queryCall(0).values).toContain('metadata_issues')
+    expect(queryCall(0).values).toContain('format_errors')
+    expect(queryCall(0).values).not.toContain('approved')
   })
 
   it('preserves cursor pagination and sort order behavior', async () => {

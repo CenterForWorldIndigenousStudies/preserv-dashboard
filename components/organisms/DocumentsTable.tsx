@@ -70,6 +70,7 @@ interface DocumentsTableProps {
   filterOptions: OverviewFilterOptions
   variant?: 'overview' | 'reviewQueue'
   fixedStatuses?: OverviewStatusOption[]
+  defaultStatuses?: OverviewStatusOption[]
   serverDriven?: boolean
 }
 
@@ -347,10 +348,22 @@ export function DocumentsTable({
   filterOptions,
   variant = 'overview',
   fixedStatuses,
+  defaultStatuses,
   serverDriven: _serverDriven = false,
 }: DocumentsTableProps): ReactElement {
   const router = useRouter()
   const isReviewQueue = variant === 'reviewQueue'
+  const resolveStatuses = (nextStatuses: OverviewStatusOption[] | undefined): OverviewStatusOption[] | undefined => {
+    if (fixedStatuses?.length) {
+      return fixedStatuses
+    }
+
+    if (nextStatuses?.length) {
+      return nextStatuses
+    }
+
+    return defaultStatuses?.length ? defaultStatuses : undefined
+  }
   const {
     accessLevel,
     batch,
@@ -374,7 +387,7 @@ export function DocumentsTable({
     goToNextPage,
     goToPreviousPage,
   } = useOverviewTableState(initialQuery)
-  const effectiveStatuses = fixedStatuses?.length ? fixedStatuses : statuses
+  const effectiveStatuses = resolveStatuses(statuses)
   const effectiveQueryParams = useMemo<DocumentsQueryParams>(
     () => ({
       ...queryParams,
@@ -607,7 +620,7 @@ export function DocumentsTable({
                 search: query.search,
                 author: query.filters.author ?? query.search,
                 tag: query.filters.tag,
-                statuses: fixedStatuses?.length ? fixedStatuses : query.filters.statuses,
+                statuses: resolveStatuses(query.filters.statuses),
                 documentType: query.filters.documentType,
                 batch: query.filters.batch,
                 createdFrom: query.filters.createdFrom,
@@ -643,7 +656,7 @@ export function DocumentsTable({
           setFilters: (filters) => {
             setOverviewFilters({
               ...filters,
-              statuses: fixedStatuses?.length ? fixedStatuses : filters.statuses,
+              statuses: resolveStatuses(filters.statuses),
             })
           },
           setPageSize,
@@ -692,7 +705,7 @@ export function DocumentsTable({
               onApply={(filters) => {
                 setOverviewFilters({
                   ...filters,
-                  statuses: fixedStatuses?.length ? fixedStatuses : filters.statuses,
+                  statuses: resolveStatuses(filters.statuses),
                 })
               }}
             />

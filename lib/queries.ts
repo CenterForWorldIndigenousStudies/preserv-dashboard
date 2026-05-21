@@ -11,7 +11,10 @@ import {
   type OverviewFilterOptions,
   type OverviewStatusOption,
 } from '@lib/overview-search'
-import { REVIEW_QUEUE_SORT_FIELDS } from '@constants/reviewQueue'
+import {
+  REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES,
+  REVIEW_QUEUE_SORT_FIELDS,
+} from '@constants/reviewQueue'
 import { db } from '@lib/db'
 import { createEditHistoryEntry } from '@lib/editHistory'
 import { Prisma, PrismaClient, type document_quality_validation_status as DocumentQualityValidationStatus } from '@lib/prisma/generated/client'
@@ -173,6 +176,7 @@ export async function getNeedsReviewDocuments(
 ): Promise<DocumentsPageResult> {
   const page = normalizePageNumber(params.page)
   const pageSize = normalizeDocumentTablePageSize(params.pageSize)
+  const statuses = resolveReviewQueueValidationStatuses(params.statuses)
 
   return getNeedsReviewDocumentsPage(
     {
@@ -181,6 +185,7 @@ export async function getNeedsReviewDocuments(
       orderBy: params.orderBy,
       sortDirection: params.sortDirection,
       search: normalizeOverviewTextFilter(params.search ?? params.author),
+      statuses,
       tagIds: await resolveOverviewTagIds(normalizeOverviewTextFilter(params.tag), client),
       documentType: normalizeOverviewDocumentType(params.documentType),
       batch: normalizeOverviewTextFilter(params.batch),
@@ -1290,6 +1295,7 @@ async function getNeedsReviewDocumentsPage(
     orderBy?: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
     sortDirection?: 'asc' | 'desc'
     search?: string
+    statuses: OverviewStatusOption[]
     tagIds?: string[]
     documentType?: OverviewDocumentTypeOption
     batch?: string
@@ -1330,6 +1336,7 @@ async function getNeedsReviewDocumentsPage(
     sortDirection,
     sortExpression,
     sortField,
+    statuses: params.statuses,
     tagIds: params.tagIds,
   })
   const orderBySql = buildOverviewDocumentsOrderBySql({
@@ -1494,6 +1501,7 @@ function buildOverviewDocumentsWhereSql(params: {
 
 function buildNeedsReviewDocumentsWhereSql(params: {
   searchTerm?: string
+  statuses: OverviewStatusOption[]
   tagIds?: string[]
   documentType?: OverviewDocumentTypeOption
   batch?: string
@@ -1508,7 +1516,7 @@ function buildNeedsReviewDocumentsWhereSql(params: {
   sortExpression: Prisma.Sql
   sortField: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
 }): Prisma.Sql {
-  const conditions: Prisma.Sql[] = [Prisma.sql`dq.validation_status = 'NEEDS_REVIEW'`]
+  const conditions: Prisma.Sql[] = [buildOverviewStatusConditionSql(params.statuses)]
 
   if (params.searchTerm) {
     conditions.push(buildOverviewAuthorSearchConditionSql(params.searchTerm))
@@ -1562,6 +1570,18 @@ function buildNeedsReviewDocumentsWhereSql(params: {
   }
 
   return Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`
+}
+
+function resolveReviewQueueValidationStatuses(
+  statuses: OverviewStatusOption[] | undefined,
+): OverviewStatusOption[] {
+  const allowedStatuses = new Set<string>(REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES)
+  const filteredStatuses =
+    normalizeOverviewStatuses(statuses)?.filter((status) => allowedStatuses.has(status)) ?? []
+
+  return filteredStatuses.length > 0
+    ? filteredStatuses
+    : [...REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES]
 }
 
 function buildOverviewStatusConditionSql(statuses: OverviewStatusOption[]): Prisma.Sql {

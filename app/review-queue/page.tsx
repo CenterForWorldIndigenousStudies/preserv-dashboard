@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import { REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES } from '@constants/reviewQueue'
 import { DocumentsTable } from '@organisms/DocumentsTable'
 import { PageHeader } from '@organisms/PageHeader'
 import {
@@ -6,8 +7,10 @@ import {
   normalizeOverviewAccessLevel,
   normalizeOverviewDateFilter,
   normalizeOverviewDocumentType,
+  parseOverviewStatusesParam,
   normalizeOverviewTextFilter,
   type OverviewFilterOptions,
+  type OverviewStatusOption,
 } from '@lib/overview-search'
 import { getNeedsReviewDocuments, type DocumentsQueryParams } from '@lib/queries'
 
@@ -16,7 +19,19 @@ export const dynamic = 'force-dynamic'
 const REVIEW_QUEUE_FILTER_OPTIONS: OverviewFilterOptions = {
   collections: [],
   accessLevels: [...OVERVIEW_ACCESS_LEVEL_OPTIONS],
-  statuses: ['NEEDS_REVIEW'],
+  statuses: [...REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES],
+}
+
+function normalizeReviewQueueStatuses(
+  statuses: OverviewStatusOption[] | undefined,
+): OverviewStatusOption[] {
+  const allowedStatuses = new Set<string>(REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES)
+  const filteredStatuses =
+    statuses?.filter((status) => allowedStatuses.has(status)) ?? []
+
+  return filteredStatuses.length > 0
+    ? filteredStatuses
+    : [...REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES]
 }
 
 interface ReviewQueuePageProps {
@@ -42,6 +57,7 @@ function parseReviewQueueQueryParams(
   const createdTo = normalizeOverviewDateFilter(firstSearchParam(params.createdTo))
   const accessLevel = normalizeOverviewAccessLevel(firstSearchParam(params.accessLevel))
   const documentType = normalizeOverviewDocumentType(firstSearchParam(params.documentType))
+  const statuses = normalizeReviewQueueStatuses(parseOverviewStatusesParam(params.statuses))
   const cursorValue = firstSearchParam(params.cursorValue)
   const cursorId = firstSearchParam(params.cursorId)
   const cursorDirection = firstSearchParam(params.cursorDirection) as DocumentsQueryParams['cursorDirection']
@@ -54,7 +70,7 @@ function parseReviewQueueQueryParams(
     search,
     author: search,
     tag,
-    statuses: ['NEEDS_REVIEW'],
+    statuses,
     documentType,
     batch,
     createdFrom,
@@ -80,7 +96,7 @@ async function ReviewQueueContent({ searchParams }: ReviewQueuePageProps) {
       initialQuery={initialQuery}
       filterOptions={REVIEW_QUEUE_FILTER_OPTIONS}
       variant="reviewQueue"
-      fixedStatuses={['NEEDS_REVIEW']}
+      defaultStatuses={[...REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES]}
       serverDriven
     />
   )
@@ -92,7 +108,7 @@ export default function ReviewQueuePage({ searchParams }: ReviewQueuePageProps) 
       <PageHeader
         eyebrow="Review Queue"
         title="Documents needing review."
-        description="This queue only shows documents whose validation_status is NEEDS_REVIEW."
+        description="This queue defaults to documents whose validation_status is NEEDS_REVIEW, METADATA_ISSUES, or FORMAT_ERRORS."
       />
 
       <Suspense fallback={null}>
