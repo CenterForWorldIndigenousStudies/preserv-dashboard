@@ -31,11 +31,7 @@ export function CollectionsPageClient({ collections }: CollectionsPageClientProp
 
       <CollectionsAccordion collections={collections} />
 
-      <AddCollectionDialog
-        open={isAddDialogOpen}
-        collections={collections}
-        onClose={() => setIsAddDialogOpen(false)}
-      />
+      <AddCollectionDialog open={isAddDialogOpen} collections={collections} onClose={() => setIsAddDialogOpen(false)} />
     </div>
   )
 }

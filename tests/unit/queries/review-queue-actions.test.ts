@@ -71,7 +71,9 @@ describe('applyReviewQueueDecision', () => {
     tx.state_history.findFirst.mockResolvedValue({ new_state: 'under_review' })
     tx.state_history.create.mockResolvedValue({ id: 'state-1' })
     tx.document_quality.update.mockResolvedValue({ document_id: 'doc-1' })
-    mockTransaction.mockImplementation(async (callback: (client: MockTransactionClient) => Promise<unknown>) => callback(tx))
+    mockTransaction.mockImplementation(async (callback: (client: MockTransactionClient) => Promise<unknown>) =>
+      callback(tx),
+    )
 
     await applyReviewQueueDecision({
       documentId: 'doc-1',
@@ -107,7 +109,9 @@ describe('applyReviewQueueDecision', () => {
     tx.state_history.findFirst.mockResolvedValue(null)
     tx.state_history.create.mockResolvedValue({ id: 'state-2' })
     tx.document_quality.update.mockResolvedValue({ document_id: 'doc-2' })
-    mockTransaction.mockImplementation(async (callback: (client: MockTransactionClient) => Promise<unknown>) => callback(tx))
+    mockTransaction.mockImplementation(async (callback: (client: MockTransactionClient) => Promise<unknown>) =>
+      callback(tx),
+    )
 
     await applyReviewQueueDecision({
       documentId: 'doc-2',
@@ -129,14 +133,18 @@ describe('applyReviewQueueDecision', () => {
         validation_timestamp: 1747094401,
       },
     })
-    const documentQualityUpdateArgs = tx.document_quality.update.mock.calls[0]?.[0] as DocumentQualityUpdateArgs | undefined
+    const documentQualityUpdateArgs = tx.document_quality.update.mock.calls[0]?.[0] as
+      | DocumentQualityUpdateArgs
+      | undefined
     expect(documentQualityUpdateArgs?.data.validator_name).toBeUndefined()
   })
 
   it('fails before writing history when the document quality record is missing', async () => {
     const tx = createTransactionClient()
     tx.document_quality.findUnique.mockResolvedValue(null)
-    mockTransaction.mockImplementation(async (callback: (client: MockTransactionClient) => Promise<unknown>) => callback(tx))
+    mockTransaction.mockImplementation(async (callback: (client: MockTransactionClient) => Promise<unknown>) =>
+      callback(tx),
+    )
 
     await expect(
       applyReviewQueueDecision({

@@ -15,7 +15,8 @@ export const statusVariantMap = {
 
 export function IngestStatusBadge({ status, className }: IngestStatusBadgeProps): ReactElement {
   const normalized = (status ?? 'unknown').toLowerCase()
-  const variant: BadgeVariant = statusVariantMap[(normalized ?? '').toLowerCase() as keyof typeof statusVariantMap] ?? 'neutral'
+  const variant: BadgeVariant =
+    statusVariantMap[(normalized ?? '').toLowerCase() as keyof typeof statusVariantMap] ?? 'neutral'
   const componentClass = `${className}`.trim()
 
   return (

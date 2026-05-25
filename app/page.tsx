@@ -19,9 +19,7 @@ function firstSearchParam(value: string | string[] | undefined): string | undefi
   return Array.isArray(value) ? value[0] : value
 }
 
-function parseOverviewQueryParams(
-  params: Record<string, string | string[] | undefined>,
-): DocumentsQueryParams {
+function parseOverviewQueryParams(params: Record<string, string | string[] | undefined>): DocumentsQueryParams {
   const page = Number(firstSearchParam(params.page))
   const pageSize = Number(firstSearchParam(params.pageSize))
   const orderBy = firstSearchParam(params.orderBy) as DocumentsQueryParams['orderBy']
@@ -63,10 +61,7 @@ function parseOverviewQueryParams(
 async function OverviewContent({ searchParams }: OverviewPageProps) {
   const resolvedSearchParams = await searchParams
   const initialQuery = parseOverviewQueryParams(resolvedSearchParams)
-  const [initialData, filterOptions] = await Promise.all([
-    getAllDocuments(initialQuery),
-    getOverviewFilterOptions(),
-  ])
+  const [initialData, filterOptions] = await Promise.all([getAllDocuments(initialQuery), getOverviewFilterOptions()])
 
   return <DocumentsTable initialData={initialData} initialQuery={initialQuery} filterOptions={filterOptions} />
 }

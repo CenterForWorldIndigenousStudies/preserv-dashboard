@@ -1,16 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
-  Box,
-  Chip,
-  Divider,
-  Stack,
-  Typography,
-} from '@mui/material'
+import { Accordion, AccordionDetails, AccordionSummary, Box, Chip, Divider, Stack, Typography } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import {
   MaterialReactTable,
@@ -47,8 +38,7 @@ function parsePropertyValue(value: unknown): unknown {
     return value
   }
   const looksLikeJson =
-    (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
-    (trimmed.startsWith('[') && trimmed.endsWith(']'))
+    (trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))
   if (!looksLikeJson) {
     return value
   }
@@ -116,10 +106,7 @@ function BatchDetailPanel({ rows }: { rows: BatchSummary[] }): React.ReactElemen
           <Stack divider={<Divider flexItem sx={{ borderColor: 'rgba(53,88,52,0.08)' }} />}>
             {rows.map((propertyRow) => {
               const parsedValue = parsePropertyValue(propertyRow.property_value)
-              const isComplex =
-                typeof parsedValue === 'object' &&
-                parsedValue !== null &&
-                !Array.isArray(parsedValue)
+              const isComplex = typeof parsedValue === 'object' && parsedValue !== null && !Array.isArray(parsedValue)
 
               if (!isComplex) {
                 return (

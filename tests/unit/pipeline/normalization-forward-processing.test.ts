@@ -1,15 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
 import type { PipelineConfig, PipelineExecutionStep } from '@lib/pipelineConfig'
-import {
-  getNextEligibleExecutionStep,
-  type PipelineStepRuntimeStatus,
-} from '@lib/pipelineExecution'
+import { getNextEligibleExecutionStep, type PipelineStepRuntimeStatus } from '@lib/pipelineExecution'
 import type { ProcessBatchStatus, ProcessStageStatus } from '@lib/processBatches'
-import {
-  shouldTriggerDocumentSplitter,
-  shouldTriggerPageRotator,
-} from '@lib/pipelineTriggers'
+import { shouldTriggerDocumentSplitter, shouldTriggerPageRotator } from '@lib/pipelineTriggers'
 
 function buildExecutionPlan(): PipelineExecutionStep[] {
   return [
@@ -60,9 +54,7 @@ function buildExecutionPlan(): PipelineExecutionStep[] {
   ]
 }
 
-function buildStageStatus(
-  overrides: Partial<ProcessStageStatus> = {},
-): ProcessStageStatus {
+function buildStageStatus(overrides: Partial<ProcessStageStatus> = {}): ProcessStageStatus {
   return {
     status: null,
     requestId: null,
@@ -104,9 +96,7 @@ function buildStageStatus(
   }
 }
 
-function buildBatchStatus(
-  overrides: Partial<ProcessBatchStatus> = {},
-): ProcessBatchStatus {
+function buildBatchStatus(overrides: Partial<ProcessBatchStatus> = {}): ProcessBatchStatus {
   const pipelineConfig: PipelineConfig = {
     profileId: 'custom',
     mode: 'custom',
@@ -129,10 +119,7 @@ function buildBatchStatus(
   }
 }
 
-function expectNextStep(
-  batch: ProcessBatchStatus,
-  expected: { service: string; pass?: 1 | 2 } | null,
-): void {
+function expectNextStep(batch: ProcessBatchStatus, expected: { service: string; pass?: 1 | 2 } | null): void {
   const nextStep = getNextEligibleExecutionStep(batch)
   if (expected === null) {
     expect(nextStep).toBeNull()

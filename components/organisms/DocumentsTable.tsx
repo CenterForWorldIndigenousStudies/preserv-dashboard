@@ -108,7 +108,9 @@ function normalizeReviewQueueComment(value: string | null | undefined): string |
   return normalizedValue ? normalizedValue : null
 }
 
-function buildReviewQueueCommentTooltipContent(document: Pick<Document, 'validation_comment' | 'validation_comment_additional'>): ReactElement | null {
+function buildReviewQueueCommentTooltipContent(
+  document: Pick<Document, 'validation_comment' | 'validation_comment_additional'>,
+): ReactElement | null {
   const validationComment = normalizeReviewQueueComment(document.validation_comment)
   const validationCommentAdditional = normalizeReviewQueueComment(document.validation_comment_additional)
 
@@ -130,9 +132,19 @@ function buildReviewQueueColumns(preservedOverviewHref: string): MRT_ColumnDef<D
       accessorKey: 'name',
       header: 'Document',
       size: 420,
-      Cell: ({ row: {original: { id, id_legacy, name, source_id }} }) => {
+      Cell: ({
+        row: {
+          original: { id, id_legacy, name, source_id },
+        },
+      }) => {
         return (
-          <DocumentNameBlock name={name} id={id} legacyId={id_legacy} sourceId={source_id} href={`${DOCUMENTS_PATH}/${id}?from=${preservedOverviewHref}`} />
+          <DocumentNameBlock
+            name={name}
+            id={id}
+            legacyId={id_legacy}
+            sourceId={source_id}
+            href={`${DOCUMENTS_PATH}/${id}?from=${preservedOverviewHref}`}
+          />
         )
       },
     },
@@ -141,7 +153,11 @@ function buildReviewQueueColumns(preservedOverviewHref: string): MRT_ColumnDef<D
       header: 'Validation Status',
       size: 190,
       enableSorting: false,
-      Cell: ({ row: {original: { validation_status } } }) => {
+      Cell: ({
+        row: {
+          original: { validation_status },
+        },
+      }) => {
         if (!validation_status) {
           return <span className="txt-muted">{`-`}</span>
         }
@@ -154,7 +170,7 @@ function buildReviewQueueColumns(preservedOverviewHref: string): MRT_ColumnDef<D
       header: 'Review Details',
       size: 220,
       enableSorting: false,
-      Cell: ({ row: {original} }) => {
+      Cell: ({ row: { original } }) => {
         const { validation_comment, validation_comment_additional, validation_timestamp, validator_name } = original
         const validatorName = validator_name?.trim()
         const hasHumanReviewContext = Boolean(validatorName || validation_timestamp)
@@ -182,9 +198,7 @@ function buildReviewQueueColumns(preservedOverviewHref: string): MRT_ColumnDef<D
             <span className={validatorName || hasHumanReviewContext ? 'text-sm text-ink' : 'txt-muted text-sm'}>
               {validatorName || (hasHumanReviewContext ? 'Reviewer not recorded' : '-')}
             </span>
-            {validation_timestamp ? (
-              <DateAtom value={validation_timestamp} className="text-xs text-ink/60" />
-            ) : null}
+            {validation_timestamp ? <DateAtom value={validation_timestamp} className="text-xs text-ink/60" /> : null}
           </div>
         )
       },
@@ -198,9 +212,19 @@ function buildOverviewColumns(preservedOverviewHref: string): MRT_ColumnDef<Docu
       accessorKey: 'name',
       header: 'Document',
       size: 420,
-      Cell: ({ row: {original: { id, id_legacy, name, source_id }} }) => {
+      Cell: ({
+        row: {
+          original: { id, id_legacy, name, source_id },
+        },
+      }) => {
         return (
-          <DocumentNameBlock name={name} id={id} legacyId={id_legacy} sourceId={source_id} href={`${DOCUMENTS_PATH}/${id}?from=${preservedOverviewHref}`} />
+          <DocumentNameBlock
+            name={name}
+            id={id}
+            legacyId={id_legacy}
+            sourceId={source_id}
+            href={`${DOCUMENTS_PATH}/${id}?from=${preservedOverviewHref}`}
+          />
         )
       },
     },
@@ -208,9 +232,7 @@ function buildOverviewColumns(preservedOverviewHref: string): MRT_ColumnDef<Docu
       accessorKey: 'filesize',
       header: 'Size',
       size: 110,
-      Cell: ({ renderedCellValue }) => (
-        <FileSize value={renderedCellValue as bigint | number | null | undefined} />
-      ),
+      Cell: ({ renderedCellValue }) => <FileSize value={renderedCellValue as bigint | number | null | undefined} />,
     },
     {
       accessorKey: 'hash_binary',
@@ -262,7 +284,11 @@ function buildOverviewColumns(preservedOverviewHref: string): MRT_ColumnDef<Docu
       accessorKey: 'is_duplicate',
       header: 'Is Duplicate',
       size: 120,
-      Cell: ({ row: { original: { is_duplicate } } }) => (is_duplicate ? 'True' : 'False'),
+      Cell: ({
+        row: {
+          original: { is_duplicate },
+        },
+      }) => (is_duplicate ? 'True' : 'False'),
     },
   ]
 }
@@ -319,11 +345,7 @@ function getReviewQueueSelectionProps(
 
 function getReviewQueueBatchApproveButton(
   isReviewQueue: boolean,
-  {
-    batchApprovePending,
-    selectedCount,
-    onApprove,
-  }: ReviewQueueBatchApproveButtonProps,
+  { batchApprovePending, selectedCount, onApprove }: ReviewQueueBatchApproveButtonProps,
 ): ReactElement | undefined {
   if (!isReviewQueue) {
     return undefined
@@ -564,7 +586,8 @@ export function DocumentsTable({
   })
 
   const columns = useMemo<MRT_ColumnDef<Document>[]>(
-    () => (isReviewQueue ? buildReviewQueueColumns(preservedOverviewHref) : buildOverviewColumns(preservedOverviewHref)),
+    () =>
+      isReviewQueue ? buildReviewQueueColumns(preservedOverviewHref) : buildOverviewColumns(preservedOverviewHref),
     [isReviewQueue, preservedOverviewHref],
   )
 
@@ -576,10 +599,8 @@ export function DocumentsTable({
           columns,
           renderRowActions: isReviewQueue
             ? (row) => {
-                const isApprovePending =
-                  activeDecision?.documentId === row.id && activeDecision.decision === 'APPROVED'
-                const isRejectPending =
-                  activeDecision?.documentId === row.id && activeDecision.decision === 'REJECTED'
+                const isApprovePending = activeDecision?.documentId === row.id && activeDecision.decision === 'APPROVED'
+                const isRejectPending = activeDecision?.documentId === row.id && activeDecision.decision === 'REJECTED'
                 const isPending = isApprovePending || isRejectPending || batchApprovePending
 
                 return (
@@ -687,17 +708,19 @@ export function DocumentsTable({
         {...reviewQueueSelectionProps}
         leadingToolbarSlot={
           <DocumentTableAdvancedSearchTrigger
-            activeFilterCount={[
-              currentFilters.author,
-              currentFilters.statuses?.length ? 'statuses' : undefined,
-              currentFilters.documentType && currentFilters.documentType !== 'all'
-                ? currentFilters.documentType
-                : undefined,
-              currentFilters.batch,
-              currentFilters.createdFrom || currentFilters.createdTo ? 'dates' : undefined,
-              currentFilters.collection,
-              currentFilters.accessLevel,
-            ].filter(Boolean).length}
+            activeFilterCount={
+              [
+                currentFilters.author,
+                currentFilters.statuses?.length ? 'statuses' : undefined,
+                currentFilters.documentType && currentFilters.documentType !== 'all'
+                  ? currentFilters.documentType
+                  : undefined,
+                currentFilters.batch,
+                currentFilters.createdFrom || currentFilters.createdTo ? 'dates' : undefined,
+                currentFilters.collection,
+                currentFilters.accessLevel,
+              ].filter(Boolean).length
+            }
           >
             <OverviewAdvancedSearchModal
               filters={currentFilters}

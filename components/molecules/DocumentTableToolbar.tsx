@@ -41,11 +41,7 @@ export function DocumentTableToolbar({
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {trailingSlot}
-        <DocumentTablePageSizeSelect
-          options={pageSizeOptions}
-          value={pageSize}
-          onChange={onPageSizeChange}
-        />
+        <DocumentTablePageSizeSelect options={pageSizeOptions} value={pageSize} onChange={onPageSizeChange} />
       </div>
     </div>
   )

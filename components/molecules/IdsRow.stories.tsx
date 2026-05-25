@@ -22,12 +22,12 @@ const meta = {
     },
     maxTruncationLength: {
       control: 'number',
-      description: 'Maximum character length before truncating secondary IDs (default: 12)'
+      description: 'Maximum character length before truncating secondary IDs (default: 12)',
     },
     sourceId: {
       control: 'text',
-      description: 'Optional source ID to display alongside the document name'
-    }
+      description: 'Optional source ID to display alongside the document name',
+    },
   },
   parameters: {
     backgrounds: {

@@ -42,7 +42,8 @@ export function DateAtom({ value, className = '' }: DateProps): ReactNode {
 
   const display = formatDisplay(dt)
   const raw = String(value)
-  const computedClass = `cursor-pointer border-b border-dotted border-ink/30 hover:border-ink/70 transition-colors ${className}`.trim()
+  const computedClass =
+    `cursor-pointer border-b border-dotted border-ink/30 hover:border-ink/70 transition-colors ${className}`.trim()
 
   return (
     <span

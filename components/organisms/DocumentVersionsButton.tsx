@@ -28,19 +28,13 @@ function compareNullableNumbers(a: number | null, b: number | null): number {
   return (a ?? Number.NEGATIVE_INFINITY) - (b ?? Number.NEGATIVE_INFINITY)
 }
 
-function compareNullableDates(
-  a: Date | string | null,
-  b: Date | string | null,
-): number {
+function compareNullableDates(a: Date | string | null, b: Date | string | null): number {
   const left = a ? new Date(a).getTime() : Number.NEGATIVE_INFINITY
   const right = b ? new Date(b).getTime() : Number.NEGATIVE_INFINITY
   return left - right
 }
 
-function sortVersionDocuments(
-  documents: VersionFamilyDocument[],
-  sorting: MRT_SortingState,
-): VersionFamilyDocument[] {
+function sortVersionDocuments(documents: VersionFamilyDocument[], sorting: MRT_SortingState): VersionFamilyDocument[] {
   if (!sorting.length) {
     return [...documents].sort((left, right) => Number(right.is_canonical) - Number(left.is_canonical))
   }
@@ -114,10 +108,7 @@ export function DocumentVersionsButton({ versionFamily }: DocumentVersionsButton
     }
   }, [closeModal, isOpen])
 
-  const data = useMemo(
-    () => sortVersionDocuments(versionFamily.documents, sorting),
-    [sorting, versionFamily.documents],
-  )
+  const data = useMemo(() => sortVersionDocuments(versionFamily.documents, sorting), [sorting, versionFamily.documents])
 
   const columns = useMemo<MRT_ColumnDef<VersionFamilyDocument>[]>(
     () => [

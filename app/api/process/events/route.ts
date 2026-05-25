@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { getDashboardSession } from '@root/auth'
 import { logEvent } from '@lib/observability'
-import {
-  getProcessBatchStatus,
-  type ProcessBatchStatus,
-} from '@lib/processBatches'
+import { getProcessBatchStatus, type ProcessBatchStatus } from '@lib/processBatches'
 import { shouldCloseProcessStream } from '@lib/pipelineTriggers'
 
 export const dynamic = 'force-dynamic'

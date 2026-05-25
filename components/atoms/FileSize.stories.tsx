@@ -86,14 +86,14 @@ export const Terabytes: Story = {
 
 export const Null: Story = {
   name: 'null (dash)',
-    args: { value: null },
-    parameters: {
-      docs: {
-        description: {
-          story: 'There is no toggle when there is no value.',
-        },
+  args: { value: null },
+  parameters: {
+    docs: {
+      description: {
+        story: 'There is no toggle when there is no value.',
       },
     },
+  },
 }
 
 export const Undefined: Story = {

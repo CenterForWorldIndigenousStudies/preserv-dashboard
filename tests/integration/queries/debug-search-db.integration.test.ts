@@ -20,7 +20,10 @@ describe('DEBUG: tag search against test DB', () => {
     const hasAboriginal = candidates.some((tag) => tag.name.toLowerCase().includes('aboriginal'))
 
     console.log('[TEST-DB] candidateCount=', candidates.length)
-    console.log('[TEST-DB] first20=', candidates.slice(0, 20).map((tag) => tag.name))
+    console.log(
+      '[TEST-DB] first20=',
+      candidates.slice(0, 20).map((tag) => tag.name),
+    )
     console.log('[TEST-DB] hasAboriginal=', hasAboriginal)
     console.log('[TEST-DB] scored=', JSON.stringify(scored))
 

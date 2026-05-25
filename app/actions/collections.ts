@@ -39,10 +39,7 @@ export async function addDocumentsToCollectionAction(collectionId: string, docum
   revalidatePath(COLLECTIONS_PATH)
 }
 
-export async function createCollectionAction(input: {
-  tagId: string
-  collectionNotes?: string
-}): Promise<void> {
+export async function createCollectionAction(input: { tagId: string; collectionNotes?: string }): Promise<void> {
   await createCollection({
     tagId: input.tagId,
     collectionNotes: input.collectionNotes,

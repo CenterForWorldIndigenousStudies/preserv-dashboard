@@ -11,13 +11,14 @@ import {
   type OverviewFilterOptions,
   type OverviewStatusOption,
 } from '@lib/overview-search'
-import {
-  REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES,
-  REVIEW_QUEUE_SORT_FIELDS,
-} from '@constants/reviewQueue'
+import { REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES, REVIEW_QUEUE_SORT_FIELDS } from '@constants/reviewQueue'
 import { db } from '@lib/db'
 import { createEditHistoryEntry } from '@lib/editHistory'
-import { Prisma, PrismaClient, type document_quality_validation_status as DocumentQualityValidationStatus } from '@lib/prisma/generated/client'
+import {
+  Prisma,
+  PrismaClient,
+  type document_quality_validation_status as DocumentQualityValidationStatus,
+} from '@lib/prisma/generated/client'
 import { buildNameHash, getTagSearchCandidateLimit, normalizeTagName, scoreTags } from '@lib/tag-utils'
 import type { BatchSummary } from 'types/batches'
 import type { CollectionWithMeta } from 'types/collections'
@@ -128,7 +129,9 @@ export function normalizeDocumentTablePageSize(pageSize?: number): number {
   return resolvedPageSize
 }
 
-function isOverviewSortField(value?: DocumentsQueryParams['orderBy']): value is (typeof DOCUMENTS_ORDERABLE_FIELDS)[number] {
+function isOverviewSortField(
+  value?: DocumentsQueryParams['orderBy'],
+): value is (typeof DOCUMENTS_ORDERABLE_FIELDS)[number] {
   return !!value && (DOCUMENTS_ORDERABLE_FIELDS as readonly string[]).includes(value)
 }
 
@@ -219,9 +222,7 @@ async function resolveOverviewTagIds(
   })
 
   const matches = scoreTags(candidates, tagTerm, OVERVIEW_TAG_SEARCH_LIMIT)
-  return matches
-    .filter((tag) => tag.score >= OVERVIEW_TAG_SEARCH_MIN_SCORE)
-    .map((tag) => tag.id)
+  return matches.filter((tag) => tag.score >= OVERVIEW_TAG_SEARCH_MIN_SCORE).map((tag) => tag.id)
 }
 
 export async function applyReviewQueueDecision(params: {
@@ -580,9 +581,7 @@ export async function createCollection(
 
   return db.$transaction(async (tx) => {
     let createdTag = false
-    let tag = tagId
-      ? await tx.tags.findUnique({ where: { id: tagId } })
-      : null
+    let tag = tagId ? await tx.tags.findUnique({ where: { id: tagId } }) : null
 
     if (!tagId && tagName) {
       const nameHash = buildNameHash(tagName)
@@ -979,17 +978,15 @@ function buildCollectionDocumentRowsSql(params: {
   `
 }
 
-async function getCollectionDocumentsPage(
-  params: {
-    collectionId: string
-    search?: string
-    sortField?: string
-    sortDirection?: 'asc' | 'desc'
-    page?: number
-    pageSize?: number
-    mode: 'in' | 'out'
-  },
-): Promise<CollectionDocumentQueryResult> {
+async function getCollectionDocumentsPage(params: {
+  collectionId: string
+  search?: string
+  sortField?: string
+  sortDirection?: 'asc' | 'desc'
+  page?: number
+  pageSize?: number
+  mode: 'in' | 'out'
+}): Promise<CollectionDocumentQueryResult> {
   const rows = await db.$queryRaw<Array<CollectionDocumentRow & { total: bigint | number | string }>>(
     buildCollectionDocumentRowsSql(params),
   )
@@ -1187,11 +1184,7 @@ async function getOverviewDocumentsPage(
   const hasExplicitSort = isOverviewSortField(params.orderBy)
   const usesDefaultSort = !hasExplicitSort
   const sortField = normalizeOverviewSortField(params.orderBy)
-  const sortDirection = usesDefaultSort
-    ? 'asc'
-    : params.sortDirection === 'asc'
-      ? 'asc'
-      : 'desc'
+  const sortDirection = usesDefaultSort ? 'asc' : params.sortDirection === 'asc' ? 'asc' : 'desc'
   const cursorDirection = params.cursorDirection === 'prev' ? 'prev' : 'next'
   const searchTerm = params.search?.trim()
   const sortExpression = Prisma.raw(OVERVIEW_SORT_EXPRESSIONS[sortField])
@@ -1311,11 +1304,7 @@ async function getNeedsReviewDocumentsPage(
   const hasExplicitSort = isOverviewSortField(params.orderBy)
   const usesDefaultSort = !hasExplicitSort
   const sortField = normalizeOverviewSortField(params.orderBy)
-  const sortDirection = usesDefaultSort
-    ? 'asc'
-    : params.sortDirection === 'asc'
-      ? 'asc'
-      : 'desc'
+  const sortDirection = usesDefaultSort ? 'asc' : params.sortDirection === 'asc' ? 'asc' : 'desc'
   const cursorDirection = params.cursorDirection === 'prev' ? 'prev' : 'next'
   const searchTerm = params.search?.trim()
   const sortExpression = Prisma.raw(OVERVIEW_SORT_EXPRESSIONS[sortField])
@@ -1572,16 +1561,11 @@ function buildNeedsReviewDocumentsWhereSql(params: {
   return Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`
 }
 
-function resolveReviewQueueValidationStatuses(
-  statuses: OverviewStatusOption[] | undefined,
-): OverviewStatusOption[] {
+function resolveReviewQueueValidationStatuses(statuses: OverviewStatusOption[] | undefined): OverviewStatusOption[] {
   const allowedStatuses = new Set<string>(REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES)
-  const filteredStatuses =
-    normalizeOverviewStatuses(statuses)?.filter((status) => allowedStatuses.has(status)) ?? []
+  const filteredStatuses = normalizeOverviewStatuses(statuses)?.filter((status) => allowedStatuses.has(status)) ?? []
 
-  return filteredStatuses.length > 0
-    ? filteredStatuses
-    : [...REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES]
+  return filteredStatuses.length > 0 ? filteredStatuses : [...REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES]
 }
 
 function buildOverviewStatusConditionSql(statuses: OverviewStatusOption[]): Prisma.Sql {
@@ -2031,9 +2015,7 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
     }
 
     const canonicalDocument = mapVersionFamilyDocument(group.documents, true)
-    const familyDocumentsById = new Map<string, VersionFamilyDocument>([
-      [canonicalDocument.id, canonicalDocument],
-    ])
+    const familyDocumentsById = new Map<string, VersionFamilyDocument>([[canonicalDocument.id, canonicalDocument]])
     for (const versionRow of group.document_versions) {
       const mapped = mapVersionFamilyDocument(versionRow.documents, false)
       if (mapped.id === canonicalDocument.id) {
@@ -2128,10 +2110,7 @@ export async function getFailures(): Promise<FailureItem[]> {
 }
 
 export async function getOverviewFilterOptions(): Promise<OverviewFilterOptions> {
-  const [collections, statuses] = await Promise.all([
-    getDistinctCollections(),
-    getDistinctValidationStatuses(),
-  ])
+  const [collections, statuses] = await Promise.all([getDistinctCollections(), getDistinctValidationStatuses()])
 
   return {
     collections,
@@ -2178,9 +2157,7 @@ export async function getDistinctValidationStatuses(): Promise<string[]> {
     orderBy: { validation_status: 'asc' },
   })
 
-  return rows
-    .map((row) => row.validation_status?.trim())
-    .filter((status): status is string => Boolean(status))
+  return rows.map((row) => row.validation_status?.trim()).filter((status): status is string => Boolean(status))
 }
 
 // ---------------------------------------------------------------------------
@@ -2246,11 +2223,11 @@ export async function getReviewQueueDocuments(
   const metadataRows =
     metadataIds.length > 0
       ? await client.document_to_metadata.findMany({
-        where: {
-          metadata_id: { in: metadataIds },
-        },
-        select: { document_id: true, metadata_id: true, value: true },
-      })
+          where: {
+            metadata_id: { in: metadataIds },
+          },
+          select: { document_id: true, metadata_id: true, value: true },
+        })
       : []
 
   const needsReviewDocIds = new Set<string>()
@@ -2472,7 +2449,7 @@ export async function getBatchSummary(): Promise<BatchSummary[]> {
 
   const result: BatchSummary[] = []
 
-  for (const {document_to_batches, id, name, processing_details, started_at} of rows) {
+  for (const { document_to_batches, id, name, processing_details, started_at } of rows) {
     const details = parseBatchProcessingDetails(processing_details)
 
     for (const [property_key, property_value] of Object.entries(details)) {
@@ -2485,12 +2462,9 @@ export async function getBatchSummary(): Promise<BatchSummary[]> {
       })
     }
 
-    const totalCost = document_to_batches.reduce(
-      (sum, dtb) => sum + Number(dtb.cost ?? 0),
-      0.0,
-    )
+    const totalCost = document_to_batches.reduce((sum, dtb) => sum + Number(dtb.cost ?? 0), 0.0)
 
-    const totalProcessingTime = getTotalProcessingTime({document_to_batches, processing_details: details})
+    const totalProcessingTime = getTotalProcessingTime({ document_to_batches, processing_details: details })
 
     result.push({
       batch_id: id,
@@ -2505,24 +2479,24 @@ export async function getBatchSummary(): Promise<BatchSummary[]> {
       batch_name: name ?? null,
       started_at,
       property_key: 'Processing Time (seconds)',
-      property_value: totalProcessingTime || "Unknown",
+      property_value: totalProcessingTime || 'Unknown',
     })
   }
 
   return result
 }
 
-function getTotalProcessingTime({document_to_batches, processing_details}: {
+function getTotalProcessingTime({
+  document_to_batches,
+  processing_details,
+}: {
   document_to_batches: {
-    cost: Prisma.Decimal | null;
-    processing_time_seconds: number | null;
-  }[],
+    cost: Prisma.Decimal | null
+    processing_time_seconds: number | null
+  }[]
   processing_details: Record<string, string | number | boolean | null>
 }) {
   const speed = parseBatchProcessingDetails(processing_details.batch_statistics as string).speed
   if (speed) return speed
-  return document_to_batches.reduce(
-      (sum, dtb) => sum + (dtb.processing_time_seconds ?? 0),
-      0,
-    )
+  return document_to_batches.reduce((sum, dtb) => sum + (dtb.processing_time_seconds ?? 0), 0)
 }

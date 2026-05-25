@@ -25,47 +25,11 @@ jobs:
       - name: Read version
         id: version
         run: |
-          MAJOR_MINOR=$(jq -r .version package.json | grep -oE "^[0-9]+\.[0-9]+")
-          ESCAPED=$(echo "$MAJOR_MINOR" | sed 's/\./\\./g')
-          LATEST_PATCH_TAG=$(git tag --sort=-v:refname | grep -E "^v${ESCAPED}\.[0-9]+$" | head -n 1 || true)
-
-          if [ -z "$LATEST_PATCH_TAG" ]; then
-            PATCH=1
-          else
-            PATCH=$(echo "$LATEST_PATCH_TAG" | sed "s/^${ESCAPED}\\.//")
-            PATCH=$((PATCH + 1))
-          fi
-
-          VERSION="${MAJOR_MINOR}.${PATCH}"
+          VERSION=$(jq -r .version package.json)
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "tag=${VERSION}" >> $GITHUB_OUTPUT
           echo "Publishing version: ${VERSION}"
         shell: bash
-
-      - name: Get changed project files
-        if: ${{ steps.check-branch.outputs.skip != 'true' }}
-        id: changed-files
-        uses: tj-actions/changed-files@v47
-        with:
-          files: |
-            **/*
-          files_ignore: |
-            **/*.md
-            .cursorrules
-            .env*
-            .gitigore
-            .markdownlint*
-            .prettier*
-            eslint*
-            vercel.json
-            vitest*
-            .next/**
-            .storybook/**
-            .vscode/**
-            documentation/**
-            lib/prisma/generated/**
-            public/developers/storybook/**
-            scripts/**
 
       - name: Check tag and changes
         id: check_tag
@@ -82,12 +46,6 @@ jobs:
           LATEST_TAG=$(git tag --sort=-v:refname | grep -E "^[0-9]+\.[0-9]+\.[0-9]+$" | head -n 1 || true)
 
           if [ -n "$LATEST_TAG" ]; then
-            if [ "${{ steps.changed-files.outputs.any_modified }}" != 'true' ]; then
-              echo "No package-relevant changes since ${LATEST_TAG}, skipping."
-              echo "skip=true" >> $GITHUB_OUTPUT
-              exit 0
-            fi
-
             echo "::group::Changed files since ${LATEST_TAG}"
             echo "$CHANGES"
             echo "::endgroup::"

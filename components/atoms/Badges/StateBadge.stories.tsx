@@ -29,9 +29,9 @@ export const DefaultStateBadge: Story = {
 export const AllStates: Story = {
   render: () => (
     <div className="flex flex-wrap gap-3">
-      { states.map((state, index) => (
+      {states.map((state, index) => (
         <StateBadge key={`${state}-${index}`} state={state} />
-      )) }
+      ))}
     </div>
   ),
 }

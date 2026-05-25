@@ -1,9 +1,5 @@
 import { db } from '@lib/db'
-import {
-  parsePipelineConfig,
-  pipelineConfigToRequestedStages,
-  type PipelineConfig,
-} from '@lib/pipelineConfig'
+import { parsePipelineConfig, pipelineConfigToRequestedStages, type PipelineConfig } from '@lib/pipelineConfig'
 
 export interface ProcessStageStatus {
   status: string | null
@@ -161,7 +157,9 @@ function toIsoString(value: Date | null): string | null {
   return value?.toISOString() ?? null
 }
 
-function parseStageCallbackFields(stage: ProcessStageDetails): Pick<
+function parseStageCallbackFields(
+  stage: ProcessStageDetails,
+): Pick<
   ProcessStageStatus,
   | 'callbackDeliveryStatus'
   | 'callbackNotifiedAt'
@@ -183,7 +181,9 @@ function parseStageCallbackFields(stage: ProcessStageDetails): Pick<
   }
 }
 
-function parseStageCountFields(stage: ProcessStageDetails): Pick<
+function parseStageCountFields(
+  stage: ProcessStageDetails,
+): Pick<
   ProcessStageStatus,
   | 'processedCount'
   | 'ingestedCount'
@@ -222,10 +222,9 @@ function parseStageCountFields(stage: ProcessStageDetails): Pick<
   }
 }
 
-function parseStageCollectionFields(stage: ProcessStageDetails): Pick<
-  ProcessStageStatus,
-  'collectionName' | 'collectionNotes'
-> {
+function parseStageCollectionFields(
+  stage: ProcessStageDetails,
+): Pick<ProcessStageStatus, 'collectionName' | 'collectionNotes'> {
   return {
     collectionName: normalizeText(stage.collection?.name ?? null),
     collectionNotes: normalizeText(stage.collection?.notes ?? null),
@@ -237,7 +236,9 @@ function parseStageStatus(stage: ProcessStageDetails | null | undefined): Proces
     return null
   }
 
-  const completedPasses = parseStringArray(stage.completed_passes).map((value) => Number(value)).filter(Number.isFinite)
+  const completedPasses = parseStringArray(stage.completed_passes)
+    .map((value) => Number(value))
+    .filter(Number.isFinite)
 
   return {
     status: normalizeText(stage.status),
@@ -314,10 +315,7 @@ export async function getProcessBatchStatus(batchId: string): Promise<ProcessBat
   return batch ? toProcessBatchStatus(batch) : null
 }
 
-export async function setProcessBatchPipelineConfig(
-  batchId: string,
-  pipelineConfig: PipelineConfig,
-): Promise<void> {
+export async function setProcessBatchPipelineConfig(batchId: string, pipelineConfig: PipelineConfig): Promise<void> {
   const batch = await db.batches.findUnique({
     where: { id: batchId },
     select: { id: true, processing_details: true },
@@ -347,9 +345,7 @@ export async function setProcessBatchPipelineConfig(
   })
 }
 
-export async function getProcessBatchPipelineConfig(
-  batchId: string,
-): Promise<PipelineConfig | null> {
+export async function getProcessBatchPipelineConfig(batchId: string): Promise<PipelineConfig | null> {
   const batch = await db.batches.findUnique({
     where: { id: batchId },
     select: { id: true, processing_details: true },
@@ -392,12 +388,7 @@ export async function setProcessBatchRequestedStages(batchId: string, requestedS
 
 async function updateProcessStageCallbackReceived(
   batchId: string,
-  stageKey:
-    | 'ingester'
-    | 'document_splitter'
-    | 'page_rotator'
-    | 'ocr_processor'
-    | 'content_dedup',
+  stageKey: 'ingester' | 'document_splitter' | 'page_rotator' | 'ocr_processor' | 'content_dedup',
   receivedAtIso: string,
 ): Promise<void> {
   const batch = await db.batches.findUnique({
@@ -436,12 +427,7 @@ async function updateProcessStageCallbackReceived(
 
 export async function markProcessStageCallbackReceived(
   batchId: string,
-  stageKey:
-    | 'ingester'
-    | 'document_splitter'
-    | 'page_rotator'
-    | 'ocr_processor'
-    | 'content_dedup',
+  stageKey: 'ingester' | 'document_splitter' | 'page_rotator' | 'ocr_processor' | 'content_dedup',
   receivedAtIso: string,
 ): Promise<void> {
   await updateProcessStageCallbackReceived(batchId, stageKey, receivedAtIso)

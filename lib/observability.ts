@@ -3,9 +3,7 @@ type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 type LogFields = Record<string, unknown>
 
 function normalizeFields(fields: LogFields): LogFields {
-  return Object.fromEntries(
-    Object.entries(fields).filter(([, value]) => value !== undefined),
-  )
+  return Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== undefined))
 }
 
 export function logEvent(level: LogLevel, event: string, fields: LogFields = {}): void {

@@ -22,13 +22,7 @@ export function SourceId({ value, maxTruncationLength = 0 }: SourceIdProps): Rea
   const href = `https://drive.google.com/file/d/${normalizedValue}/view`
 
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noreferrer"
-      className="text-moss hover:underline"
-      title={href}
-    >
+    <a href={href} target="_blank" rel="noreferrer" className="text-moss hover:underline" title={href}>
       {truncatedSourceId}
     </a>
   )

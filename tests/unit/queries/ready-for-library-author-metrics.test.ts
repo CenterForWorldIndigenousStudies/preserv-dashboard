@@ -26,11 +26,7 @@ describe('getUniqueDocumentCountByAuthor', () => {
   })
 
   it('counts distinct document links for the requested author', async () => {
-    mockFindMany.mockResolvedValueOnce([
-      { document_id: 'doc-1' },
-      { document_id: 'doc-2' },
-      { document_id: 'doc-3' },
-    ])
+    mockFindMany.mockResolvedValueOnce([{ document_id: 'doc-1' }, { document_id: 'doc-2' }, { document_id: 'doc-3' }])
 
     await expect(getUniqueDocumentCountByAuthor('Ryser, Rudolph C.')).resolves.toBe(3)
 

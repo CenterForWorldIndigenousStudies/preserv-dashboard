@@ -23,9 +23,13 @@ describe('documents queries (integration)', () => {
       db.tags.findFirst({ where: { name: 'duplicate_document' }, select: { id: true } }),
       db.access_levels.findMany({ select: { id: true, level_name: true } }),
     ])
-    const restrictedAccessLevel = accessLevels.find((accessLevel) => accessLevel.level_name.toLowerCase() === 'restricted')
+    const restrictedAccessLevel = accessLevels.find(
+      (accessLevel) => accessLevel.level_name.toLowerCase() === 'restricted',
+    )
     if (!sourceMetadata || !duplicateTag || !restrictedAccessLevel) {
-      throw new Error('Expected source_id metadata, duplicate_document tag, and restricted access level to exist in integration DB')
+      throw new Error(
+        'Expected source_id metadata, duplicate_document tag, and restricted access level to exist in integration DB',
+      )
     }
     sourceIdMetadataId = sourceMetadata.id
     duplicateTagId = duplicateTag.id
@@ -206,23 +210,29 @@ describe('documents queries (integration)', () => {
           }),
         )
 
-        const page1 = await getAllDocuments({
-          page: 1,
-          pageSize: 25,
-          batch: batchName,
-          orderBy: 'name',
-          sortDirection: 'asc',
-        }, tx)
-        const page2 = await getAllDocuments({
-          page: 2,
-          pageSize: 25,
-          batch: batchName,
-          orderBy: 'name',
-          sortDirection: 'asc',
-          cursorValue: page1.pageInfo.endCursor?.value,
-          cursorId: page1.pageInfo.endCursor?.id,
-          cursorDirection: 'next',
-        }, tx)
+        const page1 = await getAllDocuments(
+          {
+            page: 1,
+            pageSize: 25,
+            batch: batchName,
+            orderBy: 'name',
+            sortDirection: 'asc',
+          },
+          tx,
+        )
+        const page2 = await getAllDocuments(
+          {
+            page: 2,
+            pageSize: 25,
+            batch: batchName,
+            orderBy: 'name',
+            sortDirection: 'asc',
+            cursorValue: page1.pageInfo.endCursor?.value,
+            cursorId: page1.pageInfo.endCursor?.id,
+            cursorDirection: 'next',
+          },
+          tx,
+        )
 
         expect(page1.data).toHaveLength(25)
         expect(page2.data).toHaveLength(5)
@@ -252,11 +262,14 @@ describe('documents queries (integration)', () => {
         await createTestDocument(tx, { name: 'Alpha Document' })
         await createTestDocument(tx, { name: 'Middle Document' })
 
-        const result = await getAllDocuments({
-          orderBy: 'name',
-          sortDirection: 'asc',
-          pageSize: 100,
-        }, tx)
+        const result = await getAllDocuments(
+          {
+            orderBy: 'name',
+            sortDirection: 'asc',
+            pageSize: 100,
+          },
+          tx,
+        )
 
         const ourDocs = result.data.filter((d) =>
           ['Zebra Document', 'Alpha Document', 'Middle Document'].includes(d.name ?? ''),
@@ -309,12 +322,15 @@ describe('documents queries (integration)', () => {
           ],
         })
 
-        const result = await getAllDocuments({
-          orderBy: 'source_id',
-          sortDirection: 'asc',
-          pageSize: 100,
-          search: 'SORT_PAIR_SOURCE Author',
-        }, tx)
+        const result = await getAllDocuments(
+          {
+            orderBy: 'source_id',
+            sortDirection: 'asc',
+            pageSize: 100,
+            search: 'SORT_PAIR_SOURCE Author',
+          },
+          tx,
+        )
 
         const ourDocs = result.data.filter((d) => ['SORT_PAIR_SOURCE A', 'SORT_PAIR_SOURCE B'].includes(d.name ?? ''))
         expect(ourDocs.map((d) => d.source_id)).toEqual(['AAA', 'ZZZ'])
@@ -339,12 +355,15 @@ describe('documents queries (integration)', () => {
           },
         })
 
-        const result = await getAllDocuments({
-          orderBy: 'is_duplicate',
-          sortDirection: 'desc',
-          pageSize: 100,
-          search: 'SORT_PAIR_DUP Author',
-        }, tx)
+        const result = await getAllDocuments(
+          {
+            orderBy: 'is_duplicate',
+            sortDirection: 'desc',
+            pageSize: 100,
+            search: 'SORT_PAIR_DUP Author',
+          },
+          tx,
+        )
 
         const ourDocs = result.data.filter((d) =>
           ['SORT_PAIR_DUP Plain', 'SORT_PAIR_DUP Duplicate'].includes(d.name ?? ''),
@@ -410,15 +429,18 @@ describe('documents queries (integration)', () => {
           },
         })
 
-        const result = await getAllDocuments({
-          pageSize: 100,
-          search: 'Mary Filter',
-          statuses: ['APPROVED'],
-          documentType: 'duplicate',
-          batch: 'Advanced Batch',
-          collection: 'Overview Advanced Collection',
-          accessLevel: 'restricted',
-        }, tx)
+        const result = await getAllDocuments(
+          {
+            pageSize: 100,
+            search: 'Mary Filter',
+            statuses: ['APPROVED'],
+            documentType: 'duplicate',
+            batch: 'Advanced Batch',
+            collection: 'Overview Advanced Collection',
+            accessLevel: 'restricted',
+          },
+          tx,
+        )
 
         const resultIds = result.data.map((document) => document.id)
         expect(resultIds).toContain(matchingDoc.id)
@@ -465,28 +487,37 @@ describe('documents queries (integration)', () => {
           },
         })
 
-        const batchOriginResult = await getAllDocuments({
-          pageSize: 100,
-          batch: 'Inventory Batch Origin',
-        }, tx)
+        const batchOriginResult = await getAllDocuments(
+          {
+            pageSize: 100,
+            batch: 'Inventory Batch Origin',
+          },
+          tx,
+        )
 
         const batchOriginIds = new Set(batchOriginResult.data.map((document) => document.id))
         expect(batchOriginIds.has(matchingDoc.id)).toBe(true)
         expect(batchOriginIds.has(nonMatchingDoc.id)).toBe(false)
 
-        const batchLegacyResult = await getAllDocuments({
-          pageSize: 100,
-          batch: 'legacy-20260514',
-        }, tx)
+        const batchLegacyResult = await getAllDocuments(
+          {
+            pageSize: 100,
+            batch: 'legacy-20260514',
+          },
+          tx,
+        )
 
         const batchLegacyIds = new Set(batchLegacyResult.data.map((document) => document.id))
         expect(batchLegacyIds.has(matchingDoc.id)).toBe(true)
         expect(batchLegacyIds.has(nonMatchingDoc.id)).toBe(false)
 
-        const batchMetadataResult = await getAllDocuments({
-          pageSize: 100,
-          batch: 'Historic Batch Origin',
-        }, tx)
+        const batchMetadataResult = await getAllDocuments(
+          {
+            pageSize: 100,
+            batch: 'Historic Batch Origin',
+          },
+          tx,
+        )
 
         const batchMetadataIds = new Set(batchMetadataResult.data.map((document) => document.id))
         expect(batchMetadataIds.has(matchingDoc.id)).toBe(true)
@@ -516,10 +547,13 @@ describe('documents queries (integration)', () => {
           ],
         })
 
-        const result = await getAllDocuments({
-          pageSize: 100,
-          tag: 'aborijinal',
-        }, tx)
+        const result = await getAllDocuments(
+          {
+            pageSize: 100,
+            tag: 'aborijinal',
+          },
+          tx,
+        )
 
         const resultIds = new Set(result.data.map((document) => document.id))
         expect(resultIds.has(matchingDoc.id)).toBe(true)

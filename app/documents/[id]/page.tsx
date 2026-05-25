@@ -68,10 +68,7 @@ export default async function DocumentDetailPage({
             title="No Data"
             description="Inspect the full document record, metadata payload, audit trail, review history, and duplicate relationships."
           />
-          <Link
-            href={overviewHref}
-            className="inline-flex text-sm font-medium text-moss transition hover:text-moss/80"
-          >
+          <Link href={overviewHref} className="inline-flex text-sm font-medium text-moss transition hover:text-moss/80">
             ← Back to Overview
           </Link>
           <NoDataState message="No document data is available for this record yet." />
@@ -94,10 +91,7 @@ export default async function DocumentDetailPage({
 
     return (
       <div className="space-y-8">
-        <Link
-          href={overviewHref}
-          className="inline-flex text-sm font-medium text-moss transition hover:text-moss/80"
-        >
+        <Link href={overviewHref} className="inline-flex text-sm font-medium text-moss transition hover:text-moss/80">
           ← Back to Overview
         </Link>
         <PageHeader
@@ -141,9 +135,9 @@ export default async function DocumentDetailPage({
             </div>
             {!detail.version_family && detail.document.is_duplicate ? (
               <p className="mt-4 text-sm text-ink/60">
-                This document is tagged as a duplicate, but the current registry data did not include a version group
-                or duplicate family for it. The overview can flag it as duplicate, but the related duplicate set is
-                not available to display here yet.
+                This document is tagged as a duplicate, but the current registry data did not include a version group or
+                duplicate family for it. The overview can flag it as duplicate, but the related duplicate set is not
+                available to display here yet.
               </p>
             ) : null}
             {!detail.version_family && !detail.document.is_duplicate ? (
@@ -181,15 +175,14 @@ export default async function DocumentDetailPage({
                               'ocr_version_document_id',
                               'content_dedup_text_source_id',
                               'fedora_publication_source_document_id',
-                              'fedora_csv_source_id'
+                              'fedora_csv_source_id',
                             ].includes(name) ? (
                               <SourceId value={parsed.display as string} />
-                            ) : [
-                              'source_folder_id',
-                              'origin_parent_source_id'
-                            ].includes(name) ? (
+                            ) : ['source_folder_id', 'origin_parent_source_id'].includes(name) ? (
                               <SourceFolderId value={parsed.display as string} />
-                            ) : parsed.display
+                            ) : (
+                              parsed.display
+                            )
                           })()}
                         </td>
                       </tr>

@@ -3,10 +3,7 @@ import { Box, List, ListItem, Paper, Stack, Typography } from '@mui/material'
 
 import { PipelineStageStatusBadge } from '@atoms/Badges/PipelineStageStatusBadge'
 import { PipelineTimelineCard } from '@components/ProcessDocuments/PipelineTimelineCard'
-import type {
-  ProcessBatchStatus,
-  ProcessStageStatus,
-} from '@lib/processBatches'
+import type { ProcessBatchStatus, ProcessStageStatus } from '@lib/processBatches'
 
 interface ProcessBatchStatusCardProps {
   batch: ProcessBatchStatus
@@ -28,7 +25,10 @@ function formatDateTime(value: string | null): string {
 function Metric({ label, value }: { label: string; value: number }): ReactElement {
   return (
     <Box>
-      <Typography variant="caption" sx={{ color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+      <Typography
+        variant="caption"
+        sx={{ color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.12em' }}
+      >
         {label}
       </Typography>
       <Typography variant="h6" sx={{ mt: 0.5 }}>
@@ -58,7 +58,7 @@ function StageMetrics({ stageName, stage }: { stageName: string; stage: ProcessS
           { label: 'Duplicates', value: stage.duplicateCount },
           { label: 'Same Origin Skips', value: stage.skippedSameOriginCount },
         ]
-        : stageName === 'Page Rotator'
+      : stageName === 'Page Rotator'
         ? [
             { label: 'Processed', value: stage.processedCount },
             { label: 'Rotated', value: stage.rotatedCount },
@@ -74,22 +74,22 @@ function StageMetrics({ stageName, stage }: { stageName: string; stage: ProcessS
               { label: 'Review', value: stage.reviewNeededCount },
               { label: 'Failed', value: stage.failedCount },
             ]
-        : stageName === 'Content Dedup'
-          ? [
-              { label: 'Processed', value: stage.processedCount },
-              { label: 'Exact Dups', value: stage.exactDuplicateCount },
-              { label: 'Versioned', value: stage.versionedCount },
-              { label: 'Resolved', value: stage.resolvedCount },
-              { label: 'Skipped', value: stage.skippedCount },
-              { label: 'Failed', value: stage.failedCount },
-            ]
-        : [
-            { label: 'Processed', value: stage.processedCount },
-            { label: 'Split Docs', value: stage.splitCount },
-            { label: 'Child Docs', value: stage.childCount },
-            { label: 'Pass Through', value: stage.passedThroughCount },
-            { label: 'Review', value: stage.reviewNeededCount },
-          ]
+          : stageName === 'Content Dedup'
+            ? [
+                { label: 'Processed', value: stage.processedCount },
+                { label: 'Exact Dups', value: stage.exactDuplicateCount },
+                { label: 'Versioned', value: stage.versionedCount },
+                { label: 'Resolved', value: stage.resolvedCount },
+                { label: 'Skipped', value: stage.skippedCount },
+                { label: 'Failed', value: stage.failedCount },
+              ]
+            : [
+                { label: 'Processed', value: stage.processedCount },
+                { label: 'Split Docs', value: stage.splitCount },
+                { label: 'Child Docs', value: stage.childCount },
+                { label: 'Pass Through', value: stage.passedThroughCount },
+                { label: 'Review', value: stage.reviewNeededCount },
+              ]
 
   return (
     <Box
@@ -109,13 +109,7 @@ function StageMetrics({ stageName, stage }: { stageName: string; stage: ProcessS
   )
 }
 
-function StageCard({
-  label,
-  stage,
-}: {
-  label: string
-  stage: ProcessStageStatus | null
-}): ReactElement | null {
+function StageCard({ label, stage }: { label: string; stage: ProcessStageStatus | null }): ReactElement | null {
   if (!stage) {
     return null
   }
@@ -165,11 +159,7 @@ function StageCard({
         {stage.collectionName ? (
           <DetailRow
             label="Collection"
-            value={
-              stage.collectionNotes
-                ? `${stage.collectionName} — ${stage.collectionNotes}`
-                : stage.collectionName
-            }
+            value={stage.collectionNotes ? `${stage.collectionName} — ${stage.collectionNotes}` : stage.collectionName}
           />
         ) : null}
 
@@ -205,8 +195,7 @@ function StageCard({
                 Callback diagnostic:
               </Box>{' '}
               {stage.callbackErrorType ?? 'Error'}
-              {stage.callbackHttpStatus ? ` (${stage.callbackHttpStatus})` : ''} —{' '}
-              {stage.callbackErrorMessage}
+              {stage.callbackHttpStatus ? ` (${stage.callbackHttpStatus})` : ''} — {stage.callbackErrorMessage}
             </Typography>
           </Paper>
         ) : null}
@@ -215,14 +204,15 @@ function StageCard({
   )
 }
 
-export function ProcessBatchStatusCard({
-  batch,
-}: ProcessBatchStatusCardProps): ReactElement {
+export function ProcessBatchStatusCard({ batch }: ProcessBatchStatusCardProps): ReactElement {
   return (
     <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, p: 3 }}>
       <Stack spacing={2.5}>
         <Box>
-          <Typography variant="caption" sx={{ color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.16em' }}>
+          <Typography
+            variant="caption"
+            sx={{ color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.16em' }}
+          >
             Batch
           </Typography>
           <Typography variant="h5" sx={{ mt: 1 }}>
@@ -236,11 +226,7 @@ export function ProcessBatchStatusCard({
         <DetailRow label="Created" value={formatDateTime(batch.createdAt)} />
         <DetailRow
           label="Requested Stages"
-          value={
-            batch.pipelineRequestedStages.length > 0
-              ? batch.pipelineRequestedStages.join(', ')
-              : 'Ingest only'
-          }
+          value={batch.pipelineRequestedStages.length > 0 ? batch.pipelineRequestedStages.join(', ') : 'Ingest only'}
         />
 
         <PipelineTimelineCard batch={batch} />

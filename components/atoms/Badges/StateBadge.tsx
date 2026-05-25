@@ -17,7 +17,8 @@ export const stateVariantMap = {
  */
 export function StateBadge({ state, className = '' }: StateBadgeProps): ReactNode {
   const normalized = (state ?? 'unknown').toLowerCase()
-  const variant: BadgeVariant = stateVariantMap[(normalized ?? '').toLowerCase() as keyof typeof stateVariantMap] ?? 'neutral'
+  const variant: BadgeVariant =
+    stateVariantMap[(normalized ?? '').toLowerCase() as keyof typeof stateVariantMap] ?? 'neutral'
   const componentClass = `${className}`.trim()
 
   return (

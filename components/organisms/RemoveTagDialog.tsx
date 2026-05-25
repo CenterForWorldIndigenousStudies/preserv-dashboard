@@ -11,13 +11,7 @@ interface RemoveTagDialogProps {
   onConfirm: (options: { deleteTagFromSystem: boolean }) => Promise<void>
 }
 
-export function RemoveTagDialog({
-  open,
-  tagName,
-  usageCount,
-  onClose,
-  onConfirm,
-}: RemoveTagDialogProps): ReactElement {
+export function RemoveTagDialog({ open, tagName, usageCount, onClose, onConfirm }: RemoveTagDialogProps): ReactElement {
   const safeUsageCount = usageCount ?? 0
   const secondConfirmMessage = `This will remove the tag from ${safeUsageCount} ${safeUsageCount === 1 ? 'document' : 'documents'} and delete the tag. This cannot be undone.`
 

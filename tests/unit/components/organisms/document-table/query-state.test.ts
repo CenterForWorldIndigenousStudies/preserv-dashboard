@@ -54,9 +54,7 @@ describe('document table query state helpers', () => {
   })
 
   it('maps MRT sorting into query ordering fields', () => {
-    expect(
-      applyDocumentTableSorting(baseQuery, [{ id: 'updated_at', desc: true }]),
-    ).toEqual({
+    expect(applyDocumentTableSorting(baseQuery, [{ id: 'updated_at', desc: true }])).toEqual({
       ...baseQuery,
       page: 1,
       orderBy: 'updated_at',

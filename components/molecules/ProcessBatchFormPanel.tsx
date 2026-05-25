@@ -19,9 +19,7 @@ interface ProcessBatchFormPanelProps {
   onRefresh: () => void
 }
 
-function handleTextChange(
-  callback: (value: string) => void,
-): (event: ChangeEvent<HTMLInputElement>) => void {
+function handleTextChange(callback: (value: string) => void): (event: ChangeEvent<HTMLInputElement>) => void {
   return (event) => {
     callback(event.target.value)
   }
@@ -46,7 +44,10 @@ export function ProcessBatchFormPanel({
     <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, p: 3 }}>
       <Stack spacing={3}>
         <div>
-          <Typography variant="caption" sx={{ color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.16em' }}>
+          <Typography
+            variant="caption"
+            sx={{ color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.16em' }}
+          >
             Batch Details
           </Typography>
           <Typography variant="h5" sx={{ mt: 1 }}>

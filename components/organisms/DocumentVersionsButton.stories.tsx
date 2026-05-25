@@ -23,8 +23,8 @@ const makeDoc = (n: number, name: string, isCanonical: boolean, isDup: boolean):
   hash_content: `content-${n}`,
   is_duplicate: isDup,
   is_canonical: isCanonical,
-  created_at: `2026-0${n % 4 + 1}-${String(n % 28 + 1).padStart(2, '0')}T09:00:00Z`,
-  updated_at: `2026-0${n % 4 + 1}-${String(n % 28 + 1).padStart(2, '0')}T14:00:00Z`,
+  created_at: `2026-0${(n % 4) + 1}-${String((n % 28) + 1).padStart(2, '0')}T09:00:00Z`,
+  updated_at: `2026-0${(n % 4) + 1}-${String((n % 28) + 1).padStart(2, '0')}T14:00:00Z`,
 })
 
 const canonicalFamily: VersionFamily = {

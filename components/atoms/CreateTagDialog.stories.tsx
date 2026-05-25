@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { CreateTagDialog } from '@atoms/CreateTagDialog'
-import {TAG_SEARCH_PATH } from '@constants/paths'
+import { TAG_SEARCH_PATH } from '@constants/paths'
 
 const mockSuggestions = [
   {

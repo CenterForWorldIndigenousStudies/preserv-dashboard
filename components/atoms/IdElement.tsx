@@ -17,13 +17,11 @@ export function IdElement({ id, label, title }: IdElementProps): ReactElement {
   )
 }
 
-function Id({ id, label }: Omit<IdElementProps, "title">): ReactElement {
-  return <Typography
-    variant={`caption`}
-    component={`span`}
-    sx={{ color: 'text.secondary', fontSize: 'inherit' }}
-  >
-    {`${label} `}
-    {id}
-  </Typography>
+function Id({ id, label }: Omit<IdElementProps, 'title'>): ReactElement {
+  return (
+    <Typography variant={`caption`} component={`span`} sx={{ color: 'text.secondary', fontSize: 'inherit' }}>
+      {`${label} `}
+      {id}
+    </Typography>
+  )
 }

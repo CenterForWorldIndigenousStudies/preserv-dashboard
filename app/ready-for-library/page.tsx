@@ -28,10 +28,7 @@ async function ReadyForLibraryContent() {
 
   return (
     <>
-      <AuthorCountCard
-        authorName={FEATURED_AUTHOR_NAME}
-        count={featuredAuthorDocumentCount}
-      />
+      <AuthorCountCard authorName={FEATURED_AUTHOR_NAME} count={featuredAuthorDocumentCount} />
       {result.total === 0 ? (
         <NoDataState message="No documents are currently ready for library ingest." />
       ) : (

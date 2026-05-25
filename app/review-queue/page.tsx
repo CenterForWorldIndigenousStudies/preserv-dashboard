@@ -22,16 +22,11 @@ const REVIEW_QUEUE_FILTER_OPTIONS: OverviewFilterOptions = {
   statuses: [...REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES],
 }
 
-function normalizeReviewQueueStatuses(
-  statuses: OverviewStatusOption[] | undefined,
-): OverviewStatusOption[] {
+function normalizeReviewQueueStatuses(statuses: OverviewStatusOption[] | undefined): OverviewStatusOption[] {
   const allowedStatuses = new Set<string>(REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES)
-  const filteredStatuses =
-    statuses?.filter((status) => allowedStatuses.has(status)) ?? []
+  const filteredStatuses = statuses?.filter((status) => allowedStatuses.has(status)) ?? []
 
-  return filteredStatuses.length > 0
-    ? filteredStatuses
-    : [...REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES]
+  return filteredStatuses.length > 0 ? filteredStatuses : [...REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES]
 }
 
 interface ReviewQueuePageProps {
@@ -42,9 +37,7 @@ function firstSearchParam(value: string | string[] | undefined): string | undefi
   return Array.isArray(value) ? value[0] : value
 }
 
-function parseReviewQueueQueryParams(
-  params: Record<string, string | string[] | undefined>,
-): DocumentsQueryParams {
+function parseReviewQueueQueryParams(params: Record<string, string | string[] | undefined>): DocumentsQueryParams {
   const page = Number(firstSearchParam(params.page))
   const pageSize = Number(firstSearchParam(params.pageSize))
   const orderBy = firstSearchParam(params.orderBy) as DocumentsQueryParams['orderBy']

@@ -27,9 +27,7 @@ function normalizeRequestedStages(value: unknown): string[] {
     return []
   }
 
-  return value
-    .map((item) => (typeof item === 'string' ? item.trim() : ''))
-    .filter((item) => item.length > 0)
+  return value.map((item) => (typeof item === 'string' ? item.trim() : '')).filter((item) => item.length > 0)
 }
 
 function buildStageCallbackUrl(pathname: string): string {
@@ -46,11 +44,7 @@ export function normalizeRequestedProcessStages(value: unknown): string[] {
   )
 }
 
-function isNextEligibleStep(
-  batch: ProcessBatchStatus,
-  stage: PipelineExecutionStep['service'],
-  pass?: 1 | 2,
-): boolean {
+function isNextEligibleStep(batch: ProcessBatchStatus, stage: PipelineExecutionStep['service'], pass?: 1 | 2): boolean {
   const nextStep = getNextEligibleExecutionStep(batch)
   if (!nextStep) {
     return false
@@ -141,8 +135,7 @@ export async function triggerDocumentSplitter(batch: ProcessBatchStatus): Promis
 
   if (!response.ok) {
     const errorMessage =
-      typeof responseBody === 'object' &&
-      responseBody !== null
+      typeof responseBody === 'object' && responseBody !== null
         ? 'error' in responseBody && typeof responseBody.error === 'string'
           ? responseBody.error
           : 'detail' in responseBody && typeof responseBody.detail === 'string'

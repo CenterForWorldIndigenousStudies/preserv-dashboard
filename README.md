@@ -1,10 +1,9 @@
-# preserv-dashboard
+# Preservation Dashboard
 
 ## Overview
 
-`preserv-dashboard` is the CWIS Preservation Next.js application for browsing,
-reviewing, and managing preservation data stored in the shared MariaDB
-database.
+The preservation Dashboard (`preserv-dashboard`) is the CWIS (Center for Wrold Indigenous Studies) Preservation Next.js application for
+browsing, reviewing, and managing preservation data stored in the shared MariaDB database.
 
 At a high level it:
 
@@ -18,21 +17,26 @@ At a high level it:
 
 Tools an engineer needs before working with this project:
 
-- [Node.js](https://nodejs.org/) via `asdf` (see version in [`.tool-versions`](.tool-versions))
+- [Node.js](https://nodejs.org/) (see version in [`.tool-versions`](.tool-versions))
 - `npm`
 - MariaDB access for runtime and integration tests (see <https://github.com/jonryser/mariadb_docker>)
-- Google OAuth credentials for Auth.js
+- Google OAuth credentials
+- [markdownlint-cli2](https://github.com/DavidAnson/markdownlint-cli2) (see version in [`.tool-versions`](.tool-versions))
 
-If you want the process page working locally as well, you also need:
+If you want the document processing page working locally as well, you also need:
 
-- access to a running [`preserv-data-ingester`](https://github.com/CenterForWorldIndigenousStudies/preserv-data-ingester)
-- access to a running [`preserv-document-splitter`](https://github.com/CenterForWorldIndigenousStudies/preserv-document-splitter) if you want automatic splitter chaining
+- access to a running [Preservation Pipeline](../../src/preserv_pipeline/)
 - shared trigger and callback tokens
 - Google Drive service account credentials for the folder browser
 
 ## Setup
 
 1. Install the tool versions defined in `.tool-versions`.
+    __NOTE__ this repo is set up to work with [`asdf`](https://asdf-vm.com/)
+    `asdf` supports Linux and MacOs.
+    If you are on Windows, please install these versions via the appropriate Windows solution.
+
+   (Linux & Mac)
 
    ```bash
    asdf install
@@ -47,14 +51,12 @@ If you want the process page working locally as well, you also need:
 3. Create a local environment file.
 
    ```bash
-   cp .env.local.example .env
+   cp .env.example .env
    ```
 
-4. Update `.env` with your database settings, Auth.js secrets, and any local
-   pipeline integration settings you need.
+4. Update `.env` with your database settings, Auth.js secrets, and any local pipeline integration settings you need.
 
-See [documentation/ENV_VARS.md](documentation/ENV_VARS.md) for the full
-environment variable reference.
+See [documentation/dashboard/ENV_VARS.md](../../documentation/dashboard/ENV_VARS.md) for the full environment variable reference.
 
 ## Running
 
@@ -133,12 +135,13 @@ npm run lint:markdown
 
 Additional project documentation:
 
-- [Environment variables](documentation/ENV_VARS.md)
-- [Pipeline trigger and callback architecture](documentation/PIPELINE_TRIGGER_CALLBACK_ARCHITECTURE.md)
-- [Current process-page integration](documentation/PIPELINE_INGEST_INTEGRATION.md)
-- [Component architecture](documentation/ComponentArchitecture.md)
-- [Storybook deployment](documentation/DEPLOYING_STORYBOOK.md)
-- [Database connection guidance](documentation/db/CONNECTING_TO_DB.md)
-- [Database reference](documentation/db/PRESERVATION_DB.md)
-- [Testing overview](documentation/testing/TESTING.md)
+- [Environment variables](../../documentation/dashboard/ENV_VARS.md)
+- [Pipeline trigger and callback architecture](../../documentation/dashboard/PIPELINE_TRIGGER_CALLBACK_ARCHITECTURE.md)
+- [Current process-page integration](../../documentation/dashboard/PIPELINE_INGEST_INTEGRATION.md)
+- [Component architecture](../../documentation/dashboard/COMPONENT_ARCHITECTURE.md)
+- [Semantic CSS](../../documentation/dashboard/styles/SEMANTIC_CLASSES.md)
+- [Storybook deployment](../../documentation/dashboard/DEPLOYING_STORYBOOK.md)
+- [Database connection guidance](../../documentation/dashboard/db/CONNECTING_TO_DB.md)
+- [Database reference](../../documentation/dashboard/db/PRESERVATION_DB.md)
+- [Testing overview](../../documentation/dashboard/testing/TESTING.md)
 - [AI assistant guidance](AGENTS.md)

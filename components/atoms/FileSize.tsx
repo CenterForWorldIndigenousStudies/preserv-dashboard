@@ -26,11 +26,7 @@ export function FileSize({ value, className = '' }: FileSizeProps): React.ReactN
   const componentClass = `cursor-pointer rounded px-1 py-0.5 text-sm hover:bg-sand ${className}`.trim()
 
   return (
-    <span
-      title={tooltip}
-      className={componentClass}
-      onClick={() => setShowRaw((prev) => !prev)}
-    >
+    <span title={tooltip} className={componentClass} onClick={() => setShowRaw((prev) => !prev)}>
       {display}
     </span>
   )

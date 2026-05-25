@@ -11,10 +11,7 @@ import {
   triggerOcrProcessor,
   triggerPageRotator,
 } from '@lib/pipelineTriggers'
-import {
-  getProcessBatchStatus,
-  markProcessStageCallbackReceived,
-} from '@lib/processBatches'
+import { getProcessBatchStatus, markProcessStageCallbackReceived } from '@lib/processBatches'
 
 export const dynamic = 'force-dynamic'
 export const preferredRegion = 'sfo1'

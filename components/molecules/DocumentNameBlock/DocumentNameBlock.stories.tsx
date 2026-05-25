@@ -51,7 +51,8 @@ export const WithLongLegacyId: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'The legacy ID is longer than 20 characters and will be truncated with an ellipsis. Hover to see the full value in a tooltip.',
+        story:
+          'The legacy ID is longer than 20 characters and will be truncated with an ellipsis. Hover to see the full value in a tooltip.',
       },
     },
   },
@@ -68,7 +69,8 @@ export const WithLongSourceId: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'The source ID is longer than 20 characters and will be truncated with an ellipsis. Hover to see the full value in a tooltip.',
+        story:
+          'The source ID is longer than 20 characters and will be truncated with an ellipsis. Hover to see the full value in a tooltip.',
       },
     },
   },
@@ -119,7 +121,8 @@ export const AsPlainText: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'When href is not provided, the name renders as a Typography component (plain text) instead of a clickable MUI Link.',
+        story:
+          'When href is not provided, the name renders as a Typography component (plain text) instead of a clickable MUI Link.',
       },
     },
   },
@@ -154,7 +157,8 @@ export const WithHref: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'When href is provided, the name renders as a MUI Link with hover underline and navigates to the specified path.',
+        story:
+          'When href is provided, the name renders as a MUI Link with hover underline and navigates to the specified path.',
       },
     },
   },

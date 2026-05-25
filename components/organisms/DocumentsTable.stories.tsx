@@ -111,16 +111,19 @@ export const ManyResults: Story = {
     filterOptions,
   },
   render: () => {
-    const many = Array.from({ length: 25 }, (_, i): Document => ({
-      id: storyUuid(),
-      name: `Document ${i + 1}`,
-      id_legacy: String(i + 4567),
-      filesize: Math.floor(Math.random() * 10_000_000_000),
-      hash_binary: `hash-${i}`,
-      hash_content: `content-${i}`,
-      created_at: new Date(Date.now() - i * 86400000),
-      updated_at: new Date(Date.now() - i * 86400000),
-    }))
+    const many = Array.from(
+      { length: 25 },
+      (_, i): Document => ({
+        id: storyUuid(),
+        name: `Document ${i + 1}`,
+        id_legacy: String(i + 4567),
+        filesize: Math.floor(Math.random() * 10_000_000_000),
+        hash_binary: `hash-${i}`,
+        hash_content: `content-${i}`,
+        created_at: new Date(Date.now() - i * 86400000),
+        updated_at: new Date(Date.now() - i * 86400000),
+      }),
+    )
     return <DocumentsTable initialData={buildPageResult(many)} filterOptions={filterOptions} />
   },
 }

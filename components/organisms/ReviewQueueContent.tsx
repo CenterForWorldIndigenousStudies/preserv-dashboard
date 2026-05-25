@@ -20,9 +20,7 @@ function firstSearchParam(value: string | string[] | undefined): string | undefi
   return Array.isArray(value) ? value[0] : value
 }
 
-function parseReviewQueueQueryParams(
-  params: Record<string, string | string[] | undefined>,
-): DocumentsQueryParams {
+function parseReviewQueueQueryParams(params: Record<string, string | string[] | undefined>): DocumentsQueryParams {
   const page = Number(firstSearchParam(params.page))
   const pageSize = Number(firstSearchParam(params.pageSize))
   const orderBy = firstSearchParam(params.orderBy) as DocumentsQueryParams['orderBy']

@@ -28,9 +28,9 @@ export const DefaultIngestStatusBadge: Story = {
 export const AllStatuses: Story = {
   render: () => (
     <div className="flex flex-wrap gap-3">
-      { Object.keys(statusVariantMap).map((status, index) => (
+      {Object.keys(statusVariantMap).map((status, index) => (
         <IngestStatusBadge key={`${status}-${index}`} status={status} />
-      )) }
+      ))}
     </div>
   ),
 }

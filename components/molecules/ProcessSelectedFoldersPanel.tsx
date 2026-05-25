@@ -7,14 +7,15 @@ interface ProcessSelectedFoldersPanelProps {
   folders: DriveFolderOption[]
 }
 
-export function ProcessSelectedFoldersPanel({
-  folders,
-}: ProcessSelectedFoldersPanelProps): ReactElement {
+export function ProcessSelectedFoldersPanel({ folders }: ProcessSelectedFoldersPanelProps): ReactElement {
   return (
     <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, p: 3 }}>
       <Stack spacing={2}>
         <div>
-          <Typography variant="caption" sx={{ color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.16em' }}>
+          <Typography
+            variant="caption"
+            sx={{ color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.16em' }}
+          >
             Selected Folders
           </Typography>
           <Typography variant="h5" sx={{ mt: 1 }}>

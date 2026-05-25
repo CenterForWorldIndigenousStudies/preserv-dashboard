@@ -118,11 +118,7 @@ export function ReadyForLibraryTable({ initialData }: ReadyForLibraryTableProps)
                   .includes(normalizedSearch),
               )
             : result.items
-          const sortedItems = sortReadyForLibraryItems(
-            filteredItems,
-            query.orderBy,
-            query.sortDirection,
-          )
+          const sortedItems = sortReadyForLibraryItems(filteredItems, query.orderBy, query.sortDirection)
           const offset = (query.page - 1) * query.pageSize
           const pagedItems = sortedItems.slice(offset, offset + query.pageSize)
 

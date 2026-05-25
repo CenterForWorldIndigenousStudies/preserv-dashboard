@@ -1,19 +1,10 @@
 'use client'
 
 import { type ReactElement, useCallback } from 'react'
-import {
-  Box,
-  Checkbox,
-  FormControlLabel,
-  Paper,
-  Typography,
-} from '@mui/material'
+import { Box, Checkbox, FormControlLabel, Paper, Typography } from '@mui/material'
 
 import type { NormalizePassState } from '@lib/pipelineConfig'
-import {
-  NORMALIZE_PASS_1_SUB_OPTIONS,
-  NORMALIZE_PASS_2_SUB_OPTIONS,
-} from '@constants/pipeline'
+import { NORMALIZE_PASS_1_SUB_OPTIONS, NORMALIZE_PASS_2_SUB_OPTIONS } from '@constants/pipeline'
 
 interface NormalizePassCardProps {
   passNumber: 1 | 2
@@ -78,26 +69,16 @@ export function NormalizePassCard({
           bgcolor: state.enabled ? 'rgba(53, 88, 52, 0.04)' : 'transparent',
         }}
       >
-        <Checkbox
-          checked={state.enabled}
-          onChange={handleCheckboxChange}
-          disabled={disabled}
-          size="small"
-        />
+        <Checkbox checked={state.enabled} onChange={handleCheckboxChange} disabled={disabled} size="small" />
         <Box sx={{ flex: 1 }}>
           <Typography variant="body1" sx={{ fontWeight: 600 }}>
             Normalize Pass {passNumber}
           </Typography>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            {passNumber === 1
-              ? 'Split and rotate original documents'
-              : 'Split and rotate artifacts from Pass 1'}
+            {passNumber === 1 ? 'Split and rotate original documents' : 'Split and rotate artifacts from Pass 1'}
           </Typography>
           {helperText && (
-            <Typography
-              variant="caption"
-              sx={{ color: 'warning.main', mt: 0.5 }}
-            >
+            <Typography variant="caption" sx={{ color: 'warning.main', mt: 0.5 }}>
               {helperText}
             </Typography>
           )}
@@ -145,14 +126,8 @@ export function NormalizePassCard({
                 <FormControlLabel
                   control={
                     <Checkbox
-                      checked={
-                        option.id === 'split'
-                          ? state.subSelection.split
-                          : state.subSelection.rotate
-                      }
-                      onChange={
-                        option.id === 'split' ? handleSplitChange : handleRotateChange
-                      }
+                      checked={option.id === 'split' ? state.subSelection.split : state.subSelection.rotate}
+                      onChange={option.id === 'split' ? handleSplitChange : handleRotateChange}
                       size="small"
                     />
                   }

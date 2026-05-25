@@ -401,8 +401,7 @@ export function SelectionTable(props: SelectionTableProps): ReactElement {
           enableRowSelection
           rowSelection={rowSelection}
           onRowSelectionChange={(updater) => {
-            const nextSelection =
-              typeof updater === 'function' ? updater(rowSelection) : updater
+            const nextSelection = typeof updater === 'function' ? updater(rowSelection) : updater
 
             props.documents.forEach((document) => {
               const previousChecked = Boolean(rowSelection[document.id])

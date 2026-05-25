@@ -35,12 +35,14 @@ export function IdsRow({ id, legacyId, sourceId, maxTruncationLength = 12 }: Ids
       <IdElement id={shortId} label={`ID`} title={`Database ID`} />
 
       {truncatedSourceId && (
-        <IdElement id={<SourceId value={sourceId} maxTruncationLength={maxTruncationLength} />} label={`Source`} title={sourceId} />
+        <IdElement
+          id={<SourceId value={sourceId} maxTruncationLength={maxTruncationLength} />}
+          label={`Source`}
+          title={sourceId}
+        />
       )}
 
-      {truncatedLegacyId && (
-        <IdElement id={truncatedLegacyId} label={`Legacy`} title={legacyId} />
-      )}
+      {truncatedLegacyId && <IdElement id={truncatedLegacyId} label={`Legacy`} title={legacyId} />}
     </Stack>
   )
 }

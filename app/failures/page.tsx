@@ -46,7 +46,9 @@ export default async function FailuresPage(): Promise<ReactElement> {
                       <td className="px-4 py-3 whitespace-pre-wrap text-ink/80">
                         {failure.failure_reason || 'Unknown'}
                       </td>
-                      <td className="px-4 py-3 text-ink/70"><DateAtom value={failure.created_at} /></td>
+                      <td className="px-4 py-3 text-ink/70">
+                        <DateAtom value={failure.created_at} />
+                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -40,7 +40,7 @@ const meta = {
       control: 'text',
       description: 'Button label text',
     },
-    className: { 
+    className: {
       control: 'text',
       description: 'Additional CSS classes for custom styling',
     },
@@ -61,10 +61,12 @@ export const Default: Story = {
   render: (args) => {
     const variant = args.variant ? variantMap[args.variant] : 'Default'
     const buttonText = args.children ? args.children : variant
-    return <div style={{ width: '80vw', textAlign: 'center' }}>
-      <Button {...args}>{buttonText}</Button>
-    </div>
-  }
+    return (
+      <div style={{ width: '80vw', textAlign: 'center' }}>
+        <Button {...args}>{buttonText}</Button>
+      </div>
+    )
+  },
 }
 
 export const Sizes: Story = {
@@ -75,10 +77,12 @@ export const Sizes: Story = {
   render: (args) => {
     const buttonSize = args.size ? sizeMap[args.size] : 'Default'
     const buttonText = args.children ? args.children : `Button Size: ${buttonSize}`
-    return <div style={{ width: '80vw', textAlign: 'center' }}>
-      <Button {...args}>{buttonText}</Button>
-    </div>
-  }
+    return (
+      <div style={{ width: '80vw', textAlign: 'center' }}>
+        <Button {...args}>{buttonText}</Button>
+      </div>
+    )
+  },
 }
 
 export const Loading: Story = {
@@ -88,10 +92,12 @@ export const Loading: Story = {
     loading: true,
   },
   render: (args) => {
-    return <div style={{ width: '80vw', textAlign: 'center' }}>
-      <Button {...args}/>
-    </div>
-  }
+    return (
+      <div style={{ width: '80vw', textAlign: 'center' }}>
+        <Button {...args} />
+      </div>
+    )
+  },
 }
 
 export const FullWidth: Story = {
@@ -101,9 +107,11 @@ export const FullWidth: Story = {
   },
   render: (args) => {
     const buttonText = args.fullWidth ? 'Full Width Button' : 'Normal Button'
-    return <div style={{ width: '80vw', textAlign: 'center' }}>
-      <Button {...args}>{buttonText}</Button>
-    </div>
+    return (
+      <div style={{ width: '80vw', textAlign: 'center' }}>
+        <Button {...args}>{buttonText}</Button>
+      </div>
+    )
   },
 }
 
@@ -115,8 +123,10 @@ export const Disabled: Story = {
   },
   render: (args) => {
     const buttonText = args.children ? args.children : args.disabled ? 'Disabled' : 'Button Text'
-    return <div style={{ width: '80vw', textAlign: 'center' }}>
-      <Button {...args}>{buttonText}</Button>
-    </div>
-  }
+    return (
+      <div style={{ width: '80vw', textAlign: 'center' }}>
+        <Button {...args}>{buttonText}</Button>
+      </div>
+    )
+  },
 }

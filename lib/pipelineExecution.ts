@@ -11,13 +11,7 @@ import {
   type PipelineExecutionStep,
 } from '@lib/pipelineConfig'
 
-export type PipelineStepRuntimeStatus =
-  | 'pending'
-  | 'queued'
-  | 'running'
-  | 'completed'
-  | 'failed'
-  | 'review_needed'
+export type PipelineStepRuntimeStatus = 'pending' | 'queued' | 'running' | 'completed' | 'failed' | 'review_needed'
 
 const ORCHESTRATED_SERVICES = new Set<string>([
   'ingester',
@@ -69,18 +63,13 @@ export function getPipelineConfigForBatch(batch: ProcessBatchStatus): PipelineCo
   return batch.pipelineConfig ?? legacyRequestedStagesToPipelineConfig(batch.pipelineRequestedStages)
 }
 
-export function getOrchestratedExecutionPlan(
-  batch: ProcessBatchStatus,
-): PipelineExecutionStep[] {
-  return getPipelineConfigForBatch(batch).executionPlan
-    .filter((step) => step.enabled && ORCHESTRATED_SERVICES.has(step.service))
+export function getOrchestratedExecutionPlan(batch: ProcessBatchStatus): PipelineExecutionStep[] {
+  return getPipelineConfigForBatch(batch)
+    .executionPlan.filter((step) => step.enabled && ORCHESTRATED_SERVICES.has(step.service))
     .sort((left, right) => left.order - right.order)
 }
 
-export function isExecutionStepCompleted(
-  batch: ProcessBatchStatus,
-  step: PipelineExecutionStep,
-): boolean {
+export function isExecutionStepCompleted(batch: ProcessBatchStatus, step: PipelineExecutionStep): boolean {
   const stage = getStageForService(batch, step.service)
   if (!stage) {
     return false
@@ -138,9 +127,7 @@ export function areExecutionStepDependenciesSatisfied(
   })
 }
 
-export function getNextEligibleExecutionStep(
-  batch: ProcessBatchStatus,
-): PipelineExecutionStep | null {
+export function getNextEligibleExecutionStep(batch: ProcessBatchStatus): PipelineExecutionStep | null {
   const executionPlan = getOrchestratedExecutionPlan(batch)
 
   for (const step of executionPlan) {
@@ -163,16 +150,9 @@ export function getNextEligibleExecutionStep(
   return null
 }
 
-export function isExecutionStepTerminal(
-  batch: ProcessBatchStatus,
-  step: PipelineExecutionStep,
-): boolean {
+export function isExecutionStepTerminal(batch: ProcessBatchStatus, step: PipelineExecutionStep): boolean {
   const runtimeStatus = getExecutionStepRuntimeStatus(batch, step)
-  return (
-    runtimeStatus === 'completed' ||
-    runtimeStatus === 'failed' ||
-    runtimeStatus === 'review_needed'
-  )
+  return runtimeStatus === 'completed' || runtimeStatus === 'failed' || runtimeStatus === 'review_needed'
 }
 
 export function hasTerminalPipelineFailure(batch: ProcessBatchStatus): boolean {

@@ -70,10 +70,7 @@ export function scoreTags(
     .map(({ normalizedName: _normalizedName, ...tag }) => tag)
 }
 
-function scoreTag(
-  tag: { id: string; name: string; notes: string | null },
-  normalizedQuery: string,
-): ScoredTag | null {
+function scoreTag(tag: { id: string; name: string; notes: string | null }, normalizedQuery: string): ScoredTag | null {
   const normalizedName = normalizeTagKey(tag.name)
   if (!normalizedName) {
     return null
@@ -84,9 +81,7 @@ function scoreTag(
       ? 140
       : 105 - Math.min(normalizedName.length - normalizedQuery.length, 20)
     : 0
-  const includesScore = !normalizedName.startsWith(normalizedQuery) && normalizedName.includes(normalizedQuery)
-    ? 18
-    : 0
+  const includesScore = !normalizedName.startsWith(normalizedQuery) && normalizedName.includes(normalizedQuery) ? 18 : 0
   const levenshteinSimilarity = similarityFromLevenshtein(normalizedQuery, normalizedName)
   const trigramSimilarityScore = trigramSimilarity(normalizedQuery, normalizedName)
 

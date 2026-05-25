@@ -268,7 +268,17 @@ export function useCollectionManager(
     } finally {
       setIsSubmitting(false)
     }
-  }, [pendingAction, isSubmitting, selectedOut, selectedIn, addDocuments, removeDocuments, collectionId, outOfCollection, inCollection])
+  }, [
+    pendingAction,
+    isSubmitting,
+    selectedOut,
+    selectedIn,
+    addDocuments,
+    removeDocuments,
+    collectionId,
+    outOfCollection,
+    inCollection,
+  ])
 
   return {
     inCollection,

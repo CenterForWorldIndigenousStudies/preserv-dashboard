@@ -148,7 +148,9 @@ describe('getAllDocuments', () => {
 
     await getAllDocuments()
 
-    expect(queryText(0)).toContain("ORDER BY\n        COALESCE(d.name, '') ASC,\n        COALESCE(d.updated_at, TIMESTAMP('1000-01-01 00:00:00')) ASC,\n        d.id ASC")
+    expect(queryText(0)).toContain(
+      "ORDER BY\n        COALESCE(d.name, '') ASC,\n        COALESCE(d.updated_at, TIMESTAMP('1000-01-01 00:00:00')) ASC,\n        d.id ASC",
+    )
   })
 
   it('respects orderBy and sortDirection', async () => {
@@ -164,7 +166,9 @@ describe('getAllDocuments', () => {
 
     await getAllDocuments({ orderBy: 'source_id', sortDirection: 'asc' })
 
-    expect(queryText(0)).toContain("ORDER BY COALESCE(JSON_UNQUOTE(JSON_EXTRACT(source_meta.value, '$.value')), JSON_UNQUOTE(JSON_EXTRACT(source_meta.value, '$')), source_meta.value, '') ASC, d.id ASC")
+    expect(queryText(0)).toContain(
+      "ORDER BY COALESCE(JSON_UNQUOTE(JSON_EXTRACT(source_meta.value, '$.value')), JSON_UNQUOTE(JSON_EXTRACT(source_meta.value, '$')), source_meta.value, '') ASC, d.id ASC",
+    )
   })
 
   it('supports sorting by is_duplicate', async () => {
@@ -235,7 +239,7 @@ describe('getAllDocuments', () => {
     })
 
     const sql = queryText(0)
-    expect(sql).toContain('LOWER(COALESCE(dq.validation_status, \'\')) IN')
+    expect(sql).toContain("LOWER(COALESCE(dq.validation_status, '')) IN")
     expect(sql).toContain('dup.document_id IS NOT NULL')
     expect(sql).toContain('FROM document_to_batches dtb')
     expect(sql).toContain('FROM document_to_tags dtt')

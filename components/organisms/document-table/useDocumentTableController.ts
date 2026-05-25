@@ -14,13 +14,9 @@ import {
 } from './query-state'
 import type { DocumentTableCursor, DocumentTableQuery } from './types'
 
-export function useDocumentTableController<TFilters>(options: {
-  initialQuery: DocumentTableQuery<TFilters>
-}) {
+export function useDocumentTableController<TFilters>(options: { initialQuery: DocumentTableQuery<TFilters> }) {
   const [query, setQuery] = useState<DocumentTableQuery<TFilters>>(options.initialQuery)
-  const [sorting, setSortingState] = useState<MRT_SortingState>(
-    buildInitialDocumentTableSorting(options.initialQuery),
-  )
+  const [sorting, setSortingState] = useState<MRT_SortingState>(buildInitialDocumentTableSorting(options.initialQuery))
 
   const search = query.search ?? ''
   const page = query.page
@@ -45,8 +41,7 @@ export function useDocumentTableController<TFilters>(options: {
     },
     setSorting: (nextSorting: MRT_SortingState | ((prev: MRT_SortingState) => MRT_SortingState)) => {
       setSortingState((currentSorting) => {
-        const resolvedSorting =
-          typeof nextSorting === 'function' ? nextSorting(currentSorting) : nextSorting
+        const resolvedSorting = typeof nextSorting === 'function' ? nextSorting(currentSorting) : nextSorting
         setQuery((currentQuery) => applyDocumentTableSorting(currentQuery, resolvedSorting))
         return resolvedSorting
       })

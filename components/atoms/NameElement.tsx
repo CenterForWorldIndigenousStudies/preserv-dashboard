@@ -20,12 +20,10 @@ export function NameElement({ name, href }: NameElementProps): ReactElement {
   )
 }
 
-function Name({name, style}: {name: string | null, style: Record<string, unknown>}): ReactElement {
-  return <Typography
-      variant="body2"
-      color='primary'
-      sx={style}
-    >
+function Name({ name, style }: { name: string | null; style: Record<string, unknown> }): ReactElement {
+  return (
+    <Typography variant="body2" color="primary" sx={style}>
       {name}
     </Typography>
+  )
 }

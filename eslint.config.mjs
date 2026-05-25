@@ -25,6 +25,7 @@ export default tseslint.config(
       'storybook-static/**',
       'stories/**',
       'lib/prisma/generated/**',
+      'vitest.shims.d.ts'
     ],
   },
   eslint.configs.recommended,
@@ -74,7 +75,14 @@ export default tseslint.config(
     },
   }, // Config files - disable type checking (not in tsconfig)
   {
-    files: ['eslint.config.mjs', '*.config.{js,mjs,ts}', 'jest.*.ts', 'tsup.config.ts', 'create/tsup.config.ts'],
+    files: ['*.config.js', 'postcss.config.js'],
+    ...tseslint.configs.disableTypeChecked,
+    languageOptions: {
+      sourceType: 'commonjs',
+    },
+  },
+  {
+    files: ['eslint.config.mjs', '*.config.mjs', '*.config.ts', 'jest.*.ts', 'tsup.config.ts', 'create/tsup.config.ts'],
     ...tseslint.configs.disableTypeChecked,
   }, // Jest test files config
   {

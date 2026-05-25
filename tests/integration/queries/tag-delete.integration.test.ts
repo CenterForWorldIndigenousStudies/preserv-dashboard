@@ -144,11 +144,7 @@ describe('deleteTag (integration)', () => {
       expect(remainingCollection).toBeNull()
       expect(remainingTag).toBeNull()
       expect(remainingLinks).toHaveLength(0)
-      expect(historyRows.map((row) => row.entity_table).sort()).toEqual([
-        'collections',
-        'document_to_tags',
-        'tags',
-      ])
+      expect(historyRows.map((row) => row.entity_table).sort()).toEqual(['collections', 'document_to_tags', 'tags'])
     })
   })
 })

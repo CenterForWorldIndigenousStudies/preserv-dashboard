@@ -1,19 +1,9 @@
 'use client'
 
 import { type ReactElement, useCallback } from 'react'
-import {
-  Box,
-  Checkbox,
-  FormControlLabel,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material'
+import { Box, Checkbox, FormControlLabel, Paper, Stack, Typography } from '@mui/material'
 
-import {
-  getPass1HelperText,
-  type PipelineSelectionDraft,
-} from '@lib/pipelineConfig'
+import { getPass1HelperText, type PipelineSelectionDraft } from '@lib/pipelineConfig'
 import { NormalizePassCard } from './NormalizePassCard'
 
 interface PipelineStepSelectorProps {
@@ -30,13 +20,7 @@ interface StepRowProps {
   onChange: (checked: boolean) => void
 }
 
-function StepRow({
-  label,
-  description,
-  checked,
-  disabled = false,
-  onChange,
-}: StepRowProps): ReactElement {
+function StepRow({ label, description, checked, disabled = false, onChange }: StepRowProps): ReactElement {
   const handleChange = useCallback(
     (_event: unknown, value: boolean) => {
       onChange(value)
@@ -57,14 +41,7 @@ function StepRow({
       }}
     >
       <FormControlLabel
-        control={
-          <Checkbox
-            checked={checked}
-            onChange={handleChange}
-            disabled={disabled}
-            size="small"
-          />
-        }
+        control={<Checkbox checked={checked} onChange={handleChange} disabled={disabled} size="small" />}
         label={
           <Box>
             <Typography variant="body1" sx={{ fontWeight: 600 }}>
@@ -81,11 +58,7 @@ function StepRow({
   )
 }
 
-export function PipelineStepSelector({
-  draft,
-  mode,
-  onDraftChange,
-}: PipelineStepSelectorProps): ReactElement {
+export function PipelineStepSelector({ draft, mode, onDraftChange }: PipelineStepSelectorProps): ReactElement {
   const isCustomMode = mode === 'custom'
   const pass1HelperText = getPass1HelperText(draft)
 
@@ -98,9 +71,7 @@ export function PipelineStepSelector({
           normalizePass1: {
             ...draft.steps.normalizePass1,
             enabled,
-            subSelection: enabled
-              ? { split: true, rotate: true }
-              : draft.steps.normalizePass1.subSelection,
+            subSelection: enabled ? { split: true, rotate: true } : draft.steps.normalizePass1.subSelection,
           },
         },
       })
@@ -117,9 +88,7 @@ export function PipelineStepSelector({
           normalizePass2: {
             ...draft.steps.normalizePass2,
             enabled,
-            subSelection: enabled
-              ? { split: true, rotate: true }
-              : draft.steps.normalizePass2.subSelection,
+            subSelection: enabled ? { split: true, rotate: true } : draft.steps.normalizePass2.subSelection,
           },
         },
       }
@@ -143,8 +112,7 @@ export function PipelineStepSelector({
 
   const handleSubOptionToggle = useCallback(
     (pass: 1 | 2, subOption: 'split' | 'rotate', value: boolean) => {
-      const passState =
-        pass === 1 ? draft.steps.normalizePass1 : draft.steps.normalizePass2
+      const passState = pass === 1 ? draft.steps.normalizePass1 : draft.steps.normalizePass2
       const newSubSelection = {
         ...passState.subSelection,
         [subOption]: value,
@@ -190,8 +158,7 @@ export function PipelineStepSelector({
 
   const handleAdvancedToggle = useCallback(
     (pass: 1 | 2, open: boolean) => {
-      const passState =
-        pass === 1 ? draft.steps.normalizePass1 : draft.steps.normalizePass2
+      const passState = pass === 1 ? draft.steps.normalizePass1 : draft.steps.normalizePass2
       const passKey = pass === 1 ? 'normalizePass1' : 'normalizePass2'
       onDraftChange({
         ...draft,
@@ -241,10 +208,7 @@ export function PipelineStepSelector({
     >
       <Stack spacing={3}>
         <Box>
-          <Typography
-            variant="overline"
-            sx={{ color: 'text.secondary', letterSpacing: '0.16em' }}
-          >
+          <Typography variant="overline" sx={{ color: 'text.secondary', letterSpacing: '0.16em' }}>
             Pipeline Steps
           </Typography>
           <Typography variant="h5" sx={{ mt: 0.5 }}>

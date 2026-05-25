@@ -1,11 +1,5 @@
 import type { ReactElement } from 'react'
-import {
-  Checkbox,
-  FormControlLabel,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material'
+import { Checkbox, FormControlLabel, Paper, Stack, Typography } from '@mui/material'
 
 import {
   CONTENT_DEDUP_STAGE,
@@ -27,8 +21,7 @@ const availableStages: ReadonlyArray<{
   {
     id: DOCUMENT_SPLITTER_STAGE,
     label: 'Document Splitter',
-    description:
-      'Automatically continue into document splitting after ingest completes successfully.',
+    description: 'Automatically continue into document splitting after ingest completes successfully.',
   },
   {
     id: PAGE_ROTATOR_STAGE,
@@ -67,7 +60,10 @@ export function PipelineStageSelectorPanel({
     <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, p: 3 }}>
       <Stack spacing={2}>
         <div>
-          <Typography variant="caption" sx={{ color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.16em' }}>
+          <Typography
+            variant="caption"
+            sx={{ color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.16em' }}
+          >
             Additional Pipeline Stages
           </Typography>
           <Typography variant="h5" sx={{ mt: 1 }}>
@@ -80,11 +76,7 @@ export function PipelineStageSelectorPanel({
 
         <Stack spacing={1.5}>
           {availableStages.map((stage) => (
-            <Paper
-              key={stage.id}
-              elevation={0}
-              sx={{ p: 2, borderRadius: 3, bgcolor: 'background.default' }}
-            >
+            <Paper key={stage.id} elevation={0} sx={{ p: 2, borderRadius: 3, bgcolor: 'background.default' }}>
               <FormControlLabel
                 control={
                   <Checkbox

@@ -5,13 +5,26 @@ import type { PaginatedDocumentsResult } from 'types/pagination'
 import type { SelectionSortField } from '@molecules/SelectionTable'
 
 const NAME_POOL = [
-  'Cherokee Syllabary Guide', 'Language Preservation Interview', 'Oral History Transcript',
-  'Regional Archive Inventory', 'Peace Negotiations Document', 'First Nations Overview',
-  'Miskito-Sumo Conflict Analysis', 'Nicaragua Regional Report', 'Cultural Heritage Assessment',
-  'Traditional Medicine Practices', 'Land Rights Documentation', 'Treaty Analysis',
-  'Elder Interviews Collection', 'Sacred Sites Registry', 'Language Recording Archive',
-  'Water Rights Research', 'Indigenous Knowledge Database', 'Community Meeting Minutes',
-  'Elder Storytelling Session', 'Traditional Crafts Documentation',
+  'Cherokee Syllabary Guide',
+  'Language Preservation Interview',
+  'Oral History Transcript',
+  'Regional Archive Inventory',
+  'Peace Negotiations Document',
+  'First Nations Overview',
+  'Miskito-Sumo Conflict Analysis',
+  'Nicaragua Regional Report',
+  'Cultural Heritage Assessment',
+  'Traditional Medicine Practices',
+  'Land Rights Documentation',
+  'Treaty Analysis',
+  'Elder Interviews Collection',
+  'Sacred Sites Registry',
+  'Language Recording Archive',
+  'Water Rights Research',
+  'Indigenous Knowledge Database',
+  'Community Meeting Minutes',
+  'Elder Storytelling Session',
+  'Traditional Crafts Documentation',
 ]
 
 const LEGACY_PREFIXES = ['CWIS-ARCH', 'CWIS-LANG', 'CWIS-HIST', 'CWIS-CULT', 'CWIS-ORAL', 'CWIS-POLI']
@@ -42,7 +55,16 @@ function generateDocuments(count: number, inCollection: boolean): Document[] {
   return docs
 }
 
-function paginate(documents: Document[], params?: { search?: string; sortField?: SelectionSortField; sortDirection?: 'asc' | 'desc'; page?: number; pageSize?: number }): PaginatedDocumentsResult {
+function paginate(
+  documents: Document[],
+  params?: {
+    search?: string
+    sortField?: SelectionSortField
+    sortDirection?: 'asc' | 'desc'
+    page?: number
+    pageSize?: number
+  },
+): PaginatedDocumentsResult {
   const search = params?.search?.trim().toLowerCase() ?? ''
   const page = params?.page && params.page > 0 ? Math.floor(params.page) : 1
   const pageSize = params?.pageSize && params.pageSize > 0 ? Math.min(Math.floor(params.pageSize), 100) : 25
@@ -51,17 +73,23 @@ function paginate(documents: Document[], params?: { search?: string; sortField?:
 
   let results = [...documents]
   if (search) {
-    results = results.filter((doc) => (doc.name ?? '').toLowerCase().includes(search) || (doc.id_legacy ?? '').toLowerCase().includes(search))
+    results = results.filter(
+      (doc) => (doc.name ?? '').toLowerCase().includes(search) || (doc.id_legacy ?? '').toLowerCase().includes(search),
+    )
   }
 
   results.sort((a, b) => {
     const get = (doc: Document): string | number => {
       switch (sortField) {
-        case 'filesize': return doc.filesize ?? -1
-        case 'created_at': return doc.created_at ? new Date(doc.created_at).getTime() : 0
-        case 'id_legacy': return doc.id_legacy ?? ''
+        case 'filesize':
+          return doc.filesize ?? -1
+        case 'created_at':
+          return doc.created_at ? new Date(doc.created_at).getTime() : 0
+        case 'id_legacy':
+          return doc.id_legacy ?? ''
         case 'name':
-        default: return doc.name ?? ''
+        default:
+          return doc.name ?? ''
       }
     }
     const av = get(a)
@@ -143,7 +171,8 @@ const meta = {
     open: true,
     onClose: () => undefined,
     loadInCollection: () => Promise.resolve({ documents: inCollectionDocuments, total: inCollectionDocuments.length }),
-    loadOutOfCollection: () => Promise.resolve({ documents: outOfCollectionDocuments, total: outOfCollectionDocuments.length }),
+    loadOutOfCollection: () =>
+      Promise.resolve({ documents: outOfCollectionDocuments, total: outOfCollectionDocuments.length }),
     addDocuments: () => Promise.resolve(),
     removeDocuments: () => Promise.resolve(),
   },
@@ -186,10 +215,26 @@ export const LargeRemoveMode: Story = {
 
 export const ServerMode: Story = {
   render: (args) => {
-    const loadInCollection = (_collectionId: string, params?: { search?: string; sortField?: SelectionSortField; sortDirection?: 'asc' | 'desc'; page?: number; pageSize?: number }) =>
-      Promise.resolve(paginate(inCollectionDocuments, params))
-    const loadOutOfCollection = (_collectionId: string, params?: { search?: string; sortField?: SelectionSortField; sortDirection?: 'asc' | 'desc'; page?: number; pageSize?: number }) =>
-      Promise.resolve(paginate(generateDocuments(250, false), params))
+    const loadInCollection = (
+      _collectionId: string,
+      params?: {
+        search?: string
+        sortField?: SelectionSortField
+        sortDirection?: 'asc' | 'desc'
+        page?: number
+        pageSize?: number
+      },
+    ) => Promise.resolve(paginate(inCollectionDocuments, params))
+    const loadOutOfCollection = (
+      _collectionId: string,
+      params?: {
+        search?: string
+        sortField?: SelectionSortField
+        sortDirection?: 'asc' | 'desc'
+        page?: number
+        pageSize?: number
+      },
+    ) => Promise.resolve(paginate(generateDocuments(250, false), params))
 
     return (
       <CollectionDocumentManager

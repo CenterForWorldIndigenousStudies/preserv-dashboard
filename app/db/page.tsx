@@ -9,7 +9,7 @@ import { MermaidDiagram } from '@organisms/MermaidDiagram'
 export const dynamic = 'force-dynamic'
 
 export default function DbPage(): ReactElement {
-  const filePath = path.join(process.cwd(), 'documentation/db/PRESERVATION_DB.md')
+  const filePath = path.join(process.cwd(), '../../documentation/db/PRESERVATION_DB.md')
   const source = fs.readFileSync(filePath, 'utf-8')
 
   const components: Components = {

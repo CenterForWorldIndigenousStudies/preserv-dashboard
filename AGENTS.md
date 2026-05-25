@@ -1,14 +1,13 @@
-# Project
+# Preservation Daashboard
 
-`preserv-dashboard` is the CWIS Preservation Next.js application for browsing,
-reviewing, and managing preservation data in the shared MariaDB database.
+`preserv-dashboard` is the CWIS Preservation Next.js application for browsing, reviewing, and managing preservation data in the shared MariaDB database.
 
 ALL CODE MUST BE IN ENGLISH
 
 At a high level it:
 
 - renders authenticated document, review, and failure-management workflows
-- uses Prisma against the shared `preserv-db` schema
+- uses Prisma against the shared [`preserv-db`](../../src/preserv_pipeline/db) schema
 - uses MUI-based components with Atomic Design organization
 - embeds the external Storybook component library
 - integrates with external pipeline apps and can surface live status updates
@@ -17,16 +16,16 @@ At a high level it:
 
 Use repo documentation for operational detail instead of expanding this file:
 
-- overview and setup: [README.md](README.md)
-- environment variables: [documentation/ENV_VARS.md](documentation/ENV_VARS.md)
-- component architecture: [documentation/ComponentArchitecture.md](documentation/ComponentArchitecture.md)
-- semantic styling rules: [documentation/styles/SEMANTIC_CLASSES.md](documentation/styles/SEMANTIC_CLASSES.md)
-- pipeline architecture: [documentation/PIPELINE_TRIGGER_CALLBACK_ARCHITECTURE.md](documentation/PIPELINE_TRIGGER_CALLBACK_ARCHITECTURE.md)
-- current process-page integration: [documentation/PIPELINE_INGEST_INTEGRATION.md](documentation/PIPELINE_INGEST_INTEGRATION.md)
-- database connection guidance: [documentation/db/CONNECTING_TO_DB.md](documentation/db/CONNECTING_TO_DB.md)
-- database reference: [documentation/db/PRESERVATION_DB.md](documentation/db/PRESERVATION_DB.md)
-- testing overview: [documentation/testing/TESTING.md](documentation/testing/TESTING.md)
-- Storybook deployment: [documentation/DEPLOYING_STORYBOOK.md](documentation/DEPLOYING_STORYBOOK.md)
+- overview and setup: [README.md](./README.md)
+- environment variables: [documentation/dashboard/ENV_VARS.md](../../documentation/dashboard/ENV_VARS.md)
+- component architecture: [documentation/dashboard/COMPONENT_ARCHITECTURE.md](../../documentation/dashboard/COMPONENT_ARCHITECTURE.md)
+- semantic styling rules: [documentation/dashboard/styles/SEMANTIC_CLASSES.md](../../documentation/dashboard/styles/SEMANTIC_CLASSES.md)
+- pipeline architecture: [documentation/dashboard/PIPELINE_TRIGGER_CALLBACK_ARCHITECTURE.md](../../documentation/dashboard/PIPELINE_TRIGGER_CALLBACK_ARCHITECTURE.md)
+- current process-page integration: [documentation/dashboard/PIPELINE_INGEST_INTEGRATION.md](../../documentation/dashboard/PIPELINE_INGEST_INTEGRATION.md)
+- database connection guidance: [documentation/dashboard/db/CONNECTING_TO_DB.md](../../documentation/dashboard/db/CONNECTING_TO_DB.md)
+- database reference: [documentation/db/PRESERVATION_DB.md](../../documentation/db/PRESERVATION_DB.md)
+- testing overview: [documentation/dashboard/testing/TESTING.md](../../documentation/dashboard/testing/TESTING.md)
+- Storybook deployment: [documentation/dashboard/DEPLOYING_STORYBOOK.md](../../documentation/dashboard/DEPLOYING_STORYBOOK.md)
 
 ## Where To Start In Code
 

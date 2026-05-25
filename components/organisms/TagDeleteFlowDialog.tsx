@@ -71,7 +71,8 @@ export function TagDeleteFlowDialog({
     try {
       await onConfirm(false)
     } catch (confirmError) {
-      const message = confirmError instanceof Error ? confirmError.message : `Unable to remove ${subjectName} right now.`
+      const message =
+        confirmError instanceof Error ? confirmError.message : `Unable to remove ${subjectName} right now.`
       setError(message)
       setIsSubmitting(false)
     }
@@ -84,7 +85,8 @@ export function TagDeleteFlowDialog({
     try {
       await onConfirm(true)
     } catch (confirmError) {
-      const message = confirmError instanceof Error ? confirmError.message : `Unable to delete ${subjectName} right now.`
+      const message =
+        confirmError instanceof Error ? confirmError.message : `Unable to delete ${subjectName} right now.`
       setError(message)
       setIsSubmitting(false)
     }
@@ -108,9 +110,7 @@ export function TagDeleteFlowDialog({
     >
       <DialogTitle>{currentStep === 1 ? title : 'Are you sure?'}</DialogTitle>
       <DialogContent sx={{ display: 'grid', gap: 2, pt: 1.5 }}>
-        {error ? (
-          <Typography sx={{ color: '#b71c1c', fontSize: '0.9rem' }}>{error}</Typography>
-        ) : null}
+        {error ? <Typography sx={{ color: '#b71c1c', fontSize: '0.9rem' }}>{error}</Typography> : null}
         {currentStep === 1 ? (
           <>
             <Typography sx={{ color: 'rgba(35,31,32,0.8)', fontSize: '0.95rem' }}>{primaryMessage}</Typography>

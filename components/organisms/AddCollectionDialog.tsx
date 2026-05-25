@@ -29,7 +29,10 @@ export function AddCollectionDialog({ open, collections, onClose }: AddCollectio
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const existingCollectionTagIds = useMemo(() => new Set(collections.map((collection) => collection.tag_id)), [collections])
+  const existingCollectionTagIds = useMemo(
+    () => new Set(collections.map((collection) => collection.tag_id)),
+    [collections],
+  )
 
   useEffect(() => {
     if (!open) {
@@ -127,12 +130,7 @@ export function AddCollectionDialog({ open, collections, onClose }: AddCollectio
         ) : null}
 
         {selectedTag || pendingCreateName ? (
-          <Button
-            variant="ghost"
-            onClick={resetSelection}
-            disabled={isSubmitting}
-            className="justify-self-start"
-          >
+          <Button variant="ghost" onClick={resetSelection} disabled={isSubmitting} className="justify-self-start">
             Clear selection
           </Button>
         ) : null}

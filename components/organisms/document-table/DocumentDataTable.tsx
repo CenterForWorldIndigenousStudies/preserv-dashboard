@@ -14,10 +14,7 @@ import { DocumentTableCursorPager } from '@molecules/DocumentTableCursorPager'
 import { DocumentTableToolbar } from '@molecules/DocumentTableToolbar'
 
 import { buildDocumentTableMrtOptions } from './buildDocumentTableMrtOptions'
-import {
-  DOCUMENT_TABLE_PAGE_SIZE_OPTIONS,
-  documentTableQueriesEqual,
-} from './query-state'
+import { DOCUMENT_TABLE_PAGE_SIZE_OPTIONS, documentTableQueriesEqual } from './query-state'
 import { useDocumentTableController } from './useDocumentTableController'
 import type {
   DocumentTableController,
@@ -72,9 +69,7 @@ export function DocumentDataTable<TData extends MRT_RowData & { id: string }, TF
   const internalController = useDocumentTableController<TFilters>({ initialQuery })
   const controller = providedController ?? internalController
   const [data, setData] = useState<TData[]>(initialData?.data ?? [])
-  const [pageInfo, setPageInfo] = useState(
-    initialData?.pageInfo ?? emptyPageInfo(initialQuery.pageSize),
-  )
+  const [pageInfo, setPageInfo] = useState(initialData?.pageInfo ?? emptyPageInfo(initialQuery.pageSize))
   const [isLoading, setIsLoading] = useState(!initialData)
 
   const shouldUseInitialData = useMemo(

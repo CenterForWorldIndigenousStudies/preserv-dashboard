@@ -40,36 +40,36 @@ export function useTagSearch(query: string, options: UseTagSearchOptions = {}): 
     const controller = new AbortController()
     const timeout = window.setTimeout(() => {
       const doFetch = async () => {
-      setIsLoading(true)
-      setError(null)
+        setIsLoading(true)
+        setError(null)
 
-      try {
-        const searchParams = new URLSearchParams({
-          query: normalizedQuery,
-          limit: String(limit),
-        })
-        const response = await fetch(`${TAG_SEARCH_PATH}?${searchParams.toString()}`, {
-          signal: controller.signal,
-        })
-        const payload = (await response.json()) as {
-          tags?: TagSuggestion[]
-          error?: string
-        }
+        try {
+          const searchParams = new URLSearchParams({
+            query: normalizedQuery,
+            limit: String(limit),
+          })
+          const response = await fetch(`${TAG_SEARCH_PATH}?${searchParams.toString()}`, {
+            signal: controller.signal,
+          })
+          const payload = (await response.json()) as {
+            tags?: TagSuggestion[]
+            error?: string
+          }
 
-        if (!response.ok) {
-          setError(payload.error ?? 'Unable to search tags right now.')
+          if (!response.ok) {
+            setError(payload.error ?? 'Unable to search tags right now.')
+            setSuggestions([])
+            return
+          }
+
+          setSuggestions(payload.tags ?? [])
+        } catch (fetchError) {
+          if (fetchError instanceof DOMException && fetchError.name === 'AbortError') {
+            return
+          }
+
+          setError('Unable to search tags right now.')
           setSuggestions([])
-          return
-        }
-
-        setSuggestions(payload.tags ?? [])
-      } catch (fetchError) {
-        if (fetchError instanceof DOMException && fetchError.name === 'AbortError') {
-          return
-        }
-
-        setError('Unable to search tags right now.')
-        setSuggestions([])
         } finally {
           setIsLoading(false)
         }

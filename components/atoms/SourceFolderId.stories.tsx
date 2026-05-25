@@ -16,7 +16,8 @@ const meta = {
     },
     maxTruncationLength: {
       control: 'number',
-      description: 'Maximum length of the displayed value before truncation. Set to 0 or leave undefined for no truncation.',
+      description:
+        'Maximum length of the displayed value before truncation. Set to 0 or leave undefined for no truncation.',
     },
   },
   parameters: {

@@ -139,7 +139,9 @@ export function OverviewAdvancedSearchModal({
               <input
                 type="text"
                 value={draftFilters.author ?? ''}
-                onChange={(event) => setDraftFilters((previousFilters) => ({ ...previousFilters, author: event.target.value }))}
+                onChange={(event) =>
+                  setDraftFilters((previousFilters) => ({ ...previousFilters, author: event.target.value }))
+                }
                 placeholder="Partial author name"
                 className="rounded-xl border border-moss/20 bg-sand/40 px-3 py-2 focus:border-moss focus:outline-none focus:ring-1 focus:ring-moss"
               />
@@ -150,7 +152,9 @@ export function OverviewAdvancedSearchModal({
               <input
                 type="text"
                 value={draftFilters.batch ?? ''}
-                onChange={(event) => setDraftFilters((previousFilters) => ({ ...previousFilters, batch: event.target.value }))}
+                onChange={(event) =>
+                  setDraftFilters((previousFilters) => ({ ...previousFilters, batch: event.target.value }))
+                }
                 placeholder="Partial batch name"
                 className="rounded-xl border border-moss/20 bg-sand/40 px-3 py-2 focus:border-moss focus:outline-none focus:ring-1 focus:ring-moss"
               />
@@ -161,7 +165,9 @@ export function OverviewAdvancedSearchModal({
               <input
                 type="text"
                 value={draftFilters.tag ?? ''}
-                onChange={(event) => setDraftFilters((previousFilters) => ({ ...previousFilters, tag: event.target.value }))}
+                onChange={(event) =>
+                  setDraftFilters((previousFilters) => ({ ...previousFilters, tag: event.target.value }))
+                }
                 placeholder="Tag name or close match"
                 className="rounded-xl border border-moss/20 bg-sand/40 px-3 py-2 focus:border-moss focus:outline-none focus:ring-1 focus:ring-moss"
               />
@@ -195,9 +201,7 @@ export function OverviewAdvancedSearchModal({
                 onChange={(event) =>
                   setDraftFilters((previousFilters) => ({
                     ...previousFilters,
-                    accessLevel: event.target.value
-                      ? (event.target.value as OverviewAccessLevelOption)
-                      : undefined,
+                    accessLevel: event.target.value ? (event.target.value as OverviewAccessLevelOption) : undefined,
                   }))
                 }
                 className="rounded-xl border border-moss/20 bg-sand/40 px-3 py-2 focus:border-moss focus:outline-none focus:ring-1 focus:ring-moss"

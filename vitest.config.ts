@@ -27,6 +27,8 @@ export default defineConfig({
       '@lib': path.resolve(dirname, 'lib'),
       '@molecules': path.resolve(dirname, 'components/molecules'),
       '@organisms': path.resolve(dirname, 'components/organisms'),
+      '@root': path.resolve(dirname, ''),
+      types: path.resolve(dirname, 'types'),
     },
   },
   test: {

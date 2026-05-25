@@ -28,18 +28,9 @@ function createClient(): PrismaClient {
   const database = process.env.DB_NAME ?? 'cwis_preservation'
   assertSafeTestDatabase(database)
   const isProductionRuntime = process.env.NODE_ENV === 'production'
-  const connectionLimit = parsePositiveInt(
-    process.env.DB_CONNECTION_LIMIT,
-    isProductionRuntime ? 10 : 2,
-  )
-  const acquireTimeout = parsePositiveInt(
-    process.env.DB_ACQUIRE_TIMEOUT_MS,
-    30_000,
-  )
-  const idleTimeout = parsePositiveInt(
-    process.env.DB_IDLE_TIMEOUT_MS,
-    60_000,
-  )
+  const connectionLimit = parsePositiveInt(process.env.DB_CONNECTION_LIMIT, isProductionRuntime ? 10 : 2)
+  const acquireTimeout = parsePositiveInt(process.env.DB_ACQUIRE_TIMEOUT_MS, 30_000)
+  const idleTimeout = parsePositiveInt(process.env.DB_IDLE_TIMEOUT_MS, 60_000)
 
   const adapter = new PrismaMariaDb({
     host: process.env.DB_HOST ?? 'localhost',

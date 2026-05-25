@@ -27,10 +27,7 @@ interface TagSearchComboboxProps {
   getOptionHelperText?: (tag: TagSuggestion) => string | null
 }
 
-function tagSearchFilterOptions(
-  options: TagSearchOption[],
-  { inputValue }: { inputValue: string },
-): TagSearchOption[] {
+function tagSearchFilterOptions(options: TagSearchOption[], { inputValue }: { inputValue: string }): TagSearchOption[] {
   if (!inputValue.trim()) {
     return []
   }
@@ -59,10 +56,7 @@ export function TagSearchCombobox({
 
   const options = useMemo(() => suggestions, [suggestions])
 
-  async function handleChange(
-    _event: SyntheticEvent,
-    selected: TagSearchOption | string | null,
-  ): Promise<void> {
+  async function handleChange(_event: SyntheticEvent, selected: TagSearchOption | string | null): Promise<void> {
     if (!selected) {
       return
     }
@@ -113,7 +107,7 @@ export function TagSearchCombobox({
 
         return filtered
       }}
-      getOptionDisabled={(option) => ('inputValue' in option ? false : getOptionDisabled?.(option) ?? false)}
+      getOptionDisabled={(option) => ('inputValue' in option ? false : (getOptionDisabled?.(option) ?? false))}
       getOptionLabel={(option) => {
         if (typeof option === 'string') {
           return option
@@ -128,8 +122,8 @@ export function TagSearchCombobox({
       }}
       renderOption={(props, option) => {
         const { key, ...optionProps } = props
-        const optionDisabled = 'inputValue' in option ? false : getOptionDisabled?.(option) ?? false
-        const helperText = 'inputValue' in option ? null : getOptionHelperText?.(option) ?? null
+        const optionDisabled = 'inputValue' in option ? false : (getOptionDisabled?.(option) ?? false)
+        const helperText = 'inputValue' in option ? null : (getOptionHelperText?.(option) ?? null)
 
         return (
           <li key={key} {...optionProps}>

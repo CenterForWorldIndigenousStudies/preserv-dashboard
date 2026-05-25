@@ -10,12 +10,7 @@ export const OVERVIEW_STATUS_OPTIONS = [
 
 export const OVERVIEW_DOCUMENT_TYPE_OPTIONS = ['all', 'unique', 'duplicate'] as const
 
-export const OVERVIEW_ACCESS_LEVEL_OPTIONS = [
-  'open access',
-  'restricted',
-  'internal',
-  'confidential',
-] as const
+export const OVERVIEW_ACCESS_LEVEL_OPTIONS = ['open access', 'restricted', 'internal', 'confidential'] as const
 
 export type OverviewStatusOption = string
 export type OverviewDocumentTypeOption = (typeof OVERVIEW_DOCUMENT_TYPE_OPTIONS)[number]

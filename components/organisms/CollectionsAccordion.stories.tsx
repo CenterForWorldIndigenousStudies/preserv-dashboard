@@ -5,7 +5,6 @@ import type { CollectionWithMeta } from 'types/collections'
 import type { Document } from 'types/documents'
 import { CollectionsAccordion } from './CollectionsAccordion'
 
-
 const UUIDS = {
   coll1: '00000001-0001-0001-0001-000000000001',
   coll2: '00000002-0002-0002-0002-000000000002',

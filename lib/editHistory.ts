@@ -12,9 +12,7 @@ export interface CreateEditHistoryEntryParams {
 
 export type EditHistoryClient = PrismaClient | Prisma.TransactionClient
 
-export async function createEditHistoryEntry(
-  params: CreateEditHistoryEntryParams,
-): Promise<void>
+export async function createEditHistoryEntry(params: CreateEditHistoryEntryParams): Promise<void>
 export async function createEditHistoryEntry(
   client: EditHistoryClient,
   params: CreateEditHistoryEntryParams,

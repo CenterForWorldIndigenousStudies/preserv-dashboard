@@ -9,7 +9,11 @@ export default function AuthStatus() {
   const { data: session, status } = useSession()
 
   if (status === 'loading') {
-    return <Button loading={true} variant={`ghost`}>{'Loading...'}</Button>
+    return (
+      <Button loading={true} variant={`ghost`}>
+        {'Loading...'}
+      </Button>
+    )
   }
 
   if (status === 'unauthenticated') {

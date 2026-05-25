@@ -16,13 +16,9 @@ const statusVariantMap = {
   review_needed: 'danger',
 } as const satisfies Record<string, BadgeVariant>
 
-export function PipelineStageStatusBadge({
-  status,
-  className,
-}: PipelineStageStatusBadgeProps): ReactElement {
+export function PipelineStageStatusBadge({ status, className }: PipelineStageStatusBadgeProps): ReactElement {
   const normalized = (status ?? 'unknown').toLowerCase()
-  const variant: BadgeVariant =
-    statusVariantMap[normalized as keyof typeof statusVariantMap] ?? 'neutral'
+  const variant: BadgeVariant = statusVariantMap[normalized as keyof typeof statusVariantMap] ?? 'neutral'
   const componentClass = `${className ?? ''}`.trim()
 
   return (

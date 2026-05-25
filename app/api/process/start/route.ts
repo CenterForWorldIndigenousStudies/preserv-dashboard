@@ -5,11 +5,7 @@ import { DATA_INGESTER_CALLBACK_PATH } from '@constants/paths'
 import { DASHBOARD_BASE_URL } from '@constants/server'
 import { getDashboardSession } from '@root/auth'
 import { logEvent } from '@lib/observability'
-import {
-  parsePipelineConfig,
-  pipelineConfigToRequestedStages,
-  type PipelineConfig,
-} from '@lib/pipelineConfig'
+import { parsePipelineConfig, pipelineConfigToRequestedStages, type PipelineConfig } from '@lib/pipelineConfig'
 import { setProcessBatchPipelineConfig, setProcessBatchRequestedStages } from '@lib/processBatches'
 
 interface ProcessStartRequestBody {
@@ -49,9 +45,7 @@ function normalizeSourceFolderIds(value: unknown): string[] {
   if (!Array.isArray(value)) {
     return []
   }
-  return value
-    .map((item) => (typeof item === 'string' ? item.trim() : ''))
-    .filter((item) => item.length > 0)
+  return value.map((item) => (typeof item === 'string' ? item.trim() : '')).filter((item) => item.length > 0)
 }
 
 function buildRequestedStagesFromConfig(config: PipelineConfig): string[] {
@@ -63,14 +57,10 @@ function buildRequestedStagesFromLegacy(value: unknown): string[] {
   if (!Array.isArray(value)) {
     return []
   }
-  return value
-    .map((item) => (typeof item === 'string' ? item.trim() : ''))
-    .filter(Boolean)
+  return value.map((item) => (typeof item === 'string' ? item.trim() : '')).filter(Boolean)
 }
 
-async function parseProcessStartRequestBody(
-  request: NextRequest,
-): Promise<ProcessStartRequestBody | NextResponse> {
+async function parseProcessStartRequestBody(request: NextRequest): Promise<ProcessStartRequestBody | NextResponse> {
   try {
     return (await request.json()) as ProcessStartRequestBody
   } catch {
@@ -78,10 +68,7 @@ async function parseProcessStartRequestBody(
   }
 }
 
-function resolveRequestedStages(
-  pipelineConfig: PipelineConfig | null,
-  legacyRequestedStages: string[],
-): string[] {
+function resolveRequestedStages(pipelineConfig: PipelineConfig | null, legacyRequestedStages: string[]): string[] {
   if (pipelineConfig) {
     return buildRequestedStagesFromConfig(pipelineConfig)
   }
@@ -165,9 +152,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const callbackUrl = new URL(DATA_INGESTER_CALLBACK_PATH, DASHBOARD_BASE_URL).toString()
   const requestId = randomUUID()
-  const collection = collectionName
-    ? { name: collectionName, notes: collectionNotes }
-    : null
+  const collection = collectionName ? { name: collectionName, notes: collectionNotes } : null
 
   const ingestPayload = {
     app: 'preserv-dashboard',

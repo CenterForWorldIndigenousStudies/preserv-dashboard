@@ -21,11 +21,7 @@ describe('scoreTags', () => {
 
     const results = scoreTags(tags, 'aboriginal', 7)
 
-    expect(results.map((tag) => tag.name)).toEqual([
-      'aboriginal',
-      'aboriginal law',
-      'law of aboriginal title',
-    ])
+    expect(results.map((tag) => tag.name)).toEqual(['aboriginal', 'aboriginal law', 'law of aboriginal title'])
   })
 
   it('returns empty for garbled nonsense queries', () => {
@@ -62,11 +58,7 @@ describe('scoreTags', () => {
 
     const results = scoreTags(tags, 'aboriginal', 7)
 
-    expect(results.map((tag) => tag.name)).toEqual([
-      'aboriginal',
-      'aboriginal law',
-      'law of aboriginal title',
-    ])
+    expect(results.map((tag) => tag.name)).toEqual(['aboriginal', 'aboriginal law', 'law of aboriginal title'])
     expect(results.every((tag, index, list) => index === 0 || list[index - 1].score >= tag.score)).toBe(true)
   })
 })

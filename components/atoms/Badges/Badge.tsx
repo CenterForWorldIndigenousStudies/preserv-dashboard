@@ -22,11 +22,8 @@ interface BadgeProps {
  */
 export function Badge({ variant = 'info', children, className = '' }: BadgeProps): ReactNode {
   const bgColor = variantMap[variant]
-  const componentClass = `inline-block rounded-full ${bgColor} px-3 py-1 text-xs font-medium uppercase tracking-[0.15em] ${className}`.trim()
+  const componentClass =
+    `inline-block rounded-full ${bgColor} px-3 py-1 text-xs font-medium uppercase tracking-[0.15em] ${className}`.trim()
 
-  return (
-    <span className={componentClass}>
-      {children}
-    </span>
-  )
+  return <span className={componentClass}>{children}</span>
 }

@@ -1,7 +1,7 @@
 import type { ReactElement, ReactNode, ButtonHTMLAttributes } from 'react'
 import MuiButton from '@mui/material/Button'
 import type { LinkProps } from 'next/link'
-import {IconSpinner} from '@atoms/icons/IconSpinner'
+import { IconSpinner } from '@atoms/icons/IconSpinner'
 
 export const variantMap = {
   primary: 'contained',
@@ -57,14 +57,13 @@ export function Button({
     : ''
   const componentClass = `${className} ${loadingClass}`.trim()
 
-  const resolvedHref: string | undefined = (():
-    string | undefined => {
-      if (href === null || href === undefined) return undefined
-      if (typeof href === 'string') return href
-      // next/link href may be an object; String() converts to a path string
-      // eslint-disable-next-line @typescript-eslint/no-base-to-string
-      return String(href)
-    })()
+  const resolvedHref: string | undefined = ((): string | undefined => {
+    if (href === null || href === undefined) return undefined
+    if (typeof href === 'string') return href
+    // next/link href may be an object; String() converts to a path string
+    // eslint-disable-next-line @typescript-eslint/no-base-to-string
+    return String(href)
+  })()
 
   return (
     <MuiButton

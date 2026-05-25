@@ -36,9 +36,7 @@ function parseServiceAccountJson(raw: string): GoogleServiceAccountCredentials {
     typeof credentials.private_key !== 'string' ||
     credentials.private_key.trim().length === 0
   ) {
-    throw new Error(
-      'GOOGLE_SERVICE_ACCOUNT_JSON must include non-empty client_email and private_key fields',
-    )
+    throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON must include non-empty client_email and private_key fields')
   }
 
   return {
@@ -53,9 +51,7 @@ function createDriveClient(): drive_v3.Drive {
   const keyFile = process.env.GOOGLE_SERVICE_ACCOUNT_FILE?.trim()
 
   if (!rawJson && !keyFile) {
-    throw new Error(
-      'Either GOOGLE_SERVICE_ACCOUNT_JSON or GOOGLE_SERVICE_ACCOUNT_FILE is required',
-    )
+    throw new Error('Either GOOGLE_SERVICE_ACCOUNT_JSON or GOOGLE_SERVICE_ACCOUNT_FILE is required')
   }
 
   const auth = rawJson

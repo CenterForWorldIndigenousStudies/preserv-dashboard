@@ -1,15 +1,5 @@
 import type { ReactElement } from 'react'
-import {
-  Alert,
-  Box,
-  Checkbox,
-  FormControlLabel,
-  List,
-  ListItem,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material'
+import { Alert, Box, Checkbox, FormControlLabel, List, ListItem, Paper, Stack, Typography } from '@mui/material'
 
 import { Button } from '@atoms/Button'
 import type { DriveFolderOption } from '@lib/googleDrive'
@@ -41,7 +31,10 @@ export function GoogleDriveFolderTree({
     <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, p: 3 }}>
       <Stack spacing={2.5}>
         <div>
-          <Typography variant="caption" sx={{ color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.16em' }}>
+          <Typography
+            variant="caption"
+            sx={{ color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.16em' }}
+          >
             Google Drive
           </Typography>
           <Typography variant="h5" sx={{ mt: 1 }}>
@@ -71,11 +64,18 @@ export function GoogleDriveFolderTree({
                       alignItems: { xs: 'flex-start', sm: 'center' },
                     }}
                   >
-                    <Button type="button" variant="secondary" size="sm" onClick={() => onToggleFolderExpansion(folder.id)}>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => onToggleFolderExpansion(folder.id)}
+                    >
                       {isExpanded ? 'Hide' : 'Browse'}
                     </Button>
                     <FormControlLabel
-                      control={<Checkbox checked={isSelected} onChange={() => onToggleFolderSelection(folder)} size="small" />}
+                      control={
+                        <Checkbox checked={isSelected} onChange={() => onToggleFolderSelection(folder)} size="small" />
+                      }
                       label={folder.name}
                       sx={{ m: 0, '& .MuiFormControlLabel-label': { fontWeight: 600 } }}
                     />

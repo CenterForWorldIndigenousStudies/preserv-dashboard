@@ -7,7 +7,7 @@ const meta = {
   tags: ['autodocs'],
   args: {
     href: 'https://duckduckgo.com',
-    name: "Some Document Name",
+    name: 'Some Document Name',
   },
   argTypes: {
     href: {

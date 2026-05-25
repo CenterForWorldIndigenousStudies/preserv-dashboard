@@ -4,7 +4,14 @@ import { useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { LayoutDashboard, ClipboardList, Database, BookOpen, FolderInput, X } from 'lucide-react'
-import { BATCH_SUMMARY_PATH, COLLECTIONS_PATH, COMPONENT_LIBRARY_PATH, DB_SCHEMA_PATH, PROCESS_DOCUMENTS_PATH, READY_FOR_LIBRARY_PATH } from '@constants/paths'
+import {
+  BATCH_SUMMARY_PATH,
+  COLLECTIONS_PATH,
+  COMPONENT_LIBRARY_PATH,
+  DB_SCHEMA_PATH,
+  PROCESS_DOCUMENTS_PATH,
+  READY_FOR_LIBRARY_PATH,
+} from '@constants/paths'
 import AuthStatus from '@molecules/AuthStatus'
 
 export type SidebarVariant = 'desktop' | 'mobile'

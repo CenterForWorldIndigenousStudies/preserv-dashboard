@@ -10,10 +10,7 @@ import {
 
 describe('overview search helpers', () => {
   it('normalizes and de-duplicates statuses', () => {
-    expect(normalizeOverviewStatuses([' Approved ', 'approved', 'needs_review'])).toEqual([
-      'APPROVED',
-      'NEEDS_REVIEW',
-    ])
+    expect(normalizeOverviewStatuses([' Approved ', 'approved', 'needs_review'])).toEqual(['APPROVED', 'NEEDS_REVIEW'])
   })
 
   it('parses and serializes status query params', () => {

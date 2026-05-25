@@ -10,7 +10,11 @@ import DialogTitle from '@mui/material/DialogTitle'
 import { Button } from '@atoms/Button'
 import { SelectionTable, type SelectionSortField, type SelectionSortState } from '@molecules/SelectionTable'
 import { ConfirmationDialog } from '@molecules/ConfirmationDialog'
-import { useCollectionManager, type UseCollectionManagerOptions, type CollectionManagerAction } from '@hooks/useCollectionManager'
+import {
+  useCollectionManager,
+  type UseCollectionManagerOptions,
+  type CollectionManagerAction,
+} from '@hooks/useCollectionManager'
 
 interface CollectionDocumentManagerProps extends UseCollectionManagerOptions {
   collectionId: string
@@ -194,7 +198,9 @@ export function CollectionDocumentManager({
         message={buildConfirmationMessage(pendingAction ?? activeAction, collectionName, selectedCount)}
         confirmLabel={pendingAction === 'add' ? 'Yes, add' : 'Yes, remove'}
         cancelLabel="No"
-        onConfirm={() => { void handleConfirm() }}
+        onConfirm={() => {
+          void handleConfirm()
+        }}
         onCancel={() => {
           if (isSubmitting) {
             return

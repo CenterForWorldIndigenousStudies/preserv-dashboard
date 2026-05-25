@@ -14,7 +14,7 @@ describe('KeyValueRow', () => {
       React.createElement(KeyValueRow, {
         label: 'Started At',
         value: React.createElement(TestValue),
-      })
+      }),
     )
 
     expect(markup).toContain('Started At')

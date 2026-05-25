@@ -11,7 +11,8 @@ const meta = {
   argTypes: {
     value: {
       control: 'object',
-      description: 'ISO string, Unix timestamp (seconds or ms), Date object, or null. You MUST enter strings in quotes to prevent Storybook from trying to parse them as dates.',
+      description:
+        'ISO string, Unix timestamp (seconds or ms), Date object, or null. You MUST enter strings in quotes to prevent Storybook from trying to parse them as dates.',
     },
     className: {
       control: 'text',

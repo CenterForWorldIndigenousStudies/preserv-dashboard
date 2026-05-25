@@ -28,7 +28,7 @@ export interface NestedValueRendererProps {
 // ---------------------------------------------------------------------------
 
 // Re-exported for use by KeyValueRow and external consumers
- 
+
 export function isPrimitiveValue(value: unknown): value is string | number | boolean | null | undefined {
   return value === null || value === undefined || ['string', 'number', 'boolean'].includes(typeof value)
 }
@@ -80,32 +80,21 @@ export function NestedValueRenderer({
     } catch {
       // use default
     }
-    return (
-      <KeyValueRow label={fallbackLabel} value={stringified} level={level - 1} />
-    )
+    return <KeyValueRow label={fallbackLabel} value={stringified} level={level - 1} />
   }
 
   if (Array.isArray(value)) {
     const items = value as unknown[]
 
     if (items.length === 0) {
-      return (
-        <KeyValueRow label={`[${items.length}]`} value="(empty)" level={level} />
-      )
+      return <KeyValueRow label={`[${items.length}]`} value="(empty)" level={level} />
     }
 
     return (
       <>
         {items.map((item, index) => {
           if (isPrimitiveValue(item)) {
-            return (
-              <KeyValueRow
-                key={`${level}-${index}`}
-                label={`[${index}]`}
-                value={item}
-                level={level}
-              />
-            )
+            return <KeyValueRow key={`${level}-${index}`} label={`[${index}]`} value={item} level={level} />
           }
 
           return (
@@ -133,23 +122,14 @@ export function NestedValueRenderer({
     const entries = Object.entries(value)
 
     if (entries.length === 0) {
-      return (
-        <KeyValueRow label="{}" value="(empty object)" level={level} />
-      )
+      return <KeyValueRow label="{}" value="(empty object)" level={level} />
     }
 
     return (
       <>
         {entries.map(([nestedKey, nestedValue]) => {
           if (isPrimitiveValue(nestedValue)) {
-            return (
-              <KeyValueRow
-                key={`${level}-${nestedKey}`}
-                label={nestedKey}
-                value={nestedValue}
-                level={level}
-              />
-            )
+            return <KeyValueRow key={`${level}-${nestedKey}`} label={nestedKey} value={nestedValue} level={level} />
           }
 
           return (
@@ -165,11 +145,7 @@ export function NestedValueRenderer({
               >
                 {nestedKey}
               </Typography>
-              <NestedValueRenderer
-                value={nestedValue}
-                level={level + 1}
-                maxDepth={maxDepth}
-              />
+              <NestedValueRenderer value={nestedValue} level={level + 1} maxDepth={maxDepth} />
             </Box>
           )
         })}
@@ -178,7 +154,5 @@ export function NestedValueRenderer({
   }
 
   // Non-object, non-array (e.g. a number or string at root level)
-  return (
-    <KeyValueRow label={fallbackLabel} value={value} level={level} />
-  )
+  return <KeyValueRow label={fallbackLabel} value={value} level={level} />
 }

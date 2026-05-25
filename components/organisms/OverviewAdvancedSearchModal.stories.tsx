@@ -15,11 +15,7 @@ const defaultFilters: OverviewAdvancedSearchFilters = {
 }
 
 const defaultFilterOptions: OverviewFilterOptions = {
-  collections: [
-    'Nicaragua Conflict Documentation',
-    'First Nations Canada',
-    'Indigenous Health Conference',
-  ],
+  collections: ['Nicaragua Conflict Documentation', 'First Nations Canada', 'Indigenous Health Conference'],
   accessLevels: ['open access', 'restricted', 'internal', 'confidential'],
   statuses: ['APPROVED', 'NEEDS_REVIEW', 'REJECTED', 'VALIDATED'],
 }

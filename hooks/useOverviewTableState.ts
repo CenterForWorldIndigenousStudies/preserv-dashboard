@@ -4,10 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import type { MRT_SortingState } from 'material-react-table'
 
-import {
-  serializeOverviewStatusesParam,
-  type OverviewAdvancedSearchFilters,
-} from '@lib/overview-search'
+import { serializeOverviewStatusesParam, type OverviewAdvancedSearchFilters } from '@lib/overview-search'
 import type { DocumentsQueryParams } from '@lib/queries'
 import type { DocumentsCursor } from 'types/pagination'
 
@@ -75,7 +72,11 @@ function syncOverviewFilterSearchParams(nextParams: URLSearchParams, queryParams
   syncSearchParam(nextParams, 'search', queryParams.search)
   syncSearchParam(nextParams, 'tag', queryParams.tag)
   syncSearchParam(nextParams, 'statuses', serializeOverviewStatusesParam(queryParams.statuses))
-  syncSearchParam(nextParams, 'documentType', queryParams.documentType && queryParams.documentType !== 'all' ? queryParams.documentType : undefined)
+  syncSearchParam(
+    nextParams,
+    'documentType',
+    queryParams.documentType && queryParams.documentType !== 'all' ? queryParams.documentType : undefined,
+  )
   syncSearchParam(nextParams, 'batch', queryParams.batch)
   syncSearchParam(nextParams, 'createdFrom', queryParams.createdFrom)
   syncSearchParam(nextParams, 'createdTo', queryParams.createdTo)
@@ -149,7 +150,23 @@ export function useOverviewTableState(initialQuery?: DocumentsQueryParams) {
       cursorId,
       cursorDirection,
     }),
-    [accessLevel, batch, collection, createdFrom, createdTo, cursorDirection, cursorId, cursorValue, documentType, globalFilter, page, pageSize, sorting, statuses, tag],
+    [
+      accessLevel,
+      batch,
+      collection,
+      createdFrom,
+      createdTo,
+      cursorDirection,
+      cursorId,
+      cursorValue,
+      documentType,
+      globalFilter,
+      page,
+      pageSize,
+      sorting,
+      statuses,
+      tag,
+    ],
   )
 
   useEffect(() => {

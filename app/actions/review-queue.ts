@@ -1,7 +1,12 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { applyReviewQueueDecision, getNeedsReviewDocuments, getReviewQueueDocuments, type DocumentsQueryParams } from '@lib/queries'
+import {
+  applyReviewQueueDecision,
+  getNeedsReviewDocuments,
+  getReviewQueueDocuments,
+  type DocumentsQueryParams,
+} from '@lib/queries'
 import type { ReviewQueueDecision, ReviewQueueDocumentsQueryParams } from 'types/reviewQueue'
 import { getDashboardSession } from '../../auth'
 
@@ -86,9 +91,7 @@ export async function applyReviewQueueBatchApproveAction(
     })),
   )
 
-  const approvedIds = results
-    .filter((entry) => entry.result.ok)
-    .map((entry) => entry.documentId)
+  const approvedIds = results.filter((entry) => entry.result.ok).map((entry) => entry.documentId)
   const failed = results.flatMap<ReviewQueueBatchApproveFailure>((entry) =>
     entry.result.ok ? [] : [{ documentId: entry.documentId, error: entry.result.error }],
   )
@@ -100,7 +103,7 @@ export async function applyReviewQueueBatchApproveAction(
       failed,
       error:
         failed.length === 1
-          ? failed[0]?.error ?? 'No selected documents could be approved.'
+          ? (failed[0]?.error ?? 'No selected documents could be approved.')
           : 'No selected documents could be approved.',
     }
   }

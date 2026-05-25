@@ -1,28 +1,16 @@
 'use client'
 
 import { type ReactElement } from 'react'
-import {
-  Alert,
-  Box,
-  Chip,
-  Paper,
-  Stack,
-  Typography,
-} from '@mui/material'
+import { Alert, Box, Chip, Paper, Stack, Typography } from '@mui/material'
 
-import {
-  getEnabledSteps,
-  type PipelineSelectionDraft,
-} from '@lib/pipelineConfig'
+import { getEnabledSteps, type PipelineSelectionDraft } from '@lib/pipelineConfig'
 import { PIPELINE_PROFILES } from '@constants/pipeline'
 
 interface PipelineSelectionSummaryProps {
   draft: PipelineSelectionDraft
 }
 
-export function PipelineSelectionSummary({
-  draft,
-}: PipelineSelectionSummaryProps): ReactElement {
+export function PipelineSelectionSummary({ draft }: PipelineSelectionSummaryProps): ReactElement {
   const enabledSteps = getEnabledSteps(draft)
   const profile = PIPELINE_PROFILES.find((p) => p.id === draft.profileId)
 
@@ -38,8 +26,7 @@ export function PipelineSelectionSummary({
         }}
       >
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          No additional steps selected beyond Ingest.
-          Use the step list in this dialog to build your pipeline.
+          No additional steps selected beyond Ingest. Use the step list in this dialog to build your pipeline.
         </Typography>
       </Paper>
     )
@@ -92,7 +79,8 @@ export function PipelineSelectionSummary({
         {draft.mode === 'preset' && draft.profileId !== 'custom' && (
           <Alert severity="info" sx={{ borderRadius: 2 }}>
             <Typography variant="body2">
-              This preset starts with the steps shown above, and you can fine tune them here before converting to custom.
+              This preset starts with the steps shown above, and you can fine tune them here before converting to
+              custom.
             </Typography>
           </Alert>
         )}

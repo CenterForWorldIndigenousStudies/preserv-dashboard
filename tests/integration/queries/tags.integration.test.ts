@@ -72,7 +72,9 @@ describe('tag search (integration)', () => {
     })
   }
 
-  const fetchCandidates = async (tx: Prisma.TransactionClient): Promise<Array<{ id: string; name: string; notes: string | null }>> =>
+  const fetchCandidates = async (
+    tx: Prisma.TransactionClient,
+  ): Promise<Array<{ id: string; name: string; notes: string | null }>> =>
     tx.tags.findMany({
       select: {
         id: true,

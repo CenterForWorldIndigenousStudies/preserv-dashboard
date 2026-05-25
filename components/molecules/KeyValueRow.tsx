@@ -101,10 +101,7 @@ export function KeyValueRow({
         borderLeft: level > 0 ? '2px solid rgba(53,88,52,0.12)' : 'none',
       }}
     >
-      <Typography
-        variant={labelVariant}
-        sx={{ fontWeight: 500, color: '#231f20', fontSize: '0.875rem' }}
-      >
+      <Typography variant={labelVariant} sx={{ fontWeight: 500, color: '#231f20', fontSize: '0.875rem' }}>
         {label}
       </Typography>
       <Typography

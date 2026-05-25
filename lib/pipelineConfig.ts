@@ -90,9 +90,7 @@ function parseDependsOn(value: unknown): string[] | undefined {
     return undefined
   }
 
-  const dependsOn = value
-    .map((item) => (typeof item === 'string' ? item.trim() : ''))
-    .filter((item) => item.length > 0)
+  const dependsOn = value.map((item) => (typeof item === 'string' ? item.trim() : '')).filter((item) => item.length > 0)
 
   return dependsOn.length > 0 ? dependsOn : undefined
 }
@@ -173,9 +171,7 @@ export function parsePipelineConfig(value: unknown): PipelineConfig | null {
   }
 }
 
-export function applyDependencyRule(
-  draft: PipelineSelectionDraft,
-): PipelineSelectionDraft {
+export function applyDependencyRule(draft: PipelineSelectionDraft): PipelineSelectionDraft {
   const p1 = draft.steps.normalizePass1
   const p2 = draft.steps.normalizePass2
 
@@ -391,11 +387,8 @@ export function pipelineConfigToRequestedStages(config: PipelineConfig): string[
   const requestedStages = config.executionPlan
     .filter((step) => step.enabled && step.service !== 'ingester')
     .map((step) => step.service)
-    .filter(
-      (service): service is (typeof SUPPORTED_DOWNSTREAM_STAGES)[number] =>
-        SUPPORTED_DOWNSTREAM_STAGES.includes(
-          service as (typeof SUPPORTED_DOWNSTREAM_STAGES)[number],
-        ),
+    .filter((service): service is (typeof SUPPORTED_DOWNSTREAM_STAGES)[number] =>
+      SUPPORTED_DOWNSTREAM_STAGES.includes(service as (typeof SUPPORTED_DOWNSTREAM_STAGES)[number]),
     )
 
   return Array.from(new Set(requestedStages))
@@ -406,9 +399,7 @@ export function legacyRequestedStagesToPipelineConfig(requestedStages: string[])
     requestedStages
       .map((stage) => stage.trim())
       .filter((stage): stage is (typeof SUPPORTED_DOWNSTREAM_STAGES)[number] =>
-        SUPPORTED_DOWNSTREAM_STAGES.includes(
-          stage as (typeof SUPPORTED_DOWNSTREAM_STAGES)[number],
-        ),
+        SUPPORTED_DOWNSTREAM_STAGES.includes(stage as (typeof SUPPORTED_DOWNSTREAM_STAGES)[number]),
       ),
   )
 

@@ -1,11 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import {
-  MaterialReactTable,
-  useMaterialReactTable,
-  type MRT_ColumnDef,
-} from 'material-react-table'
+import { MaterialReactTable, useMaterialReactTable, type MRT_ColumnDef } from 'material-react-table'
 import { DateAtom } from '@atoms/Date'
 import { StateBadge } from '@atoms/Badges/StateBadge'
 import type { ReviewItem } from 'types/documents'
@@ -44,23 +40,19 @@ export function ReviewHistoryTable({ reviews }: { reviews: ReviewItem[] }) {
         accessorKey: 'winning_source',
         header: 'Winning Source',
         size: 160,
-        Cell: ({ renderedCellValue }) =>
-          String((renderedCellValue as string | null) ?? '') || '—',
+        Cell: ({ renderedCellValue }) => String((renderedCellValue as string | null) ?? '') || '—',
       },
       {
         accessorKey: 'winning_value',
         header: 'Winning Value',
         size: 200,
-        Cell: ({ renderedCellValue }) =>
-          String((renderedCellValue as string | null) ?? '') || '—',
+        Cell: ({ renderedCellValue }) => String((renderedCellValue as string | null) ?? '') || '—',
       },
       {
         accessorKey: 'created_at',
         header: 'Created At',
         size: 180,
-        Cell: ({ renderedCellValue }) => (
-          <DateAtom value={renderedCellValue as ReviewItem['created_at']} />
-        ),
+        Cell: ({ renderedCellValue }) => <DateAtom value={renderedCellValue as ReviewItem['created_at']} />,
       },
       {
         accessorKey: 'conflicting_values',

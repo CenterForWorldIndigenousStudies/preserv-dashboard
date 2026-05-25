@@ -7,8 +7,8 @@ const meta = {
   tags: ['autodocs'],
   args: {
     id: 'fd14a84b-72fa-4bba-83cf-340fc0790950',
-    label: "DB ID",
-    title: "The ID of the Document"
+    label: 'DB ID',
+    title: 'The ID of the Document',
   },
   argTypes: {
     id: {
@@ -21,8 +21,8 @@ const meta = {
     },
     title: {
       control: 'text',
-      description: 'The optional tooltip'
-    }
+      description: 'The optional tooltip',
+    },
   },
   parameters: {
     backgrounds: {

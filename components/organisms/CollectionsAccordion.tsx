@@ -285,10 +285,7 @@ export function CollectionsAccordion({ collections }: CollectionsAccordionProps)
                     No documents associated with this collection.
                   </Typography>
                 ) : (
-                  <CollectionDocumentsTable
-                    collectionId={collection.id}
-                    documentCount={collection.document_count}
-                  />
+                  <CollectionDocumentsTable collectionId={collection.id} documentCount={collection.document_count} />
                 )}
               </AccordionDetails>
             </Accordion>

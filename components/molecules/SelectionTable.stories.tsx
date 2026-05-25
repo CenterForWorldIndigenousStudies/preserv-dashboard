@@ -76,7 +76,12 @@ const sampleDocuments: Document[] = [
   },
 ]
 
-function InteractiveWrapper(args: { documents: Document[]; title: string; searchLabel: string; emptyMessage?: string }) {
+function InteractiveWrapper(args: {
+  documents: Document[]
+  title: string
+  searchLabel: string
+  emptyMessage?: string
+}) {
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState<SelectionSortState>(DEFAULT_SELECTION_SORT)
   const [checked, setChecked] = useState<Set<string>>(new Set())
@@ -89,7 +94,9 @@ function InteractiveWrapper(args: { documents: Document[]; title: string; search
         searchValue={search}
         onSearchChange={setSearch}
         sortState={sort}
-        onSortChange={(field) => setSort({ field, direction: field === sort.field && sort.direction === 'asc' ? 'desc' : 'asc' })}
+        onSortChange={(field) =>
+          setSort({ field, direction: field === sort.field && sort.direction === 'asc' ? 'desc' : 'asc' })
+        }
         isChecked={(id) => checked.has(id)}
         onToggle={(id, val) => {
           setChecked((prev) => {

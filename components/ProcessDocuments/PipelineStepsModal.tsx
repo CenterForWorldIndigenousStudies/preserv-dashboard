@@ -25,24 +25,12 @@ interface PipelineStepsModalProps {
   onDraftChange: (draft: PipelineSelectionDraft) => void
 }
 
-export function PipelineStepsModal({
-  open,
-  draft,
-  onClose,
-  onDraftChange,
-}: PipelineStepsModalProps): ReactElement {
+export function PipelineStepsModal({ open, draft, onClose, onDraftChange }: PipelineStepsModalProps): ReactElement {
   const theme = useTheme()
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'))
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      fullWidth
-      maxWidth="md"
-      fullScreen={fullScreen}
-      scroll="paper"
-    >
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md" fullScreen={fullScreen} scroll="paper">
       <DialogTitle>
         <Stack spacing={0.5}>
           <Typography variant="h5">Pipeline Steps</Typography>
@@ -53,11 +41,7 @@ export function PipelineStepsModal({
       </DialogTitle>
       <DialogContent dividers>
         <Stack spacing={3}>
-          <PipelineStepSelector
-            draft={draft}
-            mode={draft.mode}
-            onDraftChange={onDraftChange}
-          />
+          <PipelineStepSelector draft={draft} mode={draft.mode} onDraftChange={onDraftChange} />
           <Box>
             <PipelineSelectionSummary draft={draft} />
           </Box>

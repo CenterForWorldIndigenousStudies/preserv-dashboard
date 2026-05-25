@@ -32,17 +32,12 @@ interface ProcessAcceptedResponse {
   batch_name: string
 }
 
-function upsertBatchStatus(
-  batches: ProcessBatchStatus[],
-  nextBatch: ProcessBatchStatus,
-): ProcessBatchStatus[] {
+function upsertBatchStatus(batches: ProcessBatchStatus[], nextBatch: ProcessBatchStatus): ProcessBatchStatus[] {
   const withoutExisting = batches.filter((batch) => batch.batchId !== nextBatch.batchId)
   return [nextBatch, ...withoutExisting].slice(0, 25)
 }
 
-export function ProcessDocumentsManager({
-  initialBatches,
-}: ProcessDocumentsManagerProps): ReactElement {
+export function ProcessDocumentsManager({ initialBatches }: ProcessDocumentsManagerProps): ReactElement {
   const router = useRouter()
   const [isSubmitting, startSubmitTransition] = useTransition()
   const [isRefreshing, startRefreshTransition] = useTransition()

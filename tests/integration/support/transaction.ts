@@ -3,9 +3,7 @@ import type { Prisma } from '@lib/prisma/generated/client'
 
 const ROLLBACK_SENTINEL = '__TEST_TRANSACTION_ROLLBACK__'
 
-export async function withRollbackTransaction<T>(
-  run: (tx: Prisma.TransactionClient) => Promise<T>,
-): Promise<T> {
+export async function withRollbackTransaction<T>(run: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
   let result: T | undefined
 
   try {

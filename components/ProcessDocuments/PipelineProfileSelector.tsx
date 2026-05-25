@@ -1,27 +1,10 @@
 'use client'
 
 import { type ReactElement, useCallback } from 'react'
-import {
-  Box,
-  Button,
-  Chip,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Paper,
-  Select,
-  Stack,
-  Typography,
-} from '@mui/material'
+import { Box, Button, Chip, FormControl, InputLabel, MenuItem, Paper, Select, Stack, Typography } from '@mui/material'
 
-import {
-  PIPELINE_PROFILES,
-  type ProfileId,
-} from '@constants/pipeline'
-import {
-  getEnabledSteps,
-  type PipelineSelectionDraft,
-} from '@lib/pipelineConfig'
+import { PIPELINE_PROFILES, type ProfileId } from '@constants/pipeline'
+import { getEnabledSteps, type PipelineSelectionDraft } from '@lib/pipelineConfig'
 
 interface PipelineProfileSelectorProps {
   draft: PipelineSelectionDraft
@@ -49,8 +32,7 @@ export function PipelineProfileSelector({
   const enabledSteps = getEnabledSteps(draft)
   const previewSteps = enabledSteps.slice(0, 3)
   const remainingStepsCount = Math.max(enabledSteps.length - previewSteps.length, 0)
-  const configuredStepsLabel =
-    enabledSteps.length === 1 ? 'Ingest only' : `${enabledSteps.length} steps configured`
+  const configuredStepsLabel = enabledSteps.length === 1 ? 'Ingest only' : `${enabledSteps.length} steps configured`
 
   return (
     <Paper
@@ -64,10 +46,7 @@ export function PipelineProfileSelector({
     >
       <Stack spacing={3}>
         <Box>
-          <Typography
-            variant="overline"
-            sx={{ color: 'text.secondary', letterSpacing: '0.16em' }}
-          >
+          <Typography variant="overline" sx={{ color: 'text.secondary', letterSpacing: '0.16em' }}>
             Processing Profile
           </Typography>
           <Typography variant="h5" sx={{ mt: 0.5 }}>
@@ -154,26 +133,16 @@ export function PipelineProfileSelector({
                 }}
               />
             ))}
-            {remainingStepsCount > 0 && (
-              <Chip label={`+${remainingStepsCount} more`} size="small" variant="outlined" />
-            )}
+            {remainingStepsCount > 0 && <Chip label={`+${remainingStepsCount} more`} size="small" variant="outlined" />}
           </Box>
         </Stack>
 
         {draft.mode === 'preset' && draft.profileId !== 'custom' && (
           <Box>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={onConvertToCustom}
-              sx={{ borderRadius: 3 }}
-            >
+            <Button variant="outlined" size="small" onClick={onConvertToCustom} sx={{ borderRadius: 3 }}>
               Convert to Custom
             </Button>
-            <Typography
-              variant="caption"
-              sx={{ display: 'block', mt: 0.5, color: 'text.secondary' }}
-            >
+            <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: 'text.secondary' }}>
               Fine tune this preset for the current run, or convert it into a custom profile.
             </Typography>
           </Box>

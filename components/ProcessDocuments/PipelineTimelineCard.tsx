@@ -1,15 +1,7 @@
 'use client'
 
 import { type ReactElement } from 'react'
-import {
-  Box,
-  Collapse,
-  List,
-  ListItem,
-  ListItemIcon,
-  Paper,
-  Typography,
-} from '@mui/material'
+import { Box, Collapse, List, ListItem, ListItemIcon, Paper, Typography } from '@mui/material'
 
 import type { ProcessBatchStatus } from '@lib/processBatches'
 import {
@@ -141,9 +133,7 @@ function buildTimelineSteps(batch: ProcessBatchStatus): TimelineStep[] {
   return timelineSteps
 }
 
-export function PipelineTimelineCard({
-  batch,
-}: PipelineTimelineCardProps): ReactElement {
+export function PipelineTimelineCard({ batch }: PipelineTimelineCardProps): ReactElement {
   const timelineSteps = buildTimelineSteps(batch)
 
   return (

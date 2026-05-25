@@ -6,13 +6,7 @@ import { getBatchSummary } from '@lib/queries'
 
 export const dynamic = 'force-dynamic'
 
-function SummaryCard({
-  totalBatches,
-  totalDocuments,
-}: {
-  totalBatches: number
-  totalDocuments: number
-}) {
+function SummaryCard({ totalBatches, totalDocuments }: { totalBatches: number; totalDocuments: number }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <div className="rounded-2xl border border-moss/15 bg-white p-5 shadow-panel">
