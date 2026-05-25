@@ -1,6 +1,7 @@
 import { createElement } from 'react'
 import type { Decorator, Preview } from '@storybook/nextjs-vite'
 import { SessionProvider } from 'next-auth/react'
+import ThemeProvider from '../components/ThemeProvider'
 import '../app/globals.css'
 
 const withRootLayout: Decorator = (story) => {
@@ -11,6 +12,10 @@ const withRootLayout: Decorator = (story) => {
 
 const withSessionProvider: Decorator = (story) => {
   return createElement(SessionProvider, { session: null }, story())
+}
+
+const withThemeProvider: Decorator = (story) => {
+  return createElement(ThemeProvider, null, story())
 }
 
 const preview: Preview = {
@@ -39,7 +44,7 @@ const preview: Preview = {
       },
     },
   },
-  decorators: [withRootLayout, withSessionProvider],
+  decorators: [withRootLayout, withSessionProvider, withThemeProvider],
   tags: ['autodocs'],
 }
 

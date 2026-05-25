@@ -2,8 +2,7 @@
 
 import { useState, useEffect, type ReactNode } from 'react'
 import Sidebar from '@organisms/Sidebar'
-import SidebarToggle from '@molecules/SidebarToggle'
-import { PanelLeftClose, PanelLeft } from 'lucide-react'
+import { SidebarVisibilityControl } from '@molecules/SidebarVisibilityControl'
 
 interface LayoutBodyProps {
   children: ReactNode
@@ -52,14 +51,17 @@ export default function LayoutBody({ children, isAuthenticated }: LayoutBodyProp
 
       {/* Desktop collapse toggle: always rendered, positioned at the content edge */}
       <div className="hidden md:block">
-        <button
-          type="button"
-          onClick={toggleCollapse}
-          className={`sticky top-20 z-50 ml-0 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-moss text-white shadow-sm hover:bg-moss/80 transition-all duration-300 ${sidebarCollapsed ? '-ml-6' : 'ml-0'}`}
-          title={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
+        <div
+          className={`sticky top-20 z-50 ml-0 transition-all duration-300 ${
+            sidebarCollapsed ? 'ml-0' : '-ml-3'
+          }`}
         >
-          {sidebarCollapsed ? <PanelLeft size={14} /> : <PanelLeftClose size={14} />}
-        </button>
+          <SidebarVisibilityControl
+            intent={sidebarCollapsed ? 'open' : 'close'}
+            surface="desktopRail"
+            onClick={toggleCollapse}
+          />
+        </div>
       </div>
 
       {/* Mobile sidebar overlay */}
@@ -71,7 +73,7 @@ export default function LayoutBody({ children, isAuthenticated }: LayoutBodyProp
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Mobile top bar with toggle */}
         <div className="flex h-16 items-center gap-4 border-b border-moss/10 bg-white/80 px-4 py-4 md:hidden">
-          <SidebarToggle onClick={() => setMobileOpen(true)} />
+          <SidebarVisibilityControl intent="open" surface="mobileBar" onClick={() => setMobileOpen(true)} />
           <p className="text-sm font-semibold text-ink">Preservation Pipeline</p>
         </div>
 

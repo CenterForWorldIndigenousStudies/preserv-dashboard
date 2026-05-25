@@ -67,7 +67,7 @@ export default defineConfig({
           globals: true,
           setupFiles: [],
           environment: 'node',
-          include: ['tests/unit/**/*.test.ts'],
+          include: ['tests/unit/**/*.test.{ts,tsx}'],
         },
       },
       {
@@ -79,7 +79,7 @@ export default defineConfig({
           environment: 'node',
           hookTimeout: 30000,
           testTimeout: 30000,
-          include: ['tests/integration/**/*.test.ts'],
+          include: ['tests/integration/**/*.test.{ts,tsx}'],
         },
       },
     ],

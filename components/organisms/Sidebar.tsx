@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { LayoutDashboard, ClipboardList, Database, BookOpen, FolderInput, X } from 'lucide-react'
+import { LayoutDashboard, ClipboardList, Database, BookOpen, FolderInput } from 'lucide-react'
 import {
   BATCH_SUMMARY_PATH,
   COLLECTIONS_PATH,
@@ -12,7 +12,10 @@ import {
   PROCESS_DOCUMENTS_PATH,
   READY_FOR_LIBRARY_PATH,
 } from '@constants/paths'
+import { AppVersion } from '@atoms/AppVersion'
+import { SidebarHeader } from '@atoms/SidebarHeader'
 import AuthStatus from '@molecules/AuthStatus'
+import { SidebarVisibilityControl } from '@molecules/SidebarVisibilityControl'
 
 export type SidebarVariant = 'desktop' | 'mobile'
 
@@ -77,18 +80,19 @@ export default function Sidebar({ variant, isOpen, onClose }: SidebarProps) {
           }
         `}
       >
-        {/* Sidebar header */}
-        <div className="flex h-16 items-center justify-between border-b border-moss/10 px-4">
-          <p className="text-sm font-semibold uppercase tracking-wide text-ink">Preservation Pipeline</p>
-          {/* Close button (mobile only) */}
-          <button
-            onClick={onClose}
-            className={`rounded p-1 text-ink hover:bg-sky ${isMobile ? 'md:hidden' : 'hidden'}`}
-            aria-label="Close navigation menu"
-          >
-            <X size={20} />
-          </button>
-        </div>
+        <SidebarHeader
+          action={
+            isMobile ? (
+              <SidebarVisibilityControl
+                intent="close"
+                surface="sidebarHeader"
+                onClick={onClose ?? (() => {})}
+              />
+            ) : undefined
+          }
+          className={`border-b border-moss/10 px-4 pb-3`}
+          title={`Preservation Pipeline`}
+        />
 
         {/* Navigation links */}
         <nav className="flex-1 overflow-y-auto py-4">
@@ -117,6 +121,7 @@ export default function Sidebar({ variant, isOpen, onClose }: SidebarProps) {
         {/* Auth status at bottom */}
         <div className="border-t border-moss/10 p-4">
           <AuthStatus />
+          <AppVersion />
         </div>
       </aside>
     </>
