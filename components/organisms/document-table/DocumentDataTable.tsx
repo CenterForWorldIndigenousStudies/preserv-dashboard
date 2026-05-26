@@ -35,8 +35,11 @@ interface DocumentDataTableProps<TData extends MRT_RowData & { id: string }, TFi
   rowSelection?: MRT_RowSelectionState
   onRowSelectionChange?: (updater: MRT_Updater<MRT_RowSelectionState>) => void
   enableRowSelection?: boolean
+  enableSorting?: boolean
   getRowId?: (row: TData) => string
   excludedRowIds?: readonly string[]
+  showToolbar?: boolean
+  showPager?: boolean
   styleVariant?: 'default' | 'reviewQueueDense'
 }
 
@@ -62,8 +65,11 @@ export function DocumentDataTable<TData extends MRT_RowData & { id: string }, TF
   rowSelection,
   onRowSelectionChange,
   enableRowSelection = false,
+  enableSorting = true,
   getRowId,
   excludedRowIds,
+  showToolbar = true,
+  showPager = true,
   styleVariant = 'default',
 }: DocumentDataTableProps<TData, TFilters>): ReactElement {
   const internalController = useDocumentTableController<TFilters>({ initialQuery })
@@ -149,40 +155,45 @@ export function DocumentDataTable<TData extends MRT_RowData & { id: string }, TF
       emptyMessage,
       styleVariant,
     }),
+    enableSorting,
     enableRowSelection,
     getRowId: getRowId ?? ((row) => row.id),
     manualFiltering: true,
     manualPagination: true,
-    manualSorting: true,
+    manualSorting: enableSorting,
     onRowSelectionChange,
-    onSortingChange: controller.setSorting,
+    onSortingChange: enableSorting ? controller.setSorting : undefined,
     state: {
       isLoading,
       rowSelection: rowSelection ?? {},
-      sorting: controller.sorting,
+      sorting: enableSorting ? controller.sorting : [],
     },
   })
 
   return (
     <div>
-      <DocumentTableToolbar
-        searchPlaceholder={searchPlaceholder}
-        searchValue={controller.search}
-        onSearchChange={controller.setSearch}
-        pageSize={controller.pageSize}
-        pageSizeOptions={DOCUMENT_TABLE_PAGE_SIZE_OPTIONS}
-        onPageSizeChange={controller.setPageSize}
-        totalCount={initialData?.totalCount}
-        leadingSlot={leadingToolbarSlot}
-        trailingSlot={trailingToolbarSlot}
-      />
+      {showToolbar ? (
+        <DocumentTableToolbar
+          searchPlaceholder={searchPlaceholder}
+          searchValue={controller.search}
+          onSearchChange={controller.setSearch}
+          pageSize={controller.pageSize}
+          pageSizeOptions={DOCUMENT_TABLE_PAGE_SIZE_OPTIONS}
+          onPageSizeChange={controller.setPageSize}
+          totalCount={initialData?.totalCount}
+          leadingSlot={leadingToolbarSlot}
+          trailingSlot={trailingToolbarSlot}
+        />
+      ) : null}
       <MaterialReactTable table={table} />
-      <DocumentTableCursorPager
-        page={controller.page}
-        pageInfo={pageInfo}
-        onPrevious={() => controller.goToPreviousPage(pageInfo.startCursor)}
-        onNext={() => controller.goToNextPage(pageInfo.endCursor)}
-      />
+      {showPager ? (
+        <DocumentTableCursorPager
+          page={controller.page}
+          pageInfo={pageInfo}
+          onPrevious={() => controller.goToPreviousPage(pageInfo.startCursor)}
+          onNext={() => controller.goToNextPage(pageInfo.endCursor)}
+        />
+      ) : null}
     </div>
   )
 }
