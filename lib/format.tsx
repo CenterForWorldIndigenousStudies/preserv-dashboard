@@ -109,6 +109,12 @@ export function parseMetadataValue(
     return { display: formatted ?? strValue, plainText: strValue }
   }
 
+  if (effectiveType === 'unix_timestamp') {
+    // Convert to an integer.
+    const formatted = parseInt(strValue, 10)
+    return { display: formatted ?? strValue, plainText: strValue }
+  }
+
   if (effectiveType === 'boolean') {
     const boolVal = Boolean(inner)
     return { display: boolVal ? 'True' : 'False', plainText: String(boolVal) }

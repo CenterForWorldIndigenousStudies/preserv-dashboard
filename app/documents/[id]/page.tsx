@@ -180,6 +180,8 @@ export default async function DocumentDetailPage({
                               <SourceId value={parsed.display as string} />
                             ) : ['source_folder_id', 'origin_parent_source_id'].includes(name) ? (
                               <SourceFolderId value={parsed.display as string} />
+                            ) : ['source_created_at', 'source_updated_at'].includes(name) ? (
+                              <DateAtom value={parsed.display as number} />
                             ) : (
                               parsed.display
                             )
