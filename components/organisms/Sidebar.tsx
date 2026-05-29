@@ -3,14 +3,16 @@
 import { useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { LayoutDashboard, ClipboardList, Database, BookOpen, FolderInput } from 'lucide-react'
+import { House, LayoutDashboard, ClipboardList, Database, BookOpen, FolderInput } from 'lucide-react'
 import {
   BATCH_SUMMARY_PATH,
   COLLECTIONS_PATH,
   COMPONENT_LIBRARY_PATH,
+  DASHBOARD_PATH,
   DB_SCHEMA_PATH,
   PROCESS_DOCUMENTS_PATH,
   READY_FOR_LIBRARY_PATH,
+  REVIEW_QUEUE_PATH,
 } from '@constants/paths'
 import { AppVersion } from '@atoms/AppVersion'
 import { SidebarHeader } from '@atoms/SidebarHeader'
@@ -26,8 +28,9 @@ interface SidebarProps {
 }
 
 const navItems = [
-  { href: '/', label: 'Overview', icon: LayoutDashboard },
-  { href: '/review-queue', label: 'Review Queue', icon: ClipboardList },
+  { href: '/', label: 'Overview', icon: House },
+  { href: DASHBOARD_PATH, label: 'Dashboard', icon: LayoutDashboard },
+  { href: REVIEW_QUEUE_PATH, label: 'Review Queue', icon: ClipboardList },
   { href: READY_FOR_LIBRARY_PATH, label: 'Ready for Library', icon: BookOpen },
   { href: BATCH_SUMMARY_PATH, label: 'Batch Summary', icon: Database },
   { href: PROCESS_DOCUMENTS_PATH, label: 'Process Documents', icon: FolderInput },

@@ -9,6 +9,8 @@ export const COLLECTIONS_PATH = `/collections` as const
 
 export const COMPONENT_LIBRARY_PATH = '/component-library' as const
 
+export const DASHBOARD_PATH = '/dashboard' as const
+
 export const DB_SCHEMA_PATH = '/db' as const
 
 export const DOCUMENTS_API_PATH = `${API_PATH}/documents` as const
@@ -31,6 +33,8 @@ export const PROCESS_START_PATH = `${PROCESS_PATH}/start` as const
 export const PROCESS_DOCUMENTS_PATH = `/process-documents` as const
 
 export const READY_FOR_LIBRARY_PATH = '/ready-for-library' as const
+
+export const REVIEW_QUEUE_PATH = '/review-queue' as const
 
 export const REVIEWS_PATH = `/reviews` as const
 
