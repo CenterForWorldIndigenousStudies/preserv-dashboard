@@ -7,9 +7,14 @@ import { PageHeader } from '@organisms/PageHeader'
 import { MermaidDiagram } from '@organisms/MermaidDiagram'
 
 export const dynamic = 'force-dynamic'
+const db_schema_markdown = 'PRESERVATION_DB.md'
 
 export default function DbPage(): ReactElement {
-  const filePath = path.join(process.cwd(), '../../documentation/db/PRESERVATION_DB.md')
+  let filePath = path.join(process.cwd(), `../../documentation/db/${db_schema_markdown}`)
+  // Check if the file exists before reading it
+  if (!fs.existsSync(filePath)) {
+    filePath = path.join(process.cwd(), db_schema_markdown)
+  }
   const source = fs.readFileSync(filePath, 'utf-8')
 
   const components: Components = {
