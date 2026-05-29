@@ -41,6 +41,19 @@ export const GoogleDriveLink: Story = {
   },
 }
 
+export const PreservationDocumentLink: Story = {
+  args: {
+    value: '550e8400-e29b-41d4-a716-446655440000',
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Renders a preservation document link when the value looks like a preservation document ID (UUID).',
+      },
+    },
+  },
+}
+
 export const PlainTextFallback: Story = {
   args: {
     value: 'not-a-google-drive-id',

@@ -53,7 +53,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    await markProcessStageCallbackReceived(batchId, 'document_splitter', new Date().toISOString())
+    await markProcessStageCallbackReceived(batchId, 'document_splitter', Math.floor(Date.now() / 1000))
     logEvent('info', 'document_splitter_callback_received', {
       batchId,
       requestId,

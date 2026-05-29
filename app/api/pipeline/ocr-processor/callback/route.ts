@@ -46,7 +46,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    await markProcessStageCallbackReceived(batchId, 'ocr_processor', new Date().toISOString())
+    await markProcessStageCallbackReceived(batchId, 'ocr_processor', Math.floor(Date.now() / 1000))
     logEvent('info', 'ocr_processor_callback_received', {
       batchId,
       requestId,

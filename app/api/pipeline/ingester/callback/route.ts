@@ -55,8 +55,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const receivedAtIso = new Date().toISOString()
-    await markProcessStageCallbackReceived(batchId, 'ingester', receivedAtIso)
+    const receivedAtUnix = Math.floor(Date.now() / 1000)
+    await markProcessStageCallbackReceived(batchId, 'ingester', receivedAtUnix)
     logEvent('info', 'ingester_callback_received', {
       batchId,
       requestId,

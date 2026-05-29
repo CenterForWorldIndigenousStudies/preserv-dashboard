@@ -20,9 +20,10 @@ export function SourceFolderId({ value, maxTruncationLength = 0 }: SourceFolderI
   }
 
   const href = `https://drive.google.com/drive/folders/${normalizedValue}`
+  const title = `View Google Drive folder ${normalizedValue}`
 
   return (
-    <a href={href} target="_blank" rel="noreferrer" className="text-moss hover:underline" title={href}>
+    <a href={href} target="_blank" rel="noreferrer" className="text-moss hover:underline" title={title}>
       {truncatedSourceFolderId}
     </a>
   )

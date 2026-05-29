@@ -69,8 +69,8 @@ interface ProcessStageCollectionDetails {
 
 interface ProcessStageCallbackDetails {
   delivery_status?: string | null
-  notified_at?: string | null
-  received_at?: string | null
+  notified_at?: unknown
+  received_at?: unknown
   http_status?: unknown
   error_type?: string | null
   error_message?: string | null
@@ -80,10 +80,10 @@ interface ProcessStageDetails {
   status?: string
   request_id?: string | null
   requested_by_app?: string | null
-  initiated_at?: string | null
-  started_at?: string | null
-  completed_at?: string | null
-  last_transition_at?: string | null
+  initiated_at?: unknown
+  started_at?: unknown
+  completed_at?: unknown
+  last_transition_at?: unknown
   source_folder_ids?: unknown
   collection?: ProcessStageCollectionDetails | null
   processed_count?: unknown
@@ -116,12 +116,19 @@ interface ProcessPipelineDetails {
 
 interface ProcessBatchDetails {
   pipeline?: ProcessPipelineDetails | null
+  data_ingester?: ProcessStageDetails | null
   ingester?: ProcessStageDetails | null
+  document_splitter_pass_1?: ProcessStageDetails | null
+  document_splitter_pass_2?: ProcessStageDetails | null
   document_splitter?: ProcessStageDetails | null
+  page_rotator_pass_1?: ProcessStageDetails | null
+  page_rotator_pass_2?: ProcessStageDetails | null
   page_rotator?: ProcessStageDetails | null
   ocr_processor?: ProcessStageDetails | null
   content_dedup?: ProcessStageDetails | null
 }
+
+type CallbackStageKey = 'ingester' | 'document_splitter' | 'page_rotator' | 'ocr_processor' | 'content_dedup'
 
 function parseProcessingDetails(raw: string | null): ProcessBatchDetails {
   if (!raw?.trim()) {
@@ -153,6 +160,28 @@ function normalizeText(value: string | null | undefined): string | null {
   return normalized.length > 0 ? normalized : null
 }
 
+function parseTimestamp(value: unknown): string | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return new Date(value * 1000).toISOString()
+  }
+
+  if (typeof value !== 'string') {
+    return null
+  }
+
+  const normalized = value.trim()
+  if (!normalized) {
+    return null
+  }
+
+  if (/^\d+$/.test(normalized)) {
+    return new Date(Number(normalized) * 1000).toISOString()
+  }
+
+  const parsed = new Date(normalized)
+  return Number.isNaN(parsed.getTime()) ? normalized : parsed.toISOString()
+}
+
 function toIsoString(value: Date | null): string | null {
   return value?.toISOString() ?? null
 }
@@ -170,8 +199,8 @@ function parseStageCallbackFields(
 > {
   return {
     callbackDeliveryStatus: normalizeText(stage.callback?.delivery_status ?? null),
-    callbackNotifiedAt: normalizeText(stage.callback?.notified_at ?? null),
-    callbackReceivedAt: normalizeText(stage.callback?.received_at ?? null),
+    callbackNotifiedAt: parseTimestamp(stage.callback?.notified_at ?? null),
+    callbackReceivedAt: parseTimestamp(stage.callback?.received_at ?? null),
     callbackHttpStatus:
       typeof stage.callback?.http_status === 'number' && Number.isFinite(stage.callback.http_status)
         ? stage.callback.http_status
@@ -244,10 +273,10 @@ function parseStageStatus(stage: ProcessStageDetails | null | undefined): Proces
     status: normalizeText(stage.status),
     requestId: normalizeText(stage.request_id ?? null),
     requestedByApp: normalizeText(stage.requested_by_app ?? null),
-    initiatedAt: normalizeText(stage.initiated_at ?? null),
-    startedAt: normalizeText(stage.started_at ?? null),
-    completedAt: normalizeText(stage.completed_at ?? null),
-    lastTransitionAt: normalizeText(stage.last_transition_at ?? null),
+    initiatedAt: parseTimestamp(stage.initiated_at ?? null),
+    startedAt: parseTimestamp(stage.started_at ?? null),
+    completedAt: parseTimestamp(stage.completed_at ?? null),
+    lastTransitionAt: parseTimestamp(stage.last_transition_at ?? null),
     error: normalizeText(stage.error),
     ...parseStageCallbackFields(stage),
     ...parseStageCountFields(stage),
@@ -256,6 +285,60 @@ function parseStageStatus(stage: ProcessStageDetails | null | undefined): Proces
     completedPasses,
     sourceFolderIds: parseStringArray(stage.source_folder_ids),
     ...parseStageCollectionFields(stage),
+  }
+}
+
+function passStageEntries(
+  details: ProcessBatchDetails,
+  prefix: 'document_splitter' | 'page_rotator',
+): Array<{ key: string; passNumber: number; details: ProcessStageDetails }> {
+  const entries: Array<{ key: string; passNumber: number; details: ProcessStageDetails }> = []
+
+  for (const [key, value] of Object.entries(details)) {
+    if (!key.startsWith(`${prefix}_pass_`) || !value || typeof value !== 'object') {
+      continue
+    }
+
+    const rawPass = key.slice(`${prefix}_pass_`.length)
+    const passNumber = Number(rawPass)
+    if (!Number.isFinite(passNumber) || passNumber < 1) {
+      continue
+    }
+
+    entries.push({ key, passNumber, details: value as ProcessStageDetails })
+  }
+
+  return entries.sort((left, right) => left.passNumber - right.passNumber)
+}
+
+function parsePassStageStatus(
+  details: ProcessBatchDetails,
+  prefix: 'document_splitter' | 'page_rotator',
+): ProcessStageStatus | null {
+  const entries = passStageEntries(details, prefix)
+  const latestEntry = entries.at(-1)
+  const latestStage = latestEntry?.details ?? (details[prefix] ?? null)
+  const parsed = parseStageStatus(latestStage)
+  if (!parsed) {
+    return null
+  }
+
+  if (entries.length === 0) {
+    return parsed
+  }
+
+  const inferredCompletedPasses = entries
+    .filter((entry) => {
+      const status = entry.details.status?.trim()
+      return status === 'completed' || status === 'review_needed'
+    })
+    .map((entry) => entry.passNumber)
+
+  return {
+    ...parsed,
+    currentPass: parseNumber(latestEntry?.details.current_pass) || latestEntry?.passNumber || parsed.currentPass,
+    maxPasses: parseNumber(latestEntry?.details.max_passes) || entries.length || parsed.maxPasses,
+    completedPasses: parsed.completedPasses.length > 0 ? parsed.completedPasses : inferredCompletedPasses,
   }
 }
 
@@ -269,9 +352,9 @@ function toProcessBatchStatus(batch: SelectedBatchFields): ProcessBatchStatus {
     createdAt: toIsoString(batch.created_at),
     pipelineRequestedStages: parseStringArray(details.pipeline?.requested_stages),
     pipelineConfig: parsePipelineConfig(details.pipeline?.config),
-    ingester: parseStageStatus(details.ingester),
-    documentSplitter: parseStageStatus(details.document_splitter),
-    pageRotator: parseStageStatus(details.page_rotator),
+    ingester: parseStageStatus(details.data_ingester ?? details.ingester),
+    documentSplitter: parsePassStageStatus(details, 'document_splitter'),
+    pageRotator: parsePassStageStatus(details, 'page_rotator'),
     ocrProcessor: parseStageStatus(details.ocr_processor),
     contentDedup: parseStageStatus(details.content_dedup),
   }
@@ -388,8 +471,8 @@ export async function setProcessBatchRequestedStages(batchId: string, requestedS
 
 async function updateProcessStageCallbackReceived(
   batchId: string,
-  stageKey: 'ingester' | 'document_splitter' | 'page_rotator' | 'ocr_processor' | 'content_dedup',
-  receivedAtIso: string,
+  stageKey: CallbackStageKey,
+  receivedAt: number | string,
 ): Promise<void> {
   const batch = await db.batches.findUnique({
     where: { id: batchId },
@@ -401,18 +484,20 @@ async function updateProcessStageCallbackReceived(
   }
 
   const details = parseProcessingDetails(batch.processing_details)
-  const stageDetails = details[stageKey]
-  if (!stageDetails) {
+  const stageDetailKey = resolveStageDetailKey(details, stageKey)
+  const stageDetails = stageDetailKey ? details[stageDetailKey as keyof ProcessBatchDetails] : null
+  if (!stageDetailKey || !stageDetails || typeof stageDetails !== 'object') {
     throw new Error(`Batch ${batchId} does not contain ${stageKey} processing details`)
   }
+  const currentStageDetails = stageDetails as ProcessStageDetails
 
   const nextDetails: ProcessBatchDetails = {
     ...details,
-    [stageKey]: {
-      ...stageDetails,
+    [stageDetailKey]: {
+      ...currentStageDetails,
       callback: {
-        ...(stageDetails.callback ?? {}),
-        received_at: receivedAtIso,
+        ...(currentStageDetails.callback ?? {}),
+        received_at: receivedAt,
       },
     },
   }
@@ -427,8 +512,30 @@ async function updateProcessStageCallbackReceived(
 
 export async function markProcessStageCallbackReceived(
   batchId: string,
-  stageKey: 'ingester' | 'document_splitter' | 'page_rotator' | 'ocr_processor' | 'content_dedup',
-  receivedAtIso: string,
+  stageKey: CallbackStageKey,
+  receivedAt: number | string,
 ): Promise<void> {
-  await updateProcessStageCallbackReceived(batchId, stageKey, receivedAtIso)
+  await updateProcessStageCallbackReceived(batchId, stageKey, receivedAt)
+}
+
+function resolveStageDetailKey(
+  details: ProcessBatchDetails,
+  stageKey: CallbackStageKey,
+): string | null {
+  switch (stageKey) {
+    case 'ingester':
+      return details.data_ingester ? 'data_ingester' : details.ingester ? 'ingester' : null
+    case 'document_splitter': {
+      const latest = passStageEntries(details, 'document_splitter').at(-1)
+      return latest?.key ?? (details.document_splitter ? 'document_splitter' : null)
+    }
+    case 'page_rotator': {
+      const latest = passStageEntries(details, 'page_rotator').at(-1)
+      return latest?.key ?? (details.page_rotator ? 'page_rotator' : null)
+    }
+    case 'ocr_processor':
+      return details.ocr_processor ? 'ocr_processor' : null
+    case 'content_dedup':
+      return details.content_dedup ? 'content_dedup' : null
+  }
 }

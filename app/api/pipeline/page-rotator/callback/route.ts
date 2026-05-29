@@ -55,7 +55,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    await markProcessStageCallbackReceived(batchId, 'page_rotator', new Date().toISOString())
+    await markProcessStageCallbackReceived(batchId, 'page_rotator', Math.floor(Date.now() / 1000))
     logEvent('info', 'page_rotator_callback_received', {
       batchId,
       requestId,

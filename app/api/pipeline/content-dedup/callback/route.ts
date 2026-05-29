@@ -45,7 +45,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    await markProcessStageCallbackReceived(batchId, 'content_dedup', new Date().toISOString())
+    await markProcessStageCallbackReceived(batchId, 'content_dedup', Math.floor(Date.now() / 1000))
     logEvent('info', 'content_dedup_callback_received', {
       batchId,
       requestId,

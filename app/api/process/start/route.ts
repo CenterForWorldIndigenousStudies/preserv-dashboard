@@ -22,6 +22,8 @@ interface ProcessStartRequestBody {
 interface IngesterAcceptedResponse {
   batch_id?: unknown
   batch_name?: unknown
+  error?: unknown
+  detail?: unknown
 }
 
 interface IngesterTriggerConfig {
@@ -111,6 +113,24 @@ function requireIngesterTriggerConfig(): IngesterTriggerConfig {
   return { ingesterBaseUrl, triggerToken, callbackToken }
 }
 
+function normalizeIngesterErrorMessage(payload: IngesterAcceptedResponse): string | null {
+  if (typeof payload.error === 'string') {
+    const normalized = payload.error.trim()
+    if (normalized) {
+      return normalized
+    }
+  }
+
+  if (typeof payload.detail === 'string') {
+    const normalized = payload.detail.trim()
+    if (normalized) {
+      return normalized
+    }
+  }
+
+  return null
+}
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const session = await getDashboardSession()
   const startedBy = session?.user?.email?.trim()
@@ -189,17 +209,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       body: JSON.stringify(ingestPayload),
       cache: 'no-store',
     })
-    const payload = (await response.json()) as IngesterAcceptedResponse & { error?: string }
+    const payload = (await response.json()) as IngesterAcceptedResponse
     if (!response.ok) {
+      const errorMessage = normalizeIngesterErrorMessage(payload)
       logEvent('error', 'ingester_trigger_failed', {
         requestId,
         batchName,
         startedBy,
         ingesterBaseUrl: triggerConfig.ingesterBaseUrl,
         statusCode: response.status,
-        errorMessage: payload.error ?? null,
+        errorMessage,
       })
-      return NextResponse.json(payload, { status: response.status })
+      return NextResponse.json(
+        errorMessage ? { ...payload, error: errorMessage } : payload,
+        { status: response.status },
+      )
     }
 
     const batchId = typeof payload.batch_id === 'string' ? payload.batch_id.trim() : ''
