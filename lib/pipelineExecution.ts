@@ -4,12 +4,11 @@ import {
   OCR_PROCESSOR_STAGE,
   PAGE_ROTATOR_STAGE,
 } from '@constants/pipeline'
-import type { ProcessBatchStatus, ProcessStageStatus } from '@lib/processBatches'
 import {
-  legacyRequestedStagesToPipelineConfig,
   type PipelineConfig,
   type PipelineExecutionStep,
 } from '@lib/pipelineConfig'
+import type { ProcessBatchStatus, ProcessStageStatus } from 'types/pipelineContracts'
 
 export type PipelineStepRuntimeStatus = 'pending' | 'queued' | 'running' | 'completed' | 'failed' | 'review_needed'
 
@@ -20,6 +19,21 @@ const ORCHESTRATED_SERVICES = new Set<string>([
   OCR_PROCESSOR_STAGE,
   CONTENT_DEDUP_STAGE,
 ])
+
+const INGEST_ONLY_PIPELINE_CONFIG: PipelineConfig = {
+  profileId: 'custom',
+  mode: 'custom',
+  executionPlan: [
+    {
+      id: 'step-ingester',
+      stepId: 'ingester',
+      service: 'ingester',
+      label: 'Ingest',
+      order: 0,
+      enabled: true,
+    },
+  ],
+}
 
 function normalizeRuntimeStatus(status: string | null | undefined): PipelineStepRuntimeStatus {
   switch (status) {
@@ -60,7 +74,7 @@ function getStageForService(
 }
 
 export function getPipelineConfigForBatch(batch: ProcessBatchStatus): PipelineConfig {
-  return batch.pipelineConfig ?? legacyRequestedStagesToPipelineConfig(batch.pipelineRequestedStages)
+  return batch.pipelineConfig ?? INGEST_ONLY_PIPELINE_CONFIG
 }
 
 export function getOrchestratedExecutionPlan(batch: ProcessBatchStatus): PipelineExecutionStep[] {

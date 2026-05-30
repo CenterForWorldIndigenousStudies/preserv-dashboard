@@ -137,7 +137,7 @@ Additional project documentation:
 
 - [Environment variables](../../documentation/dashboard/ENV_VARS.md)
 - [Pipeline trigger and callback architecture](../../documentation/dashboard/PIPELINE_TRIGGER_CALLBACK_ARCHITECTURE.md)
-- [Current process-page integration](../../documentation/dashboard/PIPELINE_INGEST_INTEGRATION.md)
+- [Current pipeline intiation integration](../../documentation/dashboard/PIPELINE_INITIATION_INTEGRATION.md)
 - [Component architecture](../../documentation/dashboard/COMPONENT_ARCHITECTURE.md)
 - [Semantic CSS](../../documentation/dashboard/styles/SEMANTIC_CLASSES.md)
 - [Storybook deployment](../../documentation/dashboard/DEPLOYING_STORYBOOK.md)

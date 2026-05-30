@@ -5,12 +5,10 @@ const {
   mockGetDashboardSession,
   mockLogEvent,
   mockSetProcessBatchPipelineConfig,
-  mockSetProcessBatchRequestedStages,
 } = vi.hoisted(() => ({
   mockGetDashboardSession: vi.fn(),
   mockLogEvent: vi.fn(),
   mockSetProcessBatchPipelineConfig: vi.fn(),
-  mockSetProcessBatchRequestedStages: vi.fn(),
 }))
 
 vi.mock('@root/auth', () => ({
@@ -23,7 +21,6 @@ vi.mock('@lib/observability', () => ({
 
 vi.mock('@lib/processBatches', () => ({
   setProcessBatchPipelineConfig: mockSetProcessBatchPipelineConfig,
-  setProcessBatchRequestedStages: mockSetProcessBatchRequestedStages,
 }))
 
 import { POST } from '../../../app/api/process/start/route'
@@ -67,7 +64,20 @@ describe('process start route', () => {
       body: JSON.stringify({
         batchName: 'Test',
         sourceFolderIds: ['folder-1'],
-        requestedStages: [],
+        pipelineConfig: {
+          profileId: 'custom',
+          mode: 'custom',
+          executionPlan: [
+            {
+              id: 'step-ingester',
+              stepId: 'ingester',
+              service: 'ingester',
+              label: 'Ingest',
+              order: 0,
+              enabled: true,
+            },
+          ],
+        },
       }),
     })
 
@@ -86,6 +96,85 @@ describe('process start route', () => {
       }),
     )
     expect(mockSetProcessBatchPipelineConfig).not.toHaveBeenCalled()
-    expect(mockSetProcessBatchRequestedStages).not.toHaveBeenCalled()
+  })
+
+  it('rejects process starts that omit pipeline config', async () => {
+    const request = new NextRequest('http://localhost/api/process/start', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        batchName: 'Test',
+        sourceFolderIds: ['folder-1'],
+      }),
+    })
+
+    const response = await POST(request)
+    const payload = (await response.json()) as { error?: string }
+
+    expect(response.status).toBe(400)
+    expect(payload.error).toBe('pipelineConfig is required.')
+    expect(fetch).not.toHaveBeenCalled()
+    expect(mockSetProcessBatchPipelineConfig).not.toHaveBeenCalled()
+  })
+
+  it('sends pipeline config to data-ingester and persists it after acceptance', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ batch_id: 'batch-1', batch_name: 'Test' }), {
+        status: 202,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+
+    const pipelineConfig = {
+      profileId: 'custom',
+      mode: 'custom',
+      executionPlan: [
+        {
+          id: 'step-ingester',
+          stepId: 'ingester',
+          service: 'ingester',
+          label: 'Ingest',
+          order: 0,
+          enabled: true,
+        },
+        {
+          id: 'step-normalize-pass-1-split',
+          stepId: 'normalize-pass-1',
+          service: 'document-splitter',
+          label: 'Split Pass 1',
+          order: 1,
+          enabled: true,
+          pass: 1,
+        },
+      ],
+    }
+
+    const request = new NextRequest('http://localhost/api/process/start', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        batchName: 'Test',
+        sourceFolderIds: ['folder-1'],
+        pipelineConfig,
+      }),
+    })
+
+    const response = await POST(request)
+
+    expect(response.status).toBe(202)
+    expect(fetch).toHaveBeenCalledTimes(1)
+    const fetchCall = vi.mocked(fetch).mock.calls[0]
+    const requestInit = fetchCall?.[1]
+    expect(typeof requestInit?.body).toBe('string')
+    if (typeof requestInit?.body !== 'string') {
+      throw new Error('Expected dashboard to send a JSON string body to data-ingester.')
+    }
+    const ingesterPayload = JSON.parse(requestInit.body) as { pipeline_config?: unknown }
+    expect(ingesterPayload.pipeline_config).toEqual(pipelineConfig)
+    expect(mockSetProcessBatchPipelineConfig).toHaveBeenCalledWith('batch-1', pipelineConfig)
   })
 })

@@ -394,45 +394,6 @@ export function pipelineConfigToRequestedStages(config: PipelineConfig): string[
   return Array.from(new Set(requestedStages))
 }
 
-export function legacyRequestedStagesToPipelineConfig(requestedStages: string[]): PipelineConfig {
-  const normalized = new Set(
-    requestedStages
-      .map((stage) => stage.trim())
-      .filter((stage): stage is (typeof SUPPORTED_DOWNSTREAM_STAGES)[number] =>
-        SUPPORTED_DOWNSTREAM_STAGES.includes(stage as (typeof SUPPORTED_DOWNSTREAM_STAGES)[number]),
-      ),
-  )
-
-  const draft = createDefaultDraft()
-  draft.mode = 'custom'
-
-  const includeSplitter = normalized.has(DOCUMENT_SPLITTER_STAGE)
-  const includeRotator = normalized.has(PAGE_ROTATOR_STAGE)
-
-  draft.steps.normalizePass1 = {
-    enabled: includeSplitter || includeRotator,
-    advancedOpen: false,
-    subSelection: {
-      split: includeSplitter,
-      rotate: includeRotator,
-    },
-  }
-
-  draft.steps.normalizePass2 = {
-    enabled: includeSplitter && includeRotator,
-    advancedOpen: false,
-    subSelection: {
-      split: includeSplitter && includeRotator,
-      rotate: includeSplitter && includeRotator,
-    },
-  }
-
-  draft.steps.ocrProcessor = normalized.has(OCR_PROCESSOR_STAGE)
-  draft.steps.contentDedup = normalized.has(CONTENT_DEDUP_STAGE)
-
-  return draftToPipelineConfig(applyDependencyRule(draft))
-}
-
 export function getEnabledSteps(draft: PipelineSelectionDraft): string[] {
   const steps: string[] = ['Ingest']
   if (draft.steps.normalizePass1.enabled) {

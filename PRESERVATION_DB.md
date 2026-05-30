@@ -307,6 +307,7 @@ artifacts.
 | `origin_source_id` | Original upstream Google Drive file ID for this document lineage. | `preserv-data-ingester` | Stable original-source identity, useful when comparing imported vs managed artifacts. |
 | `origin_parent_source_id` | Original upstream parent Google Drive folder ID for this document lineage. | `preserv-data-ingester` | Group or filter by original source folder. |
 | `origin_parent_name` | Original upstream parent Google Drive folder name for this document lineage. | `preserv-data-ingester` | Human-readable display of original source location. |
+| `preservation_candidate` | Boolean flag for the current active preservation artifact in a lineage. | Shared pipeline services | Marks the artifact that should continue through downstream preservation stages and final Fedora ingest. |
 | `comment_pipeline` | Structured pipeline comments keyed by service run identity. | Pipeline services that persist review/failure context | Show per-run processing notes, review reasons, and failure context without overloading `document_quality.comment`. |
 | `content_dedup_text_source_id` | Google Drive file ID of the document artifact used as the text source for content deduplication. | `preserv-content-dedup` | Trace which managed artifact was actually hashed and compared during content deduplication. |
 
@@ -314,6 +315,8 @@ Practical rule:
 
 - if the dashboard needs the current managed file, prefer `source_id`
 - if the dashboard needs original provenance, prefer the `origin_*` keys
+- if the dashboard or a downstream service needs the current pipeline artifact,
+  prefer `preservation_candidate=true`
 - if the dashboard needs per-service processing or failure notes, prefer `comment_pipeline`
 
 ### Legacy And Import Metadata

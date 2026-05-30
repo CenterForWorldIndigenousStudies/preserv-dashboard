@@ -30,8 +30,8 @@ export function ProcessSelectedFoldersPanel({ folders }: ProcessSelectedFoldersP
         ) : (
           <List disablePadding sx={{ display: 'grid', gap: 1.5 }}>
             {folders.map((folder) => (
-              <Paper key={folder.id} elevation={0} sx={{ p: 2, borderRadius: 3, bgcolor: 'background.default' }}>
-                <ListItem disableGutters disablePadding>
+              <ListItem key={folder.id} disableGutters disablePadding sx={{ display: 'block' }}>
+                <Paper elevation={0} sx={{ p: 2, borderRadius: 3, bgcolor: 'background.default' }}>
                   <Box>
                     <Typography variant="body1" sx={{ fontWeight: 600 }}>
                       {folder.name}
@@ -40,8 +40,8 @@ export function ProcessSelectedFoldersPanel({ folders }: ProcessSelectedFoldersP
                       {folder.id}
                     </Typography>
                   </Box>
-                </ListItem>
-              </Paper>
+                </Paper>
+              </ListItem>
             ))}
           </List>
         )}

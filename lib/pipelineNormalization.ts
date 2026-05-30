@@ -1,0 +1,253 @@
+import { parsePipelineConfig } from '@lib/pipelineConfig'
+import type {
+  CallbackStageKey,
+  NormalizedProcessBatchDetails,
+  NormalizedProcessStageStatus,
+  PassStagePrefix,
+  RawProcessBatchDetails,
+  RawProcessStageDetails,
+} from 'types/pipelineContracts'
+
+function parseStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.map((item) => String(item).trim()).filter(Boolean) : []
+}
+
+function parseNumber(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0
+}
+
+function normalizeText(value: string | null | undefined): string | null {
+  if (typeof value !== 'string') {
+    return value ?? null
+  }
+
+  const normalized = value.trim()
+  return normalized.length > 0 ? normalized : null
+}
+
+function parseTimestamp(value: unknown): string | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return new Date(value * 1000).toISOString()
+  }
+
+  if (typeof value !== 'string') {
+    return null
+  }
+
+  const normalized = value.trim()
+  if (!normalized) {
+    return null
+  }
+
+  if (/^\d+$/.test(normalized)) {
+    return new Date(Number(normalized) * 1000).toISOString()
+  }
+
+  const parsed = new Date(normalized)
+  return Number.isNaN(parsed.getTime()) ? normalized : parsed.toISOString()
+}
+
+function parseStageCallbackFields(
+  stage: RawProcessStageDetails,
+): Pick<
+  NormalizedProcessStageStatus,
+  | 'callbackDeliveryStatus'
+  | 'callbackNotifiedAt'
+  | 'callbackReceivedAt'
+  | 'callbackHttpStatus'
+  | 'callbackErrorType'
+  | 'callbackErrorMessage'
+> {
+  return {
+    callbackDeliveryStatus: normalizeText(stage.callback?.delivery_status ?? null),
+    callbackNotifiedAt: parseTimestamp(stage.callback?.notified_at ?? null),
+    callbackReceivedAt: parseTimestamp(stage.callback?.received_at ?? null),
+    callbackHttpStatus:
+      typeof stage.callback?.http_status === 'number' && Number.isFinite(stage.callback.http_status)
+        ? stage.callback.http_status
+        : null,
+    callbackErrorType: normalizeText(stage.callback?.error_type ?? null),
+    callbackErrorMessage: normalizeText(stage.callback?.error_message ?? null),
+  }
+}
+
+function parseStageCountFields(
+  stage: RawProcessStageDetails,
+): Pick<
+  NormalizedProcessStageStatus,
+  | 'processedCount'
+  | 'ingestedCount'
+  | 'duplicateCount'
+  | 'exactDuplicateCount'
+  | 'skippedSameOriginCount'
+  | 'splitCount'
+  | 'childCount'
+  | 'passedThroughCount'
+  | 'rotatedCount'
+  | 'normalizedCount'
+  | 'ocrCompletedCount'
+  | 'versionedCount'
+  | 'resolvedCount'
+  | 'skippedCount'
+  | 'reviewNeededCount'
+  | 'failedCount'
+> {
+  return {
+    processedCount: parseNumber(stage.processed_count),
+    ingestedCount: parseNumber(stage.ingested_count),
+    duplicateCount: parseNumber(stage.duplicate_count),
+    exactDuplicateCount: parseNumber(stage.exact_duplicate_count),
+    skippedSameOriginCount: parseNumber(stage.skipped_same_origin_count),
+    splitCount: parseNumber(stage.split_count),
+    childCount: parseNumber(stage.child_count),
+    passedThroughCount: parseNumber(stage.passed_through_count),
+    rotatedCount: parseNumber(stage.rotated_count),
+    normalizedCount: parseNumber(stage.normalized_count),
+    ocrCompletedCount: parseNumber(stage.ocr_completed_count),
+    versionedCount: parseNumber(stage.versioned_count),
+    resolvedCount: parseNumber(stage.resolved_count),
+    skippedCount: parseNumber(stage.skipped_count),
+    reviewNeededCount: parseNumber(stage.review_needed_count),
+    failedCount: parseNumber(stage.failed_count),
+  }
+}
+
+function parseStageCollectionFields(
+  stage: RawProcessStageDetails,
+): Pick<NormalizedProcessStageStatus, 'collectionName' | 'collectionNotes'> {
+  return {
+    collectionName: normalizeText(stage.collection?.name ?? null),
+    collectionNotes: normalizeText(stage.collection?.notes ?? null),
+  }
+}
+
+export function normalizeStage(stage: RawProcessStageDetails | null | undefined): NormalizedProcessStageStatus | null {
+  if (!stage) {
+    return null
+  }
+
+  const completedPasses = parseStringArray(stage.completed_passes)
+    .map((value) => Number(value))
+    .filter(Number.isFinite)
+
+  return {
+    status: normalizeText(stage.status),
+    requestId: normalizeText(stage.request_id ?? null),
+    requestedByApp: normalizeText(stage.requested_by_app ?? null),
+    initiatedAt: parseTimestamp(stage.initiated_at ?? null),
+    startedAt: parseTimestamp(stage.started_at ?? null),
+    completedAt: parseTimestamp(stage.completed_at ?? null),
+    lastTransitionAt: parseTimestamp(stage.last_transition_at ?? null),
+    error: normalizeText(stage.error),
+    ...parseStageCallbackFields(stage),
+    ...parseStageCountFields(stage),
+    currentPass: parseNumber(stage.current_pass) || 1,
+    maxPasses: parseNumber(stage.max_passes) || 1,
+    completedPasses,
+    sourceFolderIds: parseStringArray(stage.source_folder_ids),
+    ...parseStageCollectionFields(stage),
+  }
+}
+
+export function getPassStageEntries(
+  details: RawProcessBatchDetails,
+  prefix: PassStagePrefix,
+): Array<{ key: string; passNumber: number; details: RawProcessStageDetails }> {
+  const entries: Array<{ key: string; passNumber: number; details: RawProcessStageDetails }> = []
+
+  for (const [key, value] of Object.entries(details)) {
+    if (!key.startsWith(`${prefix}_pass_`) || !value || typeof value !== 'object') {
+      continue
+    }
+
+    const rawPass = key.slice(`${prefix}_pass_`.length)
+    const passNumber = Number(rawPass)
+    if (!Number.isFinite(passNumber) || passNumber < 1) {
+      continue
+    }
+
+    entries.push({ key, passNumber, details: value as RawProcessStageDetails })
+  }
+
+  return entries.sort((left, right) => left.passNumber - right.passNumber)
+}
+
+export function normalizePassStage(
+  details: RawProcessBatchDetails,
+  prefix: PassStagePrefix,
+): NormalizedProcessStageStatus | null {
+  const entries = getPassStageEntries(details, prefix)
+  const latestEntry = entries.at(-1)
+  const latestStage = latestEntry?.details ?? (details[prefix] ?? null)
+  const parsed = normalizeStage(latestStage)
+  if (!parsed) {
+    return null
+  }
+
+  if (entries.length === 0) {
+    return parsed
+  }
+
+  const inferredCompletedPasses = entries
+    .filter((entry) => {
+      const status = entry.details.status?.trim()
+      return status === 'completed' || status === 'review_needed'
+    })
+    .map((entry) => entry.passNumber)
+
+  return {
+    ...parsed,
+    currentPass: parseNumber(latestEntry?.details.current_pass) || latestEntry?.passNumber || parsed.currentPass,
+    maxPasses: parseNumber(latestEntry?.details.max_passes) || entries.length || parsed.maxPasses,
+    completedPasses: parsed.completedPasses.length > 0 ? parsed.completedPasses : inferredCompletedPasses,
+  }
+}
+
+export function parseProcessingDetails(raw: string | null): RawProcessBatchDetails {
+  if (!raw?.trim()) {
+    return {}
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    return typeof parsed === 'object' && parsed !== null ? (parsed as RawProcessBatchDetails) : {}
+  } catch {
+    return {}
+  }
+}
+
+export function normalizeProcessBatchDetails(
+  details: RawProcessBatchDetails,
+): NormalizedProcessBatchDetails {
+  return {
+    pipelineRequestedStages: parseStringArray(details.pipeline?.requested_stages),
+    pipelineConfig: parsePipelineConfig(details.pipeline?.config),
+    ingester: normalizeStage(details.data_ingester ?? details.ingester),
+    documentSplitter: normalizePassStage(details, 'document_splitter'),
+    pageRotator: normalizePassStage(details, 'page_rotator'),
+    ocrProcessor: normalizeStage(details.ocr_processor),
+    contentDedup: normalizeStage(details.content_dedup),
+  }
+}
+
+export function resolveStageDetailKey(
+  details: RawProcessBatchDetails,
+  stageKey: CallbackStageKey,
+): string | null {
+  switch (stageKey) {
+    case 'ingester':
+      return details.data_ingester ? 'data_ingester' : details.ingester ? 'ingester' : null
+    case 'document_splitter': {
+      const latestEntry = getPassStageEntries(details, 'document_splitter').at(-1)
+      return latestEntry?.key ?? (details.document_splitter ? 'document_splitter' : null)
+    }
+    case 'page_rotator': {
+      const latestEntry = getPassStageEntries(details, 'page_rotator').at(-1)
+      return latestEntry?.key ?? (details.page_rotator ? 'page_rotator' : null)
+    }
+    case 'ocr_processor':
+      return details.ocr_processor ? 'ocr_processor' : null
+    case 'content_dedup':
+      return details.content_dedup ? 'content_dedup' : null
+  }
+}

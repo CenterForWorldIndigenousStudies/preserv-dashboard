@@ -21,7 +21,7 @@ Use repo documentation for operational detail instead of expanding this file:
 - component architecture: [documentation/dashboard/COMPONENT_ARCHITECTURE.md](../../documentation/dashboard/COMPONENT_ARCHITECTURE.md)
 - semantic styling rules: [documentation/dashboard/styles/SEMANTIC_CLASSES.md](../../documentation/dashboard/styles/SEMANTIC_CLASSES.md)
 - pipeline architecture: [documentation/dashboard/PIPELINE_TRIGGER_CALLBACK_ARCHITECTURE.md](../../documentation/dashboard/PIPELINE_TRIGGER_CALLBACK_ARCHITECTURE.md)
-- current process-page integration: [documentation/dashboard/PIPELINE_INGEST_INTEGRATION.md](../../documentation/dashboard/PIPELINE_INGEST_INTEGRATION.md)
+- current pipeline initiation integration: [documentation/dashboard/PIPELINE_INITIATION_INTEGRATION.md](../../documentation/dashboard/PIPELINE_INITIATION_INTEGRATION.md)
 - database connection guidance: [documentation/dashboard/db/CONNECTING_TO_DB.md](../../documentation/dashboard/db/CONNECTING_TO_DB.md)
 - database reference: [documentation/db/PRESERVATION_DB.md](../../documentation/db/PRESERVATION_DB.md)
 - testing overview: [documentation/dashboard/testing/TESTING.md](../../documentation/dashboard/testing/TESTING.md)

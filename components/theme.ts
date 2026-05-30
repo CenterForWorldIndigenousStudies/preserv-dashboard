@@ -190,8 +190,10 @@ const theme = createTheme({
           props: { variant: 'contained' as const, color: 'primary' },
           style: {
             backgroundColor: '#ff7637', // accent orange CTA
+            color: '#231f20',
             '&:hover': {
               backgroundColor: '#e56830',
+              color: '#231f20',
             },
           },
         },

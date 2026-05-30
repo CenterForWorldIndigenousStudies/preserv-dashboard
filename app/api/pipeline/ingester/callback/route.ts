@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { logEvent } from '@lib/observability'
+import { parseBearerToken, parsePipelineCallbackBody } from '@lib/pipelineCallbacks'
 import {
   shouldTriggerContentDedup,
   shouldTriggerDocumentSplitter,
@@ -12,20 +13,10 @@ import {
   triggerPageRotator,
 } from '@lib/pipelineTriggers'
 import { getProcessBatchStatus, markProcessStageCallbackReceived } from '@lib/processBatches'
+import type { PipelineCallbackBody } from 'types/pipelineContracts'
 
 export const dynamic = 'force-dynamic'
 export const preferredRegion = 'sfo1'
-
-interface IngesterCallbackBody {
-  batch_id?: unknown
-  request_id?: unknown
-  status?: unknown
-  error?: unknown
-}
-
-function parseBearerToken(authorization: string | null): string {
-  return (authorization ?? '').replace(/^Bearer\s+/i, '').trim()
-}
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const expectedToken = process.env.DATA_INGESTER_CALLBACK_TOKEN?.trim()
@@ -39,17 +30,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Unauthorized callback.' }, { status: 401 })
   }
 
-  let body: IngesterCallbackBody
+  let body: PipelineCallbackBody
   try {
-    body = (await request.json()) as IngesterCallbackBody
+    body = (await request.json()) as PipelineCallbackBody
   } catch {
     return NextResponse.json({ error: 'Request body must be valid JSON.' }, { status: 400 })
   }
 
-  const batchId = typeof body.batch_id === 'string' ? body.batch_id.trim() : ''
-  const requestId = typeof body.request_id === 'string' ? body.request_id.trim() : ''
-  const status = typeof body.status === 'string' ? body.status.trim() : ''
-  const errorMessage = typeof body.error === 'string' ? body.error.trim() : ''
+  const { batchId, requestId, status, errorMessage } = parsePipelineCallbackBody(body)
   if (!batchId) {
     return NextResponse.json({ error: 'batch_id is required.' }, { status: 400 })
   }

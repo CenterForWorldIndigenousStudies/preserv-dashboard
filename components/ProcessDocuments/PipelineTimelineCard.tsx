@@ -1,56 +1,19 @@
 'use client'
 
 import { type ReactElement } from 'react'
-import { Box, Collapse, List, ListItem, ListItemIcon, Paper, Typography } from '@mui/material'
+import { Box, Paper, Typography } from '@mui/material'
 
-import type { ProcessBatchStatus } from '@lib/processBatches'
+import { PipelineTimelineGroup, type TimelineStep } from '@molecules/PipelineTimelineGroup'
 import {
   getExecutionStepRuntimeStatus,
   getOrchestratedExecutionPlan,
   type PipelineStepRuntimeStatus,
 } from '@lib/pipelineExecution'
 import type { PipelineExecutionStep } from '@lib/pipelineConfig'
+import type { ProcessBatchStatus } from 'types/pipelineContracts'
 
 interface PipelineTimelineCardProps {
   batch: ProcessBatchStatus
-}
-
-const STATUS_COLORS: Record<PipelineStepRuntimeStatus, string> = {
-  pending: '#e0e0e0',
-  queued: '#94d9f8',
-  running: '#ff7637',
-  completed: '#355834',
-  failed: '#e96954',
-  review_needed: '#8d5f58',
-}
-
-function StatusDot({ status }: { status: PipelineStepRuntimeStatus }): ReactElement {
-  return (
-    <Box
-      sx={{
-        width: 10,
-        height: 10,
-        borderRadius: '50%',
-        bgcolor: STATUS_COLORS[status],
-        flexShrink: 0,
-      }}
-    />
-  )
-}
-
-interface TimelineStep {
-  label: string
-  status: PipelineStepRuntimeStatus
-  subSteps?: Array<{ label: string; status: PipelineStepRuntimeStatus }>
-}
-
-function formatStatusLabel(status: PipelineStepRuntimeStatus): string {
-  if (status === 'completed') return 'Done'
-  if (status === 'running') return 'Running...'
-  if (status === 'queued') return 'Queued'
-  if (status === 'failed') return 'Failed'
-  if (status === 'review_needed') return 'Needs review'
-  return 'Waiting'
 }
 
 function getGroupStatus(
@@ -174,80 +137,9 @@ export function PipelineTimelineCard({ batch }: PipelineTimelineCardProps): Reac
       </Box>
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-        {timelineSteps.map((step, index) => {
-          const isLast = index === timelineSteps.length - 1
-          return (
-            <Box key={step.label} sx={{ position: 'relative' }}>
-              {!isLast && (
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    left: 4,
-                    top: 28,
-                    bottom: 0,
-                    width: 2,
-                    bgcolor: 'divider',
-                    zIndex: 0,
-                  }}
-                />
-              )}
-              <Box sx={{ position: 'relative', display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', pt: 0.5 }}>
-                  <StatusDot status={step.status} />
-                </Box>
-
-                <Box sx={{ flex: 1, pb: isLast ? 0 : 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        fontWeight: step.status === 'completed' ? 500 : 600,
-                        color:
-                          step.status === 'completed'
-                            ? 'text.secondary'
-                            : step.status === 'failed'
-                              ? 'error.main'
-                              : 'ink.main',
-                      }}
-                    >
-                      {step.label}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                      {formatStatusLabel(step.status)}
-                    </Typography>
-                  </Box>
-
-                  {step.subSteps && step.subSteps.length > 0 && (
-                    <Collapse in={step.status !== 'pending'} timeout="auto" unmountOnExit>
-                      <List dense disablePadding sx={{ pl: 2 }}>
-                        {step.subSteps.map((subStep) => (
-                          <ListItem key={subStep.label} disablePadding sx={{ py: 0.25 }}>
-                            <ListItemIcon sx={{ minWidth: 28 }}>
-                              <StatusDot status={subStep.status} />
-                            </ListItemIcon>
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                fontWeight: 500,
-                                color: subStep.status === 'completed' ? 'text.secondary' : 'ink.main',
-                                mr: 1,
-                              }}
-                            >
-                              {subStep.label}
-                            </Typography>
-                            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                              {formatStatusLabel(subStep.status)}
-                            </Typography>
-                          </ListItem>
-                        ))}
-                      </List>
-                    </Collapse>
-                  )}
-                </Box>
-              </Box>
-            </Box>
-          )
-        })}
+        {timelineSteps.map((step, index) => (
+          <PipelineTimelineGroup key={step.label} step={step} isLast={index === timelineSteps.length - 1} />
+        ))}
       </Box>
     </Paper>
   )

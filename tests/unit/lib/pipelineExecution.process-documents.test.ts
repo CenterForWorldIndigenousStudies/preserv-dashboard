@@ -1,8 +1,12 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, test } from 'vitest'
 
+import {
+  getExecutionStepRuntimeStatus,
+  getNextEligibleExecutionStep,
+  getOrchestratedExecutionPlan,
+  type PipelineStepRuntimeStatus,
+} from '@lib/pipelineExecution'
 import type { PipelineConfig, PipelineExecutionStep } from '@lib/pipelineConfig'
-import { getNextEligibleExecutionStep, type PipelineStepRuntimeStatus } from '@lib/pipelineExecution'
-import { shouldTriggerDocumentSplitter, shouldTriggerPageRotator } from '@lib/pipelineTriggers'
 import type { ProcessBatchStatus, ProcessStageStatus } from 'types/pipelineContracts'
 
 function buildExecutionPlan(): PipelineExecutionStep[] {
@@ -32,6 +36,7 @@ function buildExecutionPlan(): PipelineExecutionStep[] {
       order: 2,
       enabled: true,
       pass: 1,
+      dependsOn: ['step-normalize-pass-1-split'],
     },
     {
       id: 'step-normalize-pass-2-split',
@@ -41,6 +46,7 @@ function buildExecutionPlan(): PipelineExecutionStep[] {
       order: 3,
       enabled: true,
       pass: 2,
+      dependsOn: ['step-normalize-pass-1-rotate'],
     },
     {
       id: 'step-normalize-pass-2-rotate',
@@ -50,6 +56,7 @@ function buildExecutionPlan(): PipelineExecutionStep[] {
       order: 4,
       enabled: true,
       pass: 2,
+      dependsOn: ['step-normalize-pass-2-split'],
     },
   ]
 }
@@ -119,68 +126,67 @@ function buildBatchStatus(overrides: Partial<ProcessBatchStatus> = {}): ProcessB
   }
 }
 
-function expectNextStep(batch: ProcessBatchStatus, expected: { service: string; pass?: 1 | 2 } | null): void {
-  const nextStep = getNextEligibleExecutionStep(batch)
-  if (expected === null) {
-    expect(nextStep).toBeNull()
-    return
-  }
-
-  expect(nextStep).not.toBeNull()
-  expect(nextStep?.service).toBe(expected.service)
-  expect(nextStep?.pass).toBe(expected.pass)
-}
-
-describe('normalization forward-processing orchestration', () => {
-  it('advances from split pass 1 to rotate pass 1', () => {
-    const batch = buildBatchStatus({
-      documentSplitter: buildStageStatus({
-        status: 'completed' satisfies PipelineStepRuntimeStatus,
-        currentPass: 1,
-        completedPasses: [1],
-      }),
-    })
-
-    expectNextStep(batch, { service: 'page-rotator', pass: 1 })
-    expect(shouldTriggerPageRotator(batch)).toBe(true)
-    expect(shouldTriggerDocumentSplitter(batch)).toBe(false)
-  })
-
-  it('advances from rotate pass 1 to split pass 2', () => {
-    const batch = buildBatchStatus({
-      documentSplitter: buildStageStatus({
-        status: 'completed' satisfies PipelineStepRuntimeStatus,
-        currentPass: 1,
-        completedPasses: [1],
-      }),
-      pageRotator: buildStageStatus({
-        status: 'completed' satisfies PipelineStepRuntimeStatus,
-        currentPass: 1,
-        completedPasses: [1],
-      }),
-    })
-
-    expectNextStep(batch, { service: 'document-splitter', pass: 2 })
-    expect(shouldTriggerDocumentSplitter(batch)).toBe(true)
-    expect(shouldTriggerPageRotator(batch)).toBe(false)
-  })
-
-  it('advances from split pass 2 to rotate pass 2', () => {
+describe('pipelineExecution process-documents behavior', () => {
+  test('returns rotate pass 2 as next eligible step after split pass 2 completes', () => {
     const batch = buildBatchStatus({
       documentSplitter: buildStageStatus({
         status: 'completed' satisfies PipelineStepRuntimeStatus,
         currentPass: 2,
+        maxPasses: 2,
         completedPasses: [1, 2],
       }),
       pageRotator: buildStageStatus({
         status: 'completed' satisfies PipelineStepRuntimeStatus,
         currentPass: 1,
+        maxPasses: 2,
         completedPasses: [1],
       }),
     })
 
-    expectNextStep(batch, { service: 'page-rotator', pass: 2 })
-    expect(shouldTriggerPageRotator(batch)).toBe(true)
-    expect(shouldTriggerDocumentSplitter(batch)).toBe(false)
+    expect(getNextEligibleExecutionStep(batch)?.service).toBe('page-rotator')
+    expect(getNextEligibleExecutionStep(batch)?.pass).toBe(2)
+  })
+
+  test('treats a pass as pending when the stage is running a different pass', () => {
+    const executionStep = buildExecutionPlan()[3]
+    const batch = buildBatchStatus({
+      documentSplitter: buildStageStatus({
+        status: 'running' satisfies PipelineStepRuntimeStatus,
+        currentPass: 1,
+        completedPasses: [1],
+      }),
+      pageRotator: buildStageStatus({
+        status: 'completed' satisfies PipelineStepRuntimeStatus,
+        currentPass: 1,
+        completedPasses: [1],
+      }),
+    })
+
+    expect(getExecutionStepRuntimeStatus(batch, executionStep)).toBe('pending')
+  })
+
+  test('does not infer normalize pass 2 from requested stages when pipeline config is absent', () => {
+    const batch = buildBatchStatus({
+      pipelineConfig: null,
+      documentSplitter: buildStageStatus({
+        status: 'completed' satisfies PipelineStepRuntimeStatus,
+        currentPass: 1,
+        maxPasses: 1,
+        completedPasses: [1],
+      }),
+      pageRotator: buildStageStatus({
+        status: 'completed' satisfies PipelineStepRuntimeStatus,
+        currentPass: 1,
+        maxPasses: 1,
+        completedPasses: [1],
+      }),
+    })
+
+    expect(getOrchestratedExecutionPlan(batch)).toEqual([
+      expect.objectContaining({
+        service: 'ingester',
+      }),
+    ])
+    expect(getNextEligibleExecutionStep(batch)).toBeNull()
   })
 })

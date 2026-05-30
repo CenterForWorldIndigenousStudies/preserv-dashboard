@@ -6,16 +6,13 @@ import { DASHBOARD_BASE_URL } from '@constants/server'
 import { getDashboardSession } from '@root/auth'
 import { logEvent } from '@lib/observability'
 import { parsePipelineConfig, pipelineConfigToRequestedStages, type PipelineConfig } from '@lib/pipelineConfig'
-import { setProcessBatchPipelineConfig, setProcessBatchRequestedStages } from '@lib/processBatches'
+import { setProcessBatchPipelineConfig } from '@lib/processBatches'
 
 interface ProcessStartRequestBody {
   batchName?: unknown
   sourceFolderIds?: unknown
   collectionName?: unknown
   collectionNotes?: unknown
-  // Legacy field - still accepted for backward compat
-  requestedStages?: unknown
-  // New pipeline config field
   pipelineConfig?: unknown
 }
 
@@ -30,6 +27,15 @@ interface IngesterTriggerConfig {
   ingesterBaseUrl: string
   triggerToken: string
   callbackToken: string
+}
+
+interface ValidatedProcessStartInput {
+  batchName: string
+  sourceFolderIds: string[]
+  collectionName: string | null
+  collectionNotes: string | null
+  pipelineConfig: PipelineConfig
+  requestedStages: string[]
 }
 
 export const dynamic = 'force-dynamic'
@@ -55,13 +61,6 @@ function buildRequestedStagesFromConfig(config: PipelineConfig): string[] {
   return pipelineConfigToRequestedStages(config)
 }
 
-function buildRequestedStagesFromLegacy(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    return []
-  }
-  return value.map((item) => (typeof item === 'string' ? item.trim() : '')).filter(Boolean)
-}
-
 async function parseProcessStartRequestBody(request: NextRequest): Promise<ProcessStartRequestBody | NextResponse> {
   try {
     return (await request.json()) as ProcessStartRequestBody
@@ -70,29 +69,36 @@ async function parseProcessStartRequestBody(request: NextRequest): Promise<Proce
   }
 }
 
-function resolveRequestedStages(pipelineConfig: PipelineConfig | null, legacyRequestedStages: string[]): string[] {
-  if (pipelineConfig) {
-    return buildRequestedStagesFromConfig(pipelineConfig)
-  }
-
-  if (legacyRequestedStages.length > 0) {
-    return legacyRequestedStages
-  }
-
-  return []
+async function persistRequestedStages(batchId: string, pipelineConfig: PipelineConfig): Promise<void> {
+  await setProcessBatchPipelineConfig(batchId, pipelineConfig)
 }
 
-async function persistRequestedStages(
-  batchId: string,
-  pipelineConfig: PipelineConfig | null,
-  requestedStages: string[],
-): Promise<void> {
-  if (pipelineConfig) {
-    await setProcessBatchPipelineConfig(batchId, pipelineConfig)
-    return
+function validateProcessStartInput(body: ProcessStartRequestBody): ValidatedProcessStartInput | NextResponse {
+  const batchName = normalizeText(body.batchName)
+  const sourceFolderIds = normalizeSourceFolderIds(body.sourceFolderIds)
+  const collectionName = normalizeText(body.collectionName)
+  const collectionNotes = normalizeText(body.collectionNotes)
+  const pipelineConfig = parsePipelineConfig(body.pipelineConfig)
+  const requestedStages = pipelineConfig ? buildRequestedStagesFromConfig(pipelineConfig) : []
+
+  if (!batchName) {
+    return NextResponse.json({ error: 'batchName is required.' }, { status: 400 })
+  }
+  if (sourceFolderIds.length === 0) {
+    return NextResponse.json({ error: 'At least one source folder must be selected.' }, { status: 400 })
+  }
+  if (!pipelineConfig) {
+    return NextResponse.json({ error: 'pipelineConfig is required.' }, { status: 400 })
   }
 
-  await setProcessBatchRequestedStages(batchId, requestedStages)
+  return {
+    batchName,
+    sourceFolderIds,
+    collectionName,
+    collectionNotes,
+    pipelineConfig,
+    requestedStages,
+  }
 }
 
 function requireIngesterTriggerConfig(): IngesterTriggerConfig {
@@ -151,24 +157,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return parsedBody
   }
 
-  const body = parsedBody
-  const batchName = normalizeText(body.batchName)
-  const sourceFolderIds = normalizeSourceFolderIds(body.sourceFolderIds)
-  const collectionName = normalizeText(body.collectionName)
-  const collectionNotes = normalizeText(body.collectionNotes)
-
-  // Parse pipeline config (new approach) or requestedStages (legacy)
-  const pipelineConfig = parsePipelineConfig(body.pipelineConfig)
-  const legacyRequestedStages = buildRequestedStagesFromLegacy(body.requestedStages)
-
-  const requestedStages = resolveRequestedStages(pipelineConfig, legacyRequestedStages)
-
-  if (!batchName) {
-    return NextResponse.json({ error: 'batchName is required.' }, { status: 400 })
+  const validatedInput = validateProcessStartInput(parsedBody)
+  if (validatedInput instanceof NextResponse) {
+    return validatedInput
   }
-  if (sourceFolderIds.length === 0) {
-    return NextResponse.json({ error: 'At least one source folder must be selected.' }, { status: 400 })
-  }
+
+  const {
+    batchName,
+    sourceFolderIds,
+    collectionName,
+    collectionNotes,
+    pipelineConfig,
+    requestedStages,
+  } = validatedInput
 
   const callbackUrl = new URL(DATA_INGESTER_CALLBACK_PATH, DASHBOARD_BASE_URL).toString()
   const requestId = randomUUID()
@@ -182,6 +183,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     initiated_at: new Date().toISOString(),
     source_folder_ids: sourceFolderIds,
     requested_stages: requestedStages,
+    pipeline_config: pipelineConfig,
     collection,
     callback: {
       url: callbackUrl,
@@ -231,7 +233,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       throw new Error('data-ingester response did not include batch_id.')
     }
 
-    await persistRequestedStages(batchId, pipelineConfig, requestedStages)
+    await persistRequestedStages(batchId, pipelineConfig)
 
     logEvent('info', 'ingester_trigger_accepted', {
       requestId,
