@@ -2010,7 +2010,7 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
 
   const mapVersionFamily = (): VersionFamily | null => {
     const group = canonicalGroup ?? variantMemberships[0]?.version_groups ?? null
-    if (!group || group.document_versions.length === 0) {
+    if (!group) {
       return null
     }
 

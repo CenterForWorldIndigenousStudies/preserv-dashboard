@@ -133,6 +133,43 @@ export default async function DocumentDetailPage({
               </div>
               {detail.version_family ? <DocumentVersionsButton versionFamily={detail.version_family} /> : null}
             </div>
+            {detail.versions.length > 0 ? (
+              <div className="mt-6 grid gap-x-6 gap-y-4 md:grid-cols-2">
+                {detail.versions.map((version) => (
+                  <div key={version.id} className="rounded-xl bg-sand/45 p-4">
+                    <dl className="grid gap-3">
+                      <div>
+                        <dt className="text-xs uppercase tracking-[0.15em] text-ink/60">Version Group</dt>
+                        <dd className="mt-1 break-words text-sm font-medium text-ink">{version.version_group_id}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs uppercase tracking-[0.15em] text-ink/60">Changes Summary</dt>
+                        <dd className="mt-1 break-words text-sm text-ink">{version.changes_summary ?? '-'}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs uppercase tracking-[0.15em] text-ink/60">Notes</dt>
+                        <dd className="mt-1 break-words text-sm text-ink">{version.notes ?? '-'}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs uppercase tracking-[0.15em] text-ink/60">Similarity</dt>
+                        <dd className="mt-1 break-words text-sm text-ink">
+                          {version.similarity_score !== null ? version.similarity_score : '-'}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs uppercase tracking-[0.15em] text-ink/60">Analyzed At</dt>
+                        <dd className="mt-1 break-words text-sm text-ink">
+                          {version.analyzed_at !== null ? <DateAtom value={version.analyzed_at} /> : '-'}
+                        </dd>
+                      </div>
+                    </dl>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {detail.version_family && detail.versions.length === 0 ? (
+              <p className="mt-4 text-sm text-ink/60">No version membership records are stored for this document.</p>
+            ) : null}
             {!detail.version_family && detail.document.is_duplicate ? (
               <p className="mt-4 text-sm text-ink/60">
                 This document is tagged as a duplicate, but the current registry data did not include a version group or

@@ -44,7 +44,7 @@ describe('getDocumentDetail version family mapping', () => {
     vi.clearAllMocks()
   })
 
-  it('deduplicates the canonical family row and forces canonical to display first as non-duplicate', async () => {
+  function mockBaseDocument(overrides: Partial<Record<string, unknown>> = {}): void {
     mockDocumentFindUnique.mockResolvedValue({
       id: 'canonical-1',
       filesize: 1024,
@@ -54,8 +54,17 @@ describe('getDocumentDetail version family mapping', () => {
       name: 'Canonical.pdf',
       created_at: new Date('2026-05-18T10:00:00Z'),
       updated_at: new Date('2026-05-18T10:00:00Z'),
+      ...overrides,
     })
     mockDocumentQualityFindUnique.mockResolvedValue(null)
+    mockDocumentToMetadataFindMany.mockResolvedValue([])
+    mockDocumentToBatchesFindMany.mockResolvedValue([])
+    mockDocumentToAuthorsFindMany.mockResolvedValue([])
+    mockVersionGroupsFindUnique.mockResolvedValue(null)
+  }
+
+  it('deduplicates the canonical family row and forces canonical to display first as non-duplicate', async () => {
+    mockBaseDocument()
     mockDocumentVersionsFindMany
       .mockResolvedValueOnce([
         {
@@ -64,6 +73,7 @@ describe('getDocumentDetail version family mapping', () => {
           version_group_id: 'vg-1',
           notes: null,
           changes_summary: null,
+          similarity_score: 0.99,
           analyzed_at: null,
           created_at: new Date('2026-05-18T10:01:00Z'),
           updated_at: new Date('2026-05-18T10:01:00Z'),
@@ -122,15 +132,24 @@ describe('getDocumentDetail version family mapping', () => {
           },
         },
       ])
-    mockDocumentToMetadataFindMany.mockResolvedValue([])
-    mockDocumentToBatchesFindMany.mockResolvedValue([])
-    mockDocumentToAuthorsFindMany.mockResolvedValue([])
     mockDocumentToTagsFindMany.mockResolvedValue([{ tags: { name: 'duplicate_document' } }])
-    mockVersionGroupsFindUnique.mockResolvedValue(null)
 
     const result = await getDocumentDetail('canonical-1')
 
     expect(result).not.toBeNull()
+    expect(result?.versions).toEqual([
+      {
+        id: 'dv-canonical',
+        document_id: 'canonical-1',
+        version_group_id: 'vg-1',
+        notes: null,
+        changes_summary: null,
+        similarity_score: 0.99,
+        created_at: new Date('2026-05-18T10:01:00Z'),
+        updated_at: new Date('2026-05-18T10:01:00Z'),
+        analyzed_at: null,
+      },
+    ])
     expect(result?.version_family).not.toBeNull()
     expect(result?.version_family?.documents).toHaveLength(2)
     expect(result?.version_family?.documents[0]).toMatchObject({
@@ -143,5 +162,108 @@ describe('getDocumentDetail version family mapping', () => {
       is_canonical: false,
       is_duplicate: true,
     })
+  })
+
+  it('returns a single-document version family for canonical-only version groups', async () => {
+    mockBaseDocument()
+    mockDocumentVersionsFindMany.mockResolvedValueOnce([]).mockResolvedValueOnce([])
+    mockDocumentToTagsFindMany.mockResolvedValue([])
+    mockVersionGroupsFindUnique.mockResolvedValue({
+      id: 'vg-canonical-only',
+      canonical_document_id: 'canonical-1',
+      documents: {
+        id: 'canonical-1',
+        filesize: 1024,
+        hash_binary: 'binary-a',
+        hash_content: 'content-a',
+        id_legacy: 'file-1',
+        name: 'Canonical.pdf',
+        created_at: new Date('2026-05-18T10:00:00Z'),
+        updated_at: new Date('2026-05-18T10:00:00Z'),
+        document_to_tags: [],
+      },
+      document_versions: [],
+    })
+
+    const result = await getDocumentDetail('canonical-1')
+
+    expect(result?.version_family).toEqual({
+      version_group_id: 'vg-canonical-only',
+      canonical_document_id: 'canonical-1',
+      documents: [
+        {
+          id: 'canonical-1',
+          filesize: 1024,
+          hash_binary: 'binary-a',
+          hash_content: 'content-a',
+          id_legacy: 'file-1',
+          name: 'Canonical.pdf',
+          created_at: new Date('2026-05-18T10:00:00Z'),
+          updated_at: new Date('2026-05-18T10:00:00Z'),
+          is_canonical: true,
+          is_duplicate: false,
+        },
+      ],
+    })
+    expect(result?.versions).toEqual([])
+  })
+
+  it('maps detail versions fields without changing stored values', async () => {
+    mockBaseDocument()
+    mockDocumentVersionsFindMany
+      .mockResolvedValueOnce([
+        {
+          id: 'dv-one',
+          document_id: 'canonical-1',
+          version_group_id: 'vg-1',
+          notes: 'Normalized from source artifact',
+          changes_summary: 'Deskewed and OCRed',
+          similarity_score: 0.875,
+          analyzed_at: BigInt(1760000000),
+          created_at: new Date('2026-05-18T11:00:00Z'),
+          updated_at: new Date('2026-05-18T12:00:00Z'),
+        },
+        {
+          id: 'dv-two',
+          document_id: 'canonical-1',
+          version_group_id: 'vg-2',
+          notes: null,
+          changes_summary: null,
+          similarity_score: null,
+          analyzed_at: null,
+          created_at: new Date('2026-05-19T11:00:00Z'),
+          updated_at: new Date('2026-05-19T12:00:00Z'),
+        },
+      ])
+      .mockResolvedValueOnce([])
+    mockDocumentToTagsFindMany.mockResolvedValue([])
+
+    const result = await getDocumentDetail('canonical-1')
+
+    expect(result?.versions).toEqual([
+      {
+        id: 'dv-one',
+        document_id: 'canonical-1',
+        version_group_id: 'vg-1',
+        notes: 'Normalized from source artifact',
+        changes_summary: 'Deskewed and OCRed',
+        similarity_score: 0.875,
+        analyzed_at: 1760000000,
+        created_at: new Date('2026-05-18T11:00:00Z'),
+        updated_at: new Date('2026-05-18T12:00:00Z'),
+      },
+      {
+        id: 'dv-two',
+        document_id: 'canonical-1',
+        version_group_id: 'vg-2',
+        notes: null,
+        changes_summary: null,
+        similarity_score: null,
+        analyzed_at: null,
+        created_at: new Date('2026-05-19T11:00:00Z'),
+        updated_at: new Date('2026-05-19T12:00:00Z'),
+      },
+    ])
+    expect(result?.version_family).toBeNull()
   })
 })
