@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import type { ReactElement, ReactNode } from 'react'
 import { Rethink_Sans, Work_Sans } from 'next/font/google'
+import { AppRouterCacheProvider } from '@mui/material-nextjs/v16-appRouter'
 
 import './globals.css'
 import LayoutBody from '@components/LayoutBody'
@@ -36,9 +37,11 @@ export default async function RootLayout({
   return (
     <html lang="en" className={`${rethinkSans.variable} ${workSans.variable}`}>
       <body className="font-sans antialiased">
-        <Providers session={session}>
-          <LayoutBody isAuthenticated={!!session}>{children}</LayoutBody>
-        </Providers>
+        <AppRouterCacheProvider>
+          <Providers session={session}>
+            <LayoutBody isAuthenticated={!!session}>{children}</LayoutBody>
+          </Providers>
+        </AppRouterCacheProvider>
       </body>
     </html>
   )

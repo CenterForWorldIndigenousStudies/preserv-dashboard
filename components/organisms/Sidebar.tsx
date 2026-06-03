@@ -1,22 +1,28 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
-import Link from 'next/link'
-import { House, LayoutDashboard, ClipboardList, Database, BookOpen, FolderInput } from 'lucide-react'
+import { Box, Drawer, Stack } from '@mui/material'
+
+import { AppVersion } from '@atoms/AppVersion'
+import { SidebarHeader } from '@atoms/SidebarHeader'
 import {
-  BATCH_SUMMARY_PATH,
+  DASHBOARD_NAVIGATION_SECTIONS,
+  type DashboardNavigationSection,
+} from '@constants/navigation'
+import {
+  BATCHES_PATH,
   COLLECTIONS_PATH,
   COMPONENT_LIBRARY_PATH,
   DASHBOARD_PATH,
   DB_SCHEMA_PATH,
+  DOCUMENTS_PATH,
+  FAILED_PATH,
   PROCESS_DOCUMENTS_PATH,
   READY_FOR_LIBRARY_PATH,
   REVIEW_QUEUE_PATH,
 } from '@constants/paths'
-import { AppVersion } from '@atoms/AppVersion'
-import { SidebarHeader } from '@atoms/SidebarHeader'
 import AuthStatus from '@molecules/AuthStatus'
+import { NavSection } from '@molecules/NavSection'
 import { SidebarVisibilityControl } from '@molecules/SidebarVisibilityControl'
 
 export type SidebarVariant = 'desktop' | 'mobile'
@@ -27,62 +33,44 @@ interface SidebarProps {
   onClose?: () => void
 }
 
-const navItems = [
-  { href: '/', label: 'Overview', icon: House },
-  { href: DASHBOARD_PATH, label: 'Dashboard', icon: LayoutDashboard },
-  { href: REVIEW_QUEUE_PATH, label: 'Review Queue', icon: ClipboardList },
-  { href: READY_FOR_LIBRARY_PATH, label: 'Ready for Library', icon: BookOpen },
-  { href: BATCH_SUMMARY_PATH, label: 'Batch Summary', icon: Database },
-  { href: PROCESS_DOCUMENTS_PATH, label: 'Process Documents', icon: FolderInput },
-  { href: COLLECTIONS_PATH, label: 'Collections', icon: BookOpen },
-  { href: DB_SCHEMA_PATH, label: 'DB Schema', icon: Database },
-  { href: COMPONENT_LIBRARY_PATH, label: 'Components', icon: BookOpen },
-]
+const visibleNavigationHrefs = new Set<string>([
+  DASHBOARD_PATH,
+  DOCUMENTS_PATH,
+  PROCESS_DOCUMENTS_PATH,
+  BATCHES_PATH,
+  REVIEW_QUEUE_PATH,
+  READY_FOR_LIBRARY_PATH,
+  COLLECTIONS_PATH,
+  FAILED_PATH,
+  DB_SCHEMA_PATH,
+  COMPONENT_LIBRARY_PATH,
+])
+
+function getVisibleSections(): DashboardNavigationSection[] {
+  return DASHBOARD_NAVIGATION_SECTIONS.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => visibleNavigationHrefs.has(item.href)),
+  })).filter((section) => section.items.length > 0)
+}
 
 export default function Sidebar({ variant, isOpen, onClose }: SidebarProps) {
   const pathname = usePathname()
-  const sidebarRef = useRef<HTMLDivElement>(null)
   const isMobile = variant === 'mobile'
-
-  // Close sidebar when clicking outside on mobile
-  useEffect(() => {
-    if (!isMobile || !isOpen) return
-
-    function handleClickOutside(event: MouseEvent) {
-      if (isOpen && sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
-        onClose?.()
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [isMobile, isOpen, onClose])
+  const sections = getVisibleSections()
 
   const sidebarContent = (
-    <>
-      {/* Mobile overlay backdrop */}
-      {isMobile && (
-        <div
-          className={`fixed inset-0 z-40 bg-ink/50 ${isOpen ? 'block' : 'hidden'}`}
-          onClick={onClose}
-          aria-hidden="true"
-        />
-      )}
-
-      {/* Sidebar */}
-      <aside
-        ref={sidebarRef}
-        className={`
-          flex h-full w-60 flex-col border-r border-moss/10 bg-sand
-          ${
-            isMobile
-              ? `fixed left-0 top-0 z-50 transition-transform duration-200 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`
-              : 'relative border-r'
-          }
-        `}
-      >
+    <Box
+      sx={{
+        bgcolor: 'sand.main',
+        borderColor: 'divider',
+        borderRight: isMobile ? undefined : '1px solid',
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        width: 280,
+      }}
+    >
+      <Box sx={{ borderBottom: '1px solid', borderColor: 'divider', px: 2, py: 2 }}>
         <SidebarHeader
           action={
             isMobile ? (
@@ -93,42 +81,50 @@ export default function Sidebar({ variant, isOpen, onClose }: SidebarProps) {
               />
             ) : undefined
           }
-          className={`border-b border-moss/10 px-4 pb-3`}
-          title={`Preservation Pipeline`}
+          title="Preservation Pipeline"
         />
+      </Box>
 
-        {/* Navigation links */}
-        <nav className="flex-1 overflow-y-auto py-4">
-          <ul className="space-y-1 px-3">
-            {navItems.map(({ href, label, icon: Icon }) => {
-              const isActive = pathname === href
-              return (
-                <li key={href}>
-                  <Link
-                    href={href}
-                    onClick={isMobile ? onClose : undefined}
-                    className={`
-                      flex items-center gap-3 rounded-full px-4 py-2 text-sm
-                      ${isActive ? 'bg-clay text-white font-medium' : 'text-ink hover:bg-sky'}
-                    `}
-                  >
-                    <Icon size={18} />
-                    {label}
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
-        </nav>
+      <Stack spacing={3} sx={{ flex: 1, overflowY: 'auto', px: 2, py: 3 }}>
+        {sections.map((section) => (
+          <NavSection
+            key={section.id}
+            activePathname={pathname}
+            onNavigate={isMobile ? onClose : undefined}
+            section={section}
+          />
+        ))}
+      </Stack>
 
-        {/* Auth status at bottom */}
-        <div className="border-t border-moss/10 p-4">
+      <Box sx={{ borderTop: '1px solid', borderColor: 'divider', p: 2 }}>
+        <Box sx={{ px: 1 }}>
           <AuthStatus />
+        </Box>
+        <Box sx={{ mt: 1, px: 1 }}>
           <AppVersion />
-        </div>
-      </aside>
-    </>
+        </Box>
+      </Box>
+    </Box>
   )
 
-  return sidebarContent
+  if (isMobile) {
+    return (
+      <Drawer
+        anchor="left"
+        ModalProps={{ keepMounted: true }}
+        onClose={onClose}
+        open={Boolean(isOpen)}
+        sx={{
+          display: { md: 'none' },
+          '& .MuiDrawer-paper': {
+            width: 280,
+          },
+        }}
+      >
+        {sidebarContent}
+      </Drawer>
+    )
+  }
+
+  return <Box sx={{ height: '100%' }}>{sidebarContent}</Box>
 }

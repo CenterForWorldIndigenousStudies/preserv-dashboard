@@ -1,5 +1,4 @@
 import type { ReactElement } from 'react'
-import NextLink from 'next/link'
 
 import { Button } from '@atoms/Button'
 import {
@@ -88,7 +87,7 @@ function QuickActionCard({ href, label, description }: QuickActionProps): ReactE
       <h2 className="mt-2 text-lg font-semibold text-ink">{label}</h2>
       <p className="mt-2 text-sm leading-6 text-ink/70">{description}</p>
       <div className="mt-4">
-        <Button component={NextLink} href={href} variant="secondary">
+        <Button href={href} variant="secondary">
           Open
         </Button>
       </div>

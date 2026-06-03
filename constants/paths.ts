@@ -3,6 +3,7 @@ export const API_PATH = '/api' as const
 export const AUTH_PATH = `/auth` as const
 export const SIGNIN_PATH = `${AUTH_PATH}/signin` as const
 
+export const BATCHES_PATH = '/batches' as const
 export const BATCH_SUMMARY_PATH = '/batch-summary' as const
 
 export const COLLECTIONS_PATH = `/collections` as const
@@ -38,5 +39,8 @@ export const REVIEW_QUEUE_PATH = '/review-queue' as const
 
 export const REVIEWS_PATH = `/reviews` as const
 
+export const REPORTS_PAGE_PATH = '/reports' as const
+
 export const TAGS_PATH = `${API_PATH}/tags` as const
+export const TAGS_PAGE_PATH = '/tags' as const
 export const TAG_SEARCH_PATH = `${TAGS_PATH}/search` as const

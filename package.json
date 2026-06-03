@@ -1,6 +1,6 @@
 {
   "name": "cwis-preservation-dashboard",
-  "version": "0.2.13",
+  "version": "0.2.16",
   "private": true,
   "scripts": {
     "build": "run-s db:prisma:generate build:next",
@@ -30,7 +30,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@emotion/cache": "^11.14.0",
     "@mui/material": "^9.0.0",
+    "@mui/material-nextjs": "^9.0.1",
     "@prisma/adapter-mariadb": "^7.7.0",
     "@prisma/client": "^7.7.0",
     "@tailwindcss/typography": "^0.5.19",
