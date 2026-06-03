@@ -8,32 +8,60 @@ interface DateProps {
   className?: string
 }
 
-function formatDisplay(dt: DateTime): string {
-  const hasTime = dt.hour !== 0 || dt.minute !== 0 || dt.second !== 0
-  const hasDay = dt.day !== 1 || hasTime // day 1 with no time = partial
-  const hasMonth = dt.month !== 1 || hasDay
+const ENGLISH_MONTHS = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+] as const
 
-  if (hasTime) return dt.toLocaleString(DateTime.DATETIME_MED)
-  if (hasDay) return dt.toLocaleString(DateTime.DATE_MED)
-  if (hasMonth) return `${dt.toLocaleString({ month: 'long' })} ${dt.year}`
-  return String(dt.year)
+function formatDisplay(dt: DateTime): string {
+  const canonical = dt.toUTC()
+  const hasTime = canonical.hour !== 0 || canonical.minute !== 0 || canonical.second !== 0 || canonical.millisecond !== 0
+  const hasDay = canonical.day !== 1 || hasTime // day 1 with no time = partial
+  const hasMonth = canonical.month !== 1 || hasDay
+
+  if (hasTime) return `${canonical.toFormat('yyyy-LL-dd HH:mm')} UTC`
+  if (hasDay) return canonical.toFormat('yyyy-LL-dd')
+  if (hasMonth) return `${ENGLISH_MONTHS[canonical.month - 1]} ${canonical.year}`
+  return String(canonical.year)
 }
 
 function parseValue(value: string | number | Date | null | undefined): DateTime | null {
   if (value === null || value === undefined) return null
-  if (typeof value === 'string') return DateTime.fromISO(value)
+  if (typeof value === 'string') return DateTime.fromISO(value, { zone: 'utc', setZone: true })
   if (typeof value === 'number') {
     const asNumber = Number(value)
     if (asNumber < 1e11) {
-      return DateTime.fromSeconds(asNumber)
+      return DateTime.fromSeconds(asNumber, { zone: 'utc' })
     }
-    return DateTime.fromMillis(asNumber)
+    return DateTime.fromMillis(asNumber, { zone: 'utc' })
   }
-  return DateTime.fromJSDate(value)
+  return DateTime.fromJSDate(value, { zone: 'utc' })
+}
+
+function formatRawValue(value: string | number | Date): string {
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value)
+  }
+
+  return value.toISOString()
 }
 
 export function DateAtom({ value, className = '' }: DateProps): ReactNode {
   const [showRaw, setShowRaw] = useState(false)
+
+  if (value === null || value === undefined) {
+    return <span className={className}>{`-`}</span>
+  }
 
   const dt = parseValue(value)
   if (!dt || !dt.isValid) {
@@ -41,7 +69,7 @@ export function DateAtom({ value, className = '' }: DateProps): ReactNode {
   }
 
   const display = formatDisplay(dt)
-  const raw = String(value)
+  const raw = formatRawValue(value)
   const computedClass =
     `cursor-pointer border-b border-dotted border-ink/30 hover:border-ink/70 transition-colors ${className}`.trim()
 
