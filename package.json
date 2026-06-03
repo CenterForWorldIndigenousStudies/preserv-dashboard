@@ -1,6 +1,6 @@
 {
   "name": "cwis-preservation-dashboard",
-  "version": "0.2.17",
+  "version": "0.2.18",
   "private": true,
   "scripts": {
     "build": "run-s db:prisma:generate build:next",
@@ -15,7 +15,7 @@
     "lint": "run-p lint:project lint:markdown",
     "lint:markdown": "markdownlint-cli2 \"**/*.md\"",
     "lint:project": "eslint --max-warnings=0 --cache --cache-location .eslintcache --cache-strategy content",
-    "postinstall": "npm run db:prisma:generate",
+    "postinstall": "npm run db:prisma:generate && patch-package",
     "start": "next start",
     "storybook": "storybook dev -p 6006",
     "storybook:build": "storybook build --quiet --output-dir ./storybook-static",
@@ -78,6 +78,7 @@
     "next-router-mock": "^1.0.5",
     "npm-run-all": "^4.1.5",
     "postcss": "^8.5.14",
+    "patch-package": "^8.0.1",
     "prettier": "^3.8.3",
     "storybook": "^10.3.5",
     "tailwindcss": "^3.4.17",
