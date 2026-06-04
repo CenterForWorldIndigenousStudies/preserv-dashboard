@@ -306,11 +306,11 @@ const theme = createTheme({
             backgroundColor: 'rgba(148, 217, 248, 0.24)',
           },
           '&.Mui-selected': {
-            backgroundColor: '#355834',
-            color: '#ffffff',
+            backgroundColor: '#ff7637',
+            color: '#231f20',
           },
           '&.Mui-selected:hover': {
-            backgroundColor: '#2a4729',
+            backgroundColor: '#e56830',
           },
         },
       },
