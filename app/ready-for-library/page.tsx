@@ -3,7 +3,7 @@ import { PageHeader } from '@organisms/PageHeader'
 import { ReadyForLibraryTable } from '@organisms/ReadyForLibraryTable'
 import { NoDataState } from '@organisms/NoDataState'
 import { getReadyForLibraryDocuments } from '@lib/queries'
-import { getUniqueDocumentCountByAuthor } from '@lib/ready-for-library-author-metrics'
+import { getUniqueDocumentCountByAuthor } from '@lib/readyForLibraryAuthorMetrics'
 
 export const dynamic = 'force-dynamic'
 

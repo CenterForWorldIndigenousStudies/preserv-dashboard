@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import type { OverviewAdvancedSearchFilters, OverviewFilterOptions } from '@lib/overview-search'
+import type { OverviewAdvancedSearchFilters, OverviewFilterOptions } from '@lib/overviewSearch'
 
 import { OverviewAdvancedSearchModal } from './OverviewAdvancedSearchModal'
 

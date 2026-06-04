@@ -11,7 +11,7 @@ import {
   normalizeOverviewTextFilter,
   type OverviewFilterOptions,
   type OverviewStatusOption,
-} from '@lib/overview-search'
+} from '@lib/overviewSearch'
 import { getNeedsReviewDocuments, type DocumentsQueryParams } from '@lib/queries'
 
 export const dynamic = 'force-dynamic'

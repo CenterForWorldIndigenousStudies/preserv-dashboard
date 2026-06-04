@@ -1,7 +1,7 @@
 import type { Prisma } from '@lib/prisma/generated/client'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { db } from '@lib/db'
-import { scoreTags, type TagSearchResult } from '@lib/tag-utils'
+import { scoreTags, type TagSearchResult } from '@lib/tagUtils'
 import { resetTestDatabase } from '../support/test-db'
 import { withRollbackTransaction } from '../support/transaction'
 

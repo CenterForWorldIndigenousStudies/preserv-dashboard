@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Prisma } from '@lib/prisma/generated/client'
 import { createEditHistoryEntry } from '@lib/editHistory'
 import { db } from '@lib/db'
-import { buildNameHash, normalizeTagName } from '@lib/tag-utils'
+import { buildNameHash, getProtectedTagDeletionMessage, isProtectedTagName, normalizeTagName } from '@lib/tagUtils'
 
 interface RouteContext {
   params: Promise<{
@@ -145,6 +145,13 @@ export async function DELETE(request: NextRequest, context: RouteContext): Promi
 
     if (!documentTag) {
       return NextResponse.json({ error: 'Tag association not found.' }, { status: 404 })
+    }
+
+    if (deleteTagFromSystem && isProtectedTagName(documentTag.tags.name)) {
+      return NextResponse.json(
+        { error: getProtectedTagDeletionMessage(documentTag.tags.name) },
+        { status: 409 },
+      )
     }
 
     const result = await db.$transaction(async (tx) => {

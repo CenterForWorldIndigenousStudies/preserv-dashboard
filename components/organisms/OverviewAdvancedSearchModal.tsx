@@ -9,7 +9,7 @@ import {
   type OverviewAdvancedSearchFilters,
   type OverviewFilterOptions,
   type OverviewStatusOption,
-} from '@lib/overview-search'
+} from '@lib/overviewSearch'
 
 interface OverviewAdvancedSearchModalProps {
   filters: OverviewAdvancedSearchFilters

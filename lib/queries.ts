@@ -10,7 +10,7 @@ import {
   type OverviewDocumentTypeOption,
   type OverviewFilterOptions,
   type OverviewStatusOption,
-} from '@lib/overview-search'
+} from '@lib/overviewSearch'
 import { REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES, REVIEW_QUEUE_SORT_FIELDS } from '@constants/reviewQueue'
 import { db } from '@lib/db'
 import { createEditHistoryEntry } from '@lib/editHistory'
@@ -19,7 +19,14 @@ import {
   PrismaClient,
   type document_quality_validation_status as DocumentQualityValidationStatus,
 } from '@lib/prisma/generated/client'
-import { buildNameHash, getTagSearchCandidateLimit, normalizeTagName, scoreTags } from '@lib/tag-utils'
+import {
+  buildNameHash,
+  getProtectedTagDeletionMessage,
+  getTagSearchCandidateLimit,
+  isProtectedTagName,
+  normalizeTagName,
+  scoreTags,
+} from '@lib/tagUtils'
 import type { BatchSummary } from 'types/batches'
 import type { CollectionWithMeta } from 'types/collections'
 import type {
@@ -738,11 +745,6 @@ export async function deleteTagInTransaction(
   tagId: string,
   deleteAssociations = false,
 ): Promise<void> {
-  if (deleteAssociations) {
-    await deleteTagAndDocumentAssociationsInTransaction(client, tagId)
-    return
-  }
-
   const tag = await client.tags.findUnique({
     where: { id: tagId },
     include: {
@@ -758,6 +760,15 @@ export async function deleteTagInTransaction(
 
   if (!tag) {
     throw new Error('Tag not found.')
+  }
+
+  if (isProtectedTagName(tag.name)) {
+    throw new Error(getProtectedTagDeletionMessage(tag.name))
+  }
+
+  if (deleteAssociations) {
+    await deleteTagAndDocumentAssociationsInTransaction(client, tagId)
+    return
   }
 
   if (tag.document_to_tags.length > 0) {
@@ -798,6 +809,10 @@ export async function deleteTagAndDocumentAssociationsInTransaction(
 
   if (!tag) {
     throw new Error('Tag not found.')
+  }
+
+  if (isProtectedTagName(tag.name)) {
+    throw new Error(getProtectedTagDeletionMessage(tag.name))
   }
 
   await Promise.all(

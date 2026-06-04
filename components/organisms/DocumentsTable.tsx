@@ -17,7 +17,7 @@ import {
   type OverviewAdvancedSearchFilters,
   type OverviewFilterOptions,
   type OverviewStatusOption,
-} from '@lib/overview-search'
+} from '@lib/overviewSearch'
 import type { DocumentsQueryParams } from '@lib/queries'
 import { truncateString } from '@lib/strings'
 import type { Document } from 'types/documents'

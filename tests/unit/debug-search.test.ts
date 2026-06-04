@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { getTagSearchCandidateLimit, getTagSearchLimit, scoreTags } from '@lib/tag-utils'
+import { getTagSearchCandidateLimit, getTagSearchLimit, scoreTags } from '@lib/tagUtils'
 
 describe('DEBUG: tag search scoring', () => {
   it('aborijinal should score aboriginal', () => {

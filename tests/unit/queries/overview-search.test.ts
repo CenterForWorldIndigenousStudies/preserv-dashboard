@@ -6,7 +6,7 @@ import {
   normalizeOverviewStatuses,
   parseOverviewStatusesParam,
   serializeOverviewStatusesParam,
-} from '@lib/overview-search'
+} from '@lib/overviewSearch'
 
 describe('overview search helpers', () => {
   it('normalizes and de-duplicates statuses', () => {

@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { db } from '@lib/db'
+import { DUPLICATE_DOCUMENT } from '@constants/tags'
 
 import { deleteCollectionWithOptionsInTransaction, deleteTagInTransaction } from '@lib/queries'
 vi.mock('../../../auth', () => ({
@@ -89,6 +90,69 @@ describe('deleteTag (integration)', () => {
       ])
       const tagHistoryRow = historyRows.find((row) => row.entity_table === 'tags')
       expect(tagHistoryRow?.edit_summary).toContain('Deleted tag')
+    })
+  })
+
+  it('rejects deleting a protected tag from the system', async () => {
+    await withRollbackTransaction(async (tx) => {
+      const protectedTag =
+        (await tx.tags.findFirst({
+          where: { name: DUPLICATE_DOCUMENT },
+        })) ??
+        (await tx.tags.create({
+          data: {
+            id: 'tag-protected-duplicate-0000000001',
+            name: DUPLICATE_DOCUMENT,
+          },
+        }))
+
+      await expect(deleteTagInTransaction(tx, protectedTag.id, false)).rejects.toThrow(
+        `Tag "${DUPLICATE_DOCUMENT}" is protected and cannot be deleted from the system.`,
+      )
+
+      const tagAfter = await tx.tags.findUnique({ where: { id: protectedTag.id } })
+      expect(tagAfter).not.toBeNull()
+    })
+  })
+
+  it('rejects cascading deletion of a protected tag from the system', async () => {
+    await withRollbackTransaction(async (tx) => {
+      const protectedTag =
+        (await tx.tags.findFirst({
+          where: { name: DUPLICATE_DOCUMENT },
+        })) ??
+        (await tx.tags.create({
+          data: {
+            id: 'tag-protected-duplicate-0000000002',
+            name: DUPLICATE_DOCUMENT,
+          },
+        }))
+      const doc = await tx.documents.create({
+        data: {
+          id: 'tag-delete-doc-protected-000000001',
+          id_legacy: 'tag-delete-doc-protected-legacy-1',
+          name: 'Protected Tag Doc',
+          hash_binary: 'hash-protected-tag-1',
+          hash_content: 'content-protected-tag-1',
+          filesize: BigInt(5),
+        },
+      })
+      await tx.document_to_tags.create({
+        data: {
+          id: 'tag-delete-link-protected-00000001',
+          document_id: doc.id,
+          tag_id: protectedTag.id,
+        },
+      })
+
+      await expect(deleteTagInTransaction(tx, protectedTag.id, true)).rejects.toThrow(
+        `Tag "${DUPLICATE_DOCUMENT}" is protected and cannot be deleted from the system.`,
+      )
+
+      const tagAfter = await tx.tags.findUnique({ where: { id: protectedTag.id } })
+      const linkAfter = await tx.document_to_tags.findMany({ where: { tag_id: protectedTag.id } })
+      expect(tagAfter).not.toBeNull()
+      expect(linkAfter).toHaveLength(1)
     })
   })
 

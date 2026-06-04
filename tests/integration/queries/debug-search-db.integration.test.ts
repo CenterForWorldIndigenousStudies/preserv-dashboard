@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { db } from '@lib/db'
-import { getTagSearchCandidateLimit, getTagSearchLimit, scoreTags } from '@lib/tag-utils'
+import { getTagSearchCandidateLimit, getTagSearchLimit, scoreTags } from '@lib/tagUtils'
 
 describe('DEBUG: tag search against test DB', () => {
   it('logs candidate coverage for aborijinal', async () => {

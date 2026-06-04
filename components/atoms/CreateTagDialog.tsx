@@ -9,7 +9,7 @@ import DialogTitle from '@mui/material/DialogTitle'
 import TextField from '@mui/material/TextField'
 import { Button } from '@atoms/Button'
 import { useTagSearch } from '@lib/hooks/useTagSearch'
-import { normalizeTagName } from '@lib/tag-utils'
+import { normalizeTagName } from '@lib/tagUtils'
 
 interface CreateTagDialogProps {
   open: boolean

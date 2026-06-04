@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import type { MRT_SortingState } from 'material-react-table'
 
-import { serializeOverviewStatusesParam, type OverviewAdvancedSearchFilters } from '@lib/overview-search'
+import { serializeOverviewStatusesParam, type OverviewAdvancedSearchFilters } from '@lib/overviewSearch'
 import type { DocumentsQueryParams } from '@lib/queries'
 import type { DocumentsCursor } from 'types/pagination'
 

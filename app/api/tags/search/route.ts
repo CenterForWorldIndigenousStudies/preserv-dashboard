@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@lib/db'
-import { getTagSearchLimit, scoreTags } from '@lib/tag-utils'
+import { getTagSearchLimit, scoreTags } from '@lib/tagUtils'
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {

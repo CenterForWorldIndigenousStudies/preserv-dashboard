@@ -6,7 +6,7 @@ import {
   normalizeOverviewDocumentType,
   normalizeOverviewTextFilter,
   parseOverviewStatusesParam,
-} from '@lib/overview-search'
+} from '@lib/overviewSearch'
 import { getAllDocuments, getOverviewFilterOptions, type DocumentsQueryParams } from '@lib/queries'
 
 export const dynamic = 'force-dynamic'

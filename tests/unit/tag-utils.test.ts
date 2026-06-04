@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { scoreTags } from '@lib/tag-utils'
+import { getProtectedTagDeletionMessage, isProtectedTagName, scoreTags } from '@lib/tagUtils'
 
 describe('scoreTags', () => {
   it('finds aboriginal with typo aborijinal', () => {
@@ -60,5 +60,19 @@ describe('scoreTags', () => {
 
     expect(results.map((tag) => tag.name)).toEqual(['aboriginal', 'aboriginal law', 'law of aboriginal title'])
     expect(results.every((tag, index, list) => index === 0 || list[index - 1].score >= tag.score)).toBe(true)
+  })
+})
+
+describe('protected tag helpers', () => {
+  it('recognizes protected tags using normalized keys', () => {
+    expect(isProtectedTagName(' duplicate_document ')).toBe(true)
+    expect(isProtectedTagName('OCR')).toBe(true)
+    expect(isProtectedTagName('custom tag')).toBe(false)
+  })
+
+  it('builds a friendly protected-tag deletion message', () => {
+    expect(getProtectedTagDeletionMessage('duplicate_document')).toBe(
+      'Tag "duplicate_document" is protected and cannot be deleted from the system.',
+    )
   })
 })

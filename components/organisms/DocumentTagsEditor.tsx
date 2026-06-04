@@ -10,7 +10,7 @@ import { IconX } from '@atoms/icons/IconX'
 import { DOCUMENTS_API_PATH, TAGS_PATH } from '@constants/paths'
 import type { TagSuggestion } from '@lib/hooks/useTagSearch'
 import type { DocumentToTag } from 'types/documents'
-import { normalizeTagName } from '@lib/tag-utils'
+import { normalizeTagName } from '@lib/tagUtils'
 import { TagSearchCombobox } from '@molecules/TagSearchCombobox'
 import { RemoveTagDialog } from '@organisms/RemoveTagDialog'
 

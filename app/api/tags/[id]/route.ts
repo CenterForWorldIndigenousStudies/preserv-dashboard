@@ -31,6 +31,8 @@ export async function DELETE(request: NextRequest, context: RouteContext): Promi
         ? 404
         : message === 'Tag id is required.'
           ? 400
+          : message.includes('is protected and cannot be deleted from the system.')
+            ? 409
           : message === 'Cannot delete a tag that is still associated with documents.'
             ? 409
             : 500

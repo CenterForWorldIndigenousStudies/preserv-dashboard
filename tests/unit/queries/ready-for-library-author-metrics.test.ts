@@ -12,7 +12,7 @@ vi.mock('@lib/db', () => ({
   },
 }))
 
-import { getUniqueDocumentCountByAuthor } from '@lib/ready-for-library-author-metrics'
+import { getUniqueDocumentCountByAuthor } from '@lib/readyForLibraryAuthorMetrics'
 
 describe('getUniqueDocumentCountByAuthor', () => {
   afterEach(() => {

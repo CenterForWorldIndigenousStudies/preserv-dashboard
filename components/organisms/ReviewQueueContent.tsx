@@ -5,7 +5,7 @@ import {
   normalizeOverviewDocumentType,
   normalizeOverviewTextFilter,
   type OverviewFilterOptions,
-} from '@lib/overview-search'
+} from '@lib/overviewSearch'
 import { getNeedsReviewDocuments, type DocumentsQueryParams } from '@lib/queries'
 import { DocumentsTable } from '@organisms/DocumentsTable'
 import { ReviewQueuePageProps } from 'types/reviewQueue'

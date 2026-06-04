@@ -16,7 +16,7 @@ interface TagDeleteFlowDialogProps {
   subjectName: string
   usageCount: number | null
   primaryMessage: string
-  checkboxLabel: string
+  checkboxLabel?: string
   secondConfirmMessage: string
   onClose: () => void
   onConfirm: (deleteTagFromSystem: boolean) => Promise<void>
@@ -33,6 +33,7 @@ export function TagDeleteFlowDialog({
   onClose,
   onConfirm,
 }: TagDeleteFlowDialogProps): ReactElement {
+  const allowDeleteFromSystem = Boolean(checkboxLabel)
   const [deleteTagFromSystem, setDeleteTagFromSystem] = useState(false)
   const [currentStep, setCurrentStep] = useState<1 | 2>(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -61,7 +62,7 @@ export function TagDeleteFlowDialog({
   async function handlePrimaryConfirm(): Promise<void> {
     setError(null)
 
-    if (deleteTagFromSystem) {
+    if (allowDeleteFromSystem && deleteTagFromSystem) {
       setCurrentStep(2)
       return
     }
@@ -115,16 +116,18 @@ export function TagDeleteFlowDialog({
           <>
             <Typography sx={{ color: 'rgba(35,31,32,0.8)', fontSize: '0.95rem' }}>{primaryMessage}</Typography>
             <Typography sx={{ color: 'rgba(35,31,32,0.7)', fontSize: '0.9rem' }}>{usageLabel}</Typography>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={deleteTagFromSystem}
-                  onChange={(event) => setDeleteTagFromSystem(event.target.checked)}
-                  disabled={isSubmitting || usageCount === null}
-                />
-              }
-              label={checkboxLabel}
-            />
+            {checkboxLabel ? (
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={deleteTagFromSystem}
+                    onChange={(event) => setDeleteTagFromSystem(event.target.checked)}
+                    disabled={isSubmitting || usageCount === null}
+                  />
+                }
+                label={checkboxLabel}
+              />
+            ) : null}
           </>
         ) : (
           <Typography sx={{ color: 'rgba(35,31,32,0.8)', fontSize: '0.95rem' }}>{secondConfirmMessage}</Typography>
