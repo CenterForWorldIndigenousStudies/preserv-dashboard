@@ -947,7 +947,11 @@ function buildCollectionDocumentRowsSql(params: {
           d.hash_binary,
           d.hash_content,
           d.id_legacy,
-          NULL AS source_id,
+          COALESCE(
+            JSON_UNQUOTE(JSON_EXTRACT(source_meta.value, '$.value')),
+            JSON_UNQUOTE(JSON_EXTRACT(source_meta.value, '$')),
+            source_meta.value
+          ) AS source_id,
           d.name,
           d.created_at,
           d.updated_at,
@@ -955,6 +959,12 @@ function buildCollectionDocumentRowsSql(params: {
         FROM documents d
         INNER JOIN document_to_tags dtt ON dtt.document_id = d.id
         INNER JOIN collections c ON c.tag_id = dtt.tag_id
+        LEFT JOIN (
+          SELECT dtm.document_id, dtm.value
+          FROM document_to_metadata dtm
+          INNER JOIN metadata m ON m.id = dtm.metadata_id
+          WHERE m.name = 'source_id'
+        ) AS source_meta ON source_meta.document_id = d.id
         WHERE c.id = ${params.collectionId}
         ${searchCondition}
       )

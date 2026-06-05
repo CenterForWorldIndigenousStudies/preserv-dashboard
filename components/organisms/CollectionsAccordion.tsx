@@ -1,7 +1,6 @@
 'use client'
 
 import { useMemo, useState, type ReactElement } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Accordion, AccordionDetails, AccordionSummary, Box, Chip, Typography } from '@mui/material'
 import type { MRT_ColumnDef } from 'material-react-table'
@@ -10,6 +9,8 @@ import { deleteCollectionAction, getDocumentsForCollectionAction } from '@action
 import { Button } from '@atoms/Button'
 import { IconX } from '@atoms/icons/IconX'
 import { DateAtom } from '@atoms/Date'
+import { DOCUMENTS_PATH } from '@constants/paths'
+import { DocumentNameBlock } from '@molecules/DocumentNameBlock'
 import { CollectionDocumentManager } from '@organisms/CollectionDocumentManager'
 import { DocumentDataTable } from '@organisms/document-table/DocumentDataTable'
 import { TagDeleteFlowDialog } from '@organisms/TagDeleteFlowDialog'
@@ -49,27 +50,23 @@ function CollectionDocumentsTable({
     () => [
       {
         accessorKey: 'name',
-        header: 'Name',
-        size: 280,
-        Cell: ({ row }) => {
-          const value = row.original.name
-
-          if (!value) {
-            return '—'
-          }
-
+        header: 'Document',
+        size: 420,
+        Cell: ({
+          row: {
+            original: { id, id_legacy, name, source_id },
+          },
+        }) => {
           return (
-            <Link href={`/documents/${row.original.id}`} style={{ color: '#355834' }}>
-              {value}
-            </Link>
+            <DocumentNameBlock
+              name={name}
+              id={id}
+              legacyId={id_legacy}
+              sourceId={source_id}
+              href={`${DOCUMENTS_PATH}/${id}`}
+            />
           )
         },
-      },
-      {
-        accessorKey: 'id_legacy',
-        header: 'Legacy ID',
-        size: 180,
-        Cell: ({ renderedCellValue }) => String((renderedCellValue as string | null) ?? '—') || '—',
       },
       {
         accessorKey: 'created_at',
