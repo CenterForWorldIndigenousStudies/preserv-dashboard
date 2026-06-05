@@ -210,6 +210,58 @@ export async function getNeedsReviewDocuments(
   )
 }
 
+const needsReviewDocumentsBaseFromSql = Prisma.sql`
+  FROM documents d
+  LEFT JOIN (
+    SELECT dtm.document_id, dtm.value
+    FROM document_to_metadata dtm
+    INNER JOIN metadata m ON m.id = dtm.metadata_id
+    WHERE m.name = 'source_id'
+  ) AS source_meta ON source_meta.document_id = d.id
+  LEFT JOIN (
+    SELECT DISTINCT dtt.document_id
+    FROM document_to_tags dtt
+    INNER JOIN tags t ON t.id = dtt.tag_id
+    WHERE t.name = 'duplicate_document'
+  ) AS dup ON dup.document_id = d.id
+  INNER JOIN document_quality dq ON dq.document_id = d.id
+  LEFT JOIN document_access da ON da.document_id = d.id
+  LEFT JOIN access_levels al ON al.id = da.access_level_id
+`
+
+export async function getNeedsReviewDocumentsCount(
+  params: DocumentsQueryParams = {},
+  client: QueryDbClient = db,
+): Promise<number> {
+  const statuses = resolveReviewQueueValidationStatuses(params.statuses)
+  const whereSql = buildNeedsReviewDocumentsWhereSql({
+    accessLevel: normalizeOverviewAccessLevel(params.accessLevel),
+    batch: normalizeOverviewTextFilter(params.batch),
+    collection: normalizeOverviewTextFilter(params.collection),
+    createdFrom: normalizeOverviewDateFilter(params.createdFrom),
+    createdTo: normalizeOverviewDateFilter(params.createdTo),
+    cursor: null,
+    cursorDirection: 'next',
+    defaultSecondarySortExpression: undefined,
+    documentType: normalizeOverviewDocumentType(params.documentType),
+    searchTerm: normalizeOverviewTextFilter(params.search ?? params.author),
+    sortDirection: 'asc',
+    sortExpression: Prisma.raw(OVERVIEW_SORT_EXPRESSIONS[DEFAULT_OVERVIEW_SORT_FIELD]),
+    sortField: DEFAULT_OVERVIEW_SORT_FIELD,
+    statuses,
+    tagIds: await resolveOverviewTagIds(normalizeOverviewTextFilter(params.tag), client),
+  })
+
+  const result = await client.$queryRaw<Array<{ total: bigint | number }>>(Prisma.sql`
+    SELECT COUNT(DISTINCT d.id) AS total
+    ${needsReviewDocumentsBaseFromSql}
+    ${whereSql}
+  `)
+
+  const total = result[0]?.total
+  return typeof total === 'bigint' ? Number(total) : Number(total ?? 0)
+}
+
 async function resolveOverviewTagIds(
   tagTerm: string | undefined,
   client: QueryDbClient,
@@ -1360,25 +1412,6 @@ async function getNeedsReviewDocumentsPage(
     sortExpression,
   })
 
-  const baseFromSql = Prisma.sql`
-    FROM documents d
-    LEFT JOIN (
-      SELECT dtm.document_id, dtm.value
-      FROM document_to_metadata dtm
-      INNER JOIN metadata m ON m.id = dtm.metadata_id
-      WHERE m.name = 'source_id'
-    ) AS source_meta ON source_meta.document_id = d.id
-    LEFT JOIN (
-      SELECT DISTINCT dtt.document_id
-      FROM document_to_tags dtt
-      INNER JOIN tags t ON t.id = dtt.tag_id
-      WHERE t.name = 'duplicate_document'
-    ) AS dup ON dup.document_id = d.id
-    INNER JOIN document_quality dq ON dq.document_id = d.id
-    LEFT JOIN document_access da ON da.document_id = d.id
-    LEFT JOIN access_levels al ON al.id = da.access_level_id
-  `
-
   const items = await client.$queryRaw<OverviewDocumentRow[]>(Prisma.sql`
       SELECT
         d.id,
@@ -1401,7 +1434,7 @@ async function getNeedsReviewDocumentsPage(
         d.updated_at,
         CASE WHEN dup.document_id IS NULL THEN 0 ELSE 1 END AS is_duplicate,
         ${sortExpression} AS sort_value
-      ${baseFromSql}
+      ${needsReviewDocumentsBaseFromSql}
       ${whereSql}
       ${orderBySql}
       LIMIT ${params.pageSize + 1}
