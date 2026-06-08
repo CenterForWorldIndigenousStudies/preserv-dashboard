@@ -15,8 +15,6 @@ export function SourceId({ value, maxTruncationLength = 0 }: SourceIdProps): Rea
   const normalizedValue = value?.trim() || '-'
   const truncatedSourceId = truncateString(normalizedValue, maxTruncationLength)
 
-  console.log('SourceId render', { value, normalizedValue, truncatedSourceId })
-
   const isUuid = validateUuid(normalizedValue)
   let href = `https://drive.google.com/file/d/${normalizedValue}/view`
   let title = `View Google Drive file ${normalizedValue}`

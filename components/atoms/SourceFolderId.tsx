@@ -13,8 +13,6 @@ interface SourceFolderIdProps {
 export function SourceFolderId({ value, maxTruncationLength = 0 }: SourceFolderIdProps): ReactElement {
   const normalizedValue = value?.trim() || '-'
   const truncatedSourceFolderId = truncateString(normalizedValue, maxTruncationLength)
-
-  console.log('SourceFolderId render', { value, normalizedValue, truncatedSourceFolderId })
   if (!isLikelyGoogleDriveId(normalizedValue)) {
     return <span>{truncatedSourceFolderId}</span>
   }

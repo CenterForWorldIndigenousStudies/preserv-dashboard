@@ -1,9 +1,13 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 
 import { SourceId } from '@atoms/SourceId'
 
 describe('SourceId', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('renders a dash when the value is nullish or empty', () => {
     expect(renderToStaticMarkup(<SourceId value={null} />)).toContain('>-<')
     expect(renderToStaticMarkup(<SourceId value="" />)).toContain('>-<')
@@ -23,5 +27,13 @@ describe('SourceId', () => {
 
     expect(markup).not.toContain('href=')
     expect(markup).toContain('not-a-drive-id')
+  })
+
+  it('does not write render debug output to the browser console', () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+    renderToStaticMarkup(<SourceId value="1poTSVemTJceJNCqWlhzNuUnrO4oX21Dy" />)
+
+    expect(consoleSpy).not.toHaveBeenCalled()
   })
 })

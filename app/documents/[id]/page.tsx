@@ -7,6 +7,7 @@ import { SourceFolderId } from '@atoms/SourceFolderId'
 import { NoDataState } from '@organisms/NoDataState'
 import { PageHeader } from '@organisms/PageHeader'
 import { AuditHistoryTable } from '@organisms/AuditHistoryTable'
+import { DocumentLineageSection } from '@organisms/DocumentLineageSection'
 import { DocumentTagsEditor } from '@organisms/DocumentTagsEditor'
 import { DocumentVersionsButton } from '@organisms/DocumentVersionsButton'
 import { ReviewHistoryTable } from '@organisms/ReviewHistoryTable'
@@ -237,6 +238,8 @@ export default async function DocumentDetailPage({
               <p className="mt-4 text-sm text-ink/60">No metadata available.</p>
             )}
           </div>
+
+          <DocumentLineageSection detail={detail} />
 
           <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
             <h2 className="text-xl font-semibold text-ink">Tags</h2>
