@@ -317,7 +317,7 @@ export function ReviewQueueTable({ initialData }: ReviewQueueTableProps) {
               label="Needs review"
               value={needsReviewFilter}
               onChange={(event: SelectChangeEvent<ReviewQueueBooleanFilter>) => {
-                setNeedsReviewFilter(event.target.value as ReviewQueueBooleanFilter)
+                setNeedsReviewFilter(event.target.value)
                 setPagination((current) => ({ ...current, pageIndex: 0 }))
               }}
             >
@@ -334,7 +334,7 @@ export function ReviewQueueTable({ initialData }: ReviewQueueTableProps) {
               label="Sensitive"
               value={sensitiveFilter}
               onChange={(event: SelectChangeEvent<ReviewQueueBooleanFilter>) => {
-                setSensitiveFilter(event.target.value as ReviewQueueBooleanFilter)
+                setSensitiveFilter(event.target.value)
                 setPagination((current) => ({ ...current, pageIndex: 0 }))
               }}
             >

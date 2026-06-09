@@ -178,7 +178,7 @@ export function normalizePassStage(
 ): NormalizedProcessStageStatus | null {
   const entries = getPassStageEntries(details, prefix)
   const latestEntry = entries.at(-1)
-  const latestStage = latestEntry?.details ?? (details[prefix] ?? null)
+  const latestStage = latestEntry?.details ?? details[prefix] ?? null
   const parsed = normalizeStage(latestStage)
   if (!parsed) {
     return null
@@ -210,15 +210,13 @@ export function parseProcessingDetails(raw: string | null): RawProcessBatchDetai
 
   try {
     const parsed: unknown = JSON.parse(raw)
-    return typeof parsed === 'object' && parsed !== null ? (parsed as RawProcessBatchDetails) : {}
+    return typeof parsed === 'object' && parsed !== null ? parsed : {}
   } catch {
     return {}
   }
 }
 
-export function normalizeProcessBatchDetails(
-  details: RawProcessBatchDetails,
-): NormalizedProcessBatchDetails {
+export function normalizeProcessBatchDetails(details: RawProcessBatchDetails): NormalizedProcessBatchDetails {
   return {
     pipelineRequestedStages: parseStringArray(details.pipeline?.requested_stages),
     pipelineConfig: parsePipelineConfig(details.pipeline?.config),
@@ -230,10 +228,7 @@ export function normalizeProcessBatchDetails(
   }
 }
 
-export function resolveStageDetailKey(
-  details: RawProcessBatchDetails,
-  stageKey: CallbackStageKey,
-): string | null {
+export function resolveStageDetailKey(details: RawProcessBatchDetails, stageKey: CallbackStageKey): string | null {
   switch (stageKey) {
     case 'ingester':
       return details.data_ingester ? 'data_ingester' : details.ingester ? 'ingester' : null

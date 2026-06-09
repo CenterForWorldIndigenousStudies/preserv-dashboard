@@ -18,18 +18,28 @@ if (fs.existsSync(testEnvPath)) {
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
   resolve: {
-    alias: {
-      '@actions': path.resolve(dirname, 'app/actions'),
-      '@atoms': path.resolve(dirname, 'components/atoms'),
-      '@components': path.resolve(dirname, 'components'),
-      '@constants': path.resolve(dirname, 'constants'),
-      '@hooks': path.resolve(dirname, 'hooks'),
-      '@lib': path.resolve(dirname, 'lib'),
-      '@molecules': path.resolve(dirname, 'components/molecules'),
-      '@organisms': path.resolve(dirname, 'components/organisms'),
-      '@root': path.resolve(dirname, ''),
-      types: path.resolve(dirname, 'types'),
-    },
+    alias: [
+      {
+        find: 'react-transition-group/TransitionGroupContext',
+        replacement: path.resolve(
+          dirname,
+          'node_modules/react-transition-group/cjs/TransitionGroupContext.js',
+        ),
+      },
+      { find: '@actions', replacement: path.resolve(dirname, 'app/actions') },
+      { find: '@atoms', replacement: path.resolve(dirname, 'components/atoms') },
+      { find: '@components', replacement: path.resolve(dirname, 'components') },
+      { find: '@constants', replacement: path.resolve(dirname, 'constants') },
+      { find: '@hooks', replacement: path.resolve(dirname, 'hooks') },
+      { find: '@lib', replacement: path.resolve(dirname, 'lib') },
+      { find: '@molecules', replacement: path.resolve(dirname, 'components/molecules') },
+      { find: '@organisms', replacement: path.resolve(dirname, 'components/organisms') },
+      { find: '@root', replacement: path.resolve(dirname, '') },
+      { find: 'types', replacement: path.resolve(dirname, 'types') },
+    ],
+  },
+  ssr: {
+    noExternal: ['@mui/material', 'react-transition-group'],
   },
   test: {
     coverage: {
