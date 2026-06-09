@@ -14,10 +14,10 @@ const meta: Meta<typeof Pagination> = {
   parameters: {
     backgrounds: { default: 'sand' },
   },
-}
+} satisfies Meta<typeof Pagination>
 
 export default meta
-type Story = StoryObj<typeof Pagination>
+type Story = StoryObj<typeof meta>
 
 const buildHref = (page: number) => `/documents?page=${page}`
 

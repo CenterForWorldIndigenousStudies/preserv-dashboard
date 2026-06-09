@@ -182,7 +182,6 @@ const meta = {
 } satisfies Meta<typeof CollectionDocumentManager>
 
 export default meta
-
 type Story = StoryObj<typeof meta>
 
 export const AddMode: Story = {

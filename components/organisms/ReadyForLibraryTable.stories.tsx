@@ -10,14 +10,6 @@ const UUIDS = {
   doc4: '00000004-0004-0004-0004-000000000004',
 } as const
 
-const meta = {
-  component: ReadyForLibraryTable,
-  tags: ['autodocs'],
-} satisfies Meta<typeof ReadyForLibraryTable>
-
-export default meta
-type Story = StoryObj<typeof meta>
-
 const sampleItems: ReadyForLibraryItem[] = [
   {
     id: UUIDS.doc1,
@@ -52,6 +44,14 @@ const sampleItems: ReadyForLibraryItem[] = [
     access_level: 'open access',
   },
 ]
+
+const meta = {
+  component: ReadyForLibraryTable,
+  tags: ['autodocs'],
+} satisfies Meta<typeof ReadyForLibraryTable>
+
+export default meta
+type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   args: {

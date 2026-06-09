@@ -106,6 +106,9 @@ const meta = {
   title: 'Organisms/DocumentLineageSection',
   component: DocumentLineageSection,
   tags: ['autodocs'],
+  args: {
+    detail: detailWithLineage,
+  },
   parameters: {
     backgrounds: {
       default: 'sand',
@@ -115,13 +118,10 @@ const meta = {
 } satisfies Meta<typeof DocumentLineageSection>
 
 export default meta
-
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
-  args: {
-    detail: detailWithLineage,
-  },
+  args: {},
 }
 
 export const SparseData: Story = {

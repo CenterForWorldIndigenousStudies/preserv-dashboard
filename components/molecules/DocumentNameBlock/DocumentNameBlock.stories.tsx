@@ -8,12 +8,14 @@ const meta = {
   args: {
     name: 'Annual Report 2023',
     id: 'abc12345-6789-def0-1234-567890abcdef',
+    isCanonical: false,
     legacyId: 'AR-2023-001',
     sourceId: '1ABC123XYZ',
   },
   argTypes: {
     name: { control: 'text' },
     id: { control: 'text' },
+    isCanonical: { control: 'boolean' },
     legacyId: { control: 'text' },
     sourceId: { control: 'text' },
     href: { control: 'text' },
@@ -35,6 +37,19 @@ export const Default: Story = {
     docs: {
       description: {
         story: 'All fields populated: name, id, legacyId, and sourceId.',
+      },
+    },
+  },
+}
+
+export const IsCanonical: Story = {
+  args: {
+    isCanonical: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: 'When isCanonical is true, a green "Canonical" Chip appears next to the document name.',
       },
     },
   },

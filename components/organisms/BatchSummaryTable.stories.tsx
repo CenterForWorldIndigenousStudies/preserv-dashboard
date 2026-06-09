@@ -3,14 +3,6 @@ import type { BatchSummary } from 'types/batches'
 
 import { BatchSummaryTable } from './BatchSummaryTable'
 
-const meta = {
-  component: BatchSummaryTable,
-  tags: ['autodocs'],
-} satisfies Meta<typeof BatchSummaryTable>
-
-export default meta
-type Story = StoryObj<typeof meta>
-
 const sampleData: BatchSummary[] = [
   {
     batch_id: 'batch-001-uuid',
@@ -70,10 +62,19 @@ const sampleData: BatchSummary[] = [
   },
 ]
 
-export const Default: Story = {
+const meta = {
+  component: BatchSummaryTable,
+  tags: ['autodocs'],
   args: {
     data: sampleData,
   },
+} satisfies Meta<typeof BatchSummaryTable>
+
+export default meta
+type Story = StoryObj<typeof meta>
+
+export const Default: Story = {
+  args: {},
 }
 
 export const Empty: Story = {

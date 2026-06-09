@@ -1,10 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { TagPill } from '@molecules/TagPill'
 
-const meta: Meta<typeof TagPill> = {
+const meta = {
   title: 'Molecules/TagPill',
   component: TagPill,
   tags: ['autodocs'],
+  args: {
+    tag: 'Cherokee Language',
+    onRemove: () => {
+      alert('Tag removed')
+    },
+  },
   argTypes: {
     tag: { control: 'text' },
     onRemove: { action: 'removed' },
@@ -13,45 +19,21 @@ const meta: Meta<typeof TagPill> = {
   parameters: {
     backgrounds: { default: 'sand' },
   },
-}
+} satisfies Meta<typeof TagPill>
 
 export default meta
-type Story = StoryObj<typeof TagPill>
+type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
-  args: {
-    tag: 'Cherokee Language',
-    onRemove: () => {},
-  },
-}
-
-export const CulturalArchive: Story = {
-  args: {
-    tag: 'Cultural Archive',
-    onRemove: () => {},
-  },
-}
-
-export const OralHistory: Story = {
-  args: {
-    tag: 'Oral History',
-    onRemove: () => {},
-  },
-}
-
-export const LegalTreaty: Story = {
-  args: {
-    tag: 'Legal Treaty',
-    onRemove: () => {},
-  },
+  args: {},
 }
 
 export const MultipleTags: Story = {
-  render: () => (
+  render: (args) => (
     <div className="flex flex-wrap gap-2">
-      <TagPill tag="Cherokee Language" onRemove={() => {}} />
-      <TagPill tag="Cultural Archive" onRemove={() => {}} />
-      <TagPill tag="Oral History" onRemove={() => {}} />
+      <TagPill {...{ ...args, tag: 'Cherokee Language' }} />
+      <TagPill {...{ ...args, tag: 'Cultural Archive' }} />
+      <TagPill {...{ ...args, tag: 'Oral History' }} />
     </div>
   ),
 }

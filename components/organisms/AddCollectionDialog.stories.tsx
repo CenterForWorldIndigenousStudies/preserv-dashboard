@@ -33,7 +33,6 @@ const meta = {
 } satisfies Meta<typeof AddCollectionDialog>
 
 export default meta
-
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}

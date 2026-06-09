@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { COMPONENT_LIBRARY_PATH } from '@constants/paths'
-import Sidebar, { type SidebarVariant } from '@organisms/Sidebar'
+import Sidebar from '@organisms/Sidebar'
 
-const meta: Meta<typeof Sidebar> = {
+const meta = {
   title: 'Organisms/Sidebar',
   component: Sidebar,
   tags: ['autodocs'],
@@ -21,14 +21,14 @@ const meta: Meta<typeof Sidebar> = {
       },
     },
   },
-}
+} satisfies Meta<typeof Sidebar>
 
 export default meta
-type Story = StoryObj<typeof Sidebar>
+type Story = StoryObj<typeof meta>
 
 export const Desktop: Story = {
   args: {
-    variant: 'desktop' as SidebarVariant,
+    variant: 'desktop',
     isOpen: true,
     onClose: () => {},
   },
@@ -36,7 +36,7 @@ export const Desktop: Story = {
 
 export const MobileOpen: Story = {
   args: {
-    variant: 'mobile' as SidebarVariant,
+    variant: 'mobile',
     isOpen: true,
     onClose: () => {},
   },
@@ -44,7 +44,7 @@ export const MobileOpen: Story = {
 
 export const MobileClosed: Story = {
   args: {
-    variant: 'mobile' as SidebarVariant,
+    variant: 'mobile',
     isOpen: false,
     onClose: () => {},
   },

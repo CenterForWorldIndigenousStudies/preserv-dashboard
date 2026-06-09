@@ -4,41 +4,6 @@ import type { OverviewFilterOptions } from '@lib/overviewSearch'
 import type { Document } from 'types/documents'
 import type { DocumentsPageResult } from 'types/pagination'
 
-/**
- * Browser-safe UUID replacement for Storybook stories.
- * `crypto.randomUUID()` is available in all modern browsers.
- * Fallback uses Math.random for environments where it is not available.
- */
-function storyUuid(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID()
-  }
-  return Math.random().toString(36).slice(2) + Date.now().toString(36)
-}
-
-const meta = {
-  title: 'Organisms/DocumentsTable',
-  component: DocumentsTable,
-  tags: ['autodocs'],
-  parameters: {
-    layout: 'fullscreen',
-    backgrounds: { default: 'sand' },
-    nextjs: {
-      appDirectory: true,
-      navigation: {
-        pathname: '/documents',
-        query: {
-          page: '1',
-          pageSize: '25',
-        },
-      },
-    },
-  },
-} satisfies Meta<typeof DocumentsTable>
-
-export default meta
-type Story = StoryObj<typeof meta>
-
 const mockDocuments: Document[] = [
   {
     id: storyUuid(),
@@ -92,11 +57,47 @@ function buildPageResult(data: Document[]): DocumentsPageResult {
   }
 }
 
-export const Default: Story = {
+/**
+ * Browser-safe UUID replacement for Storybook stories.
+ * `crypto.randomUUID()` is available in all modern browsers.
+ * Fallback uses Math.random for environments where it is not available.
+ */
+function storyUuid(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return Math.random().toString(36).slice(2) + Date.now().toString(36)
+}
+
+const meta = {
+  title: 'Organisms/DocumentsTable',
+  component: DocumentsTable,
+  tags: ['autodocs'],
   args: {
     initialData: buildPageResult(mockDocuments),
     filterOptions,
   },
+  parameters: {
+    layout: 'fullscreen',
+    backgrounds: { default: 'sand' },
+    nextjs: {
+      appDirectory: true,
+      navigation: {
+        pathname: '/documents',
+        query: {
+          page: '1',
+          pageSize: '25',
+        },
+      },
+    },
+  },
+} satisfies Meta<typeof DocumentsTable>
+
+export default meta
+type Story = StoryObj<typeof meta>
+
+export const Default: Story = {
+  args: {},
 }
 
 export const Empty: Story = {

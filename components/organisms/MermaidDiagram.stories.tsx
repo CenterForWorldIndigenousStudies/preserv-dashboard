@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { DOCUMENTS_API_PATH } from '@constants/paths'
 import { MermaidDiagram } from '@organisms/MermaidDiagram'
 
-const meta: Meta<typeof MermaidDiagram> = {
+const meta = {
   title: 'Organisms/MermaidDiagram',
   component: MermaidDiagram,
   tags: ['autodocs'],
@@ -13,10 +13,10 @@ const meta: Meta<typeof MermaidDiagram> = {
   parameters: {
     backgrounds: { default: 'sand' },
   },
-}
+} satisfies Meta<typeof MermaidDiagram>
 
 export default meta
-type Story = StoryObj<typeof MermaidDiagram>
+type Story = StoryObj<typeof meta>
 
 export const SimpleFlowchart: Story = {
   args: {

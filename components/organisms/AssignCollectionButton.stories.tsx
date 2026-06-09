@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { AssignCollectionButton } from '@organisms/AssignCollectionButton'
 
-const meta: Meta<typeof AssignCollectionButton> = {
+const meta = {
   title: 'Organisms/AssignCollectionButton',
   component: AssignCollectionButton,
   tags: ['autodocs'],
@@ -13,10 +13,10 @@ const meta: Meta<typeof AssignCollectionButton> = {
     backgrounds: { default: 'sand' },
     layout: 'centered',
   },
-}
+} satisfies Meta<typeof AssignCollectionButton>
 
 export default meta
-type Story = StoryObj<typeof AssignCollectionButton>
+type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   args: {

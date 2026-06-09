@@ -4,7 +4,7 @@ import { expect, fn, userEvent, within } from 'storybook/test'
 
 import { SidebarVisibilityControl } from '@molecules/SidebarVisibilityControl'
 
-const meta: Meta<typeof SidebarVisibilityControl> = {
+const meta = {
   title: 'Molecules/SidebarVisibilityControl',
   component: SidebarVisibilityControl,
   tags: ['autodocs'],
@@ -12,11 +12,10 @@ const meta: Meta<typeof SidebarVisibilityControl> = {
     backgrounds: { default: 'sand' },
     layout: 'centered',
   },
-}
+} satisfies Meta<typeof SidebarVisibilityControl>
 
 export default meta
-
-type Story = StoryObj<typeof SidebarVisibilityControl>
+type Story = StoryObj<typeof meta>
 
 export const MobileOpen: Story = {
   args: {

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { NoDataState } from '@organisms/NoDataState'
 
-const meta: Meta<typeof NoDataState> = {
+const meta = {
   title: 'Organisms/NoDataState',
   component: NoDataState,
   tags: ['autodocs'],
@@ -24,10 +24,10 @@ const meta: Meta<typeof NoDataState> = {
       default: 'sand',
     },
   },
-}
+} satisfies Meta<typeof NoDataState>
 
 export default meta
-type Story = StoryObj<typeof NoDataState>
+type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
 

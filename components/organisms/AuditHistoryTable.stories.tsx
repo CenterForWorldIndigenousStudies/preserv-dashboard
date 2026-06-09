@@ -14,14 +14,6 @@ const UUIDS = {
   doc3: '00000003-0003-0003-0003-000000000003',
 } as const
 
-const meta = {
-  component: AuditHistoryTable,
-  tags: ['autodocs'],
-} satisfies Meta<typeof AuditHistoryTable>
-
-export default meta
-type Story = StoryObj<typeof meta>
-
 const sampleAudits: AuditEntry[] = [
   {
     document_id: UUIDS.doc1,
@@ -49,10 +41,19 @@ const sampleAudits: AuditEntry[] = [
   },
 ]
 
-export const Default: Story = {
+const meta = {
+  component: AuditHistoryTable,
+  tags: ['autodocs'],
   args: {
     audits: sampleAudits,
   },
+} satisfies Meta<typeof AuditHistoryTable>
+
+export default meta
+type Story = StoryObj<typeof meta>
+
+export const Default: Story = {
+  args: {},
 }
 
 export const Empty: Story = {

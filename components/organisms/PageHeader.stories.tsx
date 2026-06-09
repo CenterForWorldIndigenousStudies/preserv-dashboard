@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { PageHeader } from '@organisms/PageHeader'
 
-const meta: Meta<typeof PageHeader> = {
+const meta = {
   title: 'Organisms/PageHeader',
   component: PageHeader,
   tags: ['autodocs'],
@@ -31,10 +31,10 @@ const meta: Meta<typeof PageHeader> = {
       default: 'sand',
     },
   },
-}
+} satisfies Meta<typeof PageHeader>
 
 export default meta
-type Story = StoryObj<typeof PageHeader>
+type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
 

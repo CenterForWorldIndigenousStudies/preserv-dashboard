@@ -10,14 +10,6 @@ const UUIDS = {
   doc4: '00000004-0004-0004-0004-000000000004',
 } as const
 
-const meta = {
-  component: ReviewQueueTable,
-  tags: ['autodocs'],
-} satisfies Meta<typeof ReviewQueueTable>
-
-export default meta
-type Story = StoryObj<typeof meta>
-
 const sampleItems: ReviewQueueItem[] = [
   {
     id: UUIDS.doc1,
@@ -60,6 +52,14 @@ const sampleItems: ReviewQueueItem[] = [
     queue_reasons: ['Validation in progress', 'Needs review metadata'],
   },
 ]
+
+const meta = {
+  component: ReviewQueueTable,
+  tags: ['autodocs'],
+} satisfies Meta<typeof ReviewQueueTable>
+
+export default meta
+type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   args: {

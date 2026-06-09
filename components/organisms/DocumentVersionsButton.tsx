@@ -1,8 +1,6 @@
 'use client'
 
-import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react'
-import { Chip, Stack } from '@mui/material'
 import {
   MaterialReactTable,
   useMaterialReactTable,
@@ -14,6 +12,7 @@ import { FileSize } from '@atoms/FileSize'
 import { Button } from '@atoms/Button'
 import { IconX } from '@atoms/icons/IconX'
 import { DOCUMENTS_PATH } from '@constants/paths'
+import { DocumentNameBlock } from '@molecules/DocumentNameBlock'
 import type { VersionFamily, VersionFamilyDocument } from 'types/documents'
 
 interface DocumentVersionsButtonProps {
@@ -113,51 +112,26 @@ export function DocumentVersionsButton({ versionFamily }: DocumentVersionsButton
   const columns = useMemo<MRT_ColumnDef<VersionFamilyDocument>[]>(
     () => [
       {
-        accessorKey: 'id',
-        header: 'ID',
-        size: 120,
-        Cell: ({ row }) => {
-          const value = row.original.id
-          return <span title={value}>{value.length > 8 ? `${value.slice(0, 8)}...` : value}</span>
-        },
-      },
-      {
         accessorKey: 'name',
-        header: 'Name',
-        size: 260,
-        Cell: ({ row }) => {
-          const value = row.original.name
-          if (!value) return '—'
+        header: 'Document',
+        size: 420,
+        Cell: ({
+          row: {
+            original: { id, id_legacy, is_canonical, name },
+          },
+        }) => {
+          // Get the source ID from the metadata if it exists, otherwise default to undefined to avoid displaying "null" in the UI
+          const sourceId = undefined
           return (
-            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-              <Link href={`${DOCUMENTS_PATH}/${row.original.id}`} style={{ color: '#355834' }}>
-                {value}
-              </Link>
-              {row.original.is_canonical ? (
-                <Chip
-                  label="Canonical"
-                  size="small"
-                  variant="outlined"
-                  color="success"
-                  sx={{
-                    fontWeight: 700,
-                    letterSpacing: '0.06em',
-                    textTransform: 'uppercase',
-                  }}
-                />
-              ) : null}
-            </Stack>
+            <DocumentNameBlock
+              name={name}
+              id={id}
+              isCanonical={is_canonical}
+              legacyId={id_legacy}
+              sourceId={sourceId}
+              href={`${DOCUMENTS_PATH}/${id}`}
+            />
           )
-        },
-      },
-      {
-        accessorKey: 'id_legacy',
-        header: 'Legacy ID',
-        size: 180,
-        Cell: ({ row }) => {
-          const value = row.original.id_legacy
-          if (!value) return '—'
-          return <span title={value}>{value.length > 30 ? `${value.slice(0, 30)}...` : value}</span>
         },
       },
       {

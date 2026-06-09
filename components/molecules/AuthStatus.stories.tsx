@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import AuthStatus from '@molecules/AuthStatus'
 
-const meta: Meta<typeof AuthStatus> = {
+const meta = {
   title: 'Molecules/AuthStatus',
   component: AuthStatus,
   tags: ['autodocs'],
@@ -9,10 +9,10 @@ const meta: Meta<typeof AuthStatus> = {
     backgrounds: { default: 'sand' },
     layout: 'centered',
   },
-}
+} satisfies Meta<typeof AuthStatus>
 
 export default meta
-type Story = StoryObj<typeof AuthStatus>
+type Story = StoryObj<typeof meta>
 
 // AuthStatus uses useSession from next-auth, which requires a session provider.
 // We use render functions with mock sessions to demonstrate both states.

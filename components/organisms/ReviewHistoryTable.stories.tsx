@@ -8,14 +8,6 @@ const UUIDS = {
   doc2: '00000002-0002-0002-0002-000000000002',
 } as const
 
-const meta = {
-  component: ReviewHistoryTable,
-  tags: ['autodocs'],
-} satisfies Meta<typeof ReviewHistoryTable>
-
-export default meta
-type Story = StoryObj<typeof meta>
-
 const sampleReviews: ReviewItem[] = [
   {
     id: 'rev-001',
@@ -57,6 +49,14 @@ const sampleReviews: ReviewItem[] = [
     created_at: '2026-04-14T16:00:00Z',
   },
 ]
+
+const meta = {
+  component: ReviewHistoryTable,
+  tags: ['autodocs'],
+} satisfies Meta<typeof ReviewHistoryTable>
+
+export default meta
+type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   args: {

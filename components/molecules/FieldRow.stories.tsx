@@ -1,10 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { FieldRow } from '@molecules/FieldRow'
 
-const meta: Meta<typeof FieldRow> = {
+const meta = {
   title: 'Molecules/FieldRow',
   component: FieldRow,
   tags: ['autodocs'],
+  args: {
+    label: 'Document ID',
+    children: 'DOC-2024-0042',
+  },
   argTypes: {
     label: { control: 'text' },
     children: { control: 'text' },
@@ -13,10 +17,10 @@ const meta: Meta<typeof FieldRow> = {
   parameters: {
     backgrounds: { default: 'sand' },
   },
-}
+} satisfies Meta<typeof FieldRow>
 
 export default meta
-type Story = StoryObj<typeof FieldRow>
+type Story = StoryObj<typeof meta>
 
 export const ShortValue: Story = {
   args: {

@@ -77,7 +77,7 @@ export default async function DocumentDetailPage({
       )
     }
 
-    const { document, audits, reviews } = detail
+    const { audits, document, metadata, reviews, version_family, versions } = detail
 
     const documentFieldValues = {
       id: document.id,
@@ -132,11 +132,11 @@ export default async function DocumentDetailPage({
                   Open the related document versions and duplicates for this record.
                 </p>
               </div>
-              {detail.version_family ? <DocumentVersionsButton versionFamily={detail.version_family} /> : null}
+              {version_family ? <DocumentVersionsButton versionFamily={version_family} /> : null}
             </div>
-            {detail.versions.length > 0 ? (
+            {versions.length > 0 ? (
               <div className="mt-6 grid gap-x-6 gap-y-4 md:grid-cols-2">
-                {detail.versions.map((version) => (
+                {versions.map((version) => (
                   <div key={version.id} className="rounded-xl bg-sand/45 p-4">
                     <dl className="grid gap-3">
                       <div>
@@ -168,24 +168,24 @@ export default async function DocumentDetailPage({
                 ))}
               </div>
             ) : null}
-            {detail.version_family && detail.versions.length === 0 ? (
+            {version_family && versions.length === 0 ? (
               <p className="mt-4 text-sm text-ink/60">No version membership records are stored for this document.</p>
             ) : null}
-            {!detail.version_family && detail.document.is_duplicate ? (
+            {!version_family && detail.document.is_duplicate ? (
               <p className="mt-4 text-sm text-ink/60">
                 This document is tagged as a duplicate, but the current registry data did not include a version group or
                 duplicate family for it. The overview can flag it as duplicate, but the related duplicate set is not
                 available to display here yet.
               </p>
             ) : null}
-            {!detail.version_family && !detail.document.is_duplicate ? (
+            {!version_family && !detail.document.is_duplicate ? (
               <p className="mt-4 text-sm text-ink/60">No related versions available.</p>
             ) : null}
           </div>
 
           <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
             <h2 className="text-xl font-semibold text-ink">Metadata</h2>
-            {detail.metadata.length > 0 ? (
+            {metadata.length > 0 ? (
               <div className="mt-6 overflow-x-auto">
                 <table className={detailTableClassName}>
                   <thead>
@@ -199,7 +199,7 @@ export default async function DocumentDetailPage({
                     </tr>
                   </thead>
                   <tbody>
-                    {detail.metadata.map(({ name, value, value_type }, i) => (
+                    {metadata.map(({ name, value, value_type }, i) => (
                       <tr key={i}>
                         <td className={`${detailTableBodyCellClassName} font-medium`}>{name}</td>
                         <td className={detailTableBodyCellClassName}>
@@ -219,10 +219,7 @@ export default async function DocumentDetailPage({
                               <SourceId value={parsed.display as string} />
                             ) : ['source_folder_id', 'origin_parent_source_id'].includes(name) ? (
                               <SourceFolderId value={parsed.display as string} />
-                            ) : [
-                              'content_hash_timestamp',
-                              'source_created_at', 'source_updated_at'
-                            ].includes(name) ? (
+                            ) : ['content_hash_timestamp', 'source_created_at', 'source_updated_at'].includes(name) ? (
                               <DateAtom value={parsed.display as number} />
                             ) : (
                               parsed.display

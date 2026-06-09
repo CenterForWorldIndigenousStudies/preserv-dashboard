@@ -9,6 +9,8 @@ import type { MRT_ColumnDef, MRT_RowSelectionState, MRT_SortingState } from 'mat
 
 import { DateAtom } from '@atoms/Date'
 import { FileSize } from '@atoms/FileSize'
+import { DOCUMENTS_PATH } from '@constants/paths'
+import { DocumentNameBlock } from '@molecules/DocumentNameBlock'
 import { DocumentDataTable } from '@organisms/document-table/DocumentDataTable'
 import type { DocumentTableController, DocumentTableFetchResult } from '@organisms/document-table/types'
 import type { Document } from 'types/documents'
@@ -205,27 +207,43 @@ export function SelectionTable(props: SelectionTableProps): ReactElement {
     () => [
       {
         accessorKey: 'name',
-        header: 'Name',
-        size: 320,
-        Cell: ({ row }) => row.original.name ?? 'Untitled document',
-      },
-      {
-        accessorKey: 'id_legacy',
-        header: 'Legacy ID',
-        size: 220,
-        Cell: ({ row }) => row.original.id_legacy ?? '-',
+        header: 'Document',
+        size: 420,
+        Cell: ({
+          row: {
+            original: { id, id_legacy, name, source_id },
+          },
+        }) => {
+          return (
+            <DocumentNameBlock
+              name={name}
+              id={id}
+              legacyId={id_legacy}
+              sourceId={source_id}
+              href={`${DOCUMENTS_PATH}/${id}`}
+            />
+          )
+        },
       },
       {
         accessorKey: 'filesize',
         header: 'File Size',
         size: 140,
-        Cell: ({ row }) => <FileSize value={row.original.filesize} />,
+        Cell: ({
+          row: {
+            original: { filesize },
+          },
+        }) => <FileSize value={filesize} />,
       },
       {
         accessorKey: 'created_at',
         header: 'Created',
         size: 180,
-        Cell: ({ row }) => <DateAtom value={row.original.created_at} />,
+        Cell: ({
+          row: {
+            original: { created_at },
+          },
+        }) => <DateAtom value={created_at} />,
       },
     ],
     [],

@@ -13,26 +13,6 @@ const UUIDS = {
   doc2: '00000012-0012-0012-0012-000000000012',
 } as const
 
-interface CollectionWithDocuments extends CollectionWithMeta {
-  documents: Document[]
-}
-
-const meta = {
-  component: CollectionsAccordion,
-  tags: ['autodocs'],
-  parameters: {
-    nextjs: {
-      appDirectory: true,
-      navigation: {
-        pathname: COLLECTIONS_PATH,
-      },
-    },
-  },
-} satisfies Meta<typeof CollectionsAccordion>
-
-export default meta
-type Story = StoryObj<typeof meta>
-
 const sampleDocuments: Document[] = [
   {
     id: UUIDS.doc1,
@@ -106,10 +86,31 @@ const sampleCollections: CollectionWithDocuments[] = [
   },
 ]
 
-export const Default: Story = {
+interface CollectionWithDocuments extends CollectionWithMeta {
+  documents: Document[]
+}
+
+const meta = {
+  component: CollectionsAccordion,
+  tags: ['autodocs'],
   args: {
     collections: sampleCollections,
   },
+  parameters: {
+    nextjs: {
+      appDirectory: true,
+      navigation: {
+        pathname: COLLECTIONS_PATH,
+      },
+    },
+  },
+} satisfies Meta<typeof CollectionsAccordion>
+
+export default meta
+type Story = StoryObj<typeof meta>
+
+export const Default: Story = {
+  args: {},
 }
 
 export const Empty: Story = {

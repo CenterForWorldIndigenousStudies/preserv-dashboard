@@ -17,14 +17,6 @@ const UUIDS = {
   doc4: '00000004-0004-0004-0004-000000000004',
 } as const
 
-const meta: Meta<typeof SelectionTable> = {
-  component: SelectionTable,
-  tags: ['autodocs'],
-}
-export default meta
-
-type Story = StoryObj<typeof SelectionTable>
-
 const sampleDocuments: Document[] = [
   {
     id: UUIDS.doc1,
@@ -113,6 +105,14 @@ function InteractiveWrapper(args: {
     </div>
   )
 }
+
+const meta: Meta<typeof SelectionTable> = {
+  component: SelectionTable,
+  tags: ['autodocs'],
+}
+
+export default meta
+type Story = StoryObj<typeof SelectionTable>
 
 export const Default: Story = {
   render: () => (

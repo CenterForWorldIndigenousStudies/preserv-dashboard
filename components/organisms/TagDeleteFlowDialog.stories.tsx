@@ -20,7 +20,6 @@ const meta = {
 } satisfies Meta<typeof TagDeleteFlowDialog>
 
 export default meta
-
 type Story = StoryObj<typeof meta>
 
 export const CollectionUnchecked: Story = {}

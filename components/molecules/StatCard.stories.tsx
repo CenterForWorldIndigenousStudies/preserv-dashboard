@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { DOCUMENTS_API_PATH, FAILED_PATH, REVIEWS_PATH } from '@constants/paths'
 import { StatCard } from '@molecules/StatCard'
 
-const meta: Meta<typeof StatCard> = {
+const meta = {
   title: 'Molecules/StatCard',
   component: StatCard,
   tags: ['autodocs'],
@@ -30,10 +30,10 @@ const meta: Meta<typeof StatCard> = {
       default: 'sand',
     },
   },
-}
+} satisfies Meta<typeof StatCard>
 
 export default meta
-type Story = StoryObj<typeof StatCard>
+type Story = StoryObj<typeof meta>
 
 export const Static: Story = {
   args: {
