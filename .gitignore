@@ -1,0 +1,62 @@
+# See https://help.github.com/ignore-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+
+# testing
+/.coverage
+/coverage
+/e2e/compiled
+/e2e/error-shots
+/css-test/
+
+# production
+/build
+
+# next.js
+/.next/
+/out/
+next-env.d.ts
+
+# misc
+.DS_Store
+.env*
+!.env.example
+!.env.test
+
+
+# generated
+.eslintcache
+*.scss.d.ts
+*.css.d.ts
+/dist/
+/static/fonts/**/*
+**/*.css
+!app/globals.css
+!public/styles/*.*
+/storybook-static/
+npm-debug.log*
+
+
+# Prisma generated files
+lib/prisma/generated
+
+# IDE Stu
+.code-workspace
+.idea
+.project
+.next/
+/.project/
+/.settings/
+.settings/org.eclipse.wst.common.project.facet.core.xml
+.settings/ts.eclipse.ide.core.prefs
+
+# VScode settings
+.vscode/*
+!.vscode/co-authored-by.code-snippets
+!.vscode/extensions.json
+!.vscode/cspell.json
+*.code-workspace
+!pdb.code-workspace
+
+no_commit

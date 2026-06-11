@@ -1,0 +1,143 @@
+import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { DocumentsTable } from '@components/organisms/DocumentsTable'
+import type { OverviewFilterOptions } from '@lib/overviewSearch'
+import type { Document } from 'types/documents'
+import type { DocumentsPageResult } from 'types/pagination'
+
+const mockDocuments: Document[] = [
+  {
+    id: storyUuid(),
+    name: 'Annual Report 2024',
+    id_legacy: '1234',
+    filesize: 2456000,
+    hash_binary: 'abc123',
+    hash_content: 'def456',
+    created_at: new Date('2024-03-15T10:30:00.000Z'),
+    updated_at: new Date('2024-03-15T10:30:00.000Z'),
+  },
+  {
+    id: storyUuid(),
+    name: 'Field Survey Data - Arizona',
+    id_legacy: '2345',
+    filesize: 890000,
+    hash_binary: 'ghi789',
+    hash_content: 'jkl012',
+    created_at: new Date('2024-06-22T14:15:00.000Z'),
+    updated_at: new Date('2024-06-22T14:15:00.000Z'),
+  },
+  {
+    id: storyUuid(),
+    name: 'Ethnographic Notes Vol. III',
+    id_legacy: '3456',
+    filesize: 142000000,
+    hash_binary: 'mno345',
+    hash_content: 'pqr678',
+    created_at: new Date('2023-11-05T09:00:00.000Z'),
+    updated_at: new Date('2023-11-05T09:00:00.000Z'),
+  },
+]
+
+const filterOptions: OverviewFilterOptions = {
+  collections: ['Plateau', 'Southwest', 'Pacific Northwest'],
+  accessLevels: ['open access', 'restricted', 'internal', 'confidential'],
+  statuses: ['APPROVED', 'NEEDS_REVIEW', 'REJECTED', 'VALIDATED'],
+}
+
+function buildPageResult(data: Document[]): DocumentsPageResult {
+  return {
+    data,
+    pageInfo: {
+      page: 1,
+      pageSize: data.length || 25,
+      hasNextPage: false,
+      hasPreviousPage: false,
+      startCursor: null,
+      endCursor: null,
+    },
+  }
+}
+
+/**
+ * Browser-safe UUID replacement for Storybook stories.
+ * `crypto.randomUUID()` is available in all modern browsers.
+ * Fallback uses Math.random for environments where it is not available.
+ */
+function storyUuid(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return Math.random().toString(36).slice(2) + Date.now().toString(36)
+}
+
+const meta = {
+  title: 'Organisms/DocumentsTable',
+  component: DocumentsTable,
+  tags: ['autodocs'],
+  args: {
+    initialData: buildPageResult(mockDocuments),
+    filterOptions,
+  },
+  parameters: {
+    layout: 'fullscreen',
+    backgrounds: { default: 'sand' },
+    nextjs: {
+      appDirectory: true,
+      navigation: {
+        pathname: '/documents',
+        query: {
+          page: '1',
+          pageSize: '25',
+        },
+      },
+    },
+  },
+} satisfies Meta<typeof DocumentsTable>
+
+export default meta
+type Story = StoryObj<typeof meta>
+
+export const Default: Story = {
+  args: {},
+}
+
+export const Empty: Story = {
+  args: {
+    initialData: buildPageResult([]),
+    filterOptions,
+  },
+}
+
+export const ManyResults: Story = {
+  args: {
+    filterOptions,
+  },
+  render: () => {
+    const many = Array.from(
+      { length: 25 },
+      (_, i): Document => ({
+        id: storyUuid(),
+        name: `Document ${i + 1}`,
+        id_legacy: String(i + 4567),
+        filesize: Math.floor(Math.random() * 10_000_000_000),
+        hash_binary: `hash-${i}`,
+        hash_content: `content-${i}`,
+        created_at: new Date(Date.now() - i * 86400000),
+        updated_at: new Date(Date.now() - i * 86400000),
+      }),
+    )
+    return <DocumentsTable initialData={buildPageResult(many)} filterOptions={filterOptions} />
+  },
+}
+
+export const ReviewQueueVariant: Story = {
+  args: {
+    initialData: buildPageResult(
+      mockDocuments.map((document, index) => ({
+        ...document,
+        validation_status: index === 0 ? 'NEEDS_REVIEW' : index === 1 ? 'APPROVED' : 'REJECTED',
+      })),
+    ),
+    filterOptions,
+    variant: 'reviewQueue',
+  },
+}

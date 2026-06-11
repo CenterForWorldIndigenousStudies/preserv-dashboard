@@ -1,0 +1,324 @@
+import Link from 'next/link'
+import type { ReactElement } from 'react'
+import { DateAtom } from '@atoms/Date'
+import { FileSize } from '@atoms/FileSize'
+import { SourceId } from '@atoms/SourceId'
+import { SourceFolderId } from '@atoms/SourceFolderId'
+import { NoDataState } from '@organisms/NoDataState'
+import { PageHeader } from '@organisms/PageHeader'
+import { AuditHistoryTable } from '@organisms/AuditHistoryTable'
+import { DocumentLineageSection } from '@organisms/DocumentLineageSection'
+import { DocumentTagsEditor } from '@organisms/DocumentTagsEditor'
+import { DocumentVersionsButton } from '@organisms/DocumentVersionsButton'
+import { ReviewHistoryTable } from '@organisms/ReviewHistoryTable'
+import { parseMetadataValue } from '@lib/format'
+import { getDocumentDetail } from '@lib/queries'
+
+export const dynamic = 'force-dynamic'
+
+interface DocumentDetailPageProps {
+  params: Promise<{
+    id: string
+  }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}
+
+function firstSearchParam(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value
+}
+
+function resolveOverviewHref(searchParams: Record<string, string | string[] | undefined>): string {
+  const from = firstSearchParam(searchParams.from)
+  if (from && from.startsWith('/')) {
+    return from
+  }
+  return '/'
+}
+
+const documentFieldLabels: Array<{ key: string; label: string }> = [
+  { key: 'id', label: 'Document ID' },
+  { key: 'name', label: 'Name' },
+  { key: 'idLegacy', label: 'Legacy ID' },
+  { key: 'filesize', label: 'File Size' },
+  { key: 'hashBinary', label: 'Hash (Binary)' },
+  { key: 'hashContent', label: 'Hash (Content)' },
+  { key: 'created_at', label: 'Created At' },
+  { key: 'updated_at', label: 'Updated At' },
+]
+
+const detailTableClassName = 'min-w-full border-separate border-spacing-0 text-left text-sm text-ink'
+const detailTableHeadCellClassName = 'bg-[#f4f1eb] px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-ink'
+const detailTableBodyCellClassName = 'border-b border-moss/10 px-3 py-3 align-top'
+
+export default async function DocumentDetailPage({
+  params,
+  searchParams,
+}: DocumentDetailPageProps): Promise<ReactElement> {
+  const { id } = await params
+  const resolvedSearchParams = await searchParams
+  const overviewHref = resolveOverviewHref(resolvedSearchParams)
+
+  try {
+    const detail = await getDocumentDetail(id)
+
+    if (!detail) {
+      return (
+        <div className="space-y-8">
+          <PageHeader
+            eyebrow="Document Detail"
+            title="No Data"
+            description="Inspect the full document record, metadata payload, audit trail, review history, and duplicate relationships."
+          />
+          <Link href={overviewHref} className="inline-flex text-sm font-medium text-moss transition hover:text-moss/80">
+            ← Back to Overview
+          </Link>
+          <NoDataState message="No document data is available for this record yet." />
+        </div>
+      )
+    }
+
+    const { audits, document, metadata, reviews, version_family, versions } = detail
+
+    const documentFieldValues = {
+      id: document.id,
+      name: document.name ?? '—',
+      idLegacy: document.id_legacy ?? '—',
+      filesize: document.filesize,
+      hashBinary: document.hash_binary ?? '—',
+      hashContent: document.hash_content ?? '—',
+      created_at: document.created_at,
+      updated_at: document.updated_at,
+    } as Record<string, string | bigint | number | null | undefined>
+
+    return (
+      <div className="space-y-8">
+        <Link href={overviewHref} className="inline-flex text-sm font-medium text-moss transition hover:text-moss/80">
+          ← Back to Overview
+        </Link>
+        <PageHeader
+          eyebrow="Document Detail"
+          title={document.name || document.id}
+          description="Inspect the full document record, metadata payload, audit trail, review history, and duplicate relationships."
+        />
+
+        <section>
+          <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
+            <h2 className="text-xl font-semibold text-ink">Document Fields</h2>
+            <dl className="mt-6 grid gap-x-6 gap-y-4 md:grid-cols-2">
+              {documentFieldLabels.map((field) => (
+                <div key={field.key} className="rounded-xl bg-sand/45 p-4">
+                  <dt className="text-xs uppercase tracking-[0.15em] text-ink/60">{field.label}</dt>
+                  <dd className="mt-2 break-words text-sm text-ink">
+                    {field.key === 'filesize' ? (
+                      <FileSize value={documentFieldValues.filesize as bigint | number | null | undefined} />
+                    ) : field.key === 'created_at' || field.key === 'updated_at' ? (
+                      <DateAtom value={documentFieldValues[field.key] as string | Date | null | undefined} />
+                    ) : (
+                      documentFieldValues[field.key] || '—'
+                    )}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </section>
+
+        <section className="space-y-8">
+          <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-semibold text-ink">Versions</h2>
+                <p className="mt-2 text-sm text-ink/60">
+                  Open the related document versions and duplicates for this record.
+                </p>
+              </div>
+              {version_family ? <DocumentVersionsButton versionFamily={version_family} /> : null}
+            </div>
+            {versions.length > 0 ? (
+              <div className="mt-6 grid gap-x-6 gap-y-4 md:grid-cols-2">
+                {versions.map((version) => (
+                  <div key={version.id} className="rounded-xl bg-sand/45 p-4">
+                    <dl className="grid gap-3">
+                      <div>
+                        <dt className="text-xs uppercase tracking-[0.15em] text-ink/60">Version Group</dt>
+                        <dd className="mt-1 break-words text-sm font-medium text-ink">{version.version_group_id}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs uppercase tracking-[0.15em] text-ink/60">Changes Summary</dt>
+                        <dd className="mt-1 break-words text-sm text-ink">{version.changes_summary ?? '-'}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs uppercase tracking-[0.15em] text-ink/60">Notes</dt>
+                        <dd className="mt-1 break-words text-sm text-ink">{version.notes ?? '-'}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs uppercase tracking-[0.15em] text-ink/60">Similarity</dt>
+                        <dd className="mt-1 break-words text-sm text-ink">
+                          {version.similarity_score !== null ? version.similarity_score : '-'}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs uppercase tracking-[0.15em] text-ink/60">Analyzed At</dt>
+                        <dd className="mt-1 break-words text-sm text-ink">
+                          {version.analyzed_at !== null ? <DateAtom value={version.analyzed_at} /> : '-'}
+                        </dd>
+                      </div>
+                    </dl>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {version_family && versions.length === 0 ? (
+              <p className="mt-4 text-sm text-ink/60">No version membership records are stored for this document.</p>
+            ) : null}
+            {!version_family && detail.document.is_duplicate ? (
+              <p className="mt-4 text-sm text-ink/60">
+                This document is tagged as a duplicate, but the current registry data did not include a version group or
+                duplicate family for it. The overview can flag it as duplicate, but the related duplicate set is not
+                available to display here yet.
+              </p>
+            ) : null}
+            {!version_family && !detail.document.is_duplicate ? (
+              <p className="mt-4 text-sm text-ink/60">No related versions available.</p>
+            ) : null}
+          </div>
+
+          <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
+            <h2 className="text-xl font-semibold text-ink">Metadata</h2>
+            {metadata.length > 0 ? (
+              <div className="mt-6 overflow-x-auto">
+                <table className={detailTableClassName}>
+                  <thead>
+                    <tr>
+                      <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
+                        Field
+                      </th>
+                      <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
+                        Value
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {metadata.map(({ name, value, value_type }, i) => (
+                      <tr key={i}>
+                        <td className={`${detailTableBodyCellClassName} font-medium`}>{name}</td>
+                        <td className={detailTableBodyCellClassName}>
+                          {(() => {
+                            const parsed = parseMetadataValue(value, value_type)
+                            return [
+                              'content_dedup_text_source_id',
+                              'fedora_csv_source_id',
+                              'fedora_publication_source_document_id',
+                              'ocr_source_document_id',
+                              'ocr_version_document_id',
+                              'origin_source_id',
+                              'rotation_source_document_id',
+                              'source_id',
+                              'split_parent_document_id',
+                            ].includes(name) ? (
+                              <SourceId value={parsed.display as string} />
+                            ) : ['source_folder_id', 'origin_parent_source_id'].includes(name) ? (
+                              <SourceFolderId value={parsed.display as string} />
+                            ) : ['content_hash_timestamp', 'source_created_at', 'source_updated_at'].includes(name) ? (
+                              <DateAtom value={parsed.display as number} />
+                            ) : (
+                              parsed.display
+                            )
+                          })()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="mt-4 text-sm text-ink/60">No metadata available.</p>
+            )}
+          </div>
+
+          <DocumentLineageSection detail={detail} />
+
+          <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
+            <h2 className="text-xl font-semibold text-ink">Tags</h2>
+            <div className="mt-6">
+              <DocumentTagsEditor documentId={document.id} initialTags={detail.document_to_tags} />
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
+            <h2 className="text-xl font-semibold text-ink">Batches</h2>
+            {detail.document_to_batches.length > 0 ? (
+              <div className="mt-6 overflow-x-auto">
+                <table className={detailTableClassName}>
+                  <thead>
+                    <tr>
+                      <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
+                        Batch ID
+                      </th>
+                      <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
+                        Batch Origin
+                      </th>
+                      <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
+                        Processing Time
+                      </th>
+                      <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
+                        OCR Low
+                      </th>
+                      <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
+                        OCR Medium
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {detail.document_to_batches.map((batchLink) => (
+                      <tr key={batchLink.id}>
+                        <td className={`${detailTableBodyCellClassName} font-medium`}>
+                          {batchLink.batch_legacy_id ?? batchLink.batch_id}
+                        </td>
+                        <td className={detailTableBodyCellClassName}>{batchLink.batch_origin ?? '—'}</td>
+                        <td className={detailTableBodyCellClassName}>{batchLink.processing_time_seconds ?? '—'}</td>
+                        <td className={detailTableBodyCellClassName}>{batchLink.ocr_quality_low ? 'True' : 'False'}</td>
+                        <td className={detailTableBodyCellClassName}>
+                          {batchLink.ocr_quality_medium ? 'True' : 'False'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="mt-4 text-sm text-ink/60">No batch links available.</p>
+            )}
+          </div>
+        </section>
+
+        <section className="grid gap-8 xl:grid-cols-2">
+          <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
+            <h2 className="text-xl font-semibold text-ink">Audit History</h2>
+            <div className="mt-6">
+              <AuditHistoryTable audits={audits} />
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
+            <h2 className="text-xl font-semibold text-ink">Review History</h2>
+            <div className="mt-6">
+              <ReviewHistoryTable reviews={reviews} />
+            </div>
+          </div>
+        </section>
+      </div>
+    )
+  } catch {
+    return (
+      <div className="space-y-8">
+        <PageHeader
+          eyebrow="Document Detail"
+          title="No Data"
+          description="Inspect the full document record, metadata payload, audit trail, review history, and duplicate relationships."
+        />
+        <NoDataState message="No data is available right now. The database may be empty, unavailable, or still being initialized." />
+      </div>
+    )
+  }
+}
