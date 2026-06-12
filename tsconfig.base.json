@@ -25,6 +25,8 @@
       "@components/*": ["./components/*"],
       "@constants": ["./constants"],
       "@constants/*": ["./constants/*"],
+      "@contracts": ["./contracts"],
+      "@contracts/*": ["./contracts/*"],
       "@hooks": ["./hooks"],
       "@hooks/*": ["./hooks/*"],
       "@lib": ["./lib"],

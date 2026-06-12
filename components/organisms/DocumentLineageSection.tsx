@@ -3,12 +3,13 @@ import type { ReactElement, ReactNode } from 'react'
 import { DateAtom } from '@atoms/Date'
 import { SourceFolderId } from '@atoms/SourceFolderId'
 import { SourceId } from '@atoms/SourceId'
-import { parseMetadataValue } from '@lib/format'
+import { parseMetadataValue } from '@lib/metadata'
 import type { DocumentDetail, DocumentMetadataField } from 'types/documents'
 
 const lineageCardClassName = 'rounded-2xl border border-moss/15 bg-white p-6 shadow-panel'
 const metadataTableClassName = 'min-w-full border-separate border-spacing-0 text-left text-sm text-ink'
-const metadataTableHeadCellClassName = 'bg-[#f4f1eb] px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-ink'
+const metadataTableHeadCellClassName =
+  'bg-[#f4f1eb] px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-ink'
 const metadataTableBodyCellClassName = 'border-b border-moss/10 px-3 py-3 align-top'
 
 const provenanceMetadataKeys = new Set([
@@ -86,15 +87,18 @@ export function DocumentLineageSection({ detail }: { detail: DocumentDetail }): 
   )
   const currentDocumentStatus = getCurrentDocumentStatus(detail)
   const hasSignals =
-    detail.version_family !== null || currentDocumentStatus !== null || recordedSourceMetadata.length > 0 || batchLinks.length > 0
+    detail.version_family !== null ||
+    currentDocumentStatus !== null ||
+    recordedSourceMetadata.length > 0 ||
+    batchLinks.length > 0
 
   return (
     <section className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold text-ink">Lineage and Provenance</h2>
         <p className="mt-2 text-sm text-ink/60">
-          Review related version family details, recorded source metadata, and batch links that are already stored for this
-          document.
+          Review related version family details, recorded source metadata, and batch links that are already stored for
+          this document.
         </p>
       </div>
 
@@ -131,7 +135,8 @@ export function DocumentLineageSection({ detail }: { detail: DocumentDetail }): 
 
           {detail.version_family === null && detail.document.is_duplicate ? (
             <p className="mt-4 text-sm text-ink/60">
-              A duplicate document tag is recorded for this document, but no related version family is available to display.
+              A duplicate document tag is recorded for this document, but no related version family is available to
+              display.
             </p>
           ) : null}
         </div>

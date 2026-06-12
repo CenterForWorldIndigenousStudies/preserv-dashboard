@@ -1,138 +1,91 @@
-# Preservation Daashboard
+# Preservation Dashboard
 
 `preserv-dashboard` is the CWIS Preservation Next.js application for browsing, reviewing, and managing preservation data in the shared MariaDB database.
 
 ALL CODE MUST BE IN ENGLISH
 
-At a high level it:
+## Purpose
 
-- renders authenticated document, review, and failure-management workflows
-- uses Prisma against the shared [`preserv-db`](../../src/preserv_pipeline/db) schema
-- uses MUI-based components with Atomic Design organization
-- embeds the external Storybook component library
-- integrates with external pipeline apps and can surface live status updates
+The dashboard is the operator-facing app for:
+
+- authenticated document, review, and failure-management workflows
+- shared MariaDB reads and writes through Prisma
+- UI composition with MUI and Atomic Design layering
+- pipeline initiation, callback handling, and live process monitoring
 
 ## Read First
 
-Use repo documentation for operational detail instead of expanding this file:
+Use the focused docs instead of growing this file:
 
 - overview and setup: [README.md](./README.md)
-- environment variables: [documentation/dashboard/ENV_VARS.md](../../documentation/dashboard/ENV_VARS.md)
-- component architecture: [documentation/dashboard/COMPONENT_ARCHITECTURE.md](../../documentation/dashboard/COMPONENT_ARCHITECTURE.md)
-- semantic styling rules: [documentation/dashboard/styles/SEMANTIC_CLASSES.md](../../documentation/dashboard/styles/SEMANTIC_CLASSES.md)
-- pipeline architecture: [documentation/dashboard/PIPELINE_TRIGGER_CALLBACK_ARCHITECTURE.md](../../documentation/dashboard/PIPELINE_TRIGGER_CALLBACK_ARCHITECTURE.md)
-- current pipeline initiation integration: [documentation/dashboard/PIPELINE_INITIATION_INTEGRATION.md](../../documentation/dashboard/PIPELINE_INITIATION_INTEGRATION.md)
-- database connection guidance: [documentation/dashboard/db/CONNECTING_TO_DB.md](../../documentation/dashboard/db/CONNECTING_TO_DB.md)
-- database reference: [documentation/db/PRESERVATION_DB.md](../../documentation/db/PRESERVATION_DB.md)
-- testing overview: [documentation/dashboard/testing/TESTING.md](../../documentation/dashboard/testing/TESTING.md)
-- Storybook deployment: [documentation/dashboard/DEPLOYING_STORYBOOK.md](../../documentation/dashboard/DEPLOYING_STORYBOOK.md)
+- documentation standards: [../../documentation/standards/DOCUMENTATION_STANDARDS.md](../../documentation/standards/DOCUMENTATION_STANDARDS.md)
+- documentation roles: [../../documentation/standards/DOCUMENTATION_ROLES.md](../../documentation/standards/DOCUMENTATION_ROLES.md)
+- environment variables: [../../documentation/dashboard/ENV_VARS.md](../../documentation/dashboard/ENV_VARS.md)
+- deployment: [../../documentation/dashboard/DEPLOYMENT.md](../../documentation/dashboard/DEPLOYMENT.md)
+- component architecture: [../../documentation/dashboard/COMPONENT_ARCHITECTURE.md](../../documentation/dashboard/COMPONENT_ARCHITECTURE.md)
+- semantic styling rules: [../../documentation/dashboard/styles/SEMANTIC_CLASSES.md](../../documentation/dashboard/styles/SEMANTIC_CLASSES.md)
+- pipeline architecture: [../../documentation/dashboard/PIPELINE_TRIGGER_CALLBACK_ARCHITECTURE.md](../../documentation/dashboard/PIPELINE_TRIGGER_CALLBACK_ARCHITECTURE.md)
+- current pipeline initiation integration: [../../documentation/dashboard/PIPELINE_INITIATION_INTEGRATION.md](../../documentation/dashboard/PIPELINE_INITIATION_INTEGRATION.md)
+- database connection guidance: [../../documentation/dashboard/db/CONNECTING_TO_DB.md](../../documentation/dashboard/db/CONNECTING_TO_DB.md)
+- database reference: [../../documentation/db/PRESERVATION_DB.md](../../documentation/db/PRESERVATION_DB.md)
+- testing overview: [../../documentation/dashboard/testing/TESTING.md](../../documentation/dashboard/testing/TESTING.md)
 
 ## Where To Start In Code
 
-Primary entrypoints:
+Primary entry points:
 
 - app routes and pages: `app/`
 - authenticated API routes: `app/api/`
 - auth configuration: `auth.ts`
 - auth proxy boundary: `proxy.ts`
-- database queries and helpers: `lib/queries.ts`, `lib/`
+- database helpers and query logic: `lib/db.ts`, `lib/queries.ts`, `lib/`
 
 Important UI areas:
 
 - atoms: `components/atoms/`
 - molecules: `components/molecules/`
 - organisms: `components/organisms/`
+- process-documents workflow: `components/organisms/ProcessDocumentsWorkspace.tsx`
 
 Important pipeline integration areas:
 
-- shared route area: `app/api/`
-- shared service helpers: `lib/`
-- current process UI: `app/process-documents/page.tsx`
-- process browser routes: `app/api/process/`
+- process routes: `app/api/process/`
 - pipeline callback routes: `app/api/pipeline/`
+- pipeline trigger orchestration: `lib/pipelineTriggers.ts`
+- normalized pipeline state: `lib/pipelineNormalization.ts`
+- process page UI: `app/process-documents/page.tsx`
 
-## Execution Model
-
-The app is a Next.js App Router project.
-
-Most work falls into one of these paths:
-
-- server-rendered pages under `app/`
-- authenticated route handlers under `app/api/`
-- shared database reads and writes through Prisma-backed helpers in `lib/`
-- UI composition through Atomic Design components
-
-For pipeline integrations, the common pattern is:
-
-- the dashboard triggers pipeline apps server-to-server
-- pipeline apps write execution state into shared persistence
-- the dashboard streams live status to the browser with SSE
-- callback routes that serve pipeline apps stay outside the Auth.js proxy and use bearer-token auth instead
-
-See the pipeline docs for the generic architecture and the current process-page implementation.
-
-## UI And Styling Notes
+## Local Guardrails
 
 - keep components in the correct Atomic Design layer
 - prefer existing atoms and molecules before creating new UI primitives
 - use MUI components and theme-driven styling
-- use semantic class names for structural/layout styling
-- do not introduce ad hoc presentational class names or inline styling patterns
-
-If you need to change structure or styling rules, read the component and semantic styling docs first.
-
-## Component Creation Checklist
-
-Before adding a new component:
-
-- check `components/atoms/`, `components/molecules/`, and `components/organisms/` for an existing reuse candidate
-- prefer extending or composing an existing component before creating a new one
-- choose the Atomic Design layer intentionally instead of defaulting to the nearest folder
-- use a generic name unless the component is truly tied to one workflow
-- keep app styling in shared primitives and the MUI theme rather than rebuilding it in task-specific JSX
-
-Use this rubric:
-
-- `atom`: one primitive or one thin app-styled wrapper such as `Button` or `Badge`
-- `molecule`: a small composed unit that can be reused across multiple views
-- `organism`: a feature-level section or workflow container with real orchestration or domain-specific state
-
-Avoid these common mistakes:
-
-- creating workflow-specific wrappers when a generic component would work
-- placing composed or stateful workflow components in `atoms/`
-- reimplementing an existing atom such as `Button`, `Badge`, dialog wrappers, or status display patterns
-- creating new styling conventions instead of using the MUI theme and semantic classes
-
-## Testing Notes
-
-Follow the testing docs for scope and command choice.
-
-Project-specific layout notes:
-
-- `tests/unit/` is the fast Vitest suite
-- `tests/integration/` covers integration behavior
-- Storybook-specific tests run through the Storybook Vitest project
+- use semantic class names for structural and layout styling
+- do not introduce ad hoc presentational class names or new styling patterns
+- treat the shared preservation database schema as the external source of truth
+- keep auth and session concerns in Auth.js and proxy configuration
+- keep pipeline callback routes outside the Auth.js proxy when they are meant for server-to-server access
+- prefer extending existing query helpers, components, and documentation over creating parallel patterns
 
 ## Validation
 
-Prefer repo scripts when possible:
+Run the smallest relevant checks for the files you touched:
 
-- `npm run typecheck`
-- `npm run lint`
-- `npm run lint:project`
-- `npm run lint:markdown`
-- `npm run test`
-- `npm run test:unit`
-- `npm run test:integration`
-- `npm run test:storybook`
-- `npm run build`
+```bash
+npm run lint:markdown
+npm run lint:dashboard
+npm run test:unit:dashboard
+```
 
-## Guardrails
+Use these broader checks when appropriate:
 
-- treat the shared preservation database schema as external source of truth; do not invent local schema variants
-- keep auth/session concerns in Auth.js and proxy configuration, not scattered per-page
-- keep pipeline callback routes outside the Auth.js proxy when they are meant for server-to-server access
-- prefer extending existing query helpers, components, and documentation over creating parallel patterns
-- default to general-purpose reusable components before introducing task-specific ones
-- if a useful assistant-facing note has no documentation yet, keep it brief and prefer creating the real documentation afterward
+```bash
+npm run test:integration:dashboard
+npm run build:dashboard
+```
+
+If you need the app-local TypeScript check:
+
+```bash
+cd app/dashboard && npm run typecheck
+```

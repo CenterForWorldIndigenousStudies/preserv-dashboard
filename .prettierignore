@@ -4,4 +4,4 @@ package-lock.json
 *.config.js
 .git
 .vscode
-*.md
+**/*.md

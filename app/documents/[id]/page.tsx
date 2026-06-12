@@ -11,7 +11,7 @@ import { DocumentLineageSection } from '@organisms/DocumentLineageSection'
 import { DocumentTagsEditor } from '@organisms/DocumentTagsEditor'
 import { DocumentVersionsButton } from '@organisms/DocumentVersionsButton'
 import { ReviewHistoryTable } from '@organisms/ReviewHistoryTable'
-import { parseMetadataValue } from '@lib/format'
+import { parseMetadataValue } from '@lib/metadata'
 import { getDocumentDetail } from '@lib/queries'
 
 export const dynamic = 'force-dynamic'

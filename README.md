@@ -2,8 +2,11 @@
 
 ## Overview
 
-The preservation Dashboard (`preserv-dashboard`) is the CWIS (Center for Wrold Indigenous Studies) Preservation Next.js application for
-browsing, reviewing, and managing preservation data stored in the shared MariaDB database.
+The Preservation Dashboard (`preserv-dashboard`) is the CWIS (Center for World Indigenous Studies) Preservation Next.js application for browsing, reviewing, and managing preservation data stored in the shared MariaDB database.
+
+Dashboard development happens in this monorepo.
+The separate public `preserv-dashboard` repository exists only as deployment output for Vercel.
+See [deployment documentation](../../documentation/dashboard/DEPLOYMENT.md).
 
 At a high level it:
 
@@ -17,11 +20,11 @@ At a high level it:
 
 Tools an engineer needs before working with this project:
 
-- [Node.js](https://nodejs.org/) (see version in [`.tool-versions`](.tool-versions))
+- [Node.js](https://nodejs.org/) (see version in [`.tool-versions`](../../.tool-versions))
 - `npm`
 - MariaDB access for runtime and integration tests (see <https://github.com/jonryser/mariadb_docker>)
 - Google OAuth credentials
-- [markdownlint-cli2](https://github.com/DavidAnson/markdownlint-cli2) (see version in [`.tool-versions`](.tool-versions))
+- [markdownlint-cli2](https://github.com/DavidAnson/markdownlint-cli2) (see version in [`.tool-versions`](../../.tool-versions))
 
 If you want the document processing page working locally as well, you also need:
 
@@ -31,12 +34,7 @@ If you want the document processing page working locally as well, you also need:
 
 ## Setup
 
-1. Install the tool versions defined in `.tool-versions`.
-    __NOTE__ this repo is set up to work with [`asdf`](https://asdf-vm.com/)
-    `asdf` supports Linux and MacOs.
-    If you are on Windows, please install these versions via the appropriate Windows solution.
-
-   (Linux & Mac)
+1. Install the tool versions defined in [`.tool-versions`](../../.tool-versions). This repo is set up to work with [`asdf`](https://asdf-vm.com/), which supports Linux and macOS. On Windows, install matching versions through the appropriate Windows tooling.
 
    ```bash
    asdf install
@@ -45,16 +43,16 @@ If you want the document processing page working locally as well, you also need:
 2. Install dependencies.
 
    ```bash
-   npm install
+   npm run deps:install:dashboard
    ```
 
 3. Create a local environment file.
 
    ```bash
-   cp .env.example .env
+   cp app/dashboard/.env.example app/dashboard/.env
    ```
 
-4. Update `.env` with your database settings, Auth.js secrets, and any local pipeline integration settings you need.
+4. Update `app/dashboard/.env` with your database settings, Auth.js secrets, and any local pipeline integration settings you need.
 
 See [documentation/dashboard/ENV_VARS.md](../../documentation/dashboard/ENV_VARS.md) for the full environment variable reference.
 
@@ -63,7 +61,7 @@ See [documentation/dashboard/ENV_VARS.md](../../documentation/dashboard/ENV_VARS
 Start the local development environment:
 
 ```bash
-npm run dev
+npm run dev:dashboard
 ```
 
 This starts:
@@ -74,7 +72,7 @@ This starts:
 If you only want the Next.js app:
 
 ```bash
-npm run dev:next
+cd app/dashboard && npm run dev:next
 ```
 
 ## Testing
@@ -88,19 +86,19 @@ npm run test
 Run unit tests only:
 
 ```bash
-npm run test:unit
+npm run test:unit:dashboard
 ```
 
 Run integration tests only:
 
 ```bash
-npm run test:integration
+npm run test:integration:dashboard
 ```
 
 Run Storybook tests only:
 
 ```bash
-npm run test:storybook
+cd app/dashboard && npm run test:storybook
 ```
 
 Integration tests require a reachable MariaDB test database.
@@ -116,13 +114,13 @@ npm run lint
 Run TypeScript checks:
 
 ```bash
-npm run typecheck
+cd app/dashboard && npm run typecheck
 ```
 
 Run project linting only:
 
 ```bash
-npm run lint:project
+npm run lint:dashboard
 ```
 
 Run Markdown linting only:
@@ -135,13 +133,15 @@ npm run lint:markdown
 
 Additional project documentation:
 
+- [Documentation standards](../../documentation/standards/DOCUMENTATION_STANDARDS.md)
+- [Documentation roles](../../documentation/standards/DOCUMENTATION_ROLES.md)
 - [Environment variables](../../documentation/dashboard/ENV_VARS.md)
+- [Deployment](../../documentation/dashboard/DEPLOYMENT.md)
 - [Pipeline trigger and callback architecture](../../documentation/dashboard/PIPELINE_TRIGGER_CALLBACK_ARCHITECTURE.md)
-- [Current pipeline intiation integration](../../documentation/dashboard/PIPELINE_INITIATION_INTEGRATION.md)
+- [Current pipeline initiation integration](../../documentation/dashboard/PIPELINE_INITIATION_INTEGRATION.md)
 - [Component architecture](../../documentation/dashboard/COMPONENT_ARCHITECTURE.md)
 - [Semantic CSS](../../documentation/dashboard/styles/SEMANTIC_CLASSES.md)
-- [Storybook deployment](../../documentation/dashboard/DEPLOYING_STORYBOOK.md)
 - [Database connection guidance](../../documentation/dashboard/db/CONNECTING_TO_DB.md)
-- [Database reference](../../documentation/dashboard/db/PRESERVATION_DB.md)
+- [Database reference](../../documentation/db/PRESERVATION_DB.md)
 - [Testing overview](../../documentation/dashboard/testing/TESTING.md)
 - [AI assistant guidance](AGENTS.md)

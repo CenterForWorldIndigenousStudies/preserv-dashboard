@@ -30,6 +30,7 @@ export default defineConfig({
       { find: '@atoms', replacement: path.resolve(dirname, 'components/atoms') },
       { find: '@components', replacement: path.resolve(dirname, 'components') },
       { find: '@constants', replacement: path.resolve(dirname, 'constants') },
+      { find: '@contracts', replacement: path.resolve(dirname, 'contracts') },
       { find: '@hooks', replacement: path.resolve(dirname, 'hooks') },
       { find: '@lib', replacement: path.resolve(dirname, 'lib') },
       { find: '@molecules', replacement: path.resolve(dirname, 'components/molecules') },
