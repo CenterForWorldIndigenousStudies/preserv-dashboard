@@ -30,7 +30,7 @@ async function ReadyForLibraryContent() {
     <>
       <AuthorCountCard authorName={FEATURED_AUTHOR_NAME} count={featuredAuthorDocumentCount} />
       {result.total === 0 ? (
-        <NoDataState message="No documents are currently ready for library ingest." />
+        <NoDataState message="No documents currently meet the dashboard-visible library eligibility criteria." />
       ) : (
         <ReadyForLibraryTable initialData={result} />
       )}
@@ -43,8 +43,8 @@ export default function ReadyForLibraryPage(): ReactElement {
     <div className="w-full space-y-8">
       <PageHeader
         eyebrow="Ready for Library"
-        title="Approved documents ready for ingest."
-        description="Documents with APPROVED validation status, a set access level, and all required Dublin Core metadata fields (dc_title, dc_type, dc_subject, dc_rights)."
+        title="Documents evaluated for library ingest readiness."
+        description="These documents satisfy current dashboard-visible preconditions for Fedora handoff (APPROVED validation status, a set access level, and required Dublin Core metadata fields: dc_title, dc_type, dc_subject, dc_rights). Further runtime checks are still required before ingest can proceed."
       />
 
       <Suspense fallback={null}>

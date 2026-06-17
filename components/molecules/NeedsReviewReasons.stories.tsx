@@ -66,3 +66,51 @@ export const EmptyState: Story = {
     value: null,
   },
 }
+
+export const ReadyForLibraryStaticBlockers: Story = {
+  args: {
+    value: {
+      metadata_requirements: [
+        'Required Dublin Core field dc_rights is missing.',
+        'Required Dublin Core field dc_subject is missing.',
+      ],
+      collection_requirements: ['Document is not linked to a real collection.'],
+      access_requirements: ['Access level must be set before Fedora handoff can proceed.'],
+    },
+  },
+}
+
+export const ReadyForLibraryStaticAndRuntimeChecks: Story = {
+  args: {
+    value: {
+      static_readiness: [
+        'Required Dublin Core field dc_rights is missing.',
+        'Document is not linked to a real collection.',
+      ],
+      runtime_checks: [
+        'Runtime ingest checks are still required before Fedora handoff can proceed.',
+        'Drive or Workbench state may still block ingest at execution time.',
+      ],
+    },
+  },
+}
+
+export const ReadyForLibraryRuntimeChecksOnly: Story = {
+  args: {
+    value: {
+      runtime_checks: [
+        'No dashboard-visible static blocker is currently recorded.',
+        'Runtime ingest checks are still required before Fedora handoff can proceed.',
+        'Fedora or Workbench execution may still reject this document at handoff time.',
+      ],
+    },
+  },
+}
+
+export const ReadyForLibraryNoKnownBlockers: Story = {
+  args: {
+    value: null,
+    emptyMessage:
+      'No known dashboard-visible blockers are recorded. Runtime ingest checks are still required before Fedora handoff can proceed.',
+  },
+}

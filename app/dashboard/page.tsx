@@ -23,7 +23,7 @@ interface QuickActionProps {
 
 const KPI_CARD_DESCRIPTIONS: Record<string, string> = {
   'Needs Review': 'Documents in the current human-review queue using the existing Review Queue defaults.',
-  'Ready for Library': 'Approved documents that meet the current library-ready handoff rules.',
+  'Ready for Library': 'Documents that meet the current dashboard-visible library eligibility rules.',
   'Active Batches': 'Recent processing batches currently classified as active in the Batches view.',
 }
 
@@ -117,7 +117,8 @@ export default async function DashboardPage(): Promise<ReactElement> {
       <section className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
         <h2 className="text-xl font-semibold text-ink">Priority Alerts</h2>
         <p className="mt-3 text-sm leading-6 text-ink/70">
-          Placeholder only. Priority alerts will appear here once alert rules and live dashboard metrics are implemented.
+          Placeholder only. Priority alerts will appear here once alert rules and live dashboard metrics are
+          implemented.
         </p>
       </section>
 

@@ -155,7 +155,7 @@ export function ReadyForLibraryTable({ initialData }: ReadyForLibraryTableProps)
         pageSize: 25,
         filters: {},
       }}
-      emptyMessage="No documents ready for library ingest."
+      emptyMessage="No documents currently meet the dashboard-visible library eligibility criteria."
       searchPlaceholder="Search ready for library..."
     />
   )
