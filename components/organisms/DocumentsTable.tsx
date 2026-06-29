@@ -1,6 +1,13 @@
 'use client'
 
 import { useEffect, useMemo, useState, type ReactElement } from 'react'
+import Box from '@mui/material/Box'
+import Checkbox from '@mui/material/Checkbox'
+import Collapse from '@mui/material/Collapse'
+import Divider from '@mui/material/Divider'
+import FormControlLabel from '@mui/material/FormControlLabel'
+import Stack from '@mui/material/Stack'
+import Typography from '@mui/material/Typography'
 import Alert from '@mui/material/Alert'
 import Snackbar from '@mui/material/Snackbar'
 import Tooltip from '@mui/material/Tooltip'
@@ -87,6 +94,111 @@ interface ReviewQueueBatchApproveButtonProps {
   onApprove: () => void
 }
 
+const REVIEW_QUEUE_CHECKLIST_ITEMS = [
+  { key: 'metadataReviewed', label: 'Metadata reviewed' },
+  { key: 'rightsReviewed', label: 'Rights reviewed' },
+  { key: 'classificationReviewed', label: 'Classification reviewed' },
+  { key: 'duplicatesChecked', label: 'Duplicates checked' },
+  { key: 'completenessReviewed', label: 'Completeness reviewed' },
+] as const
+
+type ReviewQueueChecklistItemKey = (typeof REVIEW_QUEUE_CHECKLIST_ITEMS)[number]['key']
+
+type ReviewQueueChecklistState = Record<ReviewQueueChecklistItemKey, boolean>
+
+function buildDefaultReviewQueueChecklistState(): ReviewQueueChecklistState {
+  return {
+    metadataReviewed: false,
+    rightsReviewed: false,
+    classificationReviewed: false,
+    duplicatesChecked: false,
+    completenessReviewed: false,
+  }
+}
+
+function ReviewQueueChecklistPanel({
+  documentId,
+  expanded,
+  checklistState,
+  onToggleExpanded,
+  onToggle,
+}: {
+  documentId: string
+  expanded: boolean
+  checklistState: ReviewQueueChecklistState
+  onToggleExpanded: (documentId: string) => void
+  onToggle: (itemKey: ReviewQueueChecklistItemKey) => void
+}): ReactElement {
+  const completedCount = REVIEW_QUEUE_CHECKLIST_ITEMS.filter(({ key }) => checklistState[key]).length
+
+  return (
+    <Box
+      sx={{
+        mx: 2,
+        mb: 2,
+        borderRadius: '0.75rem',
+        border: '1px solid rgba(53,88,52,0.12)',
+        backgroundColor: 'rgba(244,241,240,0.65)',
+        p: { xs: 2, sm: 2.5 },
+      }}
+    >
+      <Stack spacing={2}>
+        <Box>
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box>
+              <Typography
+                sx={{
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  color: '#355834',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.14em',
+                }}
+              >
+                Validation Checklist
+              </Typography>
+              <Typography sx={{ mt: 0.75, fontSize: '0.875rem', color: '#231f20' }}>
+                {`${completedCount} of ${REVIEW_QUEUE_CHECKLIST_ITEMS.length} review steps marked complete`}
+              </Typography>
+            </Box>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                onToggleExpanded(documentId)
+              }}
+            >
+              {expanded ? 'Hide checklist' : 'Show checklist'}
+            </Button>
+          </Stack>
+        </Box>
+        <Collapse in={expanded} timeout="auto" unmountOnExit>
+          <Stack spacing={2}>
+            <Divider flexItem sx={{ borderColor: 'rgba(53,88,52,0.08)' }} />
+            <Stack spacing={0.5}>
+              {REVIEW_QUEUE_CHECKLIST_ITEMS.map(({ key, label }) => (
+                <FormControlLabel
+                  key={key}
+                  control={<Checkbox checked={checklistState[key]} onChange={() => onToggle(key)} size="small" />}
+                  label={label}
+                  sx={{
+                    m: 0,
+                    alignItems: 'flex-start',
+                    '& .MuiFormControlLabel-label': {
+                      fontSize: '0.875rem',
+                      color: '#231f20',
+                    },
+                  }}
+                />
+              ))}
+            </Stack>
+          </Stack>
+        </Collapse>
+      </Stack>
+    </Box>
+  )
+}
+
 function getValidationStatusBadgeVariant(status: string | null | undefined): BadgeVariant {
   switch ((status ?? '').toUpperCase()) {
     case 'APPROVED':
@@ -126,7 +238,13 @@ function buildReviewQueueCommentTooltipContent(
   )
 }
 
-function buildReviewQueueColumns(preservedOverviewHref: string): MRT_ColumnDef<Document>[] {
+function buildReviewQueueColumns(params: {
+  preservedOverviewHref: string
+  expandedDocumentIds: Record<string, boolean>
+  getChecklistState: (documentId: string) => ReviewQueueChecklistState
+  onToggleExpanded: (documentId: string) => void
+  onToggleChecklistItem: (documentId: string, itemKey: ReviewQueueChecklistItemKey) => void
+}): MRT_ColumnDef<Document>[] {
   return [
     {
       accessorKey: 'name',
@@ -143,7 +261,7 @@ function buildReviewQueueColumns(preservedOverviewHref: string): MRT_ColumnDef<D
             id={id}
             legacyId={id_legacy}
             sourceId={source_id}
-            href={`${DOCUMENTS_PATH}/${id}?from=${preservedOverviewHref}`}
+            href={`${DOCUMENTS_PATH}/${id}?from=${params.preservedOverviewHref}`}
           />
         )
       },
@@ -202,6 +320,23 @@ function buildReviewQueueColumns(preservedOverviewHref: string): MRT_ColumnDef<D
           </div>
         )
       },
+    },
+    {
+      id: 'validation_checklist',
+      header: 'Validation Checklist',
+      size: 360,
+      enableSorting: false,
+      Cell: ({ row: { original } }) => (
+        <ReviewQueueChecklistPanel
+          documentId={original.id}
+          expanded={Boolean(params.expandedDocumentIds[original.id])}
+          checklistState={params.getChecklistState(original.id)}
+          onToggleExpanded={params.onToggleExpanded}
+          onToggle={(itemKey) => {
+            params.onToggleChecklistItem(original.id, itemKey)
+          }}
+        />
+      ),
     },
   ]
 }
@@ -424,6 +559,10 @@ export function DocumentsTable({
   const [reviewQueueRowSelection, setReviewQueueRowSelection] = useState<MRT_RowSelectionState>({})
   const [batchApprovePending, setBatchApprovePending] = useState(false)
   const [optimisticallyHiddenDocumentIds, setOptimisticallyHiddenDocumentIds] = useState<string[]>([])
+  const [expandedReviewQueueDocumentIds, setExpandedReviewQueueDocumentIds] = useState<Record<string, boolean>>({})
+  const [reviewQueueChecklistByDocumentId, setReviewQueueChecklistByDocumentId] = useState<
+    Record<string, ReviewQueueChecklistState>
+  >({})
   const [toastState, setToastState] = useState<{
     open: boolean
     message: string
@@ -492,6 +631,31 @@ export function DocumentsTable({
 
     saveReviewQueueSelection(reviewQueueQueryKey, reviewQueueRowSelection)
   }, [isReviewQueue, reviewQueueQueryKey, reviewQueueRowSelection])
+
+  function getReviewQueueChecklistState(documentId: string): ReviewQueueChecklistState {
+    return reviewQueueChecklistByDocumentId[documentId] ?? buildDefaultReviewQueueChecklistState()
+  }
+
+  function toggleReviewQueueChecklistItem(documentId: string, itemKey: ReviewQueueChecklistItemKey): void {
+    setReviewQueueChecklistByDocumentId((currentState) => {
+      const existingState = currentState[documentId] ?? buildDefaultReviewQueueChecklistState()
+
+      return {
+        ...currentState,
+        [documentId]: {
+          ...existingState,
+          [itemKey]: !existingState[itemKey],
+        },
+      }
+    })
+  }
+
+  function toggleReviewQueueChecklistExpanded(documentId: string): void {
+    setExpandedReviewQueueDocumentIds((currentState) => ({
+      ...currentState,
+      [documentId]: !currentState[documentId],
+    }))
+  }
 
   async function handleReviewDecision(documentId: string, decision: ReviewQueueDecision): Promise<void> {
     setActiveDecision({ documentId, decision })
@@ -587,8 +751,16 @@ export function DocumentsTable({
 
   const columns = useMemo<MRT_ColumnDef<Document>[]>(
     () =>
-      isReviewQueue ? buildReviewQueueColumns(preservedOverviewHref) : buildOverviewColumns(preservedOverviewHref),
-    [isReviewQueue, preservedOverviewHref],
+      isReviewQueue
+        ? buildReviewQueueColumns({
+            preservedOverviewHref,
+            expandedDocumentIds: expandedReviewQueueDocumentIds,
+            getChecklistState: getReviewQueueChecklistState,
+            onToggleExpanded: toggleReviewQueueChecklistExpanded,
+            onToggleChecklistItem: toggleReviewQueueChecklistItem,
+          })
+        : buildOverviewColumns(preservedOverviewHref),
+    [expandedReviewQueueDocumentIds, isReviewQueue, preservedOverviewHref, reviewQueueChecklistByDocumentId],
   )
 
   return (

@@ -74,8 +74,8 @@ export default function ReadyForLibraryPage(): ReactElement {
     <div className="w-full space-y-8">
       <PageHeader
         eyebrow="Ready for Library"
-        title="Documents evaluated for library ingest readiness."
-        description="These documents satisfy current dashboard-visible preconditions for Fedora handoff (APPROVED validation status, a set access level, and required Dublin Core metadata fields: dc_title, dc_type, dc_subject, dc_rights). Further runtime checks are still required before ingest can proceed."
+        title="Documents in Ready for Library view"
+        description="Approved documents with an access level. Metadata completeness is shown for review."
       />
 
       <ReadyForLibraryReadinessExplanation />
