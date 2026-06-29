@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { Box, Drawer, Stack } from '@mui/material'
+import { Box, Drawer, Stack, type SxProps, type Theme } from '@mui/material'
 
 import { AppVersion } from '@atoms/AppVersion'
 import { SidebarHeader } from '@atoms/SidebarHeader'
@@ -27,10 +27,18 @@ import { SidebarVisibilityControl } from '@molecules/SidebarVisibilityControl'
 
 export type SidebarVariant = 'desktop' | 'mobile'
 
+const mobileDrawerLabel = 'Preservation Pipeline navigation'
+
 interface SidebarProps {
   variant: SidebarVariant
   isOpen?: boolean
   onClose?: () => void
+}
+
+interface SidebarLayoutStyles {
+  nav: SxProps<Theme>
+  panel: SxProps<Theme>
+  root: SxProps<Theme>
 }
 
 const visibleNavigationHrefs = new Set<string>([
@@ -53,23 +61,49 @@ function getVisibleSections(): DashboardNavigationSection[] {
   })).filter((section) => section.items.length > 0)
 }
 
+export function getSidebarLayoutStyles(variant: SidebarVariant): SidebarLayoutStyles {
+  const isMobile = variant === 'mobile'
+
+  return {
+    root: isMobile
+      ? {
+          height: '100%',
+        }
+      : {
+          alignSelf: 'flex-start',
+          height: '100dvh',
+          position: 'sticky',
+          top: 0,
+        },
+    panel: {
+      bgcolor: 'sand.main',
+      borderColor: 'divider',
+      borderRight: isMobile ? undefined : '1px solid',
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100%',
+      maxHeight: '100dvh',
+      overflow: 'hidden',
+      width: 280,
+    },
+    nav: {
+      flex: 1,
+      minHeight: 0,
+      overflowY: 'auto',
+      px: 2,
+      py: 3,
+    },
+  }
+}
+
 export default function Sidebar({ variant, isOpen, onClose }: SidebarProps) {
   const pathname = usePathname()
   const isMobile = variant === 'mobile'
   const sections = getVisibleSections()
+  const layoutStyles = getSidebarLayoutStyles(variant)
 
   const sidebarContent = (
-    <Box
-      sx={{
-        bgcolor: 'sand.main',
-        borderColor: 'divider',
-        borderRight: isMobile ? undefined : '1px solid',
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        width: 280,
-      }}
-    >
+    <Box sx={layoutStyles.panel}>
       <Box sx={{ borderBottom: '1px solid', borderColor: 'divider', px: 2, py: 2 }}>
         <SidebarHeader
           action={
@@ -85,7 +119,7 @@ export default function Sidebar({ variant, isOpen, onClose }: SidebarProps) {
         />
       </Box>
 
-      <Stack spacing={3} sx={{ flex: 1, overflowY: 'auto', px: 2, py: 3 }}>
+      <Stack spacing={3} sx={layoutStyles.nav}>
         {sections.map((section) => (
           <NavSection
             key={section.id}
@@ -114,8 +148,12 @@ export default function Sidebar({ variant, isOpen, onClose }: SidebarProps) {
         ModalProps={{ keepMounted: true }}
         onClose={onClose}
         open={Boolean(isOpen)}
+        slotProps={{
+          paper: {
+            'aria-label': mobileDrawerLabel,
+          },
+        }}
         sx={{
-          display: { md: 'none' },
           '& .MuiDrawer-paper': {
             width: 280,
           },
@@ -126,5 +164,5 @@ export default function Sidebar({ variant, isOpen, onClose }: SidebarProps) {
     )
   }
 
-  return <Box sx={{ height: '100%' }}>{sidebarContent}</Box>
+  return <Box sx={layoutStyles.root}>{sidebarContent}</Box>
 }

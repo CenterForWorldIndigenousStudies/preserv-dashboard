@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, type ReactElement, type ReactNode } from 'react'
-import { Box } from '@mui/material'
+import { Box, type SxProps, type Theme } from '@mui/material'
 
 import Sidebar from '@organisms/Sidebar'
 import { AppShellHeader } from '@organisms/AppShellHeader'
@@ -11,9 +11,52 @@ interface AppShellProps {
   children: ReactNode
 }
 
+interface AppShellLayoutStyles {
+  contentColumn: SxProps<Theme>
+  main: SxProps<Theme>
+  shell: SxProps<Theme>
+  sidebarRail: SxProps<Theme>
+}
+
+export function getAppShellLayoutStyles(sidebarCollapsed: boolean): AppShellLayoutStyles {
+  return {
+    shell: {
+      bgcolor: 'sand.main',
+      display: 'flex',
+      height: '100dvh',
+      overflow: 'hidden',
+    },
+    sidebarRail: {
+      borderColor: 'divider',
+      borderRight: '1px solid',
+      display: { xs: 'none', md: 'flex' },
+      flexDirection: 'column',
+      flexShrink: 0,
+      overflow: 'hidden',
+      transition: 'width 0.3s ease-in-out',
+      width: sidebarCollapsed ? 0 : 280,
+    },
+    contentColumn: {
+      display: 'flex',
+      flex: 1,
+      flexDirection: 'column',
+      minHeight: 0,
+      minWidth: 0,
+    },
+    main: {
+      flex: 1,
+      minHeight: 0,
+      overflowY: 'auto',
+      px: { xs: 2, md: 3, lg: 4 },
+      py: { xs: 3, md: 4 },
+    },
+  }
+}
+
 export function AppShell({ children }: AppShellProps): ReactElement {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const layoutStyles = getAppShellLayoutStyles(sidebarCollapsed)
 
   useEffect(() => {
     const stored = localStorage.getItem('sidebar-collapsed')
@@ -31,18 +74,8 @@ export function AppShell({ children }: AppShellProps): ReactElement {
   }
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', overflow: 'hidden', bgcolor: 'sand.main' }}>
-      <Box
-        sx={{
-          borderRight: '1px solid',
-          borderColor: 'divider',
-          display: { xs: 'none', md: 'flex' },
-          flexDirection: 'column',
-          overflow: 'hidden',
-          transition: 'width 0.3s ease-in-out',
-          width: sidebarCollapsed ? 0 : 280,
-        }}
-      >
+    <Box sx={layoutStyles.shell}>
+      <Box sx={layoutStyles.sidebarRail}>
         <Sidebar variant="desktop" />
       </Box>
 
@@ -66,17 +99,9 @@ export function AppShell({ children }: AppShellProps): ReactElement {
 
       <Sidebar variant="mobile" isOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
 
-      <Box sx={{ display: 'flex', flex: 1, flexDirection: 'column', minWidth: 0 }}>
+      <Box sx={layoutStyles.contentColumn}>
         <AppShellHeader onOpenNavigation={() => setMobileOpen(true)} />
-        <Box
-          component="main"
-          sx={{
-            flex: 1,
-            overflowY: 'auto',
-            px: { xs: 2, md: 3, lg: 4 },
-            py: { xs: 3, md: 4 },
-          }}
-        >
+        <Box component="main" sx={layoutStyles.main}>
           <Box sx={{ margin: '0 auto', maxWidth: '80rem', width: '100%' }}>{children}</Box>
         </Box>
       </Box>
