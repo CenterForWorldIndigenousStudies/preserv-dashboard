@@ -4,7 +4,6 @@ export const AUTH_PATH = `/auth` as const
 export const SIGNIN_PATH = `${AUTH_PATH}/signin` as const
 
 export const BATCHES_PATH = '/batches' as const
-export const BATCH_SUMMARY_PATH = '/batch-summary' as const
 
 export const COLLECTIONS_PATH = `/collections` as const
 
@@ -36,8 +35,6 @@ export const PROCESS_DOCUMENTS_PATH = `/process-documents` as const
 export const READY_FOR_LIBRARY_PATH = '/ready-for-library' as const
 
 export const REVIEW_QUEUE_PATH = '/review-queue' as const
-
-export const REVIEWS_PATH = `/reviews` as const
 
 export const REPORTS_PAGE_PATH = '/reports' as const
 

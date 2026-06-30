@@ -20,6 +20,7 @@ import {
   PROCESS_DOCUMENTS_PATH,
   READY_FOR_LIBRARY_PATH,
   REVIEW_QUEUE_PATH,
+  TAGS_PAGE_PATH,
 } from '@constants/paths'
 import AuthStatus from '@molecules/AuthStatus'
 import { NavSection } from '@molecules/NavSection'
@@ -49,6 +50,7 @@ const visibleNavigationHrefs = new Set<string>([
   REVIEW_QUEUE_PATH,
   READY_FOR_LIBRARY_PATH,
   COLLECTIONS_PATH,
+  TAGS_PAGE_PATH,
   FAILED_PATH,
   DB_SCHEMA_PATH,
   COMPONENT_LIBRARY_PATH,

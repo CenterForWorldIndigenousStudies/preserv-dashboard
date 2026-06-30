@@ -1,24 +1,24 @@
 import type { ReactElement } from 'react'
-import { Box, Stack, Typography } from '@mui/material'
+import { Box, Card, CardContent, Stack, Typography } from '@mui/material'
 
-import { Button } from '@atoms/Button'
 import {
-  BATCH_SUMMARY_PATH,
+  BATCHES_PATH,
   FAILED_PATH,
   PROCESS_DOCUMENTS_PATH,
   READY_FOR_LIBRARY_PATH,
   REVIEW_QUEUE_PATH,
 } from '@constants/paths'
 import { getDashboardKpiMetrics } from '@lib/dashboardMetrics'
+import { ActionCard } from '@molecules/ActionCard'
 import { MetricCard } from '@molecules/MetricCard'
 import { PageHeader } from '@organisms/PageHeader'
 
 export const dynamic = 'force-dynamic'
 
 interface QuickActionProps {
-  href: string
-  label: string
   description: string
+  href: string
+  title: string
 }
 
 const KPI_CARD_DESCRIPTIONS: Record<string, string> = {
@@ -30,51 +30,36 @@ const KPI_CARD_DESCRIPTIONS: Record<string, string> = {
 const QUICK_ACTIONS: QuickActionProps[] = [
   {
     href: REVIEW_QUEUE_PATH,
-    label: 'Open Review Queue',
+    title: 'Review Queue',
     description: 'Go to the current review workflow.',
   },
   {
     href: READY_FOR_LIBRARY_PATH,
-    label: 'Open Ready for Library',
+    title: 'Ready for Library',
     description: 'Go to the current library-ready list.',
   },
   {
     href: PROCESS_DOCUMENTS_PATH,
-    label: 'Start Process Documents',
+    title: 'Process Documents',
     description: 'Go to the existing batch launch page.',
   },
   {
-    href: BATCH_SUMMARY_PATH,
-    label: 'Open Batch Summary',
+    href: BATCHES_PATH,
+    title: 'Batch Summary',
     description: 'Review the current batch summary table.',
   },
   {
     href: FAILED_PATH,
-    label: 'Open Failures',
+    title: 'Failures',
     description: 'Inspect the current failures view.',
   },
 ]
-
-function QuickActionCard({ href, label, description }: QuickActionProps): ReactElement {
-  return (
-    <article className="rounded-2xl border border-moss/15 bg-white p-5 shadow-panel">
-      <p className="text-xs uppercase tracking-[0.15em] text-ink/60">Quick Action</p>
-      <h2 className="mt-2 text-lg font-semibold text-ink">{label}</h2>
-      <p className="mt-2 text-sm leading-6 text-ink/70">{description}</p>
-      <div className="mt-4">
-        <Button href={href} variant="secondary">
-          Open
-        </Button>
-      </div>
-    </article>
-  )
-}
 
 export default async function DashboardPage(): Promise<ReactElement> {
   const metrics = await getDashboardKpiMetrics()
 
   return (
-    <div className="w-full space-y-8">
+    <Stack spacing={8} sx={{ width: '100%' }}>
       <PageHeader
         eyebrow="Dashboard"
         title="Operational dashboard."
@@ -114,40 +99,60 @@ export default async function DashboardPage(): Promise<ReactElement> {
         </Box>
       </Stack>
 
-      <section className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
-        <h2 className="text-xl font-semibold text-ink">Priority Alerts</h2>
-        <p className="mt-3 text-sm leading-6 text-ink/70">
-          Placeholder only. Priority alerts will appear here once alert rules and live dashboard metrics are
-          implemented.
-        </p>
-      </section>
+      <Card component="section">
+        <CardContent>
+          <Typography component="h2" variant="h5" sx={{ color: 'text.primary' }}>
+            Priority Alerts
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1.5 }}>
+            Placeholder only. Priority alerts will appear here once alert rules and live dashboard metrics are
+            implemented.
+          </Typography>
+        </CardContent>
+      </Card>
 
-      <section className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
-        <h2 className="text-xl font-semibold text-ink">System Status</h2>
-        <p className="mt-3 text-sm leading-6 text-ink/70">
-          Placeholder only. System status messaging will be connected to live pipeline health in a later PR.
-        </p>
-      </section>
+      <Card component="section">
+        <CardContent>
+          <Typography component="h2" variant="h5" sx={{ color: 'text.primary' }}>
+            System Status
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1.5 }}>
+            Placeholder only. System status messaging will be connected to live pipeline health in a later PR.
+          </Typography>
+        </CardContent>
+      </Card>
 
-      <section className="space-y-4">
-        <div>
-          <h2 className="text-xl font-semibold text-ink">Quick Actions</h2>
-          <p className="mt-2 text-sm leading-6 text-ink/70">
+      <Stack component="section" spacing={2}>
+        <Box>
+          <Typography component="h2" variant="h5" sx={{ color: 'text.primary' }}>
+            Quick Actions
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1 }}>
             Use these links to reach existing dashboard destinations while this page remains a skeleton.
-          </p>
-        </div>
+          </Typography>
+        </Box>
 
-        <div className="grid gap-4 lg:grid-cols-2">
+        <Box
+          sx={{
+            display: 'grid',
+            gap: 2,
+            gridTemplateColumns: {
+              xs: '1fr',
+              lg: 'repeat(2, minmax(0, 1fr))',
+            },
+          }}
+        >
           {QUICK_ACTIONS.map((action) => (
-            <QuickActionCard
+            <ActionCard
               key={action.href}
               href={action.href}
-              label={action.label}
               description={action.description}
+              eyebrow="Quick Action"
+              title={action.title}
             />
           ))}
-        </div>
-      </section>
-    </div>
+        </Box>
+      </Stack>
+    </Stack>
   )
 }

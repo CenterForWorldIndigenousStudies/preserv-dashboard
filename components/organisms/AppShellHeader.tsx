@@ -4,6 +4,18 @@ import type { ReactElement } from 'react'
 import { usePathname } from 'next/navigation'
 import { Box, Stack, Typography } from '@mui/material'
 
+import {
+  BATCHES_PATH,
+  COLLECTIONS_PATH,
+  COMPONENT_LIBRARY_PATH,
+  DASHBOARD_PATH,
+  DB_SCHEMA_PATH,
+  DOCUMENTS_PATH,
+  FAILED_PATH,
+  PROCESS_DOCUMENTS_PATH,
+  REVIEW_QUEUE_PATH,
+  READY_FOR_LIBRARY_PATH,
+} from '@constants/paths'
 import { SidebarVisibilityControl } from '@molecules/SidebarVisibilityControl'
 
 interface AppShellHeaderProps {
@@ -16,47 +28,43 @@ interface ShellRouteMetadata {
 }
 
 const routeMetadataByPath: Record<string, ShellRouteMetadata> = {
-  '/': {
-    title: 'Overview',
-    description: 'Existing documents index behavior remains unchanged in this shell slice.',
-  },
-  '/dashboard': {
+  [DASHBOARD_PATH]: {
     title: 'Dashboard',
     description: 'Shared operational shell frame for preservation workflows and supporting tools.',
   },
-  '/process-documents': {
+  [DOCUMENTS_PATH]: {
+    title: 'Documents',
+    description: 'Existing documents index behavior remains unchanged in this shell slice.',
+  },
+  [PROCESS_DOCUMENTS_PATH]: {
     title: 'Process',
     description: 'Launch and monitor document processing workflows from the existing route.',
   },
-  '/batches': {
+  [BATCHES_PATH]: {
     title: 'Batches',
     description: 'Monitor recent processing batches and their current execution state.',
   },
-  '/batch-summary': {
-    title: 'Batch Summary',
-    description: 'Existing direct route for batch-level summary details remains available.',
-  },
-  '/review-queue': {
+  [REVIEW_QUEUE_PATH]: {
     title: 'Review Queue',
     description: 'Continue the current document review workflow from the shared shell.',
   },
-  '/ready-for-library': {
+  [READY_FOR_LIBRARY_PATH]: {
     title: 'Ready for Library',
     description: 'Review the current library-ready list within the shared shell frame.',
   },
-  '/collections': {
+  [COLLECTIONS_PATH]: {
     title: 'Collections',
     description: 'Browse the existing collections workspace without changing route behavior.',
   },
-  '/failures': {
+  [FAILED_PATH]: {
     title: 'Failures',
     description: 'Inspect the existing failures view from the shared shell.',
   },
-  '/db': {
+  [DB_SCHEMA_PATH]: {
     title: 'DB',
     description: 'Open the existing database reference route from the shared shell.',
   },
-  '/component-library': {
+  [COMPONENT_LIBRARY_PATH]: {
     title: 'Component Library',
     description: 'Access the current component library route from the shared shell.',
   },
@@ -65,7 +73,7 @@ const routeMetadataByPath: Record<string, ShellRouteMetadata> = {
 function titleizePathname(pathname: string): string {
   const segments = pathname.split('/').filter(Boolean)
   if (segments.length === 0) {
-    return 'Overview'
+    return 'Dashboard'
   }
 
   return segments[0]

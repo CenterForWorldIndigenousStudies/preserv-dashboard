@@ -48,7 +48,7 @@ describe('AppShell', () => {
     expect(markup).toContain('Open navigation menu')
   })
 
-  it('exposes the documents route while keeping unfinished destinations hidden', () => {
+  it('exposes the documents and tags routes while keeping unfinished destinations hidden', () => {
     mockUsePathname.mockReturnValue('/dashboard')
     mockUseSession.mockReturnValue({
       data: { user: { email: 'reviewer@cwis.org' } },
@@ -65,7 +65,7 @@ describe('AppShell', () => {
 
     expect(markup).toContain('Component Library')
     expect(markup).toContain('Documents')
-    expect(markup).not.toContain('Tags')
+    expect(markup).toContain('Tags')
     expect(markup).not.toContain('Reports')
   })
 })

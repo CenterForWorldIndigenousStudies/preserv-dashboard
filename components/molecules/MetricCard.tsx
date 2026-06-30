@@ -1,8 +1,7 @@
 import type { ReactElement } from 'react'
+import { Typography } from '@mui/material'
 
-import { Card, CardActions, CardContent, Stack, Typography } from '@mui/material'
-
-import { Button } from '@atoms/Button'
+import { LinkCardFrame } from '@molecules/LinkCardFrame'
 
 interface MetricCardProps {
   title: string
@@ -20,25 +19,21 @@ export function MetricCard({
   actionLabel = 'Open',
 }: MetricCardProps): ReactElement {
   return (
-    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <CardContent sx={{ flexGrow: 1, pb: 2 }}>
-        <Stack spacing={1.5}>
-          <Typography variant="overline" sx={{ color: 'text.secondary' }}>
-            {title}
-          </Typography>
-          <Typography variant="h3" component="p" sx={{ color: 'text.primary' }}>
-            {value.toLocaleString('en-US')}
-          </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            {description}
-          </Typography>
-        </Stack>
-      </CardContent>
-      <CardActions sx={{ px: 2, pb: 2, pt: 0 }}>
-        <Button href={href} variant="secondary">
-          {actionLabel}
-        </Button>
-      </CardActions>
-    </Card>
+    <LinkCardFrame
+      actionLabel={actionLabel}
+      href={href}
+      title={title}
+      titleComponent="p"
+      titleVariant="overline"
+    >
+      <>
+        <Typography variant="h3" component="p" sx={{ color: 'text.primary' }}>
+          {value.toLocaleString('en-US')}
+        </Typography>
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+          {description}
+        </Typography>
+      </>
+    </LinkCardFrame>
   )
 }

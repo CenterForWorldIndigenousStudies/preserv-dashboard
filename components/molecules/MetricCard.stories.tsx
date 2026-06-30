@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { Box } from '@mui/material'
 
-import { BATCH_SUMMARY_PATH, READY_FOR_LIBRARY_PATH, REVIEW_QUEUE_PATH } from '@constants/paths'
+import { BATCHES_PATH, READY_FOR_LIBRARY_PATH, REVIEW_QUEUE_PATH } from '@constants/paths'
 import { MetricCard } from '@molecules/MetricCard'
 
 const meta: Meta<typeof MetricCard> = {
@@ -63,7 +63,7 @@ export const ActiveBatches: Story = {
     title: 'Active Batches',
     value: 6,
     description: 'Recent processing batches currently classified as active in the Batches view.',
-    href: BATCH_SUMMARY_PATH,
+    href: BATCHES_PATH,
   },
 }
 
@@ -96,7 +96,7 @@ export const AllCards: Story = {
         title="Active Batches"
         value={6}
         description="Recent processing batches currently classified as active in the Batches view."
-        href={BATCH_SUMMARY_PATH}
+        href={BATCHES_PATH}
       />
     </Box>
   ),
