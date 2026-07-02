@@ -11,17 +11,17 @@ export const dynamic = 'force-dynamic'
 const FEATURED_AUTHOR_NAME = 'Ryser, Rudolph C.'
 
 const READINESS_EXPLANATION_GROUPS = {
-  'Dashboard-visible preconditions': [
-    'Validation status must be APPROVED.',
-    'An access level must be set.',
+  'Why documents appear here': [
+    'Validation status is APPROVED.',
+    'An access level is set.',
   ],
-  'Metadata completeness shown for review': [
-    'Required Dublin Core fields are checked for display: dc_title, dc_type, dc_subject, and dc_rights.',
-    'Documents may still appear here when Metadata Complete is Incomplete.',
+  'What to inspect before handoff': [
+    'This page shows whether required Dublin Core fields are present: dc_title, dc_type, dc_subject, and dc_rights.',
+    'Documents can still appear here when Metadata Complete is Incomplete.',
   ],
-  'Runtime checks still required': [
-    'This page does not confirm final Fedora handoff eligibility.',
-    'Collection linkage, Fedora collection mapping, duplicate and review exclusions, and other ingest checks may still prevent handoff.',
+  'What this page does not confirm': [
+    'This page does not confirm final Fedora handoff readiness.',
+    'Collection linkage, Fedora collection mapping, duplicate and review exclusions, and other ingest checks may still block handoff.',
     'Drive, Fedora, and Workbench conditions are still evaluated at execution time.',
   ],
 }
@@ -44,7 +44,7 @@ function ReadyForLibraryReadinessExplanation() {
         id="ready-for-library-readiness-explanation"
         className="text-xs font-semibold uppercase tracking-[0.15em] text-ink/60"
       >
-        How this page evaluates readiness
+        What this workspace tells you
       </p>
       <NeedsReviewReasons value={READINESS_EXPLANATION_GROUPS} />
     </section>
@@ -74,8 +74,8 @@ export default function ReadyForLibraryPage(): ReactElement {
     <div className="w-full space-y-8">
       <PageHeader
         eyebrow="Ready for Library"
-        title="Documents in Ready for Library view"
-        description="Approved documents with an access level. Metadata completeness is shown for review."
+        title="Post-approval handoff inspection"
+        description="Use this workspace to inspect approved documents with an access level before the next handoff. Metadata completeness is shown to support review, but this page does not confirm final Fedora readiness."
       />
 
       <ReadyForLibraryReadinessExplanation />
