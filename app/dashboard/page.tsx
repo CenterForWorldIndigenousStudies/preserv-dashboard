@@ -3,6 +3,7 @@ import { Box, Card, CardContent, Stack, Typography } from '@mui/material'
 
 import {
   BATCHES_PATH,
+  COLLECTIONS_PATH,
   FAILED_PATH,
   PROCESS_DOCUMENTS_PATH,
   READY_FOR_LIBRARY_PATH,
@@ -15,7 +16,7 @@ import { PageHeader } from '@organisms/PageHeader'
 
 export const dynamic = 'force-dynamic'
 
-interface QuickActionProps {
+interface DashboardLinkCardProps {
   description: string
   href: string
   title: string
@@ -27,7 +28,25 @@ const KPI_CARD_DESCRIPTIONS: Record<string, string> = {
   'Active Batches': 'Recent processing batches currently classified as active in the Batches view.',
 }
 
-const QUICK_ACTIONS: QuickActionProps[] = [
+const QUEUE_SNAPSHOTS: DashboardLinkCardProps[] = [
+  {
+    href: REVIEW_QUEUE_PATH,
+    title: 'Review Queue',
+    description: 'Open the live review queue for documents needing human attention.',
+  },
+  {
+    href: READY_FOR_LIBRARY_PATH,
+    title: 'Ready for Library',
+    description: 'Open approved documents with dashboard-visible library-ready criteria.',
+  },
+  {
+    href: FAILED_PATH,
+    title: 'Failures',
+    description: 'Open the failures workspace. A reliable dashboard failure total is not available yet in the current data model.',
+  },
+]
+
+const QUICK_ACTIONS: DashboardLinkCardProps[] = [
   {
     href: REVIEW_QUEUE_PATH,
     title: 'Review Queue',
@@ -42,6 +61,11 @@ const QUICK_ACTIONS: QuickActionProps[] = [
     href: PROCESS_DOCUMENTS_PATH,
     title: 'Process Documents',
     description: 'Go to the existing batch launch page.',
+  },
+  {
+    href: COLLECTIONS_PATH,
+    title: 'Collections',
+    description: 'Review collection coverage and manage collection records.',
   },
   {
     href: BATCHES_PATH,
@@ -125,10 +149,44 @@ export default async function DashboardPage(): Promise<ReactElement> {
       <Stack component="section" spacing={2}>
         <Box>
           <Typography component="h2" variant="h5" sx={{ color: 'text.primary' }}>
+            Queue Snapshots
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1 }}>
+            Open the live review and library-ready queues from here. Where dashboard data is not yet
+            reliable, the card explains the current limit.
+          </Typography>
+        </Box>
+
+        <Box
+          sx={{
+            display: 'grid',
+            gap: 2,
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: 'repeat(2, minmax(0, 1fr))',
+              xl: 'repeat(3, minmax(0, 1fr))',
+            },
+          }}
+        >
+          {QUEUE_SNAPSHOTS.map((snapshot) => (
+            <ActionCard
+              key={snapshot.href}
+              href={snapshot.href}
+              description={snapshot.description}
+              eyebrow="Queue Snapshot"
+              title={snapshot.title}
+            />
+          ))}
+        </Box>
+      </Stack>
+
+      <Stack component="section" spacing={2}>
+        <Box>
+          <Typography component="h2" variant="h5" sx={{ color: 'text.primary' }}>
             Quick Actions
           </Typography>
           <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1 }}>
-            Use these links to reach existing dashboard destinations while this page remains a skeleton.
+            Use these links to move from triage into processing, collections, and batch review.
           </Typography>
         </Box>
 

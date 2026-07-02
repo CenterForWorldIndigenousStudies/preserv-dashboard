@@ -16,7 +16,7 @@ describe('DashboardPage', () => {
     vi.clearAllMocks()
   })
 
-  it('renders three live KPI cards with deep links and no failed-documents KPI card', async () => {
+  it('renders queue snapshots, collections quick action, and current live KPI links', async () => {
     mockGetDashboardKpiMetrics.mockResolvedValue([
       { title: 'Needs Review', value: 12, href: '/review-queue' },
       { title: 'Ready for Library', value: 4, href: '/ready-for-library' },
@@ -34,7 +34,14 @@ describe('DashboardPage', () => {
     expect(markup).toContain('/review-queue')
     expect(markup).toContain('/ready-for-library')
     expect(markup).toContain('/batches')
+    expect(markup).toContain('Queue Snapshots')
+    expect(markup).toContain('Open the live review queue for documents needing human attention.')
+    expect(markup).toContain('Open approved documents with dashboard-visible library-ready criteria.')
+    expect(markup).toContain(
+      'Open the failures workspace. A reliable dashboard failure total is not available yet in the current data model.',
+    )
+    expect(markup).toContain('Collections')
     expect(markup).not.toContain('Failed Documents')
-    expect(markup).not.toContain('Placeholder only. A live review count will be connected in a later PR.')
+    expect(markup).not.toContain('while this page remains a skeleton')
   })
 })
