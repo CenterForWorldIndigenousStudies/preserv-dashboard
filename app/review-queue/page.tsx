@@ -1,8 +1,5 @@
 import { Suspense } from 'react'
-import { Box, Stack, Typography } from '@mui/material'
-import { READY_FOR_LIBRARY_PATH } from '@constants/paths'
 import { REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES } from '@constants/reviewQueue'
-import { ActionCard } from '@molecules/ActionCard'
 import { DocumentsTable } from '@organisms/DocumentsTable'
 import { PageHeader } from '@organisms/PageHeader'
 import {
@@ -10,12 +7,19 @@ import {
   normalizeOverviewAccessLevel,
   normalizeOverviewDateFilter,
   normalizeOverviewDocumentType,
-  parseOverviewStatusesParam,
   normalizeOverviewTextFilter,
+  parseOverviewStatusesParam,
   type OverviewFilterOptions,
   type OverviewStatusOption,
 } from '@lib/overviewSearch'
-import { getNeedsReviewDocuments, type DocumentsQueryParams } from '@lib/queries'
+import {
+  getNeedsReviewDocuments,
+  getNeedsReviewDocumentsCount,
+  getReadyForLibraryDocuments,
+  type DocumentsQueryParams,
+} from '@lib/queries'
+
+import { ReviewQueueTabbedWorkspace } from './ReviewQueueTabbedWorkspace'
 
 export const dynamic = 'force-dynamic'
 
@@ -98,7 +102,14 @@ async function ReviewQueueContent({ searchParams }: ReviewQueuePageProps) {
   )
 }
 
-export default function ReviewQueuePage({ searchParams }: ReviewQueuePageProps) {
+export default async function ReviewQueuePage({ searchParams }: ReviewQueuePageProps) {
+  const [needsReviewCount, readyForLibraryResult] = await Promise.all([
+    getNeedsReviewDocumentsCount({
+      statuses: [...REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES],
+    }),
+    getReadyForLibraryDocuments(),
+  ])
+
   return (
     <div className="w-full space-y-8">
       <PageHeader
@@ -107,38 +118,12 @@ export default function ReviewQueuePage({ searchParams }: ReviewQueuePageProps) 
         description="Use this human judgment workspace to review documents that need a deliberate approve or reject decision before they move forward."
       />
 
-      <Stack
-        component="section"
-        spacing={2}
-        sx={{
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: '1.5rem',
-          bgcolor: 'background.paper',
-          p: 3,
-        }}
-      >
-        <Box>
-          <Typography component="h2" variant="h5" sx={{ color: 'text.primary' }}>
-            Review decisions and next step
-          </Typography>
-          <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
-            Review Queue is where human judgment happens. Approve and reject decisions happen here, and approved work
-            continues to Ready for Library as the next operational checkpoint.
-          </Typography>
-        </Box>
-
-        <ActionCard
-          href={READY_FOR_LIBRARY_PATH}
-          eyebrow="Next Operational Checkpoint"
-          title="Ready for Library"
-          description="Open the standalone readiness workspace for approved documents before handoff."
-          label="Open Ready for Library"
-        />
-      </Stack>
-
       <Suspense fallback={null}>
-        <ReviewQueueContent searchParams={searchParams} />
+        <ReviewQueueTabbedWorkspace
+          needsReviewCount={needsReviewCount}
+          readyForLibraryCount={readyForLibraryResult.total}
+          needsReviewPanel={<ReviewQueueContent searchParams={searchParams} />}
+        />
       </Suspense>
     </div>
   )
