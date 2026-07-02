@@ -36,7 +36,7 @@ describe('Sidebar', () => {
     mockUseSession.mockReset()
   })
 
-  it('renders the approved visible routes after the tags route is introduced', () => {
+  it('renders the approved visible routes after the tags and reports routes are introduced', () => {
     mockUsePathname.mockReturnValue('/dashboard')
     mockUseSession.mockReturnValue({
       data: { user: { email: 'reviewer@cwis.org' } },
@@ -61,7 +61,7 @@ describe('Sidebar', () => {
     expect(markup).toContain('Component Library')
 
     expect(markup).toContain('Tags')
-    expect(markup).not.toContain('Reports')
+    expect(markup).toContain('Reports')
     expect(markup).not.toContain('Batch Summary')
   })
 
