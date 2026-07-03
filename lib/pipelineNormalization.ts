@@ -86,6 +86,9 @@ function parseStageCountFields(
   | 'rotatedCount'
   | 'normalizedCount'
   | 'ocrCompletedCount'
+  | 'extractedCount'
+  | 'metadataValidatedCount'
+  | 'underReviewCount'
   | 'versionedCount'
   | 'resolvedCount'
   | 'skippedCount'
@@ -104,6 +107,9 @@ function parseStageCountFields(
     rotatedCount: parseNumber(stage.rotated_count),
     normalizedCount: parseNumber(stage.normalized_count),
     ocrCompletedCount: parseNumber(stage.ocr_completed_count),
+    extractedCount: parseNumber(stage.extracted_count),
+    metadataValidatedCount: parseNumber(stage.metadata_validated_count),
+    underReviewCount: parseNumber(stage.under_review_count),
     versionedCount: parseNumber(stage.versioned_count),
     resolvedCount: parseNumber(stage.resolved_count),
     skippedCount: parseNumber(stage.skipped_count),
@@ -225,6 +231,8 @@ export function normalizeProcessBatchDetails(details: RawProcessBatchDetails): N
     pageRotator: normalizePassStage(details, 'page_rotator'),
     ocrProcessor: normalizeStage(details.ocr_processor),
     contentDedup: normalizeStage(details.content_dedup),
+    metadataExtractor: normalizeStage(details.metadata_extractor),
+    metadataValidator: normalizeStage(details.metadata_validator),
   }
 }
 
@@ -244,5 +252,9 @@ export function resolveStageDetailKey(details: RawProcessBatchDetails, stageKey:
       return details.ocr_processor ? 'ocr_processor' : null
     case 'content_dedup':
       return details.content_dedup ? 'content_dedup' : null
+    case 'metadata_extractor':
+      return details.metadata_extractor ? 'metadata_extractor' : null
+    case 'metadata_validator':
+      return details.metadata_validator ? 'metadata_validator' : null
   }
 }

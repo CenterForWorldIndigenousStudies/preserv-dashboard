@@ -1,6 +1,8 @@
 import {
   CONTENT_DEDUP_STAGE,
   DOCUMENT_SPLITTER_STAGE,
+  METADATA_EXTRACTOR_STAGE,
+  METADATA_VALIDATOR_STAGE,
   OCR_PROCESSOR_STAGE,
   PAGE_ROTATOR_STAGE,
 } from '@constants/pipeline'
@@ -9,11 +11,16 @@ import {
   getPipelineConfigForBatch,
   isPipelineBatchTerminal,
 } from '@lib/pipelineExecution'
+import { getProcessBatchStatus } from '@lib/processBatches'
 export {
   triggerContentDedup,
   triggerDocumentSplitter,
   triggerOcrProcessor,
   triggerPageRotator,
+} from '@lib/pipelineTriggerRequests'
+import {
+  triggerMetadataExtractor as requestMetadataExtractor,
+  triggerMetadataValidator,
 } from '@lib/pipelineTriggerRequests'
 import type { PipelineExecutionStep } from '@lib/pipelineConfig'
 import type { ProcessBatchStatus } from 'types/pipelineContracts'
@@ -32,7 +39,9 @@ export function normalizeRequestedProcessStages(value: unknown): string[] {
       stage === DOCUMENT_SPLITTER_STAGE ||
       stage === PAGE_ROTATOR_STAGE ||
       stage === OCR_PROCESSOR_STAGE ||
-      stage === CONTENT_DEDUP_STAGE,
+      stage === CONTENT_DEDUP_STAGE ||
+      stage === METADATA_EXTRACTOR_STAGE ||
+      stage === METADATA_VALIDATOR_STAGE,
   )
 }
 
@@ -63,6 +72,29 @@ export function shouldTriggerOcrProcessor(batch: ProcessBatchStatus): boolean {
 export function shouldTriggerContentDedup(batch: ProcessBatchStatus): boolean {
   getPipelineConfigForBatch(batch)
   return isNextEligibleStep(batch, CONTENT_DEDUP_STAGE)
+}
+
+export function shouldTriggerMetadataExtractor(batch: ProcessBatchStatus): boolean {
+  getPipelineConfigForBatch(batch)
+  return isNextEligibleStep(batch, METADATA_EXTRACTOR_STAGE)
+}
+
+export function shouldTriggerMetadataValidator(batch: ProcessBatchStatus): boolean {
+  getPipelineConfigForBatch(batch)
+  return isNextEligibleStep(batch, METADATA_VALIDATOR_STAGE)
+}
+
+export async function triggerMetadataExtractor(batch: ProcessBatchStatus): Promise<void> {
+  await requestMetadataExtractor(batch)
+
+  const updatedBatch = await getProcessBatchStatus(batch.batchId)
+  if (!updatedBatch) {
+    throw new Error(`Batch ${batch.batchId} was not found after metadata extraction completed.`)
+  }
+
+  if (shouldTriggerMetadataValidator(updatedBatch)) {
+    await triggerMetadataValidator(updatedBatch)
+  }
 }
 
 export function shouldCloseProcessStream(batch: ProcessBatchStatus): boolean {

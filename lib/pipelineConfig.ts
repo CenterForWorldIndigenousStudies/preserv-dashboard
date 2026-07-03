@@ -1,6 +1,8 @@
 import {
   CONTENT_DEDUP_STAGE,
   DOCUMENT_SPLITTER_STAGE,
+  METADATA_EXTRACTOR_STAGE,
+  METADATA_VALIDATOR_STAGE,
   OCR_PROCESSOR_STAGE,
   PAGE_ROTATOR_STAGE,
   PIPELINE_PROFILES,
@@ -240,18 +242,27 @@ export function expandPresetToDraft(profileId: ProfileId): PipelineSelectionDraf
   }
 }
 
-export function draftToPipelineConfig(draft: PipelineSelectionDraft): PipelineConfig {
-  const plan: PipelineExecutionStep[] = [
-    {
-      id: 'step-ingester',
-      stepId: 'ingester',
-      service: 'ingester',
-      label: 'Ingest',
-      order: 0,
-      enabled: true,
-    },
-  ]
+function getUpstreamDependencyId(draft: PipelineSelectionDraft): string[] {
+  if (draft.steps.contentDedup) {
+    return ['step-content-dedup']
+  }
 
+  if (draft.steps.ocrProcessor) {
+    return ['step-ocr-processor']
+  }
+
+  if (draft.steps.normalizePass2.enabled) {
+    return ['step-normalize-pass-2-rotate']
+  }
+
+  if (draft.steps.normalizePass1.enabled) {
+    return ['step-normalize-pass-1-rotate']
+  }
+
+  return ['step-ingester']
+}
+
+function pushNormalizePassSteps(plan: PipelineExecutionStep[], draft: PipelineSelectionDraft): void {
   if (draft.steps.normalizePass1.enabled) {
     const sub = draft.steps.normalizePass1.subSelection
     plan.push({
@@ -299,6 +310,21 @@ export function draftToPipelineConfig(draft: PipelineSelectionDraft): PipelineCo
       dependsOn: sub.split ? ['step-normalize-pass-2-split'] : ['step-normalize-pass-1-rotate'],
     })
   }
+}
+
+export function draftToPipelineConfig(draft: PipelineSelectionDraft): PipelineConfig {
+  const plan: PipelineExecutionStep[] = [
+    {
+      id: 'step-ingester',
+      stepId: 'ingester',
+      service: 'ingester',
+      label: 'Ingest',
+      order: 0,
+      enabled: true,
+    },
+  ]
+
+  pushNormalizePassSteps(plan, draft)
 
   if (draft.steps.ocrProcessor) {
     plan.push({
@@ -308,11 +334,7 @@ export function draftToPipelineConfig(draft: PipelineSelectionDraft): PipelineCo
       label: 'OCR Processor',
       order: 5,
       enabled: true,
-      dependsOn: draft.steps.normalizePass2.enabled
-        ? ['step-normalize-pass-2-rotate']
-        : draft.steps.normalizePass1.enabled
-          ? ['step-normalize-pass-1-rotate']
-          : ['step-ingester'],
+      dependsOn: getUpstreamDependencyId(draft),
     })
   }
 
@@ -332,10 +354,11 @@ export function draftToPipelineConfig(draft: PipelineSelectionDraft): PipelineCo
     plan.push({
       id: 'step-metadata-extraction',
       stepId: 'metadata-extraction',
-      service: 'metadata-extraction',
+      service: METADATA_EXTRACTOR_STAGE,
       label: 'Metadata Extraction',
       order: 7,
       enabled: true,
+      dependsOn: getUpstreamDependencyId(draft),
     })
   }
 
@@ -343,10 +366,11 @@ export function draftToPipelineConfig(draft: PipelineSelectionDraft): PipelineCo
     plan.push({
       id: 'step-metadata-validation',
       stepId: 'metadata-validation',
-      service: 'metadata-validation',
+      service: METADATA_VALIDATOR_STAGE,
       label: 'Metadata Validation',
       order: 8,
       enabled: true,
+      dependsOn: draft.steps.metadataExtraction ? ['step-metadata-extraction'] : getUpstreamDependencyId(draft),
     })
   }
 

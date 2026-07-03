@@ -14,7 +14,12 @@ vi.mock('@lib/db', () => ({
   },
 }))
 
-import { getProcessBatchStatus, markProcessStageCallbackReceived } from '@lib/processBatches'
+import {
+  getProcessBatchStatus,
+  markProcessStageCallbackReceived,
+  recordMetadataExtractorCompletion,
+  recordMetadataValidatorCompletion,
+} from '@lib/processBatches'
 
 function buildBatchRow(processingDetails: Record<string, unknown>) {
   return {
@@ -201,6 +206,170 @@ describe('processBatches', () => {
           url: 'http://localhost/callback',
           received_at: '2026-05-29T04:30:00.000Z',
         },
+      },
+    })
+  })
+
+  it('parses metadata extractor details from processing details', async () => {
+    mockFindUnique.mockResolvedValue(
+      buildBatchRow({
+        pipeline: {
+          requested_stages: ['metadata-extraction'],
+        },
+        metadata_extractor: {
+          status: 'completed',
+          request_id: 'request-7',
+          initiated_at: 1780027500,
+          completed_at: 1780027560,
+          processed_count: 4,
+        },
+      }),
+    )
+
+    const batch = await getProcessBatchStatus('batch-1')
+
+    expect(batch).not.toBeNull()
+    expect(batch?.pipelineRequestedStages).toEqual(['metadata-extraction'])
+    expect(batch?.metadataExtractor?.status).toBe('completed')
+    expect(batch?.metadataExtractor?.requestId).toBe('request-7')
+    expect(batch?.metadataExtractor?.processedCount).toBe(4)
+  })
+
+  it('parses metadata validator details from processing details', async () => {
+    mockFindUnique.mockResolvedValue(
+      buildBatchRow({
+        pipeline: {
+          requested_stages: ['metadata-extraction', 'metadata-validation'],
+        },
+        metadata_validator: {
+          status: 'completed',
+          request_id: 'request-8',
+          initiated_at: 1780027600,
+          completed_at: 1780027660,
+          processed_count: 4,
+          metadata_validated_count: 3,
+          under_review_count: 1,
+          failed_count: 0,
+        },
+      }),
+    )
+
+    const batch = await getProcessBatchStatus('batch-1')
+
+    expect(batch).not.toBeNull()
+    expect(batch?.pipelineRequestedStages).toEqual(['metadata-extraction', 'metadata-validation'])
+    expect(batch?.metadataValidator?.status).toBe('completed')
+    expect(batch?.metadataValidator?.requestId).toBe('request-8')
+    expect(batch?.metadataValidator?.metadataValidatedCount).toBe(3)
+    expect(batch?.metadataValidator?.underReviewCount).toBe(1)
+  })
+
+  it('records metadata extractor callback receipt under the metadata_extractor key', async () => {
+    mockFindUnique.mockResolvedValue(
+      buildBatchRow({
+        metadata_extractor: {
+          status: 'completed',
+          callback: {
+            url: 'http://localhost/callback',
+          },
+        },
+      }),
+    )
+    mockUpdate.mockResolvedValue(undefined)
+
+    await markProcessStageCallbackReceived('batch-3', 'metadata_extractor', '2026-05-29T04:35:00.000Z')
+
+    expect(getUpdatedProcessingDetails()).toEqual({
+      metadata_extractor: {
+        status: 'completed',
+        callback: {
+          url: 'http://localhost/callback',
+          received_at: '2026-05-29T04:35:00.000Z',
+        },
+      },
+    })
+  })
+
+  it('records metadata extractor completion on batch processing details', async () => {
+    mockFindUnique.mockResolvedValue(
+      buildBatchRow({
+        pipeline: {
+          requested_stages: ['metadata-extraction'],
+        },
+      }),
+    )
+    mockUpdate.mockResolvedValue(undefined)
+
+    await recordMetadataExtractorCompletion('batch-4', {
+      requestId: 'request-9',
+      initiatedAt: '2026-05-29T04:40:00.000Z',
+      completedAt: '2026-05-29T04:40:05.000Z',
+      processedCount: 4,
+      extractedCount: 3,
+      failedCount: 1,
+    })
+
+    expect(getUpdatedProcessingDetails()).toEqual({
+      pipeline: {
+        requested_stages: ['metadata-extraction'],
+      },
+      metadata_extractor: {
+        status: 'completed',
+        request_id: 'request-9',
+        requested_by_app: 'preserv-dashboard',
+        initiated_at: '2026-05-29T04:40:00.000Z',
+        started_at: '2026-05-29T04:40:00.000Z',
+        completed_at: '2026-05-29T04:40:05.000Z',
+        last_transition_at: '2026-05-29T04:40:05.000Z',
+        processed_count: 4,
+        extracted_count: 3,
+        failed_count: 1,
+        current_pass: 1,
+        max_passes: 1,
+        completed_passes: [1],
+      },
+    })
+  })
+
+  it('records metadata validator completion on batch processing details', async () => {
+    mockFindUnique.mockResolvedValue(
+      buildBatchRow({
+        pipeline: {
+          requested_stages: ['metadata-extraction', 'metadata-validation'],
+        },
+      }),
+    )
+    mockUpdate.mockResolvedValue(undefined)
+
+    await recordMetadataValidatorCompletion('batch-5', {
+      requestId: 'request-10',
+      initiatedAt: '2026-05-29T04:45:00.000Z',
+      completedAt: '2026-05-29T04:45:06.000Z',
+      processedCount: 4,
+      metadataValidatedCount: 3,
+      underReviewCount: 1,
+      failedCount: 0,
+    })
+
+    expect(getUpdatedProcessingDetails()).toEqual({
+      pipeline: {
+        requested_stages: ['metadata-extraction', 'metadata-validation'],
+      },
+      metadata_validator: {
+        status: 'completed',
+        request_id: 'request-10',
+        requested_by_app: 'preserv-dashboard',
+        initiated_at: '2026-05-29T04:45:00.000Z',
+        started_at: '2026-05-29T04:45:00.000Z',
+        completed_at: '2026-05-29T04:45:06.000Z',
+        last_transition_at: '2026-05-29T04:45:06.000Z',
+        processed_count: 4,
+        metadata_validated_count: 3,
+        under_review_count: 1,
+        failed_count: 0,
+        current_pass: 1,
+        max_passes: 1,
+        completed_passes: [1],
       },
     })
   })

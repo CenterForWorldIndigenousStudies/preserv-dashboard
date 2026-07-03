@@ -71,4 +71,46 @@ describe('pipelineNormalization', () => {
     expect(normalized.ingester?.callbackReceivedAt).toBe('2024-05-29T16:30:00.000Z')
     expect(normalized.ingester?.callbackHttpStatus).toBe(204)
   })
+
+  test('parses metadata extractor stage details', () => {
+    const normalized = normalizeProcessBatchDetails({
+      pipeline: {
+        requested_stages: ['content-dedup', 'metadata-extraction'],
+      },
+      metadata_extractor: {
+        status: 'running',
+        request_id: 'request-9',
+        started_at: 1717000300,
+        completed_at: null,
+      },
+    })
+
+    expect(normalized.pipelineRequestedStages).toEqual(['content-dedup', 'metadata-extraction'])
+    expect(normalized.metadataExtractor?.status).toBe('running')
+    expect(normalized.metadataExtractor?.requestId).toBe('request-9')
+    expect(normalized.metadataExtractor?.startedAt).toBe('2024-05-29T16:31:40.000Z')
+  })
+
+  test('parses metadata validator stage details', () => {
+    const normalized = normalizeProcessBatchDetails({
+      pipeline: {
+        requested_stages: ['metadata-extraction', 'metadata-validation'],
+      },
+      metadata_validator: {
+        status: 'completed',
+        request_id: 'request-10',
+        started_at: 1717000400,
+        metadata_validated_count: 3,
+        under_review_count: 1,
+        failed_count: 0,
+      },
+    })
+
+    expect(normalized.pipelineRequestedStages).toEqual(['metadata-extraction', 'metadata-validation'])
+    expect(normalized.metadataValidator?.status).toBe('completed')
+    expect(normalized.metadataValidator?.requestId).toBe('request-10')
+    expect(normalized.metadataValidator?.startedAt).toBe('2024-05-29T16:33:20.000Z')
+    expect(normalized.metadataValidator?.metadataValidatedCount).toBe(3)
+    expect(normalized.metadataValidator?.underReviewCount).toBe(1)
+  })
 })

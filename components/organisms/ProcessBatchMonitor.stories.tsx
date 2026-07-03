@@ -16,6 +16,8 @@ function buildBatchStatus(): ProcessBatchStatus {
     pageRotator: null,
     ocrProcessor: null,
     contentDedup: null,
+    metadataExtractor: null,
+    metadataValidator: null,
   }
 }
 

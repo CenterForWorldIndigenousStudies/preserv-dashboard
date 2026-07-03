@@ -1,6 +1,8 @@
 import {
   CONTENT_DEDUP_STAGE,
   DOCUMENT_SPLITTER_STAGE,
+  METADATA_EXTRACTOR_STAGE,
+  METADATA_VALIDATOR_STAGE,
   OCR_PROCESSOR_STAGE,
   PAGE_ROTATOR_STAGE,
 } from '@constants/pipeline'
@@ -18,6 +20,8 @@ const ORCHESTRATED_SERVICES = new Set<string>([
   PAGE_ROTATOR_STAGE,
   OCR_PROCESSOR_STAGE,
   CONTENT_DEDUP_STAGE,
+  METADATA_EXTRACTOR_STAGE,
+  METADATA_VALIDATOR_STAGE,
 ])
 
 const INGEST_ONLY_PIPELINE_CONFIG: PipelineConfig = {
@@ -68,6 +72,10 @@ function getStageForService(
       return batch.ocrProcessor
     case CONTENT_DEDUP_STAGE:
       return batch.contentDedup
+    case METADATA_EXTRACTOR_STAGE:
+      return batch.metadataExtractor
+    case METADATA_VALIDATOR_STAGE:
+      return batch.metadataValidator
     default:
       return null
   }

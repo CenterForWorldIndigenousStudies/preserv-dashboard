@@ -42,6 +42,20 @@ function getMetrics(stageLabel: string, stage: ProcessStageStatus): Array<{ labe
         { label: 'Skipped', value: stage.skippedCount },
         { label: 'Failed', value: stage.failedCount },
       ]
+    case 'Metadata Extractor':
+      return [
+        { label: 'Processed', value: stage.processedCount },
+        { label: 'Extracted', value: stage.extractedCount },
+        { label: 'Review', value: stage.reviewNeededCount },
+        { label: 'Failed', value: stage.failedCount },
+      ]
+    case 'Metadata Validator':
+      return [
+        { label: 'Processed', value: stage.processedCount },
+        { label: 'Validated', value: stage.metadataValidatedCount },
+        { label: 'Under Review', value: stage.underReviewCount },
+        { label: 'Failed', value: stage.failedCount },
+      ]
     default:
       return [
         { label: 'Processed', value: stage.processedCount },

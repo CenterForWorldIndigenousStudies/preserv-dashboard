@@ -35,6 +35,9 @@ export interface RawProcessStageDetails {
   rotated_count?: unknown
   normalized_count?: unknown
   ocr_completed_count?: unknown
+  extracted_count?: unknown
+  metadata_validated_count?: unknown
+  under_review_count?: unknown
   versioned_count?: unknown
   resolved_count?: unknown
   skipped_count?: unknown
@@ -64,6 +67,8 @@ export interface RawProcessBatchDetails {
   page_rotator?: RawProcessStageDetails | null
   ocr_processor?: RawProcessStageDetails | null
   content_dedup?: RawProcessStageDetails | null
+  metadata_extractor?: RawProcessStageDetails | null
+  metadata_validator?: RawProcessStageDetails | null
 }
 
 export interface PipelineCallbackBody {
@@ -79,6 +84,8 @@ export type CallbackStageKey =
   | 'page_rotator'
   | 'ocr_processor'
   | 'content_dedup'
+  | 'metadata_extractor'
+  | 'metadata_validator'
 
 export interface NormalizedProcessStageStatus {
   status: string | null
@@ -106,6 +113,9 @@ export interface NormalizedProcessStageStatus {
   rotatedCount: number
   normalizedCount: number
   ocrCompletedCount: number
+  extractedCount: number
+  metadataValidatedCount: number
+  underReviewCount: number
   versionedCount: number
   resolvedCount: number
   skippedCount: number
@@ -127,6 +137,8 @@ export interface NormalizedProcessBatchDetails {
   pageRotator: NormalizedProcessStageStatus | null
   ocrProcessor: NormalizedProcessStageStatus | null
   contentDedup: NormalizedProcessStageStatus | null
+  metadataExtractor: NormalizedProcessStageStatus | null
+  metadataValidator: NormalizedProcessStageStatus | null
 }
 
 export type ProcessStageStatus = NormalizedProcessStageStatus

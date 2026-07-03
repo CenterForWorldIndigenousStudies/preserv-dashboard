@@ -8,15 +8,23 @@ import {
 } from '@constants/paths'
 import { DASHBOARD_BASE_URL } from '@constants/server'
 import { logEvent } from '@lib/observability'
+import { recordMetadataExtractorCompletion, recordMetadataValidatorCompletion } from '@lib/processBatches'
 import type { ProcessBatchStatus } from 'types/pipelineContracts'
 
 type TriggerConfig = {
-  serviceName: 'document_splitter' | 'page_rotator' | 'ocr_processor' | 'content_dedup'
+  serviceName:
+    | 'document_splitter'
+    | 'page_rotator'
+    | 'ocr_processor'
+    | 'content_dedup'
+    | 'metadata_extractor'
+    | 'metadata_validator'
   baseUrlEnv: string
   triggerTokenEnv: string
-  callbackTokenEnv: string
-  callbackPath: string
   endpointPath: string
+  callbackTokenEnv?: string
+  callbackPath?: string
+  payloadMode?: 'async-callback' | 'metadata-extractor' | 'metadata-validator'
 }
 
 function buildStageCallbackUrl(pathname: string): string {
@@ -56,28 +64,117 @@ function getErrorMessage(responseBody: unknown, fallback: string): string {
   return fallback
 }
 
-async function triggerPipelineService(batch: ProcessBatchStatus, config: TriggerConfig): Promise<void> {
-  const baseUrl = readRequiredEnv(config.baseUrlEnv, `${config.baseUrlEnv} is not configured.`)
-  const triggerToken = readRequiredEnv(config.triggerTokenEnv, `${config.triggerTokenEnv} is not configured.`)
-  const callbackToken = readRequiredEnv(config.callbackTokenEnv, `${config.callbackTokenEnv} is not configured.`)
+function createSynchronousPayload(batchId: string, initiatedAt: string): Record<string, string> {
+  return {
+    app: 'preserv-dashboard',
+    batch_id: batchId,
+    initiated_at: initiatedAt,
+  }
+}
 
+function createAsyncCallbackPayload(
+  batch: ProcessBatchStatus,
+  initiatedAt: string,
+  requestId: string,
+  callbackUrl: string | null,
+  callbackTokenEnv: string | undefined,
+): Record<string, unknown> {
   if (!batch.startedBy) {
     throw new Error(`Batch ${batch.batchId} is missing startedBy.`)
   }
 
-  const requestId = randomUUID()
-  const callbackUrl = buildStageCallbackUrl(config.callbackPath)
-  const payload = {
+  return {
     app: 'preserv-dashboard',
     request_id: requestId,
     batch_id: batch.batchId,
     started_by: batch.startedBy,
-    initiated_at: new Date().toISOString(),
+    initiated_at: initiatedAt,
     callback: {
       url: callbackUrl,
-      token: callbackToken,
+      token: readRequiredEnv(callbackTokenEnv ?? '', `${callbackTokenEnv} is not configured.`),
     },
   }
+}
+
+function buildTriggerPayload(
+  batch: ProcessBatchStatus,
+  config: TriggerConfig,
+  initiatedAt: string,
+  requestId: string,
+  callbackUrl: string | null,
+): Record<string, unknown> {
+  return config.payloadMode === 'metadata-extractor' || config.payloadMode === 'metadata-validator'
+    ? createSynchronousPayload(batch.batchId, initiatedAt)
+    : createAsyncCallbackPayload(batch, initiatedAt, requestId, callbackUrl, config.callbackTokenEnv)
+}
+
+async function persistSynchronousCompletion(
+  batchId: string,
+  payloadMode: 'metadata-extractor' | 'metadata-validator',
+  requestId: string,
+  initiatedAt: string,
+  responseBody: unknown,
+): Promise<void> {
+  const typedResponseBody = responseBody as
+    | {
+        processed_count?: unknown
+        extracted_count?: unknown
+        metadata_validated_count?: unknown
+        under_review_count?: unknown
+        failed_count?: unknown
+      }
+    | undefined
+
+  const processedCount =
+    typeof typedResponseBody?.processed_count === 'number' && Number.isFinite(typedResponseBody.processed_count)
+      ? typedResponseBody.processed_count
+      : 0
+  const failedCount =
+    typeof typedResponseBody?.failed_count === 'number' && Number.isFinite(typedResponseBody.failed_count)
+      ? typedResponseBody.failed_count
+      : 0
+  const completedAt = new Date().toISOString()
+
+  if (payloadMode === 'metadata-extractor') {
+    await recordMetadataExtractorCompletion(batchId, {
+      requestId,
+      initiatedAt,
+      completedAt,
+      processedCount,
+      extractedCount:
+        typeof typedResponseBody?.extracted_count === 'number' && Number.isFinite(typedResponseBody.extracted_count)
+          ? typedResponseBody.extracted_count
+          : 0,
+      failedCount,
+    })
+    return
+  }
+
+  await recordMetadataValidatorCompletion(batchId, {
+    requestId,
+    initiatedAt,
+    completedAt,
+    processedCount,
+    metadataValidatedCount:
+      typeof typedResponseBody?.metadata_validated_count === 'number' &&
+      Number.isFinite(typedResponseBody.metadata_validated_count)
+        ? typedResponseBody.metadata_validated_count
+        : 0,
+    underReviewCount:
+      typeof typedResponseBody?.under_review_count === 'number' && Number.isFinite(typedResponseBody.under_review_count)
+        ? typedResponseBody.under_review_count
+        : 0,
+    failedCount,
+  })
+}
+
+async function triggerPipelineService(batch: ProcessBatchStatus, config: TriggerConfig): Promise<void> {
+  const baseUrl = readRequiredEnv(config.baseUrlEnv, `${config.baseUrlEnv} is not configured.`)
+  const triggerToken = readRequiredEnv(config.triggerTokenEnv, `${config.triggerTokenEnv} is not configured.`)
+  const requestId = randomUUID()
+  const initiatedAt = new Date().toISOString()
+  const callbackUrl = config.callbackPath ? buildStageCallbackUrl(config.callbackPath) : null
+  const payload = buildTriggerPayload(batch, config, initiatedAt, requestId, callbackUrl)
 
   logEvent('info', `${config.serviceName}_trigger_requested`, {
     batchId: batch.batchId,
@@ -109,6 +206,10 @@ async function triggerPipelineService(batch: ProcessBatchStatus, config: Trigger
       errorMessage,
     })
     throw new Error(errorMessage)
+  }
+
+  if (config.payloadMode === 'metadata-extractor' || config.payloadMode === 'metadata-validator') {
+    await persistSynchronousCompletion(batch.batchId, config.payloadMode, requestId, initiatedAt, responseBody)
   }
 
   logEvent('info', `${config.serviceName}_trigger_accepted`, {
@@ -160,5 +261,25 @@ export async function triggerContentDedup(batch: ProcessBatchStatus): Promise<vo
     callbackTokenEnv: 'CONTENT_DEDUP_CALLBACK_TOKEN',
     callbackPath: CONTENT_DEDUP_CALLBACK_PATH,
     endpointPath: '/content-dedup',
+  })
+}
+
+export async function triggerMetadataExtractor(batch: ProcessBatchStatus): Promise<void> {
+  await triggerPipelineService(batch, {
+    serviceName: 'metadata_extractor',
+    baseUrlEnv: 'METADATA_EXTRACTOR_BASE_URL',
+    triggerTokenEnv: 'METADATA_EXTRACTOR_TRIGGER_TOKEN',
+    endpointPath: '/metadata-extractor',
+    payloadMode: 'metadata-extractor',
+  })
+}
+
+export async function triggerMetadataValidator(batch: ProcessBatchStatus): Promise<void> {
+  await triggerPipelineService(batch, {
+    serviceName: 'metadata_validator',
+    baseUrlEnv: 'MD_VALIDATE_BASE_URL',
+    triggerTokenEnv: 'MD_VALIDATE_TRIGGER_TOKEN',
+    endpointPath: '/metadata-validator',
+    payloadMode: 'metadata-validator',
   })
 }

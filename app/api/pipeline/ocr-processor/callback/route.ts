@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { logEvent } from '@lib/observability'
 import { parseBearerToken, parsePipelineCallbackBody } from '@lib/pipelineCallbacks'
-import { shouldTriggerContentDedup, triggerContentDedup } from '@lib/pipelineTriggers'
+import {
+  shouldTriggerContentDedup,
+  shouldTriggerMetadataExtractor,
+  triggerContentDedup,
+  triggerMetadataExtractor,
+} from '@lib/pipelineTriggers'
 import { getProcessBatchStatus, markProcessStageCallbackReceived } from '@lib/processBatches'
 import type { PipelineCallbackBody } from 'types/pipelineContracts'
 
@@ -49,6 +54,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     if (shouldTriggerContentDedup(batch)) {
       await triggerContentDedup(batch)
+    } else if (shouldTriggerMetadataExtractor(batch)) {
+      await triggerMetadataExtractor(batch)
     }
     return new NextResponse(null, { status: 204 })
   } catch (error: unknown) {

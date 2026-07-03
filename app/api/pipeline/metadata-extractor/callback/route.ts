@@ -2,22 +2,21 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { logEvent } from '@lib/observability'
 import { parseBearerToken, parsePipelineCallbackBody } from '@lib/pipelineCallbacks'
-import { shouldTriggerMetadataExtractor, triggerMetadataExtractor } from '@lib/pipelineTriggers'
-import { getProcessBatchStatus, markProcessStageCallbackReceived } from '@lib/processBatches'
+import { markProcessStageCallbackReceived } from '@lib/processBatches'
 import type { PipelineCallbackBody } from 'types/pipelineContracts'
 
 export const dynamic = 'force-dynamic'
 export const preferredRegion = 'sfo1'
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const expectedToken = process.env.CONTENT_DEDUP_CALLBACK_TOKEN?.trim()
+  const expectedToken = process.env.METADATA_EXTRACTOR_CALLBACK_TOKEN?.trim()
   if (!expectedToken) {
-    return NextResponse.json({ error: 'CONTENT_DEDUP_CALLBACK_TOKEN is not configured.' }, { status: 500 })
+    return NextResponse.json({ error: 'METADATA_EXTRACTOR_CALLBACK_TOKEN is not configured.' }, { status: 500 })
   }
 
   const actualToken = parseBearerToken(request.headers.get('authorization'))
   if (actualToken !== expectedToken) {
-    logEvent('warn', 'content_dedup_callback_unauthorized')
+    logEvent('warn', 'metadata_extractor_callback_unauthorized')
     return NextResponse.json({ error: 'Unauthorized callback.' }, { status: 401 })
   }
 
@@ -34,26 +33,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    await markProcessStageCallbackReceived(batchId, 'content_dedup', Math.floor(Date.now() / 1000))
-    logEvent('info', 'content_dedup_callback_received', {
+    await markProcessStageCallbackReceived(batchId, 'metadata_extractor', Math.floor(Date.now() / 1000))
+    logEvent('info', 'metadata_extractor_callback_received', {
       batchId,
       requestId,
       status,
       errorMessage: errorMessage || null,
     })
-
-    const batch = await getProcessBatchStatus(batchId)
-    if (!batch) {
-      throw new Error(`Batch ${batchId} was not found after recording content-dedup callback.`)
-    }
-
-    if (shouldTriggerMetadataExtractor(batch)) {
-      await triggerMetadataExtractor(batch)
-    }
     return new NextResponse(null, { status: 204 })
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Failed to record content-dedup callback.'
-    logEvent('error', 'content_dedup_callback_record_failed', {
+    const message = error instanceof Error ? error.message : 'Failed to record metadata-extractor callback.'
+    logEvent('error', 'metadata_extractor_callback_record_failed', {
       batchId,
       requestId,
       status,

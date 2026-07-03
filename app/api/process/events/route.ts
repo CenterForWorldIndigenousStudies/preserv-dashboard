@@ -27,6 +27,8 @@ function sleep(milliseconds: number): Promise<void> {
 
 function currentRequestId(batch: ProcessBatchStatus): string | null {
   return (
+    batch.metadataValidator?.requestId ??
+    batch.metadataExtractor?.requestId ??
     batch.contentDedup?.requestId ??
     batch.ocrProcessor?.requestId ??
     batch.pageRotator?.requestId ??
@@ -34,6 +36,18 @@ function currentRequestId(batch: ProcessBatchStatus): string | null {
     batch.ingester?.requestId ??
     null
   )
+}
+
+function buildBatchStatusLogFields(batch: ProcessBatchStatus): Record<string, string | null> {
+  return {
+    ingesterStatus: batch.ingester?.status ?? null,
+    documentSplitterStatus: batch.documentSplitter?.status ?? null,
+    pageRotatorStatus: batch.pageRotator?.status ?? null,
+    ocrProcessorStatus: batch.ocrProcessor?.status ?? null,
+    contentDedupStatus: batch.contentDedup?.status ?? null,
+    metadataExtractorStatus: batch.metadataExtractor?.status ?? null,
+    metadataValidatorStatus: batch.metadataValidator?.status ?? null,
+  }
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
@@ -109,11 +123,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
             batchId,
             requestId: currentRequestId(latestStatus),
             userEmail: session.user.email,
-            ingesterStatus: latestStatus.ingester?.status ?? null,
-            documentSplitterStatus: latestStatus.documentSplitter?.status ?? null,
-            pageRotatorStatus: latestStatus.pageRotator?.status ?? null,
-            ocrProcessorStatus: latestStatus.ocrProcessor?.status ?? null,
-            contentDedupStatus: latestStatus.contentDedup?.status ?? null,
+            ...buildBatchStatusLogFields(latestStatus),
           })
           controller.enqueue(encodeSseEvent('batch_status', latestStatus))
           previousPayload = nextPayload
@@ -133,11 +143,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           batchId,
           requestId: currentRequestId(initialStatus),
           userEmail: session.user.email,
-          ingesterStatus: initialStatus.ingester?.status ?? null,
-          documentSplitterStatus: initialStatus.documentSplitter?.status ?? null,
-          pageRotatorStatus: initialStatus.pageRotator?.status ?? null,
-          ocrProcessorStatus: initialStatus.ocrProcessor?.status ?? null,
-          contentDedupStatus: initialStatus.contentDedup?.status ?? null,
+          ...buildBatchStatusLogFields(initialStatus),
         })
         controller.enqueue(encodeSseEvent('batch_status', initialStatus))
         if (shouldCloseProcessStream(initialStatus)) {

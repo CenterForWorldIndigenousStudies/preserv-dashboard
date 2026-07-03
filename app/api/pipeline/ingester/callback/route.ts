@@ -5,10 +5,12 @@ import { parseBearerToken, parsePipelineCallbackBody } from '@lib/pipelineCallba
 import {
   shouldTriggerContentDedup,
   shouldTriggerDocumentSplitter,
+  shouldTriggerMetadataExtractor,
   shouldTriggerOcrProcessor,
   shouldTriggerPageRotator,
   triggerContentDedup,
   triggerDocumentSplitter,
+  triggerMetadataExtractor,
   triggerOcrProcessor,
   triggerPageRotator,
 } from '@lib/pipelineTriggers'
@@ -65,6 +67,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       await triggerOcrProcessor(batch)
     } else if (shouldTriggerContentDedup(batch)) {
       await triggerContentDedup(batch)
+    } else if (shouldTriggerMetadataExtractor(batch)) {
+      await triggerMetadataExtractor(batch)
     }
 
     return new NextResponse(null, { status: 204 })

@@ -27,12 +27,16 @@ export const DOCUMENT_SPLITTER_STAGE = 'document-splitter' as const
 export const PAGE_ROTATOR_STAGE = 'page-rotator' as const
 export const OCR_PROCESSOR_STAGE = 'ocr-processor' as const
 export const CONTENT_DEDUP_STAGE = 'content-dedup' as const
+export const METADATA_EXTRACTOR_STAGE = 'metadata-extraction' as const
+export const METADATA_VALIDATOR_STAGE = 'metadata-validation' as const
 
 export const SUPPORTED_DOWNSTREAM_STAGES = [
   DOCUMENT_SPLITTER_STAGE,
   PAGE_ROTATOR_STAGE,
   OCR_PROCESSOR_STAGE,
   CONTENT_DEDUP_STAGE,
+  METADATA_EXTRACTOR_STAGE,
+  METADATA_VALIDATOR_STAGE,
 ] as const
 
 export interface StepDefinition {

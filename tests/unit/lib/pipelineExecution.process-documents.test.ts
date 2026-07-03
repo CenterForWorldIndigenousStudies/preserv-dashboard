@@ -58,6 +58,42 @@ function buildExecutionPlan(): PipelineExecutionStep[] {
       pass: 2,
       dependsOn: ['step-normalize-pass-2-split'],
     },
+    {
+      id: 'step-ocr-processor',
+      stepId: 'ocr-processor',
+      service: 'ocr-processor',
+      label: 'OCR Processor',
+      order: 5,
+      enabled: true,
+      dependsOn: ['step-normalize-pass-2-rotate'],
+    },
+    {
+      id: 'step-content-dedup',
+      stepId: 'content-dedup',
+      service: 'content-dedup',
+      label: 'Content Dedup',
+      order: 6,
+      enabled: true,
+      dependsOn: ['step-ocr-processor'],
+    },
+    {
+      id: 'step-metadata-extraction',
+      stepId: 'metadata-extraction',
+      service: 'metadata-extraction',
+      label: 'Metadata Extraction',
+      order: 7,
+      enabled: true,
+      dependsOn: ['step-content-dedup'],
+    },
+    {
+      id: 'step-metadata-validation',
+      stepId: 'metadata-validation',
+      service: 'metadata-validation',
+      label: 'Metadata Validation',
+      order: 8,
+      enabled: true,
+      dependsOn: ['step-metadata-extraction'],
+    },
   ]
 }
 
@@ -88,6 +124,9 @@ function buildStageStatus(overrides: Partial<ProcessStageStatus> = {}): ProcessS
     rotatedCount: 0,
     normalizedCount: 0,
     ocrCompletedCount: 0,
+    extractedCount: 0,
+    metadataValidatedCount: 0,
+    underReviewCount: 0,
     versionedCount: 0,
     resolvedCount: 0,
     skippedCount: 0,
@@ -122,6 +161,8 @@ function buildBatchStatus(overrides: Partial<ProcessBatchStatus> = {}): ProcessB
     pageRotator: buildStageStatus(),
     ocrProcessor: null,
     contentDedup: null,
+    metadataExtractor: null,
+    metadataValidator: null,
     ...overrides,
   }
 }
@@ -188,5 +229,58 @@ describe('pipelineExecution process-documents behavior', () => {
       }),
     ])
     expect(getNextEligibleExecutionStep(batch)).toBeNull()
+  })
+
+  test('returns metadata extraction as next eligible step after content dedup completes', () => {
+    const batch = buildBatchStatus({
+      documentSplitter: buildStageStatus({
+        status: 'completed' satisfies PipelineStepRuntimeStatus,
+        currentPass: 2,
+        maxPasses: 2,
+        completedPasses: [1, 2],
+      }),
+      pageRotator: buildStageStatus({
+        status: 'completed' satisfies PipelineStepRuntimeStatus,
+        currentPass: 2,
+        maxPasses: 2,
+        completedPasses: [1, 2],
+      }),
+      ocrProcessor: buildStageStatus({
+        status: 'completed' satisfies PipelineStepRuntimeStatus,
+      }),
+      contentDedup: buildStageStatus({
+        status: 'completed' satisfies PipelineStepRuntimeStatus,
+      }),
+    })
+
+    expect(getNextEligibleExecutionStep(batch)?.service).toBe('metadata-extraction')
+  })
+
+  test('returns metadata validation as next eligible step after metadata extraction completes', () => {
+    const batch = buildBatchStatus({
+      documentSplitter: buildStageStatus({
+        status: 'completed' satisfies PipelineStepRuntimeStatus,
+        currentPass: 2,
+        maxPasses: 2,
+        completedPasses: [1, 2],
+      }),
+      pageRotator: buildStageStatus({
+        status: 'completed' satisfies PipelineStepRuntimeStatus,
+        currentPass: 2,
+        maxPasses: 2,
+        completedPasses: [1, 2],
+      }),
+      ocrProcessor: buildStageStatus({
+        status: 'completed' satisfies PipelineStepRuntimeStatus,
+      }),
+      contentDedup: buildStageStatus({
+        status: 'completed' satisfies PipelineStepRuntimeStatus,
+      }),
+      metadataExtractor: buildStageStatus({
+        status: 'completed' satisfies PipelineStepRuntimeStatus,
+      }),
+    })
+
+    expect(getNextEligibleExecutionStep(batch)?.service).toBe('metadata-validation')
   })
 })

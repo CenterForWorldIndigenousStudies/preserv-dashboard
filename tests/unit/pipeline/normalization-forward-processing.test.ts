@@ -81,6 +81,9 @@ function buildStageStatus(overrides: Partial<ProcessStageStatus> = {}): ProcessS
     rotatedCount: 0,
     normalizedCount: 0,
     ocrCompletedCount: 0,
+    extractedCount: 0,
+    metadataValidatedCount: 0,
+    underReviewCount: 0,
     versionedCount: 0,
     resolvedCount: 0,
     skippedCount: 0,
@@ -115,6 +118,8 @@ function buildBatchStatus(overrides: Partial<ProcessBatchStatus> = {}): ProcessB
     pageRotator: buildStageStatus(),
     ocrProcessor: null,
     contentDedup: null,
+    metadataExtractor: null,
+    metadataValidator: null,
     ...overrides,
   }
 }

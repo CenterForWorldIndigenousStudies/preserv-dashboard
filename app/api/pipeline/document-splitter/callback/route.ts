@@ -4,9 +4,11 @@ import { logEvent } from '@lib/observability'
 import { parseBearerToken, parsePipelineCallbackBody } from '@lib/pipelineCallbacks'
 import {
   shouldTriggerContentDedup,
+  shouldTriggerMetadataExtractor,
   shouldTriggerOcrProcessor,
   shouldTriggerPageRotator,
   triggerContentDedup,
+  triggerMetadataExtractor,
   triggerOcrProcessor,
   triggerPageRotator,
 } from '@lib/pipelineTriggers'
@@ -60,6 +62,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       await triggerOcrProcessor(batch)
     } else if (shouldTriggerContentDedup(batch)) {
       await triggerContentDedup(batch)
+    } else if (shouldTriggerMetadataExtractor(batch)) {
+      await triggerMetadataExtractor(batch)
     }
     return new NextResponse(null, { status: 204 })
   } catch (error: unknown) {

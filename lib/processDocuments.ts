@@ -62,6 +62,9 @@ export function buildAcceptedBatchStatus({
       rotatedCount: 0,
       normalizedCount: 0,
       ocrCompletedCount: 0,
+      extractedCount: 0,
+      metadataValidatedCount: 0,
+      underReviewCount: 0,
       versionedCount: 0,
       resolvedCount: 0,
       skippedCount: 0,
@@ -78,5 +81,7 @@ export function buildAcceptedBatchStatus({
     pageRotator: null,
     ocrProcessor: null,
     contentDedup: null,
+    metadataExtractor: null,
+    metadataValidator: null,
   }
 }
