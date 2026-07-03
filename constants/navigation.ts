@@ -5,7 +5,6 @@ import {
   DASHBOARD_PATH,
   DB_SCHEMA_PATH,
   DOCUMENTS_PATH,
-  FAILED_PATH,
   PROCESS_DOCUMENTS_PATH,
   READY_FOR_LIBRARY_PATH,
   REPORTS_PAGE_PATH,
@@ -25,7 +24,6 @@ export type DashboardNavigationIconKey =
   | 'collections'
   | 'tags'
   | 'reports'
-  | 'failures'
   | 'db'
   | 'componentLibrary'
 
@@ -51,7 +49,6 @@ export const PRIMARY_DASHBOARD_NAVIGATION_ITEMS: readonly DashboardNavigationIte
   { href: COLLECTIONS_PATH, iconKey: 'collections', label: 'Collections' },
   { href: TAGS_PAGE_PATH, iconKey: 'tags', label: 'Tags' },
   { href: REPORTS_PAGE_PATH, iconKey: 'reports', label: 'Reports' },
-  { href: FAILED_PATH, iconKey: 'failures', label: 'Failures' },
 ] as const
 
 export const UTILITY_DASHBOARD_NAVIGATION_ITEMS: readonly DashboardNavigationItem[] = [

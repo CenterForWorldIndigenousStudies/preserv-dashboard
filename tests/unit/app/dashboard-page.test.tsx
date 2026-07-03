@@ -37,10 +37,9 @@ describe('DashboardPage', () => {
     expect(markup).toContain('Queue Snapshots')
     expect(markup).toContain('Open the live review queue for documents needing human attention.')
     expect(markup).toContain('Open approved documents with dashboard-visible library-ready criteria.')
-    expect(markup).toContain(
-      'Open the failures workspace. A reliable dashboard failure total is not available yet in the current data model.',
-    )
     expect(markup).toContain('Collections')
+    expect(markup).not.toContain('/failures')
+    expect(markup).not.toContain('Inspect the current failures view.')
     expect(markup).not.toContain('Failed Documents')
     expect(markup).not.toContain('while this page remains a skeleton')
   })

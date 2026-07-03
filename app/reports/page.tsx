@@ -4,7 +4,6 @@ import { Box, Card, CardContent, Stack, Typography } from '@mui/material'
 import {
   BATCHES_PATH,
   DASHBOARD_PATH,
-  FAILED_PATH,
   READY_FOR_LIBRARY_PATH,
   REVIEW_QUEUE_PATH,
 } from '@constants/paths'
@@ -29,11 +28,6 @@ const REPORT_WORKSPACE_LINKS: ReportWorkspaceLink[] = [
     href: BATCHES_PATH,
     title: 'Batches',
     description: 'Review the current batch processing details and batch-level activity already available in the dashboard.',
-  },
-  {
-    href: FAILED_PATH,
-    title: 'Failures',
-    description: 'Inspect documents that did not complete processing in the current failures view.',
   },
   {
     href: REVIEW_QUEUE_PATH,
@@ -74,7 +68,7 @@ export default function ReportsPage(): ReactElement {
           <Box component="ul" sx={listStyles}>
             <li>Dashboard provides a live snapshot of review backlog, library-ready work, and current batch activity.</li>
             <li>Batches shows batch processing details by batch from the current operational view.</li>
-            <li>Failures surfaces documents that did not complete processing when failure-like metadata is available.</li>
+            <li>Failures remain part of the reporting scope as an operational signal alongside queue pressure, readiness, and batch activity.</li>
             <li>Review Queue defaults to documents whose validation status still needs human review.</li>
             <li>Ready for Library shows approved documents with an access level and metadata completeness displayed for review.</li>
           </Box>

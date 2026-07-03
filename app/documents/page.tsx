@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import { DocumentsTable } from '@organisms/DocumentsTable'
+import { PageHeader } from '@organisms/PageHeader'
 import {
   normalizeOverviewAccessLevel,
   normalizeOverviewDateFilter,
@@ -65,10 +66,15 @@ async function OverviewContent({ searchParams }: OverviewPageProps) {
 
   return <DocumentsTable initialData={initialData} initialQuery={initialQuery} filterOptions={filterOptions} />
 }
-
 export default function OverviewPage({ searchParams }: OverviewPageProps) {
   return (
-    <div className="w-full">
+    <div className="w-full space-y-8">
+      <PageHeader
+        eyebrow="Documents"
+        title="Documents"
+        description="Use this canonical browse and discovery workspace to search, filter, and open documents across the preservation system."
+      />
+
       <Suspense fallback={null}>
         <OverviewContent searchParams={searchParams} />
       </Suspense>

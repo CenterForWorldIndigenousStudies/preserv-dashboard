@@ -56,13 +56,13 @@ describe('Sidebar', () => {
     expect(markup).toContain('Review Queue')
     expect(markup).toContain('Ready for Library')
     expect(markup).toContain('Collections')
-    expect(markup).toContain('Failures')
     expect(markup).toContain('DB')
     expect(markup).toContain('Component Library')
 
     expect(markup).toContain('Tags')
     expect(markup).toContain('Reports')
     expect(markup).not.toContain('Batch Summary')
+    expect(markup).not.toContain('Failures')
   })
 
   it('preserves mobile close behavior in the drawer header', () => {

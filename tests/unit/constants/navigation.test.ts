@@ -12,7 +12,6 @@ import {
   DASHBOARD_PATH,
   DB_SCHEMA_PATH,
   DOCUMENTS_PATH,
-  FAILED_PATH,
   PROCESS_DOCUMENTS_PATH,
   READY_FOR_LIBRARY_PATH,
   REPORTS_PAGE_PATH,
@@ -32,7 +31,6 @@ describe('dashboard navigation constants', () => {
       { href: COLLECTIONS_PATH, iconKey: 'collections', label: 'Collections' },
       { href: TAGS_PAGE_PATH, iconKey: 'tags', label: 'Tags' },
       { href: REPORTS_PAGE_PATH, iconKey: 'reports', label: 'Reports' },
-      { href: FAILED_PATH, iconKey: 'failures', label: 'Failures' },
     ])
   })
 

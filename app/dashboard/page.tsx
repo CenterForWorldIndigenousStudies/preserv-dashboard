@@ -4,7 +4,6 @@ import { Box, Card, CardContent, Stack, Typography } from '@mui/material'
 import {
   BATCHES_PATH,
   COLLECTIONS_PATH,
-  FAILED_PATH,
   PROCESS_DOCUMENTS_PATH,
   READY_FOR_LIBRARY_PATH,
   REVIEW_QUEUE_PATH,
@@ -39,11 +38,6 @@ const QUEUE_SNAPSHOTS: DashboardLinkCardProps[] = [
     title: 'Ready for Library',
     description: 'Open approved documents with dashboard-visible library-ready criteria.',
   },
-  {
-    href: FAILED_PATH,
-    title: 'Failures',
-    description: 'Open the failures workspace. A reliable dashboard failure total is not available yet in the current data model.',
-  },
 ]
 
 const QUICK_ACTIONS: DashboardLinkCardProps[] = [
@@ -71,11 +65,6 @@ const QUICK_ACTIONS: DashboardLinkCardProps[] = [
     href: BATCHES_PATH,
     title: 'Batch Summary',
     description: 'Review the current batch summary table.',
-  },
-  {
-    href: FAILED_PATH,
-    title: 'Failures',
-    description: 'Inspect the current failures view.',
   },
 ]
 
