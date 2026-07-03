@@ -18,6 +18,7 @@ function buildBatchStatus(): ProcessBatchStatus {
     contentDedup: null,
     metadataExtractor: null,
     metadataValidator: null,
+    rightsDeterminator: null,
   }
 }
 

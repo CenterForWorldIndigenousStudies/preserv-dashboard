@@ -88,6 +88,7 @@ function parseStageCountFields(
   | 'ocrCompletedCount'
   | 'extractedCount'
   | 'metadataValidatedCount'
+  | 'rightsDeterminedCount'
   | 'underReviewCount'
   | 'versionedCount'
   | 'resolvedCount'
@@ -109,6 +110,7 @@ function parseStageCountFields(
     ocrCompletedCount: parseNumber(stage.ocr_completed_count),
     extractedCount: parseNumber(stage.extracted_count),
     metadataValidatedCount: parseNumber(stage.metadata_validated_count),
+    rightsDeterminedCount: parseNumber(stage.rights_determined_count),
     underReviewCount: parseNumber(stage.under_review_count),
     versionedCount: parseNumber(stage.versioned_count),
     resolvedCount: parseNumber(stage.resolved_count),
@@ -233,28 +235,28 @@ export function normalizeProcessBatchDetails(details: RawProcessBatchDetails): N
     contentDedup: normalizeStage(details.content_dedup),
     metadataExtractor: normalizeStage(details.metadata_extractor),
     metadataValidator: normalizeStage(details.metadata_validator),
+    rightsDeterminator: normalizeStage(details.rights_determinator),
   }
 }
 
+const DIRECT_STAGE_DETAIL_KEYS: Record<Exclude<CallbackStageKey, 'ingester' | 'document_splitter' | 'page_rotator'>, keyof RawProcessBatchDetails> = {
+  ocr_processor: 'ocr_processor',
+  content_dedup: 'content_dedup',
+  metadata_extractor: 'metadata_extractor',
+  metadata_validator: 'metadata_validator',
+  rights_determinator: 'rights_determinator',
+}
+
 export function resolveStageDetailKey(details: RawProcessBatchDetails, stageKey: CallbackStageKey): string | null {
-  switch (stageKey) {
-    case 'ingester':
-      return details.data_ingester ? 'data_ingester' : details.ingester ? 'ingester' : null
-    case 'document_splitter': {
-      const latestEntry = getPassStageEntries(details, 'document_splitter').at(-1)
-      return latestEntry?.key ?? (details.document_splitter ? 'document_splitter' : null)
-    }
-    case 'page_rotator': {
-      const latestEntry = getPassStageEntries(details, 'page_rotator').at(-1)
-      return latestEntry?.key ?? (details.page_rotator ? 'page_rotator' : null)
-    }
-    case 'ocr_processor':
-      return details.ocr_processor ? 'ocr_processor' : null
-    case 'content_dedup':
-      return details.content_dedup ? 'content_dedup' : null
-    case 'metadata_extractor':
-      return details.metadata_extractor ? 'metadata_extractor' : null
-    case 'metadata_validator':
-      return details.metadata_validator ? 'metadata_validator' : null
+  if (stageKey === 'ingester') {
+    return details.data_ingester ? 'data_ingester' : details.ingester ? 'ingester' : null
   }
+
+  if (stageKey === 'document_splitter' || stageKey === 'page_rotator') {
+    const latestEntry = getPassStageEntries(details, stageKey).at(-1)
+    return latestEntry?.key ?? (details[stageKey] ? stageKey : null)
+  }
+
+  const directKey = DIRECT_STAGE_DETAIL_KEYS[stageKey]
+  return details[directKey] ? directKey : null
 }

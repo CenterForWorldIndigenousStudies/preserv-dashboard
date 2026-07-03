@@ -5,6 +5,7 @@ import {
   METADATA_VALIDATOR_STAGE,
   OCR_PROCESSOR_STAGE,
   PAGE_ROTATOR_STAGE,
+  RIGHTS_DETERMINATOR_STAGE,
 } from '@constants/pipeline'
 import {
   getNextEligibleExecutionStep,
@@ -17,10 +18,12 @@ export {
   triggerDocumentSplitter,
   triggerOcrProcessor,
   triggerPageRotator,
+  triggerRightsDeterminator,
 } from '@lib/pipelineTriggerRequests'
 import {
   triggerMetadataExtractor as requestMetadataExtractor,
-  triggerMetadataValidator,
+  triggerRightsDeterminator as requestRightsDeterminator,
+  triggerMetadataValidator as requestMetadataValidator,
 } from '@lib/pipelineTriggerRequests'
 import type { PipelineExecutionStep } from '@lib/pipelineConfig'
 import type { ProcessBatchStatus } from 'types/pipelineContracts'
@@ -41,7 +44,8 @@ export function normalizeRequestedProcessStages(value: unknown): string[] {
       stage === OCR_PROCESSOR_STAGE ||
       stage === CONTENT_DEDUP_STAGE ||
       stage === METADATA_EXTRACTOR_STAGE ||
-      stage === METADATA_VALIDATOR_STAGE,
+      stage === METADATA_VALIDATOR_STAGE ||
+      stage === RIGHTS_DETERMINATOR_STAGE,
   )
 }
 
@@ -84,6 +88,11 @@ export function shouldTriggerMetadataValidator(batch: ProcessBatchStatus): boole
   return isNextEligibleStep(batch, METADATA_VALIDATOR_STAGE)
 }
 
+export function shouldTriggerRightsDeterminator(batch: ProcessBatchStatus): boolean {
+  getPipelineConfigForBatch(batch)
+  return isNextEligibleStep(batch, RIGHTS_DETERMINATOR_STAGE)
+}
+
 export async function triggerMetadataExtractor(batch: ProcessBatchStatus): Promise<void> {
   await requestMetadataExtractor(batch)
 
@@ -94,6 +103,19 @@ export async function triggerMetadataExtractor(batch: ProcessBatchStatus): Promi
 
   if (shouldTriggerMetadataValidator(updatedBatch)) {
     await triggerMetadataValidator(updatedBatch)
+  }
+}
+
+export async function triggerMetadataValidator(batch: ProcessBatchStatus): Promise<void> {
+  await requestMetadataValidator(batch)
+
+  const updatedBatch = await getProcessBatchStatus(batch.batchId)
+  if (!updatedBatch) {
+    throw new Error(`Batch ${batch.batchId} was not found after metadata validation completed.`)
+  }
+
+  if (shouldTriggerRightsDeterminator(updatedBatch)) {
+    await requestRightsDeterminator(updatedBatch)
   }
 }
 

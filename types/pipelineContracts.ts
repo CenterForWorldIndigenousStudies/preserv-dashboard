@@ -37,6 +37,7 @@ export interface RawProcessStageDetails {
   ocr_completed_count?: unknown
   extracted_count?: unknown
   metadata_validated_count?: unknown
+  rights_determined_count?: unknown
   under_review_count?: unknown
   versioned_count?: unknown
   resolved_count?: unknown
@@ -69,6 +70,7 @@ export interface RawProcessBatchDetails {
   content_dedup?: RawProcessStageDetails | null
   metadata_extractor?: RawProcessStageDetails | null
   metadata_validator?: RawProcessStageDetails | null
+  rights_determinator?: RawProcessStageDetails | null
 }
 
 export interface PipelineCallbackBody {
@@ -86,6 +88,7 @@ export type CallbackStageKey =
   | 'content_dedup'
   | 'metadata_extractor'
   | 'metadata_validator'
+  | 'rights_determinator'
 
 export interface NormalizedProcessStageStatus {
   status: string | null
@@ -115,6 +118,7 @@ export interface NormalizedProcessStageStatus {
   ocrCompletedCount: number
   extractedCount: number
   metadataValidatedCount: number
+  rightsDeterminedCount: number
   underReviewCount: number
   versionedCount: number
   resolvedCount: number
@@ -139,6 +143,7 @@ export interface NormalizedProcessBatchDetails {
   contentDedup: NormalizedProcessStageStatus | null
   metadataExtractor: NormalizedProcessStageStatus | null
   metadataValidator: NormalizedProcessStageStatus | null
+  rightsDeterminator: NormalizedProcessStageStatus | null
 }
 
 export type ProcessStageStatus = NormalizedProcessStageStatus

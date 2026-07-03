@@ -8,7 +8,11 @@ import {
 } from '@constants/paths'
 import { DASHBOARD_BASE_URL } from '@constants/server'
 import { logEvent } from '@lib/observability'
-import { recordMetadataExtractorCompletion, recordMetadataValidatorCompletion } from '@lib/processBatches'
+import {
+  recordMetadataExtractorCompletion,
+  recordMetadataValidatorCompletion,
+  recordRightsDeterminatorCompletion,
+} from '@lib/processBatches'
 import type { ProcessBatchStatus } from 'types/pipelineContracts'
 
 type TriggerConfig = {
@@ -18,13 +22,14 @@ type TriggerConfig = {
     | 'ocr_processor'
     | 'content_dedup'
     | 'metadata_extractor'
+    | 'rights_determinator'
     | 'metadata_validator'
   baseUrlEnv: string
   triggerTokenEnv: string
   endpointPath: string
   callbackTokenEnv?: string
   callbackPath?: string
-  payloadMode?: 'async-callback' | 'metadata-extractor' | 'metadata-validator'
+  payloadMode?: 'async-callback' | 'metadata-extractor' | 'metadata-validator' | 'rights-determinator'
 }
 
 function buildStageCallbackUrl(pathname: string): string {
@@ -62,6 +67,10 @@ function getErrorMessage(responseBody: unknown, fallback: string): string {
   }
 
   return fallback
+}
+
+function parseFiniteCount(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0
 }
 
 function createSynchronousPayload(batchId: string, initiatedAt: string): Record<string, string> {
@@ -104,13 +113,14 @@ function buildTriggerPayload(
   callbackUrl: string | null,
 ): Record<string, unknown> {
   return config.payloadMode === 'metadata-extractor' || config.payloadMode === 'metadata-validator'
+    || config.payloadMode === 'rights-determinator'
     ? createSynchronousPayload(batch.batchId, initiatedAt)
     : createAsyncCallbackPayload(batch, initiatedAt, requestId, callbackUrl, config.callbackTokenEnv)
 }
 
 async function persistSynchronousCompletion(
   batchId: string,
-  payloadMode: 'metadata-extractor' | 'metadata-validator',
+  payloadMode: 'metadata-extractor' | 'metadata-validator' | 'rights-determinator',
   requestId: string,
   initiatedAt: string,
   responseBody: unknown,
@@ -120,19 +130,14 @@ async function persistSynchronousCompletion(
         processed_count?: unknown
         extracted_count?: unknown
         metadata_validated_count?: unknown
+        rights_determined_count?: unknown
         under_review_count?: unknown
         failed_count?: unknown
       }
     | undefined
 
-  const processedCount =
-    typeof typedResponseBody?.processed_count === 'number' && Number.isFinite(typedResponseBody.processed_count)
-      ? typedResponseBody.processed_count
-      : 0
-  const failedCount =
-    typeof typedResponseBody?.failed_count === 'number' && Number.isFinite(typedResponseBody.failed_count)
-      ? typedResponseBody.failed_count
-      : 0
+  const processedCount = parseFiniteCount(typedResponseBody?.processed_count)
+  const failedCount = parseFiniteCount(typedResponseBody?.failed_count)
   const completedAt = new Date().toISOString()
 
   if (payloadMode === 'metadata-extractor') {
@@ -141,10 +146,20 @@ async function persistSynchronousCompletion(
       initiatedAt,
       completedAt,
       processedCount,
-      extractedCount:
-        typeof typedResponseBody?.extracted_count === 'number' && Number.isFinite(typedResponseBody.extracted_count)
-          ? typedResponseBody.extracted_count
-          : 0,
+      extractedCount: parseFiniteCount(typedResponseBody?.extracted_count),
+      failedCount,
+    })
+    return
+  }
+
+  if (payloadMode === 'rights-determinator') {
+    await recordRightsDeterminatorCompletion(batchId, {
+      requestId,
+      initiatedAt,
+      completedAt,
+      processedCount,
+      rightsDeterminedCount: parseFiniteCount(typedResponseBody?.rights_determined_count),
+      underReviewCount: parseFiniteCount(typedResponseBody?.under_review_count),
       failedCount,
     })
     return
@@ -155,15 +170,8 @@ async function persistSynchronousCompletion(
     initiatedAt,
     completedAt,
     processedCount,
-    metadataValidatedCount:
-      typeof typedResponseBody?.metadata_validated_count === 'number' &&
-      Number.isFinite(typedResponseBody.metadata_validated_count)
-        ? typedResponseBody.metadata_validated_count
-        : 0,
-    underReviewCount:
-      typeof typedResponseBody?.under_review_count === 'number' && Number.isFinite(typedResponseBody.under_review_count)
-        ? typedResponseBody.under_review_count
-        : 0,
+    metadataValidatedCount: parseFiniteCount(typedResponseBody?.metadata_validated_count),
+    underReviewCount: parseFiniteCount(typedResponseBody?.under_review_count),
     failedCount,
   })
 }
@@ -208,7 +216,11 @@ async function triggerPipelineService(batch: ProcessBatchStatus, config: Trigger
     throw new Error(errorMessage)
   }
 
-  if (config.payloadMode === 'metadata-extractor' || config.payloadMode === 'metadata-validator') {
+  if (
+    config.payloadMode === 'metadata-extractor' ||
+    config.payloadMode === 'metadata-validator' ||
+    config.payloadMode === 'rights-determinator'
+  ) {
     await persistSynchronousCompletion(batch.batchId, config.payloadMode, requestId, initiatedAt, responseBody)
   }
 
@@ -281,5 +293,15 @@ export async function triggerMetadataValidator(batch: ProcessBatchStatus): Promi
     triggerTokenEnv: 'MD_VALIDATE_TRIGGER_TOKEN',
     endpointPath: '/metadata-validator',
     payloadMode: 'metadata-validator',
+  })
+}
+
+export async function triggerRightsDeterminator(batch: ProcessBatchStatus): Promise<void> {
+  await triggerPipelineService(batch, {
+    serviceName: 'rights_determinator',
+    baseUrlEnv: 'RIGHTS_DETERMINATOR_BASE_URL',
+    triggerTokenEnv: 'RIGHTS_DETERMINE_TRIGGER_TOKEN',
+    endpointPath: '/rights-determinator',
+    payloadMode: 'rights-determinator',
   })
 }

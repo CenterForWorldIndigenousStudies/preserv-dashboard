@@ -36,7 +36,6 @@ const navigationIconMap: Record<DashboardNavigationIconKey, typeof House> = {
   collections: BookOpen,
   tags: BookOpen,
   reports: Database,
-  failures: ClipboardList,
   db: Database,
   componentLibrary: BookOpen,
 }

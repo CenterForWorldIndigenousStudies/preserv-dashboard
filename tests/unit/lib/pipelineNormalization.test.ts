@@ -113,4 +113,27 @@ describe('pipelineNormalization', () => {
     expect(normalized.metadataValidator?.metadataValidatedCount).toBe(3)
     expect(normalized.metadataValidator?.underReviewCount).toBe(1)
   })
+
+  test('parses rights determinator stage details', () => {
+    const normalized = normalizeProcessBatchDetails({
+      pipeline: {
+        requested_stages: ['metadata-extraction', 'metadata-validation', 'rights-determinator'],
+      },
+      rights_determinator: {
+        status: 'completed',
+        request_id: 'request-11',
+        started_at: 1717000500,
+        rights_determined_count: 2,
+        under_review_count: 1,
+        failed_count: 1,
+      },
+    })
+
+    expect(normalized.pipelineRequestedStages).toEqual(['metadata-extraction', 'metadata-validation', 'rights-determinator'])
+    expect(normalized.rightsDeterminator?.status).toBe('completed')
+    expect(normalized.rightsDeterminator?.requestId).toBe('request-11')
+    expect(normalized.rightsDeterminator?.startedAt).toBe('2024-05-29T16:35:00.000Z')
+    expect(normalized.rightsDeterminator?.rightsDeterminedCount).toBe(2)
+    expect(normalized.rightsDeterminator?.underReviewCount).toBe(1)
+  })
 })

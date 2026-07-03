@@ -52,7 +52,8 @@ function hasProcessState(batch: ProcessBatchStatus): boolean {
     batch.ocrProcessor !== null ||
     batch.contentDedup !== null ||
     batch.metadataExtractor !== null ||
-    batch.metadataValidator !== null
+    batch.metadataValidator !== null ||
+    batch.rightsDeterminator !== null
   )
 }
 
@@ -206,6 +207,16 @@ interface MetadataValidatorCompletionArgs {
   failedCount: number
 }
 
+interface RightsDeterminatorCompletionArgs {
+  requestId: string
+  initiatedAt: string
+  completedAt: string
+  processedCount: number
+  rightsDeterminedCount: number
+  underReviewCount: number
+  failedCount: number
+}
+
 export async function recordMetadataExtractorCompletion(
   batchId: string,
   {
@@ -296,6 +307,60 @@ export async function recordMetadataValidatorCompletion(
       last_transition_at: completedAt,
       processed_count: processedCount,
       metadata_validated_count: metadataValidatedCount,
+      under_review_count: underReviewCount,
+      failed_count: failedCount,
+      current_pass: 1,
+      max_passes: 1,
+      completed_passes: [1],
+    },
+  }
+
+  await db.batches.update({
+    where: { id: batchId },
+    data: {
+      processing_details: JSON.stringify(nextDetails),
+    },
+  })
+}
+
+export async function recordRightsDeterminatorCompletion(
+  batchId: string,
+  {
+    requestId,
+    initiatedAt,
+    completedAt,
+    processedCount,
+    rightsDeterminedCount,
+    underReviewCount,
+    failedCount,
+  }: RightsDeterminatorCompletionArgs,
+): Promise<void> {
+  const batch = await db.batches.findUnique({
+    where: { id: batchId },
+    select: { id: true, processing_details: true },
+  })
+
+  if (!batch) {
+    throw new Error(`Batch ${batchId} was not found`)
+  }
+
+  const details = parseProcessingDetails(batch.processing_details)
+  const currentStage = details.rights_determinator
+  const currentStageDetails = currentStage && typeof currentStage === 'object' ? currentStage : {}
+
+  const nextDetails: RawProcessBatchDetails = {
+    ...details,
+    rights_determinator: {
+      ...currentStageDetails,
+      status: 'completed',
+      request_id: requestId,
+      requested_by_app: 'preserv-dashboard',
+      initiated_at: initiatedAt,
+      started_at: initiatedAt,
+      completed_at: completedAt,
+      last_transition_at: completedAt,
+      processed_count: processedCount,
+      rights_determined_count: rightsDeterminedCount,
       under_review_count: underReviewCount,
       failed_count: failedCount,
       current_pass: 1,

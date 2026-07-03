@@ -242,15 +242,7 @@ export function expandPresetToDraft(profileId: ProfileId): PipelineSelectionDraf
   }
 }
 
-function getUpstreamDependencyId(draft: PipelineSelectionDraft): string[] {
-  if (draft.steps.contentDedup) {
-    return ['step-content-dedup']
-  }
-
-  if (draft.steps.ocrProcessor) {
-    return ['step-ocr-processor']
-  }
-
+function getNormalizationUpstreamDependencyId(draft: PipelineSelectionDraft): string[] {
   if (draft.steps.normalizePass2.enabled) {
     return ['step-normalize-pass-2-rotate']
   }
@@ -260,6 +252,18 @@ function getUpstreamDependencyId(draft: PipelineSelectionDraft): string[] {
   }
 
   return ['step-ingester']
+}
+
+function getDownstreamDependencyId(draft: PipelineSelectionDraft): string[] {
+  if (draft.steps.contentDedup) {
+    return ['step-content-dedup']
+  }
+
+  if (draft.steps.ocrProcessor) {
+    return ['step-ocr-processor']
+  }
+
+  return getNormalizationUpstreamDependencyId(draft)
 }
 
 function pushNormalizePassSteps(plan: PipelineExecutionStep[], draft: PipelineSelectionDraft): void {
@@ -334,7 +338,7 @@ export function draftToPipelineConfig(draft: PipelineSelectionDraft): PipelineCo
       label: 'OCR Processor',
       order: 5,
       enabled: true,
-      dependsOn: getUpstreamDependencyId(draft),
+      dependsOn: getNormalizationUpstreamDependencyId(draft),
     })
   }
 
@@ -358,7 +362,7 @@ export function draftToPipelineConfig(draft: PipelineSelectionDraft): PipelineCo
       label: 'Metadata Extraction',
       order: 7,
       enabled: true,
-      dependsOn: getUpstreamDependencyId(draft),
+      dependsOn: getDownstreamDependencyId(draft),
     })
   }
 
@@ -370,7 +374,7 @@ export function draftToPipelineConfig(draft: PipelineSelectionDraft): PipelineCo
       label: 'Metadata Validation',
       order: 8,
       enabled: true,
-      dependsOn: draft.steps.metadataExtraction ? ['step-metadata-extraction'] : getUpstreamDependencyId(draft),
+      dependsOn: draft.steps.metadataExtraction ? ['step-metadata-extraction'] : getDownstreamDependencyId(draft),
     })
   }
 

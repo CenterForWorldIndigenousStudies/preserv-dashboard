@@ -94,6 +94,15 @@ function buildExecutionPlan(): PipelineExecutionStep[] {
       enabled: true,
       dependsOn: ['step-metadata-extraction'],
     },
+    {
+      id: 'step-rights-determinator',
+      stepId: 'rights-determinator',
+      service: 'rights-determinator',
+      label: 'Rights Determinator',
+      order: 9,
+      enabled: true,
+      dependsOn: ['step-metadata-validation'],
+    },
   ]
 }
 
@@ -126,6 +135,7 @@ function buildStageStatus(overrides: Partial<ProcessStageStatus> = {}): ProcessS
     ocrCompletedCount: 0,
     extractedCount: 0,
     metadataValidatedCount: 0,
+    rightsDeterminedCount: 0,
     underReviewCount: 0,
     versionedCount: 0,
     resolvedCount: 0,
@@ -163,6 +173,7 @@ function buildBatchStatus(overrides: Partial<ProcessBatchStatus> = {}): ProcessB
     contentDedup: null,
     metadataExtractor: null,
     metadataValidator: null,
+    rightsDeterminator: null,
     ...overrides,
   }
 }
@@ -256,6 +267,25 @@ describe('pipelineExecution process-documents behavior', () => {
     expect(getNextEligibleExecutionStep(batch)?.service).toBe('metadata-extraction')
   })
 
+  test('returns ocr processor as next eligible step when final rotate pass is completed without completed_passes metadata', () => {
+    const batch = buildBatchStatus({
+      documentSplitter: buildStageStatus({
+        status: 'completed' satisfies PipelineStepRuntimeStatus,
+        currentPass: 2,
+        maxPasses: 2,
+        completedPasses: [1, 2],
+      }),
+      pageRotator: buildStageStatus({
+        status: 'completed' satisfies PipelineStepRuntimeStatus,
+        currentPass: 2,
+        maxPasses: 2,
+        completedPasses: [],
+      }),
+    })
+
+    expect(getNextEligibleExecutionStep(batch)?.service).toBe('ocr-processor')
+  })
+
   test('returns metadata validation as next eligible step after metadata extraction completes', () => {
     const batch = buildBatchStatus({
       documentSplitter: buildStageStatus({
@@ -282,5 +312,36 @@ describe('pipelineExecution process-documents behavior', () => {
     })
 
     expect(getNextEligibleExecutionStep(batch)?.service).toBe('metadata-validation')
+  })
+
+  test('returns rights determinator as next eligible step after metadata validation completes', () => {
+    const batch = buildBatchStatus({
+      documentSplitter: buildStageStatus({
+        status: 'completed' satisfies PipelineStepRuntimeStatus,
+        currentPass: 2,
+        maxPasses: 2,
+        completedPasses: [1, 2],
+      }),
+      pageRotator: buildStageStatus({
+        status: 'completed' satisfies PipelineStepRuntimeStatus,
+        currentPass: 2,
+        maxPasses: 2,
+        completedPasses: [1, 2],
+      }),
+      ocrProcessor: buildStageStatus({
+        status: 'completed' satisfies PipelineStepRuntimeStatus,
+      }),
+      contentDedup: buildStageStatus({
+        status: 'completed' satisfies PipelineStepRuntimeStatus,
+      }),
+      metadataExtractor: buildStageStatus({
+        status: 'completed' satisfies PipelineStepRuntimeStatus,
+      }),
+      metadataValidator: buildStageStatus({
+        status: 'completed' satisfies PipelineStepRuntimeStatus,
+      }),
+    })
+
+    expect(getNextEligibleExecutionStep(batch)?.service).toBe('rights-determinator')
   })
 })

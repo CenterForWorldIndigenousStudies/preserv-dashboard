@@ -64,6 +64,7 @@ export function buildAcceptedBatchStatus({
       ocrCompletedCount: 0,
       extractedCount: 0,
       metadataValidatedCount: 0,
+      rightsDeterminedCount: 0,
       underReviewCount: 0,
       versionedCount: 0,
       resolvedCount: 0,
@@ -83,5 +84,6 @@ export function buildAcceptedBatchStatus({
     contentDedup: null,
     metadataExtractor: null,
     metadataValidator: null,
+    rightsDeterminator: null,
   }
 }

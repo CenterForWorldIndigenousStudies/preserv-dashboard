@@ -42,6 +42,7 @@ function buildPendingStage(): ProcessStageStatus {
     ocrCompletedCount: 0,
     extractedCount: 0,
     metadataValidatedCount: 0,
+    rightsDeterminedCount: 0,
     underReviewCount: 0,
     versionedCount: 0,
     resolvedCount: 0,
@@ -69,6 +70,18 @@ function shouldShowPendingMetadataExtractor(batch: ProcessBatchStatus): boolean 
   return batch.pipelineConfig?.executionPlan.some((step) => step.enabled && step.service === 'metadata-extraction') ?? false
 }
 
+function shouldShowPendingOcrProcessor(batch: ProcessBatchStatus): boolean {
+  if (batch.ocrProcessor) {
+    return false
+  }
+
+  if (batch.pipelineRequestedStages.includes('ocr-processor')) {
+    return true
+  }
+
+  return batch.pipelineConfig?.executionPlan.some((step) => step.enabled && step.service === 'ocr-processor') ?? false
+}
+
 function shouldShowPendingMetadataValidator(batch: ProcessBatchStatus): boolean {
   if (batch.metadataValidator) {
     return false
@@ -79,6 +92,18 @@ function shouldShowPendingMetadataValidator(batch: ProcessBatchStatus): boolean 
   }
 
   return batch.pipelineConfig?.executionPlan.some((step) => step.enabled && step.service === 'metadata-validation') ?? false
+}
+
+function shouldShowPendingRightsDeterminator(batch: ProcessBatchStatus): boolean {
+  if (batch.rightsDeterminator) {
+    return false
+  }
+
+  if (batch.pipelineRequestedStages.includes('rights-determinator')) {
+    return true
+  }
+
+  return batch.pipelineConfig?.executionPlan.some((step) => step.enabled && step.service === 'rights-determinator') ?? false
 }
 
 function formatDateTime(value: string | null): string {
@@ -140,8 +165,10 @@ function StageCard({ label, stage }: { label: string; stage: ProcessStageStatus 
 }
 
 export function ProcessBatchStatusCard({ batch }: ProcessBatchStatusCardProps): ReactElement {
+  const ocrProcessorStage = batch.ocrProcessor ?? (shouldShowPendingOcrProcessor(batch) ? buildPendingStage() : null)
   const metadataExtractorStage = batch.metadataExtractor ?? (shouldShowPendingMetadataExtractor(batch) ? buildPendingStage() : null)
   const metadataValidatorStage = batch.metadataValidator ?? (shouldShowPendingMetadataValidator(batch) ? buildPendingStage() : null)
+  const rightsDeterminatorStage = batch.rightsDeterminator ?? (shouldShowPendingRightsDeterminator(batch) ? buildPendingStage() : null)
 
   return (
     <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, p: 3 }}>
@@ -163,10 +190,11 @@ export function ProcessBatchStatusCard({ batch }: ProcessBatchStatusCardProps): 
         <StageCard label="Ingest" stage={batch.ingester} />
         <StageCard label="Document Splitter" stage={batch.documentSplitter} />
         <StageCard label="Page Rotator" stage={batch.pageRotator} />
-        <StageCard label="OCR Processor" stage={batch.ocrProcessor} />
+        <StageCard label="OCR Processor" stage={ocrProcessorStage} />
         <StageCard label="Content Dedup" stage={batch.contentDedup} />
         <StageCard label="Metadata Extractor" stage={metadataExtractorStage} />
         <StageCard label="Metadata Validator" stage={metadataValidatorStage} />
+        <StageCard label="Rights Determinator" stage={rightsDeterminatorStage} />
       </Stack>
     </Paper>
   )

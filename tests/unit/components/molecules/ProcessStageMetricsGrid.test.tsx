@@ -34,6 +34,7 @@ function buildStageStatus(overrides: Partial<ProcessStageStatus> = {}): ProcessS
     ocrCompletedCount: 0,
     extractedCount: 0,
     metadataValidatedCount: 0,
+    rightsDeterminedCount: 0,
     underReviewCount: 0,
     versionedCount: 0,
     resolvedCount: 0,

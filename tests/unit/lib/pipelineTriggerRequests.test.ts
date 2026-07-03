@@ -12,6 +12,10 @@ const { mockRecordMetadataValidatorCompletion } = vi.hoisted(() => ({
   mockRecordMetadataValidatorCompletion: vi.fn(),
 }))
 
+const { mockRecordRightsDeterminatorCompletion } = vi.hoisted(() => ({
+  mockRecordRightsDeterminatorCompletion: vi.fn(),
+}))
+
 vi.mock('@lib/observability', () => ({
   logEvent: mockLogEvent,
 }))
@@ -19,9 +23,10 @@ vi.mock('@lib/observability', () => ({
 vi.mock('@lib/processBatches', () => ({
   recordMetadataExtractorCompletion: mockRecordMetadataExtractorCompletion,
   recordMetadataValidatorCompletion: mockRecordMetadataValidatorCompletion,
+  recordRightsDeterminatorCompletion: mockRecordRightsDeterminatorCompletion,
 }))
 
-import { triggerMetadataExtractor, triggerMetadataValidator } from '@lib/pipelineTriggerRequests'
+import { triggerMetadataExtractor, triggerMetadataValidator, triggerRightsDeterminator } from '@lib/pipelineTriggerRequests'
 import type { ProcessBatchStatus } from 'types/pipelineContracts'
 
 interface MetadataExtractorCompletionArgs {
@@ -43,6 +48,16 @@ interface MetadataValidatorCompletionArgs {
   failedCount: number
 }
 
+interface RightsDeterminatorCompletionArgs {
+  requestId: string
+  initiatedAt: string
+  completedAt: string
+  processedCount: number
+  rightsDeterminedCount: number
+  underReviewCount: number
+  failedCount: number
+}
+
 function buildBatchStatus(overrides: Partial<ProcessBatchStatus> = {}): ProcessBatchStatus {
   return {
     batchId: 'batch-1',
@@ -58,6 +73,7 @@ function buildBatchStatus(overrides: Partial<ProcessBatchStatus> = {}): ProcessB
     contentDedup: null,
     metadataExtractor: null,
     metadataValidator: null,
+    rightsDeterminator: null,
     ...overrides,
   }
 }
@@ -79,6 +95,11 @@ function getValidatorCompletionArgs(): MetadataValidatorCompletionArgs {
   return completionArgs as MetadataValidatorCompletionArgs
 }
 
+function getRightsDeterminatorCompletionArgs(): RightsDeterminatorCompletionArgs {
+  const completionArgs = mockRecordRightsDeterminatorCompletion.mock.calls[0]?.[1] as unknown
+  return completionArgs as RightsDeterminatorCompletionArgs
+}
+
 describe('pipelineTriggerRequests metadata extractor', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn())
@@ -96,6 +117,8 @@ describe('pipelineTriggerRequests metadata extractor', () => {
     delete process.env.MD_VALIDATE_BASE_URL
     delete process.env.MD_VALIDATE_TRIGGER_TOKEN
     delete process.env.MD_VALIDATE_CALLBACK_TOKEN
+    delete process.env.RIGHTS_DETERMINATOR_BASE_URL
+    delete process.env.RIGHTS_DETERMINE_TRIGGER_TOKEN
   })
 
   it('sends the extractor trigger contract without callback fields', async () => {
@@ -181,5 +204,54 @@ describe('pipelineTriggerRequests metadata extractor', () => {
     expect(typeof getValidatorCompletionArgs().requestId).toBe('string')
     expect(typeof getValidatorCompletionArgs().initiatedAt).toBe('string')
     expect(typeof getValidatorCompletionArgs().completedAt).toBe('string')
+  })
+
+  it('sends the rights trigger contract without callback fields', async () => {
+    process.env.RIGHTS_DETERMINATOR_BASE_URL = 'http://localhost:8007'
+    process.env.RIGHTS_DETERMINE_TRIGGER_TOKEN = 'rights-trigger-token'
+
+    let receivedBody: string | null = null
+    vi.mocked(fetch).mockImplementation((_input, init) => {
+      receivedBody = typeof init?.body === 'string' ? init.body : null
+      return Promise.resolve(
+        buildJsonResponse({
+          app: 'preserv-dashboard',
+          batch_id: 'batch-1',
+          processed_count: 4,
+          rights_determined_count: 2,
+          under_review_count: 1,
+          failed_count: 1,
+          failures: [],
+        }),
+      )
+    })
+
+    await triggerRightsDeterminator(
+      buildBatchStatus({
+        pipelineRequestedStages: ['metadata-extraction', 'metadata-validation', 'rights-determinator'],
+      }),
+    )
+
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(receivedBody).not.toBeNull()
+    if (receivedBody === null) {
+      throw new Error('Expected dashboard to send a JSON string body to rights-determinator.')
+    }
+
+    const payload = JSON.parse(receivedBody) as Record<string, unknown>
+    expect(Object.keys(payload).sort()).toEqual(['app', 'batch_id', 'initiated_at'])
+    expect(payload.app).toBe('preserv-dashboard')
+    expect(payload.batch_id).toBe('batch-1')
+    expect(typeof payload.initiated_at).toBe('string')
+    expect(mockRecordRightsDeterminatorCompletion.mock.calls[0]?.[0]).toBe('batch-1')
+    expect(getRightsDeterminatorCompletionArgs()).toMatchObject({
+      processedCount: 4,
+      rightsDeterminedCount: 2,
+      underReviewCount: 1,
+      failedCount: 1,
+    })
+    expect(typeof getRightsDeterminatorCompletionArgs().requestId).toBe('string')
+    expect(typeof getRightsDeterminatorCompletionArgs().initiatedAt).toBe('string')
+    expect(typeof getRightsDeterminatorCompletionArgs().completedAt).toBe('string')
   })
 })

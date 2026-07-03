@@ -29,6 +29,7 @@ export const OCR_PROCESSOR_STAGE = 'ocr-processor' as const
 export const CONTENT_DEDUP_STAGE = 'content-dedup' as const
 export const METADATA_EXTRACTOR_STAGE = 'metadata-extraction' as const
 export const METADATA_VALIDATOR_STAGE = 'metadata-validation' as const
+export const RIGHTS_DETERMINATOR_STAGE = 'rights-determinator' as const
 
 export const SUPPORTED_DOWNSTREAM_STAGES = [
   DOCUMENT_SPLITTER_STAGE,
@@ -37,6 +38,7 @@ export const SUPPORTED_DOWNSTREAM_STAGES = [
   CONTENT_DEDUP_STAGE,
   METADATA_EXTRACTOR_STAGE,
   METADATA_VALIDATOR_STAGE,
+  RIGHTS_DETERMINATOR_STAGE,
 ] as const
 
 export interface StepDefinition {

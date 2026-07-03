@@ -5,6 +5,7 @@ import {
   METADATA_VALIDATOR_STAGE,
   OCR_PROCESSOR_STAGE,
   PAGE_ROTATOR_STAGE,
+  RIGHTS_DETERMINATOR_STAGE,
 } from '@constants/pipeline'
 import {
   type PipelineConfig,
@@ -22,6 +23,7 @@ const ORCHESTRATED_SERVICES = new Set<string>([
   CONTENT_DEDUP_STAGE,
   METADATA_EXTRACTOR_STAGE,
   METADATA_VALIDATOR_STAGE,
+  RIGHTS_DETERMINATOR_STAGE,
 ])
 
 const INGEST_ONLY_PIPELINE_CONFIG: PipelineConfig = {
@@ -76,6 +78,8 @@ function getStageForService(
       return batch.metadataExtractor
     case METADATA_VALIDATOR_STAGE:
       return batch.metadataValidator
+    case RIGHTS_DETERMINATOR_STAGE:
+      return batch.rightsDeterminator
     default:
       return null
   }
@@ -98,7 +102,11 @@ export function isExecutionStepCompleted(batch: ProcessBatchStatus, step: Pipeli
   }
 
   if (step.pass) {
-    return stage.completedPasses.includes(step.pass)
+    return (
+      stage.completedPasses.includes(step.pass) ||
+      stage.currentPass > step.pass ||
+      (stage.currentPass === step.pass && (stage.status === 'completed' || stage.status === 'review_needed'))
+    )
   }
 
   return stage.status === 'completed'

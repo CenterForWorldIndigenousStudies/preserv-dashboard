@@ -1,0 +1,216 @@
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { NextRequest } from 'next/server'
+
+import { db } from '@lib/db'
+
+vi.mock('../../../auth', () => ({
+  auth: () => Promise.resolve({ user: { email: 'test@example.com' } }),
+  getDashboardSession: () => Promise.resolve({ user: { email: 'test@example.com' } }),
+}))
+
+import { POST as processStartRoute } from '../../../app/api/process/start/route'
+import { POST as ingesterCallbackRoute } from '../../../app/api/pipeline/ingester/callback/route'
+import { resetTestDatabase } from '../support/test-db'
+
+function toRequestUrl(value: unknown): string {
+  if (value instanceof URL) {
+    return value.toString()
+  }
+
+  if (typeof value === 'string') {
+    return value
+  }
+
+  throw new Error('Expected fetch to be called with a URL or string target.')
+}
+
+describe('ingester callback smoke (integration)', () => {
+  const batchId = 'batch-smoke-ingester-callback-0001'
+  const pipelineConfig = {
+    profileId: 'custom',
+    mode: 'custom' as const,
+    executionPlan: [
+      {
+        id: 'step-ingester',
+        stepId: 'ingester' as const,
+        service: 'ingester' as const,
+        label: 'Ingest',
+        order: 0,
+        enabled: true,
+      },
+      {
+        id: 'step-normalize-pass-1-split',
+        stepId: 'normalize-pass-1' as const,
+        service: 'document-splitter' as const,
+        label: 'Split Pass 1',
+        order: 1,
+        enabled: true,
+        pass: 1 as const,
+      },
+    ],
+  }
+
+  beforeAll(async () => {
+    await resetTestDatabase()
+    await db.$connect()
+  })
+
+  beforeEach(async () => {
+    vi.stubGlobal('fetch', vi.fn())
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-07-03T12:34:56.000Z'))
+
+    process.env.DASHBOARD_BASE_URL = 'http://localhost:3000'
+    process.env.DATA_INGESTER_BASE_URL = 'http://ingester.example.test:8000'
+    process.env.DATA_INGESTER_TRIGGER_TOKEN = 'ingester-trigger-token'
+    process.env.DATA_INGESTER_CALLBACK_TOKEN = 'ingester-callback-token'
+    process.env.DOCUMENT_SPLITTER_BASE_URL = 'http://document-splitter.example.test:8001'
+    process.env.DOCUMENT_SPLITTER_TRIGGER_TOKEN = 'document-splitter-trigger-token'
+    process.env.DOCUMENT_SPLITTER_CALLBACK_TOKEN = 'document-splitter-callback-token'
+
+    await db.batches.create({
+      data: {
+        id: batchId,
+        id_legacy: 'batch-smoke-ingester-callback-legacy-0001',
+        name: 'Smoke Test Batch',
+        started_by: 'test@example.com',
+        processing_details: JSON.stringify({
+          data_ingester: {
+            status: 'completed',
+            request_id: 'ingester-request-1',
+            requested_by_app: 'preserv-dashboard',
+            initiated_at: '2026-07-03T12:30:00.000Z',
+            started_at: '2026-07-03T12:30:00.000Z',
+            completed_at: '2026-07-03T12:34:00.000Z',
+            last_transition_at: '2026-07-03T12:34:00.000Z',
+          },
+        }),
+      },
+    })
+  })
+
+  afterEach(async () => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+    vi.clearAllMocks()
+
+    delete process.env.DASHBOARD_BASE_URL
+    delete process.env.DATA_INGESTER_BASE_URL
+    delete process.env.DATA_INGESTER_TRIGGER_TOKEN
+    delete process.env.DATA_INGESTER_CALLBACK_TOKEN
+    delete process.env.DOCUMENT_SPLITTER_BASE_URL
+    delete process.env.DOCUMENT_SPLITTER_TRIGGER_TOKEN
+    delete process.env.DOCUMENT_SPLITTER_CALLBACK_TOKEN
+
+    await db.batches.deleteMany({
+      where: {
+        id: batchId,
+      },
+    })
+  })
+
+  afterAll(async () => {
+    await db.$disconnect()
+  })
+
+  it('persists the pipeline config and triggers document-splitter after the ingester callback', async () => {
+    const callbackReceivedAtUnix = Math.floor(new Date('2026-07-03T12:34:56.000Z').getTime() / 1000)
+
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ batch_id: batchId, batch_name: 'Smoke Test Batch' }), {
+          status: 202,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ accepted: true }), {
+          status: 202,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      )
+
+    const startRequest = new NextRequest('http://localhost/api/process/start', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        batchName: 'Smoke Test Batch',
+        sourceFolderIds: ['folder-1'],
+        pipelineConfig,
+      }),
+    })
+
+    const startResponse = await processStartRoute(startRequest)
+
+    expect(startResponse.status).toBe(202)
+
+    const callbackRequest = new NextRequest('http://localhost/api/pipeline/ingester/callback', {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer ingester-callback-token',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        batch_id: batchId,
+        request_id: 'ingester-request-1',
+        status: 'completed',
+      }),
+    })
+
+    const callbackResponse = await ingesterCallbackRoute(callbackRequest)
+
+    expect(callbackResponse.status).toBe(204)
+    expect(fetch).toHaveBeenCalledTimes(2)
+
+    const ingesterCall = vi.mocked(fetch).mock.calls[0]
+    expect(toRequestUrl(ingesterCall?.[0])).toBe('http://ingester.example.test:8000/ingest')
+    expect(ingesterCall?.[1]?.headers).toMatchObject({
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ingester-trigger-token',
+    })
+
+    const splitterCall = vi.mocked(fetch).mock.calls[1]
+    expect(toRequestUrl(splitterCall?.[0])).toBe('http://document-splitter.example.test:8001/split')
+    expect(splitterCall?.[1]?.headers).toMatchObject({
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer document-splitter-trigger-token',
+    })
+
+    const splitterBodyRaw = splitterCall?.[1]?.body
+    expect(typeof splitterBodyRaw).toBe('string')
+    if (typeof splitterBodyRaw !== 'string') {
+      throw new Error('Expected document-splitter trigger body to be a JSON string.')
+    }
+
+    const splitterBody = JSON.parse(splitterBodyRaw) as {
+      app: string
+      batch_id: string
+      started_by: string
+      callback?: { url?: string; token?: string }
+    }
+    expect(splitterBody.app).toBe('preserv-dashboard')
+    expect(splitterBody.batch_id).toBe(batchId)
+    expect(splitterBody.started_by).toBe('test@example.com')
+    expect(splitterBody.callback).toEqual({
+      url: 'http://localhost:3000/api/pipeline/document-splitter/callback',
+      token: 'document-splitter-callback-token',
+    })
+
+    const storedBatch = await db.batches.findUniqueOrThrow({
+      where: { id: batchId },
+      select: {
+        processing_details: true,
+      },
+    })
+    const processingDetails = JSON.parse(storedBatch.processing_details) as {
+      pipeline?: { requested_stages?: string[]; config?: unknown }
+      data_ingester?: { callback?: { received_at?: unknown } }
+    }
+
+    expect(processingDetails.pipeline?.requested_stages).toEqual(['document-splitter'])
+    expect(processingDetails.pipeline?.config).toEqual(pipelineConfig)
+    expect(processingDetails.data_ingester?.callback?.received_at).toBe(callbackReceivedAtUnix)
+  })
+})
