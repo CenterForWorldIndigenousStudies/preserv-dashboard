@@ -15,6 +15,7 @@ import { parseMetadataValue } from '@lib/metadata'
 import { getDocumentDetail } from '@lib/queries'
 
 export const dynamic = 'force-dynamic'
+const DOCUMENTS_PATH = '/documents'
 
 interface DocumentDetailPageProps {
   params: Promise<{
@@ -33,6 +34,28 @@ function resolveOverviewHref(searchParams: Record<string, string | string[] | un
     return from
   }
   return '/'
+}
+
+function buildCurrentDocumentHref(id: string, searchParams: Record<string, string | string[] | undefined>): string {
+  const currentParams = new URLSearchParams()
+
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (item) {
+          currentParams.append(key, item)
+        }
+      }
+      continue
+    }
+
+    if (value) {
+      currentParams.set(key, value)
+    }
+  }
+
+  const currentSearch = currentParams.toString()
+  return currentSearch ? `${DOCUMENTS_PATH}/${id}?${currentSearch}` : `${DOCUMENTS_PATH}/${id}`
 }
 
 const documentFieldLabels: Array<{ key: string; label: string }> = [
@@ -57,6 +80,7 @@ export default async function DocumentDetailPage({
   const { id } = await params
   const resolvedSearchParams = await searchParams
   const overviewHref = resolveOverviewHref(resolvedSearchParams)
+  const currentDocumentHref = buildCurrentDocumentHref(id, resolvedSearchParams)
 
   try {
     const detail = await getDocumentDetail(id)
@@ -132,7 +156,7 @@ export default async function DocumentDetailPage({
                   Open the related document versions and duplicates for this record.
                 </p>
               </div>
-              {version_family ? <DocumentVersionsButton versionFamily={version_family} /> : null}
+              {version_family ? <DocumentVersionsButton versionFamily={version_family} overviewHref={currentDocumentHref} /> : null}
             </div>
             {versions.length > 0 ? (
               <div className="mt-6 grid gap-x-6 gap-y-4 md:grid-cols-2">

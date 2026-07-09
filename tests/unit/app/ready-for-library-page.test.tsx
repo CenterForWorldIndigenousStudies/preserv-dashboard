@@ -46,7 +46,7 @@ describe('ReadyForLibraryPage', () => {
     })
     mockGetUniqueDocumentCountByAuthor.mockResolvedValue(3)
 
-    const markup = renderToStaticMarkup(ReadyForLibraryPage())
+    const markup = renderToStaticMarkup(ReadyForLibraryPage({ searchParams: Promise.resolve({}) }))
 
     expect(markup).toContain('Post-approval handoff inspection')
     expect(markup).toContain(
@@ -64,4 +64,5 @@ describe('ReadyForLibraryPage', () => {
     expect(markup).toContain('What this page does not confirm')
     expect(markup).toContain('This page does not confirm final Fedora handoff readiness.')
   })
+
 })

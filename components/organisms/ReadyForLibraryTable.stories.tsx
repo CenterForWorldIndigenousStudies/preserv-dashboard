@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import type { DocumentTableFetchResult, DocumentTableQuery } from '@organisms/document-table/types'
 import type { ReadyForLibraryItem } from 'types/documents'
 
 import { ReadyForLibraryTable } from './ReadyForLibraryTable'
@@ -45,6 +46,26 @@ const sampleItems: ReadyForLibraryItem[] = [
   },
 ]
 
+const initialQuery: DocumentTableQuery<Record<string, never>> = {
+  page: 1,
+  pageSize: 25,
+  filters: {},
+}
+
+function createInitialData(items: ReadyForLibraryItem[]): DocumentTableFetchResult<ReadyForLibraryItem> {
+  return {
+    data: items,
+    totalCount: items.length,
+    pageInfo: {
+      pageSize: 25,
+      hasNextPage: false,
+      hasPreviousPage: false,
+      startCursor: null,
+      endCursor: null,
+    },
+  }
+}
+
 const meta = {
   component: ReadyForLibraryTable,
   tags: ['autodocs'],
@@ -55,37 +76,31 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   args: {
-    initialData: {
-      items: sampleItems,
-      total: sampleItems.length,
-    },
+    initialData: createInitialData(sampleItems),
+    initialQuery,
   },
 }
 
 export const Empty: Story = {
   args: {
-    initialData: {
-      items: [],
-      total: 0,
-    },
+    initialData: createInitialData([]),
+    initialQuery,
   },
 }
 
 export const SomeIncomplete: Story = {
   args: {
-    initialData: {
-      items: [
-        ...sampleItems,
-        {
-          id: '00000005-0005-0005-0005-000000000005',
-          name: 'Incomplete Metadata Document',
-          validation_status: 'APPROVED',
-          validation_timestamp: '2026-04-24T11:00:00Z',
-          metadata_complete: false,
-          access_level: null,
-        },
-      ],
-      total: 5,
-    },
+    initialData: createInitialData([
+      ...sampleItems,
+      {
+        id: '00000005-0005-0005-0005-000000000005',
+        name: 'Incomplete Metadata Document',
+        validation_status: 'APPROVED',
+        validation_timestamp: '2026-04-24T11:00:00Z',
+        metadata_complete: false,
+        access_level: null,
+      },
+    ]),
+    initialQuery,
   },
 }

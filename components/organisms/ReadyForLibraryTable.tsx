@@ -1,20 +1,38 @@
 'use client'
 
-import { useMemo, type ReactElement } from 'react'
+import { useEffect, useMemo, type ReactElement } from 'react'
 import type { MRT_ColumnDef } from 'material-react-table'
 import Link from 'next/link'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { getReadyForLibraryAction } from '@actions/ready-for-library'
+import { DOCUMENTS_PATH } from '@constants/paths'
 import { DateAtom } from '@atoms/Date'
 import { DocumentDataTable } from '@organisms/document-table/DocumentDataTable'
+import { useDocumentTableController } from '@organisms/document-table/useDocumentTableController'
+import type { DocumentTableFetchResult, DocumentTableQuery } from '@organisms/document-table/types'
 import type { ReadyForLibraryItem } from 'types/documents'
 
 interface ReadyForLibraryTableProps {
-  initialData?: { items: ReadyForLibraryItem[]; total: number }
+  initialData?: DocumentTableFetchResult<ReadyForLibraryItem>
+  initialQuery: DocumentTableQuery<Record<string, never>>
 }
 
-function normalizeReadyForLibrarySearch(value: string | undefined): string {
+export function normalizeReadyForLibrarySearch(value: string | undefined): string {
   return value?.trim().toLowerCase() ?? ''
+}
+
+function syncReadyForLibrarySearchParam(nextParams: URLSearchParams, key: string, value: string | undefined): void {
+  if (value) {
+    nextParams.set(key, value)
+    return
+  }
+
+  nextParams.delete(key)
+}
+
+function buildDocumentDetailHref(documentId: string, overviewHref: string): string {
+  return `${DOCUMENTS_PATH}/${documentId}?${new URLSearchParams({ from: overviewHref }).toString()}`
 }
 
 function getReadyForLibrarySortValue(item: ReadyForLibraryItem, orderBy: string): number | string {
@@ -33,7 +51,7 @@ function getReadyForLibrarySortValue(item: ReadyForLibraryItem, orderBy: string)
   }
 }
 
-function sortReadyForLibraryItems(
+export function sortReadyForLibraryItems(
   items: ReadyForLibraryItem[],
   orderBy?: string,
   sortDirection?: 'asc' | 'desc',
@@ -53,7 +71,34 @@ function sortReadyForLibraryItems(
   })
 }
 
-export function ReadyForLibraryTable({ initialData }: ReadyForLibraryTableProps): ReactElement {
+export function ReadyForLibraryTable({ initialData, initialQuery }: ReadyForLibraryTableProps): ReactElement {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const controller = useDocumentTableController<Record<string, never>>({ initialQuery })
+
+  useEffect(() => {
+    const nextParams = new URLSearchParams(searchParams.toString())
+
+    nextParams.set('page', String(controller.query.page))
+    nextParams.set('pageSize', String(controller.query.pageSize))
+    syncReadyForLibrarySearchParam(nextParams, 'search', controller.query.search)
+    syncReadyForLibrarySearchParam(nextParams, 'orderBy', controller.query.orderBy)
+    syncReadyForLibrarySearchParam(nextParams, 'sortDirection', controller.query.sortDirection)
+
+    const nextSearch = nextParams.toString()
+    const currentSearch = searchParams.toString()
+
+    if (nextSearch !== currentSearch) {
+      router.replace(nextSearch ? `${pathname}?${nextSearch}` : pathname, { scroll: false })
+    }
+  }, [controller.query, pathname, router, searchParams])
+
+  const preservedOverviewHref = useMemo(() => {
+    const currentSearch = searchParams.toString()
+    return currentSearch ? `${pathname}?${currentSearch}` : pathname
+  }, [pathname, searchParams])
+
   const columns = useMemo<MRT_ColumnDef<ReadyForLibraryItem>[]>(
     () => [
       {
@@ -64,7 +109,7 @@ export function ReadyForLibraryTable({ initialData }: ReadyForLibraryTableProps)
           const value = row.original.name
           if (!value) return '—'
           return (
-            <Link href={`/documents/${row.original.id}`} style={{ color: '#355834' }}>
+            <Link href={buildDocumentDetailHref(row.original.id, preservedOverviewHref)} style={{ color: '#355834' }}>
               {value}
             </Link>
           )
@@ -100,7 +145,7 @@ export function ReadyForLibraryTable({ initialData }: ReadyForLibraryTableProps)
         },
       },
     ],
-    [],
+    [preservedOverviewHref],
   )
 
   return (
@@ -135,26 +180,9 @@ export function ReadyForLibraryTable({ initialData }: ReadyForLibraryTableProps)
           }
         },
       }}
-      initialData={
-        initialData
-          ? {
-              data: initialData.items.slice(0, 25),
-              totalCount: initialData.total,
-              pageInfo: {
-                pageSize: 25,
-                hasNextPage: initialData.total > 25,
-                hasPreviousPage: false,
-                startCursor: null,
-                endCursor: null,
-              },
-            }
-          : undefined
-      }
-      initialQuery={{
-        page: 1,
-        pageSize: 25,
-        filters: {},
-      }}
+      controller={controller}
+      initialData={initialData}
+      initialQuery={initialQuery}
       emptyMessage="No documents currently meet the dashboard-visible library eligibility criteria."
       searchPlaceholder="Search ready for library..."
     />

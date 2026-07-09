@@ -1,0 +1,77 @@
+import type { ReactNode } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { describe, expect, it, vi } from 'vitest'
+
+const { mockReplace, mockSearchParams } = vi.hoisted(() => ({
+  mockReplace: vi.fn(),
+  mockSearchParams: new URLSearchParams('page=2&pageSize=50&search=Sample&orderBy=name&sortDirection=desc'),
+}))
+
+vi.mock('next/navigation', () => ({
+  usePathname: () => '/ready-for-library',
+  useRouter: () => ({ replace: mockReplace }),
+  useSearchParams: () => mockSearchParams,
+}))
+
+vi.mock('@actions/ready-for-library', () => ({
+  getReadyForLibraryAction: vi.fn(),
+}))
+
+vi.mock('@organisms/document-table/DocumentDataTable', () => ({
+  DocumentDataTable: ({ definition }: { definition: { columns: Array<{ Cell?: (args: unknown) => unknown }> } }) => {
+    const cell = definition.columns[0]?.Cell
+
+    if (!cell) {
+      return <div>No cell</div>
+    }
+
+    const renderedCell = cell({
+      row: {
+        original: {
+          id: 'doc-1',
+          name: 'Sample document',
+        },
+      },
+    }) as ReactNode
+
+    return (
+      <div data-testid="ready-for-library-link">
+        {renderedCell}
+      </div>
+    )
+  },
+}))
+
+import { ReadyForLibraryTable } from '@organisms/ReadyForLibraryTable'
+
+describe('ReadyForLibraryTable', () => {
+  it('links document detail back to the current ready-for-library state', () => {
+    const markup = renderToStaticMarkup(
+      <ReadyForLibraryTable
+        initialData={{
+          data: [],
+          totalCount: 0,
+          pageInfo: {
+            pageSize: 50,
+            hasNextPage: false,
+            hasPreviousPage: true,
+            startCursor: null,
+            endCursor: null,
+          },
+        }}
+        initialQuery={{
+          page: 2,
+          pageSize: 50,
+          search: 'Sample',
+          orderBy: 'name',
+          sortDirection: 'desc',
+          filters: {},
+        }}
+      />,
+    )
+
+    expect(markup).toContain(
+      '/documents/doc-1?from=%2Fready-for-library%3Fpage%3D2%26pageSize%3D50%26search%3DSample%26orderBy%3Dname%26sortDirection%3Ddesc',
+    )
+  })
+})

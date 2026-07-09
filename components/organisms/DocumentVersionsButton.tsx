@@ -17,6 +17,7 @@ import type { VersionFamily, VersionFamilyDocument } from 'types/documents'
 
 interface DocumentVersionsButtonProps {
   versionFamily: VersionFamily
+  overviewHref?: string
 }
 
 function compareNullableStrings(a: string | null, b: string | null): number {
@@ -75,7 +76,15 @@ function sortVersionDocuments(documents: VersionFamilyDocument[], sorting: MRT_S
   })
 }
 
-export function DocumentVersionsButton({ versionFamily }: DocumentVersionsButtonProps): ReactElement {
+function buildVersionDocumentHref(documentId: string, overviewHref: string | undefined): string {
+  if (!overviewHref) {
+    return `${DOCUMENTS_PATH}/${documentId}`
+  }
+
+  return `${DOCUMENTS_PATH}/${documentId}?${new URLSearchParams({ from: overviewHref }).toString()}`
+}
+
+export function DocumentVersionsButton({ versionFamily, overviewHref }: DocumentVersionsButtonProps): ReactElement {
   const [isOpen, setIsOpen] = useState(false)
   const [sorting, setSorting] = useState<MRT_SortingState>([])
   const dialogRef = useRef<HTMLDialogElement>(null)
@@ -129,7 +138,7 @@ export function DocumentVersionsButton({ versionFamily }: DocumentVersionsButton
               isCanonical={is_canonical}
               legacyId={id_legacy}
               sourceId={sourceId}
-              href={`${DOCUMENTS_PATH}/${id}`}
+              href={buildVersionDocumentHref(id, overviewHref)}
             />
           )
         },
@@ -187,7 +196,7 @@ export function DocumentVersionsButton({ versionFamily }: DocumentVersionsButton
         Cell: ({ row }) => (row.original.is_duplicate ? 'True' : 'False'),
       },
     ],
-    [],
+    [overviewHref],
   )
 
   const table = useMaterialReactTable({
