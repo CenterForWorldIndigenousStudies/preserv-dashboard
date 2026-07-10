@@ -2,20 +2,21 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { logEvent } from '@lib/observability'
 import { parseBearerToken, parsePipelineCallbackBody } from '@lib/pipelineCallbacks'
-import { shouldTriggerMetadataValidator, triggerMetadataValidator } from '@lib/pipelineTriggers'
+import { shouldTriggerRightsDeterminator, triggerRightsDeterminator } from '@lib/pipelineTriggers'
 import {
   getProcessBatchStatus,
   markProcessStageCallbackReceived,
-  recordMetadataExtractorCompletion,
+  recordMetadataValidatorCompletion,
 } from '@lib/processBatches'
 import type { PipelineCallbackBody } from 'types/pipelineContracts'
 
 export const dynamic = 'force-dynamic'
 export const preferredRegion = 'sfo1'
 
-interface MetadataExtractorCallbackBody extends PipelineCallbackBody {
+interface MetadataValidatorCallbackBody extends PipelineCallbackBody {
   processed_count?: unknown
-  extracted_count?: unknown
+  metadata_validated_count?: unknown
+  under_review_count?: unknown
   failed_count?: unknown
 }
 
@@ -31,13 +32,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const actualToken = parseBearerToken(request.headers.get('authorization'))
   if (actualToken !== expectedToken) {
-    logEvent('warn', 'metadata_extractor_callback_unauthorized')
+    logEvent('warn', 'metadata_validator_callback_unauthorized')
     return NextResponse.json({ error: 'Unauthorized callback.' }, { status: 401 })
   }
 
-  let body: MetadataExtractorCallbackBody
+  let body: MetadataValidatorCallbackBody
   try {
-    body = (await request.json()) as MetadataExtractorCallbackBody
+    body = (await request.json()) as MetadataValidatorCallbackBody
   } catch {
     return NextResponse.json({ error: 'Request body must be valid JSON.' }, { status: 400 })
   }
@@ -50,16 +51,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const completedAt = new Date().toISOString()
     const receivedAt = Math.floor(Date.now() / 1000)
-    await recordMetadataExtractorCompletion(batchId, {
+    await recordMetadataValidatorCompletion(batchId, {
       requestId,
       initiatedAt: completedAt,
       completedAt,
       processedCount: parseCount(body.processed_count),
-      extractedCount: parseCount(body.extracted_count),
+      metadataValidatedCount: parseCount(body.metadata_validated_count),
+      underReviewCount: parseCount(body.under_review_count),
       failedCount: parseCount(body.failed_count),
     })
-    await markProcessStageCallbackReceived(batchId, 'metadata_extractor', receivedAt)
-    logEvent('info', 'metadata_extractor_callback_received', {
+    await markProcessStageCallbackReceived(batchId, 'metadata_validator', receivedAt)
+    logEvent('info', 'metadata_validator_callback_received', {
       batchId,
       requestId,
       status,
@@ -68,17 +70,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const batch = await getProcessBatchStatus(batchId)
     if (!batch) {
-      throw new Error(`Batch ${batchId} was not found after recording metadata-extractor callback.`)
+      throw new Error(`Batch ${batchId} was not found after recording metadata-validator callback.`)
     }
 
-    if (shouldTriggerMetadataValidator(batch)) {
-      await triggerMetadataValidator(batch)
+    if (shouldTriggerRightsDeterminator(batch)) {
+      await triggerRightsDeterminator(batch)
     }
 
     return new NextResponse(null, { status: 204 })
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Failed to record metadata-extractor callback.'
-    logEvent('error', 'metadata_extractor_callback_record_failed', {
+    const message = error instanceof Error ? error.message : 'Failed to record metadata-validator callback.'
+    logEvent('error', 'metadata_validator_callback_record_failed', {
       batchId,
       requestId,
       status,

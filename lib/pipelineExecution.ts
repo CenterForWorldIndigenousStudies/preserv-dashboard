@@ -105,7 +105,7 @@ export function isExecutionStepCompleted(batch: ProcessBatchStatus, step: Pipeli
     return (
       stage.completedPasses.includes(step.pass) ||
       stage.currentPass > step.pass ||
-      (stage.currentPass === step.pass && (stage.status === 'completed' || stage.status === 'review_needed'))
+      (stage.currentPass === step.pass && stage.status === 'completed')
     )
   }
 

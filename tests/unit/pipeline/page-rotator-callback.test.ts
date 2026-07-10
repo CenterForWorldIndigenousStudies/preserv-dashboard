@@ -57,7 +57,7 @@ import { POST } from '../../../app/api/pipeline/page-rotator/callback/route'
 
 describe('page-rotator callback route', () => {
   beforeEach(() => {
-    process.env.PAGE_ROTATOR_CALLBACK_TOKEN = 'page-rotator-token'
+    process.env.PIPELINE_CALLBACK_TOKEN = 'page-rotator-token'
   })
 
   afterEach(() => {

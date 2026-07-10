@@ -25,6 +25,8 @@ export const PAGE_ROTATOR_CALLBACK_PATH = `${PIPELINE_PATH}/page-rotator/callbac
 export const OCR_PROCESSOR_CALLBACK_PATH = `${PIPELINE_PATH}/ocr-processor/callback` as const
 export const CONTENT_DEDUP_CALLBACK_PATH = `${PIPELINE_PATH}/content-dedup/callback` as const
 export const METADATA_EXTRACTOR_CALLBACK_PATH = `${PIPELINE_PATH}/metadata-extractor/callback` as const
+export const METADATA_VALIDATOR_CALLBACK_PATH = `${PIPELINE_PATH}/metadata-validator/callback` as const
+export const RIGHTS_DETERMINATOR_CALLBACK_PATH = `${PIPELINE_PATH}/rights-determinator/callback` as const
 
 export const PROCESS_PATH = `${API_PATH}/process` as const
 export const PROCESS_EVENTS_PATH = `${PROCESS_PATH}/events` as const

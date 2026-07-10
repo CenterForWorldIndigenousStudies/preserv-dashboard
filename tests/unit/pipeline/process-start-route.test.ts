@@ -28,9 +28,9 @@ import { POST } from '../../../app/api/process/start/route'
 describe('process start route', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn())
-    process.env.DATA_INGESTER_BASE_URL = 'http://localhost:8000'
-    process.env.DATA_INGESTER_TRIGGER_TOKEN = 'ingester-trigger-token'
-    process.env.DATA_INGESTER_CALLBACK_TOKEN = 'ingester-callback-token'
+    process.env.PIPELINE_API_BASE_URL = 'http://localhost:8000'
+    process.env.PIPELINE_TRIGGER_TOKEN = 'pipeline-trigger-token'
+    process.env.PIPELINE_CALLBACK_TOKEN = 'pipeline-callback-token'
     process.env.DASHBOARD_BASE_URL = 'http://localhost:3000'
     mockGetDashboardSession.mockResolvedValue({
       user: {
@@ -42,9 +42,9 @@ describe('process start route', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
     vi.clearAllMocks()
-    delete process.env.DATA_INGESTER_BASE_URL
-    delete process.env.DATA_INGESTER_TRIGGER_TOKEN
-    delete process.env.DATA_INGESTER_CALLBACK_TOKEN
+    delete process.env.PIPELINE_API_BASE_URL
+    delete process.env.PIPELINE_TRIGGER_TOKEN
+    delete process.env.PIPELINE_CALLBACK_TOKEN
     delete process.env.DASHBOARD_BASE_URL
   })
 
@@ -119,9 +119,9 @@ describe('process start route', () => {
     expect(mockSetProcessBatchPipelineConfig).not.toHaveBeenCalled()
   })
 
-  it('sends pipeline config to data-ingester and persists it after acceptance', async () => {
+  it('sends pipeline config to pipeline-api ingest and persists it after acceptance', async () => {
     vi.mocked(fetch).mockResolvedValue(
-      new Response(JSON.stringify({ batch_id: 'batch-1', batch_name: 'Test' }), {
+      new Response(JSON.stringify({ batchId: 'batch-1', status: 'queued', service: 'data_ingester', pass: null }), {
         status: 202,
         headers: { 'Content-Type': 'application/json' },
       }),
@@ -171,7 +171,7 @@ describe('process start route', () => {
     const requestInit = fetchCall?.[1]
     expect(typeof requestInit?.body).toBe('string')
     if (typeof requestInit?.body !== 'string') {
-      throw new Error('Expected dashboard to send a JSON string body to data-ingester.')
+      throw new Error('Expected dashboard to send a JSON string body to pipeline-api.')
     }
     const ingesterPayload = JSON.parse(requestInit.body) as { pipeline_config?: unknown }
     expect(ingesterPayload.pipeline_config).toEqual(pipelineConfig)

@@ -3,20 +3,24 @@ import { NextRequest, NextResponse } from 'next/server'
 import { logEvent } from '@lib/observability'
 import { parseBearerToken, parsePipelineCallbackBody } from '@lib/pipelineCallbacks'
 import {
-  shouldTriggerContentDedup,
-  shouldTriggerMetadataExtractor,
-  shouldTriggerOcrProcessor,
-  shouldTriggerPageRotator,
-  triggerContentDedup,
-  triggerMetadataExtractor,
-  triggerOcrProcessor,
-  triggerPageRotator,
-} from '@lib/pipelineTriggers'
-import { getProcessBatchStatus, markProcessStageCallbackReceived } from '@lib/processBatches'
+  markProcessStageCallbackReceived,
+  recordRightsDeterminatorCompletion,
+} from '@lib/processBatches'
 import type { PipelineCallbackBody } from 'types/pipelineContracts'
 
 export const dynamic = 'force-dynamic'
 export const preferredRegion = 'sfo1'
+
+interface RightsDeterminatorCallbackBody extends PipelineCallbackBody {
+  processed_count?: unknown
+  rights_determined_count?: unknown
+  under_review_count?: unknown
+  failed_count?: unknown
+}
+
+function parseCount(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0
+}
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const expectedToken = process.env.PIPELINE_CALLBACK_TOKEN?.trim()
@@ -26,13 +30,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const actualToken = parseBearerToken(request.headers.get('authorization'))
   if (actualToken !== expectedToken) {
-    logEvent('warn', 'document_splitter_callback_unauthorized')
+    logEvent('warn', 'rights_determinator_callback_unauthorized')
     return NextResponse.json({ error: 'Unauthorized callback.' }, { status: 401 })
   }
 
-  let body: PipelineCallbackBody
+  let body: RightsDeterminatorCallbackBody
   try {
-    body = (await request.json()) as PipelineCallbackBody
+    body = (await request.json()) as RightsDeterminatorCallbackBody
   } catch {
     return NextResponse.json({ error: 'Request body must be valid JSON.' }, { status: 400 })
   }
@@ -43,32 +47,28 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    await markProcessStageCallbackReceived(batchId, 'document_splitter', Math.floor(Date.now() / 1000))
-    logEvent('info', 'document_splitter_callback_received', {
+    const completedAt = new Date().toISOString()
+    const receivedAt = Math.floor(Date.now() / 1000)
+    await recordRightsDeterminatorCompletion(batchId, {
+      requestId,
+      initiatedAt: completedAt,
+      completedAt,
+      processedCount: parseCount(body.processed_count),
+      rightsDeterminedCount: parseCount(body.rights_determined_count),
+      underReviewCount: parseCount(body.under_review_count),
+      failedCount: parseCount(body.failed_count),
+    })
+    await markProcessStageCallbackReceived(batchId, 'rights_determinator', receivedAt)
+    logEvent('info', 'rights_determinator_callback_received', {
       batchId,
       requestId,
       status,
       errorMessage: errorMessage || null,
     })
-
-    const batch = await getProcessBatchStatus(batchId)
-    if (!batch) {
-      throw new Error(`Batch ${batchId} was not found after recording document-splitter callback.`)
-    }
-
-    if (shouldTriggerPageRotator(batch)) {
-      await triggerPageRotator(batch)
-    } else if (shouldTriggerOcrProcessor(batch)) {
-      await triggerOcrProcessor(batch)
-    } else if (shouldTriggerContentDedup(batch)) {
-      await triggerContentDedup(batch)
-    } else if (shouldTriggerMetadataExtractor(batch)) {
-      await triggerMetadataExtractor(batch)
-    }
     return new NextResponse(null, { status: 204 })
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Failed to record document-splitter callback.'
-    logEvent('error', 'document_splitter_callback_record_failed', {
+    const message = error instanceof Error ? error.message : 'Failed to record rights-determinator callback.'
+    logEvent('error', 'rights_determinator_callback_record_failed', {
       batchId,
       requestId,
       status,

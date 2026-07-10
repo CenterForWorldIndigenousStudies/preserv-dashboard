@@ -21,9 +21,9 @@ export const dynamic = 'force-dynamic'
 export const preferredRegion = 'sfo1'
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const expectedToken = process.env.PAGE_ROTATOR_CALLBACK_TOKEN?.trim()
+  const expectedToken = process.env.PIPELINE_CALLBACK_TOKEN?.trim()
   if (!expectedToken) {
-    return NextResponse.json({ error: 'PAGE_ROTATOR_CALLBACK_TOKEN is not configured.' }, { status: 500 })
+    return NextResponse.json({ error: 'PIPELINE_CALLBACK_TOKEN is not configured.' }, { status: 500 })
   }
 
   const actualToken = parseBearerToken(request.headers.get('authorization'))

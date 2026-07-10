@@ -99,6 +99,21 @@ erDiagram
         varchar started_by
     }
 
+    pipeline_queue_items {
+        varchar id PK, UK
+        varchar stage
+        varchar batch_id
+        json payload
+        varchar status
+        int attempt_count
+        timestamp queued_at
+        timestamp claimed_at
+        timestamp completed_at
+        varchar error_type
+        text error_message
+        json callback_delivery
+    }
+
     batch_to_batches_metadata {
         varchar id PK, UK
         varchar batch_id FK
@@ -248,6 +263,7 @@ erDiagram
 
 - `documents` is the anchor table. Most queries start there and join outward.
 - `batches` is the anchor table for processing runs and registry-derived batch context.
+- `pipeline_queue_items` is the durable queue control table for the combined pipeline server.
 - `document_to_*` tables and `batch_to_batches_metadata` are association tables. They connect a
   core entity to a lookup table or to typed metadata values.
 - `metadata` and `batch_metadata` define field names. The actual values live in
@@ -272,6 +288,9 @@ erDiagram
   in that history.
 - `state_history` prevents exact duplicate transitions with a composite unique constraint on
   `(document_id, previous_state, new_state, changed_at)`.
+- `pipeline_queue_items.payload` stores the original accepted trigger payload used by the worker.
+- `pipeline_queue_items.callback_delivery` stores the callback delivery result recorded after worker
+  completion.
 
 ## Index Highlights
 
@@ -284,6 +303,7 @@ erDiagram
 - `document_to_metadata` supports both document-first and metadata-first access patterns.
 - `document_to_tags` supports both document-first and tag-first access patterns.
 - `collections` is indexed and unique on `tag_id`.
+- `pipeline_queue_items` is indexed on `stage`, `batch_id`, and `status`.
 - Association tables use composite unique constraints to prevent duplicate links.
 
 ## Meaningful Metadata
@@ -635,6 +655,28 @@ Core batch/process-run records.
 
 Query note: batch-specific metrics and registry-derived attributes often live in
 `batch_to_batches_metadata`, not as top-level columns here.
+
+### pipeline_queue_items
+
+Durable queue entries for the combined pipeline server.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `VARCHAR(36)` | Primary key. UUID string. |
+| `stage` | `VARCHAR(64)` | Target stage/service key such as `data_ingester` or `document_splitter`. Indexed. |
+| `batch_id` | `VARCHAR(255)` | Batch identifier associated with the queued work. Indexed. |
+| `payload` | `JSON` | Original accepted trigger payload stored for worker execution and replay. |
+| `status` | `VARCHAR(32)` | Queue lifecycle status such as `queued`, `in_progress`, `retry_pending`, `completed`, or `failed`. Indexed. |
+| `attempt_count` | `INT` | Number of worker attempts made for this queue item. |
+| `queued_at` | `TIMESTAMP` | Time the queue item was created. |
+| `claimed_at` | `TIMESTAMP` | Time the worker claimed the queue item for execution. |
+| `completed_at` | `TIMESTAMP` | Time the queue item reached a terminal state. |
+| `error_type` | `VARCHAR(255)` | Exception type or failure category recorded on worker failure. |
+| `error_message` | `TEXT` | Failure detail recorded on worker failure. |
+| `callback_delivery` | `JSON` | Callback delivery result recorded after completion, including HTTP status and notification time when available. |
+
+Query note: this table intentionally has no foreign keys. It is a durable orchestration/control
+table for the combined pipeline worker rather than a lineage or metadata table.
 
 ### batch_to_batches_metadata
 

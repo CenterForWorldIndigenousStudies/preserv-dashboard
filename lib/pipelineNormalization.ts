@@ -199,7 +199,7 @@ export function normalizePassStage(
   const inferredCompletedPasses = entries
     .filter((entry) => {
       const status = entry.details.status?.trim()
-      return status === 'completed' || status === 'review_needed'
+      return status === 'completed'
     })
     .map((entry) => entry.passNumber)
 

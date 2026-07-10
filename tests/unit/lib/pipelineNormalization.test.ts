@@ -53,6 +53,15 @@ describe('pipelineNormalization', () => {
     expect(normalized.documentSplitter?.completedPasses).toEqual([1])
   })
 
+  test('does not infer completed passes from review_needed status', () => {
+    const normalized = normalizeProcessBatchDetails({
+      document_splitter_pass_1: { status: 'review_needed' },
+      document_splitter_pass_2: { status: 'queued' },
+    })
+
+    expect(normalized.documentSplitter?.completedPasses).toEqual([])
+  })
+
   test('parses callback receipt fields from unix timestamps', () => {
     const normalized = normalizeProcessBatchDetails({
       data_ingester: {

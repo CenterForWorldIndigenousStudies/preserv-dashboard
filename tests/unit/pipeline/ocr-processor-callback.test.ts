@@ -39,7 +39,7 @@ import { POST } from '../../../app/api/pipeline/ocr-processor/callback/route'
 
 describe('ocr-processor callback route', () => {
   beforeEach(() => {
-    process.env.OCR_PROCESSOR_CALLBACK_TOKEN = 'ocr-processor-token'
+    process.env.PIPELINE_CALLBACK_TOKEN = 'ocr-processor-token'
   })
 
   afterEach(() => {

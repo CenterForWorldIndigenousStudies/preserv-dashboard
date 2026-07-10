@@ -199,6 +199,21 @@ describe('pipelineExecution process-documents behavior', () => {
     expect(getNextEligibleExecutionStep(batch)?.pass).toBe(2)
   })
 
+  test('treats review_needed as terminal for the current pass without unlocking dependents', () => {
+    const splitPassOneStep = buildExecutionPlan()[1]
+    const batch = buildBatchStatus({
+      documentSplitter: buildStageStatus({
+        status: 'review_needed' satisfies PipelineStepRuntimeStatus,
+        currentPass: 1,
+        maxPasses: 2,
+        completedPasses: [],
+      }),
+    })
+
+    expect(getExecutionStepRuntimeStatus(batch, splitPassOneStep)).toBe('review_needed')
+    expect(getNextEligibleExecutionStep(batch)).toBeNull()
+  })
+
   test('treats a pass as pending when the stage is running a different pass', () => {
     const executionStep = buildExecutionPlan()[3]
     const batch = buildBatchStatus({

@@ -33,7 +33,7 @@ import { POST } from '../../../app/api/pipeline/content-dedup/callback/route'
 
 describe('content-dedup callback route', () => {
   beforeEach(() => {
-    process.env.CONTENT_DEDUP_CALLBACK_TOKEN = 'content-dedup-token'
+    process.env.PIPELINE_CALLBACK_TOKEN = 'content-dedup-token'
   })
 
   afterEach(() => {

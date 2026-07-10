@@ -12,18 +12,14 @@ import {
   getPipelineConfigForBatch,
   isPipelineBatchTerminal,
 } from '@lib/pipelineExecution'
-import { getProcessBatchStatus } from '@lib/processBatches'
 export {
   triggerContentDedup,
   triggerDocumentSplitter,
+  triggerMetadataExtractor,
+  triggerMetadataValidator,
   triggerOcrProcessor,
   triggerPageRotator,
   triggerRightsDeterminator,
-} from '@lib/pipelineTriggerRequests'
-import {
-  triggerMetadataExtractor as requestMetadataExtractor,
-  triggerRightsDeterminator as requestRightsDeterminator,
-  triggerMetadataValidator as requestMetadataValidator,
 } from '@lib/pipelineTriggerRequests'
 import type { PipelineExecutionStep } from '@lib/pipelineConfig'
 import type { ProcessBatchStatus } from 'types/pipelineContracts'
@@ -91,32 +87,6 @@ export function shouldTriggerMetadataValidator(batch: ProcessBatchStatus): boole
 export function shouldTriggerRightsDeterminator(batch: ProcessBatchStatus): boolean {
   getPipelineConfigForBatch(batch)
   return isNextEligibleStep(batch, RIGHTS_DETERMINATOR_STAGE)
-}
-
-export async function triggerMetadataExtractor(batch: ProcessBatchStatus): Promise<void> {
-  await requestMetadataExtractor(batch)
-
-  const updatedBatch = await getProcessBatchStatus(batch.batchId)
-  if (!updatedBatch) {
-    throw new Error(`Batch ${batch.batchId} was not found after metadata extraction completed.`)
-  }
-
-  if (shouldTriggerMetadataValidator(updatedBatch)) {
-    await triggerMetadataValidator(updatedBatch)
-  }
-}
-
-export async function triggerMetadataValidator(batch: ProcessBatchStatus): Promise<void> {
-  await requestMetadataValidator(batch)
-
-  const updatedBatch = await getProcessBatchStatus(batch.batchId)
-  if (!updatedBatch) {
-    throw new Error(`Batch ${batch.batchId} was not found after metadata validation completed.`)
-  }
-
-  if (shouldTriggerRightsDeterminator(updatedBatch)) {
-    await requestRightsDeterminator(updatedBatch)
-  }
 }
 
 export function shouldCloseProcessStream(batch: ProcessBatchStatus): boolean {

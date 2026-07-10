@@ -57,7 +57,7 @@ import { POST } from '../../../app/api/pipeline/ingester/callback/route'
 
 describe('ingester callback route', () => {
   beforeEach(() => {
-    process.env.DATA_INGESTER_CALLBACK_TOKEN = 'ingester-token'
+    process.env.PIPELINE_CALLBACK_TOKEN = 'ingester-token'
   })
 
   afterEach(() => {

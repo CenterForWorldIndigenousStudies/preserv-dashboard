@@ -7,8 +7,12 @@ import { Stack } from '@mui/material'
 import { PROCESS_EVENTS_PATH, PROCESS_FOLDERS_PATH, PROCESS_START_PATH } from '@constants/paths'
 import type { ProfileId } from '@constants/pipeline'
 import type { DriveFolderOption } from '@lib/googleDrive'
-import { buildAcceptedBatchStatus, upsertBatchStatus } from '@lib/processDocuments'
-import { isPipelineBatchTerminal } from '@lib/pipelineExecution'
+import {
+  buildAcceptedBatchStatus,
+  getLiveBatchIds,
+  normalizeAcceptedProcessStartResponse,
+  upsertBatchStatus,
+} from '@lib/processDocuments'
 import {
   createDefaultDraft,
   draftToPipelineConfig,
@@ -25,6 +29,8 @@ interface ProcessDocumentsWorkspaceProps {
 }
 
 interface ProcessAcceptedResponse {
+  batchId?: string
+  batchName?: string
   batch_id?: string
   batch_name?: string
   error?: string
@@ -47,11 +53,13 @@ export function ProcessDocumentsWorkspace({ initialBatches }: ProcessDocumentsWo
   const [foldersError, setFoldersError] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [acceptedResult, setAcceptedResult] = useState<{ batch_id: string; batch_name: string } | null>(null)
-  const [activeBatchId, setActiveBatchId] = useState<string | null>(null)
 
   useEffect(() => {
     setRecentBatches(initialBatches)
   }, [initialBatches])
+
+  const liveBatchIds = useMemo(() => getLiveBatchIds(recentBatches), [recentBatches])
+  const liveBatchIdsKey = liveBatchIds.join('|')
 
   useEffect(() => {
     void (async () => {
@@ -70,39 +78,40 @@ export function ProcessDocumentsWorkspace({ initialBatches }: ProcessDocumentsWo
   }, [])
 
   useEffect(() => {
-    if (!activeBatchId) {
+    const monitoredBatchIds = liveBatchIdsKey ? liveBatchIdsKey.split('|') : []
+
+    if (monitoredBatchIds.length === 0) {
       return undefined
     }
 
-    const eventSource = new EventSource(`${PROCESS_EVENTS_PATH}?batchId=${encodeURIComponent(activeBatchId)}`)
+    const eventSources = monitoredBatchIds.map((batchId) => {
+      const eventSource = new EventSource(`${PROCESS_EVENTS_PATH}?batchId=${encodeURIComponent(batchId)}`)
 
-    eventSource.addEventListener('batch_status', (event) => {
-      const message = event as MessageEvent<string>
-      const batch = JSON.parse(message.data) as ProcessBatchStatus
-      setRecentBatches((current) => upsertBatchStatus(current, batch))
+      eventSource.addEventListener('batch_status', (event) => {
+        const message = event as MessageEvent<string>
+        const batch = JSON.parse(message.data) as ProcessBatchStatus
+        setRecentBatches((current) => upsertBatchStatus(current, batch))
+      })
 
-      if (isPipelineBatchTerminal(batch)) {
-        setActiveBatchId((current) => (current === batch.batchId ? null : current))
+      eventSource.addEventListener('batch_missing', () => {
+        setSubmitError('Live updates stopped because the batch could not be found.')
+        eventSource.close()
+      })
+
+      eventSource.onerror = () => {
+        setSubmitError('Live updates disconnected. Use Refresh Status to reload the latest batch state.')
         eventSource.close()
       }
-    })
 
-    eventSource.addEventListener('batch_missing', () => {
-      setSubmitError('Live updates stopped because the batch could not be found.')
-      setActiveBatchId(null)
-      eventSource.close()
+      return eventSource
     })
-
-    eventSource.onerror = () => {
-      setSubmitError('Live updates disconnected. Use Refresh Status to reload the latest batch state.')
-      setActiveBatchId(null)
-      eventSource.close()
-    }
 
     return () => {
-      eventSource.close()
+      for (const eventSource of eventSources) {
+        eventSource.close()
+      }
     }
-  }, [activeBatchId])
+  }, [liveBatchIdsKey])
 
   const selectedFolderList = useMemo(() => Object.values(selectedFolders), [selectedFolders])
   const canSubmit = batchName.trim().length > 0 && selectedFolderList.length > 0 && !isSubmitting
@@ -192,8 +201,14 @@ export function ProcessDocumentsWorkspace({ initialBatches }: ProcessDocumentsWo
         }
 
         const submittedAt = new Date().toISOString()
-        const submittedBatchId = payload.batch_id ?? ''
-        const submittedBatchName = payload.batch_name ?? batchName
+        const { batchId: submittedBatchId, batchName: submittedBatchName } = normalizeAcceptedProcessStartResponse(
+          payload as Record<string, unknown>,
+          batchName,
+        )
+        if (!submittedBatchId) {
+          setSubmitError('Process start response did not include a batch ID.')
+          return
+        }
         const requestedStages = pipelineConfigToRequestedStages(pipelineConfig)
 
         setAcceptedResult({
@@ -216,7 +231,6 @@ export function ProcessDocumentsWorkspace({ initialBatches }: ProcessDocumentsWo
             }),
           ),
         )
-        setActiveBatchId(submittedBatchId)
         setBatchName('')
         setCollectionName('')
         setCollectionNotes('')

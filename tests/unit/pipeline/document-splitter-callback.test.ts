@@ -51,7 +51,7 @@ import { POST } from '../../../app/api/pipeline/document-splitter/callback/route
 
 describe('document-splitter callback route', () => {
   beforeEach(() => {
-    process.env.DOCUMENT_SPLITTER_CALLBACK_TOKEN = 'document-splitter-token'
+    process.env.PIPELINE_CALLBACK_TOKEN = 'document-splitter-token'
   })
 
   afterEach(() => {

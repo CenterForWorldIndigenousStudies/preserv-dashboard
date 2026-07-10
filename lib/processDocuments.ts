@@ -1,9 +1,41 @@
 import type { PipelineConfig } from '@lib/pipelineConfig'
+import { isPipelineBatchTerminal } from '@lib/pipelineExecution'
 import type { ProcessBatchStatus } from 'types/pipelineContracts'
 
 export function upsertBatchStatus(batches: ProcessBatchStatus[], nextBatch: ProcessBatchStatus): ProcessBatchStatus[] {
   const withoutExisting = batches.filter((batch) => batch.batchId !== nextBatch.batchId)
   return [nextBatch, ...withoutExisting].slice(0, 25)
+}
+
+export function getLiveBatchIds(batches: ProcessBatchStatus[]): string[] {
+  return batches
+    .filter((batch) => !isPipelineBatchTerminal(batch))
+    .map((batch) => batch.batchId)
+    .sort()
+}
+
+export function normalizeAcceptedProcessStartResponse(
+  payload: Record<string, unknown>,
+  fallbackBatchName: string,
+): { batchId: string; batchName: string } {
+  const batchId =
+    typeof payload.batchId === 'string'
+      ? payload.batchId.trim()
+      : typeof payload.batch_id === 'string'
+        ? payload.batch_id.trim()
+        : ''
+
+  const batchName =
+    typeof payload.batchName === 'string'
+      ? payload.batchName.trim()
+      : typeof payload.batch_name === 'string'
+        ? payload.batch_name.trim()
+        : ''
+
+  return {
+    batchId,
+    batchName: batchName || fallbackBatchName,
+  }
 }
 
 interface BuildAcceptedBatchStatusArgs {

@@ -17,14 +17,16 @@ interface ProcessStartRequestBody {
 }
 
 interface IngesterAcceptedResponse {
-  batch_id?: unknown
-  batch_name?: unknown
+  batchId?: unknown
+  status?: unknown
+  service?: unknown
+  pass?: unknown
   error?: unknown
   detail?: unknown
 }
 
 interface IngesterTriggerConfig {
-  ingesterBaseUrl: string
+  pipelineBaseUrl: string
   triggerToken: string
   callbackToken: string
 }
@@ -57,7 +59,6 @@ function normalizeSourceFolderIds(value: unknown): string[] {
 }
 
 function buildRequestedStagesFromConfig(config: PipelineConfig): string[] {
-  // Use the helper to convert config to legacy requestedStages format
   return pipelineConfigToRequestedStages(config)
 }
 
@@ -102,21 +103,21 @@ function validateProcessStartInput(body: ProcessStartRequestBody): ValidatedProc
 }
 
 function requireIngesterTriggerConfig(): IngesterTriggerConfig {
-  const ingesterBaseUrl = process.env.DATA_INGESTER_BASE_URL?.trim()
-  const triggerToken = process.env.DATA_INGESTER_TRIGGER_TOKEN?.trim()
-  const callbackToken = process.env.DATA_INGESTER_CALLBACK_TOKEN?.trim()
+  const pipelineBaseUrl = process.env.PIPELINE_API_BASE_URL?.trim()
+  const triggerToken = process.env.PIPELINE_TRIGGER_TOKEN?.trim()
+  const callbackToken = process.env.PIPELINE_CALLBACK_TOKEN?.trim()
 
-  if (!ingesterBaseUrl) {
-    throw new Error('DATA_INGESTER_BASE_URL is not configured.')
+  if (!pipelineBaseUrl) {
+    throw new Error('PIPELINE_API_BASE_URL is not configured.')
   }
   if (!triggerToken) {
-    throw new Error('DATA_INGESTER_TRIGGER_TOKEN is not configured.')
+    throw new Error('PIPELINE_TRIGGER_TOKEN is not configured.')
   }
   if (!callbackToken) {
-    throw new Error('DATA_INGESTER_CALLBACK_TOKEN is not configured.')
+    throw new Error('PIPELINE_CALLBACK_TOKEN is not configured.')
   }
 
-  return { ingesterBaseUrl, triggerToken, callbackToken }
+  return { pipelineBaseUrl, triggerToken, callbackToken }
 }
 
 function normalizeIngesterErrorMessage(payload: IngesterAcceptedResponse): string | null {
@@ -202,7 +203,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   })
 
   try {
-    const response = await fetch(new URL('/ingest', triggerConfig.ingesterBaseUrl), {
+    const response = await fetch(new URL('/ingest', triggerConfig.pipelineBaseUrl), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -218,7 +219,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         requestId,
         batchName,
         startedBy,
-        ingesterBaseUrl: triggerConfig.ingesterBaseUrl,
+        pipelineBaseUrl: triggerConfig.pipelineBaseUrl,
         statusCode: response.status,
         errorMessage,
       })
@@ -228,9 +229,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       )
     }
 
-    const batchId = typeof payload.batch_id === 'string' ? payload.batch_id.trim() : ''
+    const batchId = typeof payload.batchId === 'string' ? payload.batchId.trim() : ''
     if (!batchId) {
-      throw new Error('data-ingester response did not include batch_id.')
+      throw new Error('pipeline-api response did not include batchId.')
     }
 
     await persistRequestedStages(batchId, pipelineConfig)
@@ -240,7 +241,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       batchId,
       batchName,
       startedBy,
-      ingesterBaseUrl: triggerConfig.ingesterBaseUrl,
+      pipelineBaseUrl: triggerConfig.pipelineBaseUrl,
       requestedStages,
       statusCode: response.status,
     })
@@ -252,7 +253,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       requestId,
       batchName,
       startedBy,
-      ingesterBaseUrl: triggerConfig.ingesterBaseUrl,
+      pipelineBaseUrl: triggerConfig.pipelineBaseUrl,
       errorMessage: message,
     })
     return NextResponse.json({ error: message }, { status: 502 })
