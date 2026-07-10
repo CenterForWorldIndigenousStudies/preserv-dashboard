@@ -29,6 +29,7 @@ export interface DocumentVersion extends Omit<DbDocumentVersion, 'analyzed_at'> 
 export interface VersionFamilyDocument extends Document {
   is_canonical: boolean
   is_duplicate: boolean
+  is_preservation_candidate?: boolean
 }
 
 export interface VersionFamily {

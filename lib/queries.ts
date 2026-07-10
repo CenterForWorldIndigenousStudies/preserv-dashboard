@@ -14,6 +14,7 @@ import {
 import { REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES, REVIEW_QUEUE_SORT_FIELDS } from '@constants/reviewQueue'
 import { db } from '@lib/db'
 import { createEditHistoryEntry } from '@lib/editHistory'
+import { parseMetadataValue } from '@lib/metadata'
 import {
   Prisma,
   PrismaClient,
@@ -1970,6 +1971,9 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
       include: {
         documents: {
           include: {
+            document_to_metadata: {
+              include: { metadata: true },
+            },
             document_to_tags: {
               include: { tags: true },
             },
@@ -1979,6 +1983,9 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
           include: {
             documents: {
               include: {
+                document_to_metadata: {
+                  include: { metadata: true },
+                },
                 document_to_tags: {
                   include: { tags: true },
                 },
@@ -1995,6 +2002,9 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
           include: {
             documents: {
               include: {
+                document_to_metadata: {
+                  include: { metadata: true },
+                },
                 document_to_tags: {
                   include: { tags: true },
                 },
@@ -2004,6 +2014,9 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
               include: {
                 documents: {
                   include: {
+                    document_to_metadata: {
+                      include: { metadata: true },
+                    },
                     document_to_tags: {
                       include: { tags: true },
                     },
@@ -2049,22 +2062,40 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
       created_at: Date | null
       updated_at: Date | null
       document_to_tags: Array<{ tags: { name: string } }>
+      document_to_metadata?: Array<{
+        value: string | null
+        value_type: string | null
+        metadata: { name: string }
+      }>
     },
     isCanonical: boolean,
-  ): VersionFamilyDocument => ({
-    id: String(row.id),
-    filesize: row.filesize !== null && row.filesize !== undefined ? Number(row.filesize) : null,
-    hash_binary: row.hash_binary ?? null,
-    hash_content: row.hash_content ?? null,
-    id_legacy: row.id_legacy ?? null,
-    name: row.name ?? null,
-    created_at: row.created_at ?? null,
-    updated_at: row.updated_at ?? null,
-    is_canonical: isCanonical,
-    is_duplicate: isCanonical
-      ? false
-      : row.document_to_tags.some((tagLink) => tagLink.tags.name === 'duplicate_document'),
-  })
+  ): VersionFamilyDocument => {
+    const sourceIdMetadata = row.document_to_metadata?.find((metadataLink) => metadataLink.metadata.name === 'source_id')
+    const sourceId = sourceIdMetadata
+      ? parseMetadataValue(sourceIdMetadata.value, sourceIdMetadata.value_type).plainText || null
+      : null
+
+    return {
+      id: String(row.id),
+      filesize: row.filesize !== null && row.filesize !== undefined ? Number(row.filesize) : null,
+      hash_binary: row.hash_binary ?? null,
+      hash_content: row.hash_content ?? null,
+      id_legacy: row.id_legacy ?? null,
+      source_id: sourceId,
+      name: row.name ?? null,
+      created_at: row.created_at ?? null,
+      updated_at: row.updated_at ?? null,
+      is_canonical: isCanonical,
+      is_preservation_candidate:
+        row.document_to_metadata?.some(
+          (metadataLink) =>
+            metadataLink.metadata.name === 'preservation_candidate' && isTruthyMetadataValue(metadataLink.value),
+        ) ?? false,
+      is_duplicate: isCanonical
+        ? false
+        : row.document_to_tags.some((tagLink) => tagLink.tags.name === 'duplicate_document'),
+    }
+  }
 
   const mapVersionFamily = (): VersionFamily | null => {
     const group = canonicalGroup ?? variantMemberships[0]?.version_groups ?? null

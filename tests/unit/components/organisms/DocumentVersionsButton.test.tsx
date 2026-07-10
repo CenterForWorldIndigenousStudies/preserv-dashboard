@@ -43,11 +43,12 @@ describe('DocumentVersionsButton', () => {
               filesize: 123,
               hash_binary: null,
               hash_content: null,
-              source_id: null,
+              source_id: 'drive-file-123',
               created_at: null,
               updated_at: null,
               is_canonical: false,
               is_duplicate: false,
+              is_preservation_candidate: true,
             },
           ],
         }}
@@ -57,5 +58,8 @@ describe('DocumentVersionsButton', () => {
     expect(markup).toContain(
       '/documents/doc-2?from=%2Fdocuments%2Fdoc-1%3Ffrom%3D%252Fcollections%253Fexpanded%253Dcollection-1',
     )
+    expect(markup).toContain('Candidate')
+    expect(markup).toContain('Source')
+    expect(markup).toContain('drive-file-123')
   })
 })

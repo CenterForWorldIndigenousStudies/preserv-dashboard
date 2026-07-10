@@ -102,7 +102,7 @@ describe('getDocumentDetail version family mapping', () => {
             document_versions: [
               {
                 id: 'dv-canonical',
-                documents: {
+              documents: {
                   id: 'canonical-1',
                   filesize: 1024,
                   hash_binary: 'binary-a',
@@ -111,6 +111,7 @@ describe('getDocumentDetail version family mapping', () => {
                   name: 'Canonical.pdf',
                   created_at: new Date('2026-05-18T10:00:00Z'),
                   updated_at: new Date('2026-05-18T10:00:00Z'),
+                  document_to_metadata: [],
                   document_to_tags: [{ tags: { name: 'duplicate_document' } }],
                 },
               },
@@ -125,6 +126,7 @@ describe('getDocumentDetail version family mapping', () => {
                   name: 'Duplicate.pdf',
                   created_at: new Date('2026-05-18T10:02:00Z'),
                   updated_at: new Date('2026-05-18T10:02:00Z'),
+                  document_to_metadata: [],
                   document_to_tags: [{ tags: { name: 'duplicate_document' } }],
                 },
               },
@@ -180,6 +182,7 @@ describe('getDocumentDetail version family mapping', () => {
         name: 'Canonical.pdf',
         created_at: new Date('2026-05-18T10:00:00Z'),
         updated_at: new Date('2026-05-18T10:00:00Z'),
+        document_to_metadata: [],
         document_to_tags: [],
       },
       document_versions: [],
@@ -197,15 +200,59 @@ describe('getDocumentDetail version family mapping', () => {
           hash_binary: 'binary-a',
           hash_content: 'content-a',
           id_legacy: 'file-1',
+          source_id: null,
           name: 'Canonical.pdf',
           created_at: new Date('2026-05-18T10:00:00Z'),
           updated_at: new Date('2026-05-18T10:00:00Z'),
           is_canonical: true,
+          is_preservation_candidate: false,
           is_duplicate: false,
         },
       ],
     })
     expect(result?.versions).toEqual([])
+  })
+
+  it('marks version family documents as preservation candidates when preservation_candidate metadata is truthy', async () => {
+    mockBaseDocument()
+    mockDocumentVersionsFindMany.mockResolvedValueOnce([]).mockResolvedValueOnce([])
+    mockDocumentToTagsFindMany.mockResolvedValue([])
+    mockVersionGroupsFindUnique.mockResolvedValue({
+      id: 'vg-candidate',
+      canonical_document_id: 'canonical-1',
+      documents: {
+        id: 'canonical-1',
+        filesize: 1024,
+        hash_binary: 'binary-a',
+        hash_content: 'content-a',
+        id_legacy: 'file-1',
+        name: 'Canonical.pdf',
+        created_at: new Date('2026-05-18T10:00:00Z'),
+        updated_at: new Date('2026-05-18T10:00:00Z'),
+        document_to_tags: [],
+        document_to_metadata: [
+          {
+            value: '{"value": true}',
+            value_type: 'boolean',
+            metadata: { name: 'preservation_candidate' },
+          },
+          {
+            value: '{"value": "drive-file-123"}',
+            value_type: 'string',
+            metadata: { name: 'source_id' },
+          },
+        ],
+      },
+      document_versions: [],
+    })
+
+    const result = await getDocumentDetail('canonical-1')
+
+    expect(result?.version_family?.documents[0]).toMatchObject({
+      id: 'canonical-1',
+      is_preservation_candidate: true,
+      source_id: 'drive-file-123',
+    })
   })
 
   it('maps detail versions fields without changing stored values', async () => {

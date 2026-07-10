@@ -126,18 +126,18 @@ export function DocumentVersionsButton({ versionFamily, overviewHref }: Document
         size: 420,
         Cell: ({
           row: {
-            original: { id, id_legacy, is_canonical, name },
+            original: { id, id_legacy, is_canonical, is_preservation_candidate, name, source_id },
           },
         }) => {
           // Get the source ID from the metadata if it exists, otherwise default to undefined to avoid displaying "null" in the UI
-          const sourceId = undefined
           return (
             <DocumentNameBlock
               name={name}
               id={id}
+              isCandidate={is_preservation_candidate}
               isCanonical={is_canonical}
               legacyId={id_legacy}
-              sourceId={sourceId}
+              sourceId={source_id}
               href={buildVersionDocumentHref(id, overviewHref)}
             />
           )

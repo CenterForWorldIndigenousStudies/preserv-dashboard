@@ -11,6 +11,8 @@ interface DocumentNameBlockProps {
   name: string | null
   /** Document UUID */
   id: string
+  /** Whether this document is a preservation candidate for inclusion in the library */
+  isCandidate?: boolean
   /** Whether this document is the canonical version */
   isCanonical?: boolean
   /** Optional legacy ID to display alongside the document name */
@@ -23,6 +25,24 @@ interface DocumentNameBlockProps {
   maxTruncationLength?: number
 }
 
+const CHIP_STYLES = {
+  fontWeight: 700,
+  letterSpacing: '0.06rem',
+  textTransform: 'uppercase',
+} as const
+
+const CANDIDATE_CHIP_STYLE = {
+  ...CHIP_STYLES,
+  color: 'clay.main',
+  borderColor: 'clay.main',
+} as const
+
+const CANONICAL_CHIP_STYLE = {
+  ...CHIP_STYLES,
+  color: 'moss.main',
+  borderColor: 'moss.main',
+} as const
+
 /**
  * Atom: Document name with short ID and optional legacy/source ID metadata.
  * Renders as a clickable MUI Link when href is provided, or plain Typography otherwise.
@@ -30,6 +50,7 @@ interface DocumentNameBlockProps {
 export function DocumentNameBlock({
   name,
   id,
+  isCandidate,
   isCanonical,
   legacyId,
   sourceId,
@@ -40,19 +61,8 @@ export function DocumentNameBlock({
     <Stack direction="column" spacing={0.5}>
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
         <NameElement name={name} href={href} />
-        {isCanonical ? (
-          <Chip
-            label="Canonical"
-            size="small"
-            variant="outlined"
-            color="success"
-            sx={{
-              fontWeight: 700,
-              letterSpacing: '0.06rem',
-              textTransform: 'uppercase',
-            }}
-          />
-        ) : null}
+        {isCandidate ? <Chip label="Candidate" size="small" variant="outlined" sx={CANDIDATE_CHIP_STYLE} /> : null}
+        {isCanonical ? <Chip label="Canonical" size="small" variant="outlined" sx={CANONICAL_CHIP_STYLE} /> : null}
       </Stack>
       <IdsRow id={id} legacyId={legacyId} sourceId={sourceId} maxTruncationLength={maxTruncationLength} />
     </Stack>
