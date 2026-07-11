@@ -4,7 +4,6 @@ import { useEffect, useState, type ReactElement, type ReactNode } from 'react'
 import { Box, type SxProps, type Theme } from '@mui/material'
 
 import Sidebar from '@organisms/Sidebar'
-import { AppShellHeader } from '@organisms/AppShellHeader'
 import { SidebarVisibilityControl } from '@molecules/SidebarVisibilityControl'
 
 interface AppShellProps {
@@ -100,7 +99,9 @@ export function AppShell({ children }: AppShellProps): ReactElement {
       <Sidebar variant="mobile" isOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
 
       <Box sx={layoutStyles.contentColumn}>
-        <AppShellHeader onOpenNavigation={() => setMobileOpen(true)} />
+        <Box sx={{ display: { md: 'none' } }}>
+          <SidebarVisibilityControl intent="open" surface="mobileBar" onClick={() => setMobileOpen(true)} />
+        </Box>
         <Box component="main" sx={layoutStyles.main}>
           <Box sx={{ margin: '0 auto', maxWidth: '80rem', width: '100%' }}>{children}</Box>
         </Box>

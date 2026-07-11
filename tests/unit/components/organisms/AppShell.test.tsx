@@ -41,7 +41,6 @@ describe('AppShell', () => {
       </ThemeProvider>,
     )
 
-    expect(markup).toContain('Preservation Shell')
     expect(markup).toContain('Dashboard')
     expect(markup).toContain('Shell Child Content')
     expect(markup).toContain('reviewer@cwis.org')
