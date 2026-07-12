@@ -1,12 +1,14 @@
 'use client'
 
 import { useEffect, useMemo, useState, type ReactElement } from 'react'
+import { List, ListItem, Stack, Typography } from '@mui/material'
 import Alert from '@mui/material/Alert'
 import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import TextField from '@mui/material/TextField'
+import { alpha } from '@mui/material/styles'
 import { Button } from '@atoms/Button'
 import { useTagSearch } from '@lib/hooks/useTagSearch'
 import { normalizeTagName } from '@lib/tagUtils'
@@ -104,23 +106,47 @@ export function CreateTagDialog({
           minRows={3}
         />
         {normalizedName ? (
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-ink/70">Similar tags</p>
+          <Stack spacing={1.5}>
+            <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+              Similar tags
+            </Typography>
             {isLoading ? (
-              <p className="text-sm text-ink/60">Checking for similar tags...</p>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                Checking for similar tags...
+              </Typography>
             ) : similarTags.length > 0 ? (
-              <ul className="space-y-2 text-sm text-ink/80">
+              <List disablePadding sx={{ display: 'grid', gap: 1 }}>
                 {similarTags.map((tag) => (
-                  <li key={tag.id} className="rounded-xl border border-moss/10 bg-sand/40 px-3 py-2">
-                    <span className="font-medium">{tag.name}</span>
-                    {tag.notes ? <span className="block text-ink/60">{tag.notes}</span> : null}
-                  </li>
+                  <ListItem
+                    key={tag.id}
+                    disableGutters
+                    sx={(theme) => ({
+                      display: 'block',
+                      border: '1px solid',
+                      borderColor: alpha(theme.palette.moss.main, 0.1),
+                      borderRadius: 3,
+                      bgcolor: alpha(theme.palette.sand.main, 0.4),
+                      px: 1.5,
+                      py: 1,
+                    })}
+                  >
+                    <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500 }}>
+                      {tag.name}
+                    </Typography>
+                    {tag.notes ? (
+                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                        {tag.notes}
+                      </Typography>
+                    ) : null}
+                  </ListItem>
                 ))}
-              </ul>
+              </List>
             ) : (
-              <p className="text-sm text-ink/60">No similar tags found.</p>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                No similar tags found.
+              </Typography>
             )}
-          </div>
+          </Stack>
         ) : null}
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 3 }}>

@@ -1,18 +1,23 @@
 import type { ReactNode } from 'react'
+import { Chip } from '@mui/material'
+import { alpha, type SxProps, type Theme } from '@mui/material/styles'
 
 export const variantMap = {
-  danger: 'bg-clay/15 text-clay',
-  info: 'bg-sky text-ink',
-  success: 'bg-moss/10 text-moss',
-  neutral: 'bg-sand text-ink',
-}
+  danger: 'clay',
+  warning: 'clay',
+  info: 'sky',
+  success: 'moss',
+  neutral: 'sand',
+} as const
 
 export type BadgeVariant = keyof typeof variantMap
 
 interface BadgeProps {
   variant?: BadgeVariant
+  outlined?: boolean
   children: ReactNode
   className?: string
+  sx?: SxProps<Theme>
 }
 
 /**
@@ -20,10 +25,36 @@ interface BadgeProps {
  * Variants represent UI intent, not fixed color names, so the palette can change
  * without forcing call sites to rename props.
  */
-export function Badge({ variant = 'info', children, className = '' }: BadgeProps): ReactNode {
-  const bgColor = variantMap[variant]
-  const componentClass =
-    `inline-block rounded-full ${bgColor} px-3 py-1 text-xs font-medium uppercase tracking-[0.15em] ${className}`.trim()
+export function Badge({ variant = 'info', outlined = false, children, className = '', sx }: BadgeProps): ReactNode {
+  const paletteKey = variantMap[variant]
+  const textPaletteKey = variant === 'danger' || variant === 'warning' || variant === 'success' ? paletteKey : 'ink'
+  const backgroundOpacity = variant === 'danger' || variant === 'warning' ? 0.15 : variant === 'success' ? 0.1 : 1
 
-  return <span className={componentClass}>{children}</span>
+  return (
+    <Chip
+      component="span"
+      className={className || undefined}
+      label={children}
+      size="small"
+      sx={(theme: Theme) => {
+        const backgroundPalette = theme.palette[paletteKey] ?? theme.palette.primary
+        const textColor = theme.palette[textPaletteKey]?.main ?? theme.palette.text.primary
+
+        return {
+          border: outlined ? `1px solid ${backgroundPalette.main}` : undefined,
+          borderRadius: '9999px',
+          backgroundColor: outlined ? 'transparent' : alpha(backgroundPalette.main, backgroundOpacity),
+          color: textColor,
+          fontSize: '0.75rem',
+          fontWeight: 500,
+          letterSpacing: '0.15em',
+          textTransform: 'uppercase',
+          '& .MuiChip-label': {
+            px: 1.5,
+          },
+          ...theme.unstable_sx(sx ?? {}),
+        }
+      }}
+    />
+  )
 }

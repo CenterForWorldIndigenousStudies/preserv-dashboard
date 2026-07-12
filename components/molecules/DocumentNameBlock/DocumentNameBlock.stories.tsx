@@ -49,7 +49,7 @@ export const IsCanonical: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'When isCanonical is true, a green "Canonical" Chip appears next to the document name.',
+          story: 'When isCanonical is true, a green "Canonical" Badge appears next to the document name.',
       },
     },
   },

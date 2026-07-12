@@ -1,8 +1,9 @@
 'use client'
 
 import type { ReactElement } from 'react'
-import { Chip, Stack } from '@mui/material'
+import { Stack } from '@mui/material'
 
+import { Badge } from '@atoms/Badges/Badge'
 import { NameElement } from '@atoms/NameElement'
 import { IdsRow } from '@molecules/IdsRow'
 
@@ -25,24 +26,6 @@ interface DocumentNameBlockProps {
   maxTruncationLength?: number
 }
 
-const CHIP_STYLES = {
-  fontWeight: 700,
-  letterSpacing: '0.06rem',
-  textTransform: 'uppercase',
-} as const
-
-const CANDIDATE_CHIP_STYLE = {
-  ...CHIP_STYLES,
-  color: 'clay.main',
-  borderColor: 'clay.main',
-} as const
-
-const CANONICAL_CHIP_STYLE = {
-  ...CHIP_STYLES,
-  color: 'moss.main',
-  borderColor: 'moss.main',
-} as const
-
 /**
  * Atom: Document name with short ID and optional legacy/source ID metadata.
  * Renders as a clickable MUI Link when href is provided, or plain Typography otherwise.
@@ -61,8 +44,16 @@ export function DocumentNameBlock({
     <Stack direction="column" spacing={0.5}>
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
         <NameElement name={name} href={href} />
-        {isCandidate ? <Chip label="Candidate" size="small" variant="outlined" sx={CANDIDATE_CHIP_STYLE} /> : null}
-        {isCanonical ? <Chip label="Canonical" size="small" variant="outlined" sx={CANONICAL_CHIP_STYLE} /> : null}
+        {isCandidate ? (
+          <Badge variant="warning" outlined>
+            Candidate
+          </Badge>
+        ) : null}
+        {isCanonical ? (
+          <Badge variant="success" outlined>
+            Canonical
+          </Badge>
+        ) : null}
       </Stack>
       <IdsRow id={id} legacyId={legacyId} sourceId={sourceId} maxTruncationLength={maxTruncationLength} />
     </Stack>

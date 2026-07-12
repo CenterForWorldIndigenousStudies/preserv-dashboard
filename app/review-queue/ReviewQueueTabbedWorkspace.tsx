@@ -1,9 +1,10 @@
 'use client'
 
 import { useId, useState, type KeyboardEvent, type ReactElement, type ReactNode } from 'react'
-import { Box, Chip, Stack, Typography } from '@mui/material'
+import { Box, Stack, Typography } from '@mui/material'
 
 import { READY_FOR_LIBRARY_PATH } from '@constants/paths'
+import { Badge } from '@atoms/Badges/Badge'
 import { ActionCard } from '@molecules/ActionCard'
 
 type ReviewQueueTabId = 'needsReview' | 'readyForLibrary'
@@ -85,8 +86,12 @@ export function ReviewQueueTabbedWorkspace({
           continues to Ready for Library as the next operational checkpoint.
         </Typography>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mt: 2 }}>
-          <Chip label={`${needsReviewCount} need review`} size="small" sx={{ alignSelf: 'flex-start' }} />
-          <Chip label={`${readyForLibraryCount} ready for library`} size="small" sx={{ alignSelf: 'flex-start' }} />
+          <Badge variant="danger" sx={{ alignSelf: 'flex-start' }}>
+            {needsReviewCount} need review
+          </Badge>
+          <Badge variant="success" sx={{ alignSelf: 'flex-start' }}>
+            {readyForLibraryCount} ready for library
+          </Badge>
         </Stack>
       </Box>
 
@@ -161,11 +166,9 @@ export function ReviewQueueTabbedWorkspace({
             </Typography>
           </Box>
 
-          <Chip
-            label={`${readyForLibraryCount} documents currently ready for library review`}
-            size="small"
-            sx={{ alignSelf: 'flex-start' }}
-          />
+          <Badge variant="success" sx={{ alignSelf: 'flex-start' }}>
+            {readyForLibraryCount} documents currently ready for library review
+          </Badge>
 
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
             Use the standalone Ready for Library workspace to inspect the ingest-ready backlog, review edge cases, and

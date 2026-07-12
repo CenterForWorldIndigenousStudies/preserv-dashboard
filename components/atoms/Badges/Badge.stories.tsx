@@ -11,6 +11,10 @@ const meta = {
       options: Object.keys(variantMap),
       description: 'Semantic badge variant',
     },
+    outlined: {
+      control: 'boolean',
+      description: 'Render the badge with a transparent background and colored border',
+    },
     children: {
       control: 'text',
       description: 'Badge label text',
@@ -43,5 +47,13 @@ export const CustomClass: Story = {
   args: {
     className: 'custom-class',
     children: 'Custom Styled',
+  },
+}
+
+export const Outlined: Story = {
+  args: {
+    outlined: true,
+    variant: 'success',
+    children: 'Canonical',
   },
 }
