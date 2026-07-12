@@ -1,6 +1,8 @@
 'use client'
 
 import type { ReactElement } from 'react'
+import { Link, Typography } from '@mui/material'
+import type { SxProps, Theme } from '@mui/material/styles'
 
 import { isLikelyGoogleDriveId } from '@lib/google'
 import { truncateString } from '@lib/strings'
@@ -8,21 +10,36 @@ import { truncateString } from '@lib/strings'
 interface SourceFolderIdProps {
   value: string | null | undefined
   maxTruncationLength?: number
+  sx?: SxProps<Theme>
 }
 
-export function SourceFolderId({ value, maxTruncationLength = 0 }: SourceFolderIdProps): ReactElement {
+export function SourceFolderId({ value, maxTruncationLength = 0, sx }: SourceFolderIdProps): ReactElement {
   const normalizedValue = value?.trim() || '-'
   const truncatedSourceFolderId = truncateString(normalizedValue, maxTruncationLength)
   if (!isLikelyGoogleDriveId(normalizedValue)) {
-    return <span>{truncatedSourceFolderId}</span>
+    return (
+      <Typography component="span" variant="body2" sx={sx}>
+        {truncatedSourceFolderId}
+      </Typography>
+    )
   }
 
   const href = `https://drive.google.com/drive/folders/${normalizedValue}`
   const title = `View Google Drive folder ${normalizedValue}`
 
   return (
-    <a href={href} target="_blank" rel="noreferrer" className="text-moss hover:underline" title={title}>
+    <Link
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      title={title}
+      underline="hover"
+      sx={(theme: Theme) => ({
+        color: theme.palette.moss?.main ?? theme.palette.primary.main,
+        ...theme.unstable_sx(sx ?? {}),
+      })}
+    >
       {truncatedSourceFolderId}
-    </a>
+    </Link>
   )
 }

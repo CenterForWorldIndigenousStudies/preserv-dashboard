@@ -1,6 +1,8 @@
 'use client'
 
 import type { ReactElement } from 'react'
+import { Link, Typography } from '@mui/material'
+import type { SxProps, Theme } from '@mui/material/styles'
 import { validate as validateUuid } from 'uuid'
 
 import { isLikelyGoogleDriveId } from '@lib/google'
@@ -9,9 +11,10 @@ import { truncateString } from '@lib/strings'
 interface SourceIdProps {
   value: string | null | undefined
   maxTruncationLength?: number
+  sx?: SxProps<Theme>
 }
 
-export function SourceId({ value, maxTruncationLength = 0 }: SourceIdProps): ReactElement {
+export function SourceId({ value, maxTruncationLength = 0, sx }: SourceIdProps): ReactElement {
   const normalizedValue = value?.trim() || '-'
   const truncatedSourceId = truncateString(normalizedValue, maxTruncationLength)
 
@@ -25,12 +28,26 @@ export function SourceId({ value, maxTruncationLength = 0 }: SourceIdProps): Rea
   }
 
   if (!isUuid && !isLikelyGoogleDriveId(normalizedValue)) {
-    return <span>{truncatedSourceId}</span>
+    return (
+      <Typography component="span" variant="body2" sx={sx}>
+        {truncatedSourceId}
+      </Typography>
+    )
   }
 
   return (
-    <a href={href} target="_blank" rel="noreferrer" className="text-moss hover:underline" title={title}>
+    <Link
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      title={title}
+      underline="hover"
+      sx={(theme: Theme) => ({
+        color: theme.palette.moss?.main ?? theme.palette.primary.main,
+        ...theme.unstable_sx(sx ?? {}),
+      })}
+    >
       {truncatedSourceId}
-    </a>
+    </Link>
   )
 }

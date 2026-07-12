@@ -1,11 +1,14 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
+import { Typography } from '@mui/material'
+import { alpha, type SxProps, type Theme } from '@mui/material/styles'
 import { DateTime } from 'luxon'
 
 interface DateProps {
   value: string | number | Date | null | undefined
   className?: string
+  sx?: SxProps<Theme>
 }
 
 const ENGLISH_MONTHS = [
@@ -56,30 +59,52 @@ function formatRawValue(value: string | number | Date): string {
   return value.toISOString()
 }
 
-export function DateAtom({ value, className = '' }: DateProps): ReactNode {
+export function DateAtom({ value, className = '', sx }: DateProps): ReactNode {
   const [showRaw, setShowRaw] = useState(false)
 
   if (value === null || value === undefined) {
-    return <span className={className}>{`-`}</span>
+    return (
+      <Typography component="span" variant="body2" className={className || undefined} sx={sx}>
+        -
+      </Typography>
+    )
   }
 
   const dt = parseValue(value)
   if (!dt || !dt.isValid) {
-    return <span className={className}>{`-`}</span>
+    return (
+      <Typography component="span" variant="body2" className={className || undefined} sx={sx}>
+        -
+      </Typography>
+    )
   }
 
   const display = formatDisplay(dt)
   const raw = formatRawValue(value)
-  const computedClass =
-    `cursor-pointer border-b border-dotted border-ink/30 hover:border-ink/70 transition-colors ${className}`.trim()
 
   return (
-    <span
-      className={computedClass}
+    <Typography
+      component="span"
+      variant="body2"
+      className={className || undefined}
       title={showRaw ? display : `Raw: ${raw}`}
       onClick={() => setShowRaw((prev) => !prev)}
+      sx={(theme: Theme) => {
+        const inkColor = theme.palette.ink?.main ?? theme.palette.text.primary
+
+        return {
+          cursor: 'pointer',
+          borderBottom: '1px dotted',
+          borderColor: alpha(inkColor, 0.3),
+          transition: theme.transitions.create('border-color'),
+          '&:hover': {
+            borderColor: alpha(inkColor, 0.7),
+          },
+          ...theme.unstable_sx(sx ?? {}),
+        }
+      }}
     >
       {showRaw ? raw : display}
-    </span>
+    </Typography>
   )
 }

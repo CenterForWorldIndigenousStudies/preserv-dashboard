@@ -1,10 +1,54 @@
 import type { ReactElement, ReactNode } from 'react'
+import { Box, Typography } from '@mui/material'
+import type { SxProps, Theme } from '@mui/material/styles'
 
-export function TableStat({ label, value }: { label: string; value: ReactNode }): ReactElement {
+interface TableStatProps {
+  label: string
+  value: ReactNode
+  sx?: SxProps<Theme>
+}
+
+export function TableStat({ label, value, sx }: TableStatProps): ReactElement {
   return (
-    <span className="inline-flex items-center gap-2 rounded-full bg-[#f4f1f0] px-3 py-1 text-xs uppercase tracking-[0.1em] text-[#5b5654]">
-      <span>{label}</span>
-      <span className="font-semibold text-[#231f20]">{value}</span>
-    </span>
+    <Box
+      component="span"
+      sx={(theme: Theme) => ({
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 1,
+        borderRadius: '9999px',
+        backgroundColor: theme.palette.sand?.main ?? theme.palette.background.default,
+        px: 1.5,
+        py: 0.5,
+        ...theme.unstable_sx(sx ?? {}),
+      })}
+    >
+      <Typography
+        component="span"
+        variant="caption"
+        sx={{
+          color: 'text.secondary',
+          fontSize: '0.75rem',
+          fontWeight: 500,
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+        }}
+      >
+        {label}
+      </Typography>
+      <Typography
+        component="span"
+        variant="caption"
+        sx={{
+          color: 'text.primary',
+          fontSize: '0.75rem',
+          fontWeight: 600,
+          letterSpacing: '0.1em',
+          textTransform: 'uppercase',
+        }}
+      >
+        {value}
+      </Typography>
+    </Box>
   )
 }

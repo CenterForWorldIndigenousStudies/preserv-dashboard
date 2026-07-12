@@ -23,7 +23,7 @@ export const Zero: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Click the displayed date to toggle between `0` and `0 bytes`.',
+        story: 'Click the displayed file size to toggle between `0` and `0 bytes`.',
       },
     },
   },
@@ -34,7 +34,7 @@ export const Bytes: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Click the displayed date to toggle between the human-readable format and raw bytes.',
+        story: 'Click the displayed file size to toggle between the human-readable format and raw bytes.',
       },
     },
   },
@@ -45,7 +45,7 @@ export const Kilobytes: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Click the displayed date to toggle between the human-readable format and raw bytes.',
+        story: 'Click the displayed file size to toggle between the human-readable format and raw bytes.',
       },
     },
   },
@@ -56,7 +56,7 @@ export const Megabytes: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Click the displayed date to toggle between the human-readable format and raw bytes.',
+        story: 'Click the displayed file size to toggle between the human-readable format and raw bytes.',
       },
     },
   },
@@ -67,7 +67,7 @@ export const Gigabytes: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Click the displayed date to toggle between the human-readable format and raw bytes.',
+        story: 'Click the displayed file size to toggle between the human-readable format and raw bytes.',
       },
     },
   },
@@ -78,7 +78,7 @@ export const Terabytes: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Click the displayed date to toggle between the human-readable format and raw bytes.',
+        story: 'Click the displayed file size to toggle between the human-readable format and raw bytes.',
       },
     },
   },
@@ -113,7 +113,7 @@ export const BigIntValue: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Click the displayed date to toggle between the human-readable format and raw bytes.',
+        story: 'Click the displayed file size to toggle between the human-readable format and raw bytes.',
       },
     },
   },
