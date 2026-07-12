@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { Box } from '@mui/material'
 import { IconSpinner } from '@atoms/icons/IconSpinner'
 
 import { SidebarHeader } from '@atoms/SidebarHeader'
@@ -39,14 +40,14 @@ export const Default: Story = {}
 
 export const WithAction: Story = {
   args: {
-    action: (
-      <IconSpinner/>
-    ),
+    action: <IconSpinner />,
   },
 }
 
-export const WithBorderClass: Story = {
-  args: {
-    className: 'border-b border-moss/10',
-  },
+export const WithBorder: Story = {
+  render: (args) => (
+    <Box sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
+      <SidebarHeader {...args} />
+    </Box>
+  ),
 }

@@ -1,5 +1,6 @@
 import type { ReactElement, ReactNode, ButtonHTMLAttributes } from 'react'
 import MuiButton from '@mui/material/Button'
+import type { SxProps, Theme } from '@mui/material/styles'
 import type { LinkProps } from 'next/link'
 import { IconSpinner } from '@atoms/icons/IconSpinner'
 
@@ -34,6 +35,7 @@ interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'col
   component?: React.ElementType
   href?: LinkProps['href']
   children?: ReactNode
+  sx?: SxProps<Theme>
 }
 
 export function Button({
@@ -47,15 +49,12 @@ export function Button({
   disabled,
   component,
   href,
+  sx,
   ...props
 }: ButtonProps): ReactElement {
   const muiSize = sizeMap[size]
   const spinnerSize = spinnerSizeMap[size]
   const loadingIcon = loading ? <IconSpinner size={spinnerSize} /> : undefined
-  const loadingClass = loading
-    ? '[&.Mui-disabled]:!opacity-100 [&.Mui-disabled]:!text-ink/60 [&.Mui-disabled]:cursor-wait [&_.MuiButton-startIcon]:mr-2 [&_.MuiButton-startIcon]:ml-0'
-    : ''
-  const componentClass = `${className} ${loadingClass}`.trim()
 
   const resolvedHref: string | undefined = ((): string | undefined => {
     if (href === null || href === undefined) return undefined
@@ -75,7 +74,23 @@ export function Button({
       fullWidth={fullWidth}
       disabled={disabled || loading}
       startIcon={loadingIcon || startIcon}
-      className={componentClass}
+      className={className || undefined}
+      sx={(theme: Theme) => ({
+        ...(loading
+          ? {
+              '&.Mui-disabled': {
+                opacity: 1,
+                color: theme.palette.text.secondary,
+                cursor: 'wait',
+              },
+              '& .MuiButton-startIcon': {
+                mr: 2,
+                ml: 0,
+              },
+            }
+          : {}),
+        ...theme.unstable_sx(sx ?? {}),
+      })}
     >
       {children}
     </MuiButton>

@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { Stack } from '@mui/material'
 import { FilterPill } from '@atoms/FilterPill'
 
 const meta = {
@@ -37,11 +38,11 @@ export const AllFilters: Story = {
     className: { control: false },
   },
   render: () => (
-    <div className="flex flex-wrap gap-3">
+    <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap' }}>
       <FilterPill label="All" isActive={true} href="/documents" />
       <FilterPill label="Completed" isActive={false} href="/documents?state=completed" />
       <FilterPill label="Failed" isActive={false} href="/documents?state=failed" />
       <FilterPill label="Under Review" isActive={false} href="/documents?state=under_review" />
-    </div>
+    </Stack>
   ),
 }

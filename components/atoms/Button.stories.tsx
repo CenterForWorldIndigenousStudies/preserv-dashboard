@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { Box } from '@mui/material'
 import { Button, sizeMap, variantMap } from '@atoms/Button'
 
 const meta = {
@@ -62,9 +63,9 @@ export const Default: Story = {
     const variant = args.variant ? variantMap[args.variant] : 'Default'
     const buttonText = args.children ? args.children : variant
     return (
-      <div style={{ width: '80vw', textAlign: 'center' }}>
+      <Box sx={{ width: '80vw', textAlign: 'center' }}>
         <Button {...args}>{buttonText}</Button>
-      </div>
+      </Box>
     )
   },
 }
@@ -78,9 +79,9 @@ export const Sizes: Story = {
     const buttonSize = args.size ? sizeMap[args.size] : 'Default'
     const buttonText = args.children ? args.children : `Button Size: ${buttonSize}`
     return (
-      <div style={{ width: '80vw', textAlign: 'center' }}>
+      <Box sx={{ width: '80vw', textAlign: 'center' }}>
         <Button {...args}>{buttonText}</Button>
-      </div>
+      </Box>
     )
   },
 }
@@ -93,9 +94,9 @@ export const Loading: Story = {
   },
   render: (args) => {
     return (
-      <div style={{ width: '80vw', textAlign: 'center' }}>
+      <Box sx={{ width: '80vw', textAlign: 'center' }}>
         <Button {...args} />
-      </div>
+      </Box>
     )
   },
 }
@@ -108,9 +109,9 @@ export const FullWidth: Story = {
   render: (args) => {
     const buttonText = args.fullWidth ? 'Full Width Button' : 'Normal Button'
     return (
-      <div style={{ width: '80vw', textAlign: 'center' }}>
+      <Box sx={{ width: '80vw', textAlign: 'center' }}>
         <Button {...args}>{buttonText}</Button>
-      </div>
+      </Box>
     )
   },
 }
@@ -124,9 +125,9 @@ export const Disabled: Story = {
   render: (args) => {
     const buttonText = args.children ? args.children : args.disabled ? 'Disabled' : 'Button Text'
     return (
-      <div style={{ width: '80vw', textAlign: 'center' }}>
+      <Box sx={{ width: '80vw', textAlign: 'center' }}>
         <Button {...args}>{buttonText}</Button>
-      </div>
+      </Box>
     )
   },
 }

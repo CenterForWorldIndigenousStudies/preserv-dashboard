@@ -51,7 +51,8 @@ const config: StorybookConfig = {
           // this lightweight stub is sufficient for the storybook build.
           '@lib/prisma/generated/client': path.resolve(__dirname, '../lib/prisma.storybook.ts'),
           // Client stories only need the browser-safe utilities from this module.
-          '@lib/tag-utils': path.resolve(__dirname, '../lib/tag-utils.storybook.ts'),
+          '@lib/tag-utils': path.resolve(__dirname, '../lib/tagUtils.storybook.ts'),
+          '@lib/tagUtils': path.resolve(__dirname, '../lib/tagUtils.storybook.ts'),
         },
       },
       define: {

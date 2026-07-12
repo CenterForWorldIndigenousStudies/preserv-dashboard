@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { Stack } from '@mui/material'
 import { StateBadge, stateVariantMap } from '@atoms/Badges/StateBadge'
 
 const states = [...Object.keys(stateVariantMap), 'ingested', 'normalized', 'pending']
@@ -28,10 +29,10 @@ export const DefaultStateBadge: Story = {
 
 export const AllStates: Story = {
   render: () => (
-    <div className="flex flex-wrap gap-3">
+    <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap' }}>
       {states.map((state, index) => (
         <StateBadge key={`${state}-${index}`} state={state} />
       ))}
-    </div>
+    </Stack>
   ),
 }

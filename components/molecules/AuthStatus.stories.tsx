@@ -1,4 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { Paper, Stack, Typography } from '@mui/material'
+import { Button } from '@atoms/Button'
 import AuthStatus from '@molecules/AuthStatus'
 
 const meta = {
@@ -18,21 +20,29 @@ type Story = StoryObj<typeof meta>
 // We use render functions with mock sessions to demonstrate both states.
 export const SignedIn: Story = {
   render: () => (
-    <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
-      <p className="mb-1 text-xs uppercase tracking-[0.15em] text-ink/60">Authenticated</p>
-      <div className="flex items-center gap-3">
-        <span className="text-sm font-medium text-ink">marygoldaross@cwis.org</span>
-        <button className="rounded-full bg-ink/10 px-4 py-2 text-sm text-ink hover:bg-ink/20">Sign Out</button>
-      </div>
-    </div>
+    <Paper sx={{ border: '1px solid', borderColor: 'divider', p: 3 }}>
+      <Typography variant="overline" sx={{ color: 'text.secondary' }}>
+        Authenticated
+      </Typography>
+      <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', mt: 0.5 }}>
+        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+          marygoldaross@cwis.org
+        </Typography>
+        <Button variant="ghost">Sign Out</Button>
+      </Stack>
+    </Paper>
   ),
 }
 
 export const SignedOut: Story = {
   render: () => (
-    <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
-      <p className="mb-1 text-xs uppercase tracking-[0.15em] text-ink/60">Not Authenticated</p>
-      <button className="rounded-full bg-moss px-4 py-2 text-sm text-white hover:bg-moss/90">Sign In</button>
-    </div>
+    <Paper sx={{ border: '1px solid', borderColor: 'divider', p: 3 }}>
+      <Typography variant="overline" sx={{ color: 'text.secondary' }}>
+        Not Authenticated
+      </Typography>
+      <Stack sx={{ mt: 0.5 }}>
+        <Button variant="primary">Sign In</Button>
+      </Stack>
+    </Paper>
   ),
 }

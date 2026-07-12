@@ -2,6 +2,7 @@
 
 import NextLink from 'next/link'
 import { useSession, signOut } from 'next-auth/react'
+import { Stack, Typography } from '@mui/material'
 import { SIGNIN_PATH } from '@constants/paths'
 
 import { Button } from '@atoms/Button'
@@ -26,8 +27,10 @@ export default function AuthStatus() {
   }
 
   return (
-    <div className={`flex items-center gap-3`}>
-      <span className={`text-xs text-ink/60`}>{session?.user?.email}</span>
+    <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+        {session?.user?.email}
+      </Typography>
       <Button
         onClick={() => {
           void signOut({ redirectTo: SIGNIN_PATH })
@@ -36,6 +39,6 @@ export default function AuthStatus() {
       >
         {'Sign Out'}
       </Button>
-    </div>
+    </Stack>
   )
 }
