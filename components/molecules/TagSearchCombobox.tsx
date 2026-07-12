@@ -2,7 +2,9 @@
 
 import { useMemo, useState, type ReactElement, type SyntheticEvent } from 'react'
 import Autocomplete from '@mui/material/Autocomplete'
+import Box from '@mui/material/Box'
 import TextField from '@mui/material/TextField'
+import Typography from '@mui/material/Typography'
 import { useTagSearch, type TagSuggestion } from '@lib/hooks/useTagSearch'
 
 interface CreateOption {
@@ -126,13 +128,23 @@ export function TagSearchCombobox({
         const helperText = 'inputValue' in option ? null : (getOptionHelperText?.(option) ?? null)
 
         return (
-          <li key={key} {...optionProps}>
-            <div className={`flex flex-col ${optionDisabled ? 'opacity-50' : ''}`}>
-              <span className="font-medium text-ink">{option.name}</span>
-              {option.notes ? <span className="text-sm text-ink/60">{option.notes}</span> : null}
-              {helperText ? <span className="text-sm text-ink/50">{helperText}</span> : null}
-            </div>
-          </li>
+          <Box component="li" key={key} {...optionProps} sx={{ opacity: optionDisabled ? 0.5 : 1 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+              <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500 }}>
+                {option.name}
+              </Typography>
+              {option.notes ? (
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                  {option.notes}
+                </Typography>
+              ) : null}
+              {helperText ? (
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                  {helperText}
+                </Typography>
+              ) : null}
+            </Box>
+          </Box>
         )
       }}
       renderInput={(params) => (

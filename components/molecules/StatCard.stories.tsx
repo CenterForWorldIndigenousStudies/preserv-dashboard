@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import Box from '@mui/material/Box'
 import { DOCUMENTS_API_PATH, FAILED_PATH, REVIEW_QUEUE_PATH } from '@constants/paths'
 import { StatCard } from '@molecules/StatCard'
 
@@ -60,10 +61,20 @@ export const CollectionSize: Story = {
 
 export const AllCards: Story = {
   render: () => (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <Box
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: {
+          xs: '1fr',
+          sm: 'repeat(2, minmax(0, 1fr))',
+          lg: 'repeat(3, minmax(0, 1fr))',
+        },
+        gap: 2,
+      }}
+    >
       <StatCard title="Total Documents" value={12847} href={DOCUMENTS_API_PATH} />
       <StatCard title="Pending Review" value={342} href={REVIEW_QUEUE_PATH} />
       <StatCard title="Failed Pipeline" value={7} href={FAILED_PATH} />
-    </div>
+    </Box>
   ),
 }

@@ -1,4 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import Stack from '@mui/material/Stack'
+import Typography from '@mui/material/Typography'
 import { useState } from 'react'
 import type { Document } from 'types/documents'
 
@@ -79,7 +81,7 @@ function InteractiveWrapper(args: {
   const [checked, setChecked] = useState<Set<string>>(new Set())
 
   return (
-    <div className="space-y-4">
+    <Stack spacing={2}>
       <SelectionTable
         {...args}
         documents={args.documents}
@@ -99,14 +101,15 @@ function InteractiveWrapper(args: {
           })
         }}
       />
-      <p style={{ fontSize: '0.875rem', color: '#231f20' }}>
+      <Typography variant="body2" color="text.primary">
         Selected: {checked.size} document{checked.size !== 1 ? 's' : ''}
-      </p>
-    </div>
+      </Typography>
+    </Stack>
   )
 }
 
 const meta: Meta<typeof SelectionTable> = {
+  title: 'Molecules/SelectionTable',
   component: SelectionTable,
   tags: ['autodocs'],
 }

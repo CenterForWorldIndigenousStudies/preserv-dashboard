@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { TagPill } from '@molecules/TagPill'
+import Box from '@mui/material/Box'
+import { TagPill } from '@atoms/TagPill'
 
 const meta = {
-  title: 'Molecules/TagPill',
+  title: 'Atoms/TagPill',
   component: TagPill,
   tags: ['autodocs'],
   args: {
@@ -30,10 +31,10 @@ export const Default: Story = {
 
 export const MultipleTags: Story = {
   render: (args) => (
-    <div className="flex flex-wrap gap-2">
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
       <TagPill {...{ ...args, tag: 'Cherokee Language' }} />
       <TagPill {...{ ...args, tag: 'Cultural Archive' }} />
       <TagPill {...{ ...args, tag: 'Oral History' }} />
-    </div>
+    </Box>
   ),
 }

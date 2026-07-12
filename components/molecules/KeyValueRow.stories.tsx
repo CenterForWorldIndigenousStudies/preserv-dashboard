@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import Box from '@mui/material/Box'
 
 import { DateAtom } from '@atoms/Date'
 import { KeyValueRow } from './KeyValueRow'
@@ -7,6 +8,9 @@ const meta = {
   title: 'Molecules/KeyValueRow',
   component: KeyValueRow,
   tags: ['autodocs'],
+  parameters: {
+    backgrounds: { default: 'sand' },
+  },
 } satisfies Meta<typeof KeyValueRow>
 
 export default meta
@@ -54,9 +58,9 @@ export const LongStringValue: Story = {
   },
   decorators: [
     (Story) => (
-      <div style={{ maxWidth: 600 }}>
+      <Box sx={{ maxWidth: 600, mx: 'auto' }}>
         <Story />
-      </div>
+      </Box>
     ),
   ],
 }

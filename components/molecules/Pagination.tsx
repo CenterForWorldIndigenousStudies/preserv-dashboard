@@ -1,5 +1,8 @@
 import type { ReactElement } from 'react'
-import Link from 'next/link'
+import NextLink from 'next/link'
+import { Paper, Stack, Typography } from '@mui/material'
+
+import { Button } from '@atoms/Button'
 
 interface PaginationProps {
   currentPage: number
@@ -16,30 +19,42 @@ export function Pagination({ currentPage, totalItems, pageSize, buildHref }: Pag
   }
 
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-moss/15 bg-white px-4 py-3 shadow-panel">
-      <p className="text-sm text-ink/70">
+    <Paper
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 1.5,
+        flexWrap: 'wrap',
+        border: '1px solid',
+        borderColor: 'divider',
+        px: 2,
+        py: 1.5,
+      }}
+    >
+      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
         Page {currentPage} of {totalPages}
-      </p>
-      <div className="flex gap-2">
-        <Link
+      </Typography>
+      <Stack direction="row" spacing={1}>
+        <Button
+          component={NextLink}
           href={buildHref(Math.max(1, currentPage - 1))}
-          className={`rounded-full px-4 py-2 text-sm ${
-            currentPage === 1 ? 'pointer-events-none bg-stone-100 text-stone-400' : 'bg-moss text-white hover:bg-ink'
-          }`}
+          variant="primary"
+          size="sm"
+          disabled={currentPage === 1}
         >
           Previous
-        </Link>
-        <Link
+        </Button>
+        <Button
+          component={NextLink}
           href={buildHref(Math.min(totalPages, currentPage + 1))}
-          className={`rounded-full px-4 py-2 text-sm ${
-            currentPage === totalPages
-              ? 'pointer-events-none bg-stone-100 text-stone-400'
-              : 'bg-moss text-white hover:bg-ink'
-          }`}
+          variant="primary"
+          size="sm"
+          disabled={currentPage === totalPages}
         >
           Next
-        </Link>
-      </div>
-    </div>
+        </Button>
+      </Stack>
+    </Paper>
   )
 }

@@ -1,4 +1,5 @@
 import type { ReactElement, ReactNode } from 'react'
+import { Stack, TextField } from '@mui/material'
 
 import { TableStat } from '@atoms/TableStat'
 import { DocumentTablePageSizeSelect } from '@molecules/DocumentTablePageSizeSelect'
@@ -27,22 +28,32 @@ export function DocumentTableToolbar({
   trailingSlot,
 }: DocumentTableToolbarProps): ReactElement {
   return (
-    <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <input
-          type="text"
+    <Stack
+      direction={{ xs: 'column', md: 'row' }}
+      spacing={1.5}
+      sx={{
+        alignItems: { xs: 'stretch', md: 'center' },
+        justifyContent: 'space-between',
+        mb: 2,
+      }}
+    >
+      <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+        <TextField
+          type="search"
+          size="small"
           placeholder={searchPlaceholder}
           value={searchValue}
           onChange={(event) => onSearchChange(event.target.value)}
-          className="w-64 rounded-lg border border-[#355834]/20 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#355834]/30"
+          slotProps={{ htmlInput: { 'aria-label': searchPlaceholder } }}
+          sx={{ width: { xs: '100%', sm: 256 } }}
         />
         {leadingSlot}
         {typeof totalCount === 'number' ? <TableStat label="results" value={totalCount} /> : null}
-      </div>
-      <div className="flex flex-wrap items-center gap-2">
+      </Stack>
+      <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
         {trailingSlot}
         <DocumentTablePageSizeSelect options={pageSizeOptions} value={pageSize} onChange={onPageSizeChange} />
-      </div>
-    </div>
+      </Stack>
+    </Stack>
   )
 }

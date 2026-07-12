@@ -360,8 +360,9 @@ export function SelectionTable(props: SelectionTableProps): ReactElement {
   return (
     <Paper
       sx={{
-        borderRadius: '1rem',
-        border: '1px solid rgba(53,88,52,0.125)',
+        borderRadius: 2,
+        border: 1,
+        borderColor: 'divider',
         overflow: 'hidden',
         flex: 1,
         minHeight: 0,
@@ -369,8 +370,10 @@ export function SelectionTable(props: SelectionTableProps): ReactElement {
         flexDirection: 'column',
       }}
     >
-      <Box sx={{ borderBottom: '1px solid rgba(53,88,52,0.125)', p: 2 }}>
-        <Typography sx={{ color: '#231f20', fontSize: '1rem', fontWeight: 600 }}>{props.title}</Typography>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', p: 2 }}>
+        <Typography variant="h6" color="text.primary">
+          {props.title}
+        </Typography>
       </Box>
 
       <Box sx={{ flex: 1, minHeight: 0, p: 2 }}>

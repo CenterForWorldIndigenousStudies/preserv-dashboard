@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, type MouseEvent, type ReactEl
 import { Button } from '@atoms/Button'
 import { IconX } from '@atoms/icons/IconX'
 import { DOCUMENTS_API_PATH } from '@constants/paths'
-import { TagPill } from '@molecules/TagPill'
+import { TagPill } from '@atoms/TagPill'
 
 interface AssignCollectionButtonProps {
   /** The document ID to update */

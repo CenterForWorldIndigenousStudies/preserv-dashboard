@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react'
+import { Stack, Typography } from '@mui/material'
 
 import { Button } from '@atoms/Button'
 import type { DocumentTablePageInfo } from '@organisms/document-table/types'
@@ -17,16 +18,26 @@ export function DocumentTableCursorPager({
   onPrevious,
 }: DocumentTableCursorPagerProps): ReactElement {
   return (
-    <div className="mt-4 flex items-center justify-between gap-3 text-sm text-[#231f20]/60">
-      <span>Page {page}</span>
-      <div className="flex items-center gap-2">
+    <Stack
+      direction="row"
+      spacing={1.5}
+      sx={{
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        mt: 2,
+        color: 'text.secondary',
+        flexWrap: 'wrap',
+      }}
+    >
+      <Typography variant="body2">Page {page}</Typography>
+      <Stack direction="row" spacing={1}>
         <Button variant="ghost" size="sm" disabled={!pageInfo.hasPreviousPage} onClick={onPrevious}>
-          Previous
+          {'Previous'}
         </Button>
         <Button variant="ghost" size="sm" disabled={!pageInfo.hasNextPage} onClick={onNext}>
-          Next
+          {'Next'}
         </Button>
-      </div>
-    </div>
+      </Stack>
+    </Stack>
   )
 }

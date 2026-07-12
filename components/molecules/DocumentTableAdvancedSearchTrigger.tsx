@@ -1,4 +1,5 @@
 import type { ReactElement, ReactNode } from 'react'
+import { Stack } from '@mui/material'
 
 import { TableStat } from '@atoms/TableStat'
 
@@ -12,9 +13,9 @@ export function DocumentTableAdvancedSearchTrigger({
   children,
 }: DocumentTableAdvancedSearchTriggerProps): ReactElement {
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
       {children}
       {activeFilterCount > 0 ? <TableStat label="active filters" value={activeFilterCount} /> : null}
-    </div>
+    </Stack>
   )
 }
