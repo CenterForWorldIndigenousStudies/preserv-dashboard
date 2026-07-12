@@ -81,7 +81,7 @@ export function AppShell({ children }: AppShellProps): ReactElement {
       <Box sx={{ display: { xs: 'none', md: 'block' } }}>
         <Box
           sx={{
-            ml: sidebarCollapsed ? 0 : '-12px',
+            ml: 0,
             position: 'sticky',
             top: 80,
             transition: 'margin 0.3s ease-in-out',

@@ -2,17 +2,17 @@ import { Suspense } from 'react'
 import { DocumentsTable } from '@organisms/DocumentsTable'
 import { PageHeader } from '@organisms/PageHeader'
 import {
-  normalizeOverviewAccessLevel,
-  normalizeOverviewDateFilter,
-  normalizeOverviewDocumentType,
-  normalizeOverviewTextFilter,
-  parseOverviewStatusesParam,
-} from '@lib/overviewSearch'
-import { getAllDocuments, getOverviewFilterOptions, type DocumentsQueryParams } from '@lib/queries'
+  normalizeAccessLevel,
+  normalizeDateFilter,
+  normalizeDocumentType,
+  normalizeTextFilter,
+  parseStatusesParam,
+} from '@lib/search'
+import { getAllDocuments, getDocumentFilterOptions, type DocumentsQueryParams } from '@lib/queries'
 
 export const dynamic = 'force-dynamic'
 
-interface OverviewPageProps {
+interface DocumentsPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
@@ -20,20 +20,20 @@ function firstSearchParam(value: string | string[] | undefined): string | undefi
   return Array.isArray(value) ? value[0] : value
 }
 
-function parseOverviewQueryParams(params: Record<string, string | string[] | undefined>): DocumentsQueryParams {
+function parseDocumentQueryParams(params: Record<string, string | string[] | undefined>): DocumentsQueryParams {
   const page = Number(firstSearchParam(params.page))
   const pageSize = Number(firstSearchParam(params.pageSize))
   const orderBy = firstSearchParam(params.orderBy) as DocumentsQueryParams['orderBy']
   const sortDirection = firstSearchParam(params.sortDirection) as DocumentsQueryParams['sortDirection']
-  const search = normalizeOverviewTextFilter(firstSearchParam(params.search))
-  const tag = normalizeOverviewTextFilter(firstSearchParam(params.tag))
-  const batch = normalizeOverviewTextFilter(firstSearchParam(params.batch))
-  const collection = normalizeOverviewTextFilter(firstSearchParam(params.collection))
-  const createdFrom = normalizeOverviewDateFilter(firstSearchParam(params.createdFrom))
-  const createdTo = normalizeOverviewDateFilter(firstSearchParam(params.createdTo))
-  const accessLevel = normalizeOverviewAccessLevel(firstSearchParam(params.accessLevel))
-  const documentType = normalizeOverviewDocumentType(firstSearchParam(params.documentType))
-  const statuses = parseOverviewStatusesParam(params.statuses)
+  const search = normalizeTextFilter(firstSearchParam(params.search))
+  const tag = normalizeTextFilter(firstSearchParam(params.tag))
+  const batch = normalizeTextFilter(firstSearchParam(params.batch))
+  const collection = normalizeTextFilter(firstSearchParam(params.collection))
+  const createdFrom = normalizeDateFilter(firstSearchParam(params.createdFrom))
+  const createdTo = normalizeDateFilter(firstSearchParam(params.createdTo))
+  const accessLevel = normalizeAccessLevel(firstSearchParam(params.accessLevel))
+  const documentType = normalizeDocumentType(firstSearchParam(params.documentType))
+  const statuses = parseStatusesParam(params.statuses)
   const cursorValue = firstSearchParam(params.cursorValue)
   const cursorId = firstSearchParam(params.cursorId)
   const cursorDirection = firstSearchParam(params.cursorDirection) as DocumentsQueryParams['cursorDirection']
@@ -59,14 +59,15 @@ function parseOverviewQueryParams(params: Record<string, string | string[] | und
   }
 }
 
-async function OverviewContent({ searchParams }: OverviewPageProps) {
+async function DocumentsContent({ searchParams }: DocumentsPageProps) {
   const resolvedSearchParams = await searchParams
-  const initialQuery = parseOverviewQueryParams(resolvedSearchParams)
-  const [initialData, filterOptions] = await Promise.all([getAllDocuments(initialQuery), getOverviewFilterOptions()])
+  const initialQuery = parseDocumentQueryParams(resolvedSearchParams)
+  const [initialData, filterOptions] = await Promise.all([getAllDocuments(initialQuery), getDocumentFilterOptions()])
 
   return <DocumentsTable initialData={initialData} initialQuery={initialQuery} filterOptions={filterOptions} />
 }
-export default function OverviewPage({ searchParams }: OverviewPageProps) {
+
+export default function DocumentsPage({ searchParams }: DocumentsPageProps) {
   return (
     <div className="w-full space-y-8">
       <PageHeader
@@ -76,7 +77,7 @@ export default function OverviewPage({ searchParams }: OverviewPageProps) {
       />
 
       <Suspense fallback={null}>
-        <OverviewContent searchParams={searchParams} />
+        <DocumentsContent searchParams={searchParams} />
       </Suspense>
     </div>
   )

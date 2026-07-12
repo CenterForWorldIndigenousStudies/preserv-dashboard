@@ -1,18 +1,18 @@
 import {
-  OVERVIEW_ACCESS_LEVEL_OPTIONS,
-  normalizeOverviewAccessLevel,
-  normalizeOverviewDateFilter,
-  normalizeOverviewDocumentType,
-  normalizeOverviewTextFilter,
-  type OverviewFilterOptions,
-} from '@lib/overviewSearch'
+  ACCESS_LEVEL_OPTIONS,
+  normalizeAccessLevel,
+  normalizeDateFilter,
+  normalizeDocumentType,
+  normalizeTextFilter,
+  type FilterOptions,
+} from '@lib/search'
 import { getNeedsReviewDocuments, type DocumentsQueryParams } from '@lib/queries'
 import { DocumentsTable } from '@organisms/DocumentsTable'
 import { ReviewQueuePageProps } from 'types/reviewQueue'
 
-const REVIEW_QUEUE_FILTER_OPTIONS: OverviewFilterOptions = {
+const REVIEW_QUEUE_FILTER_OPTIONS: FilterOptions = {
   collections: [],
-  accessLevels: [...OVERVIEW_ACCESS_LEVEL_OPTIONS],
+  accessLevels: [...ACCESS_LEVEL_OPTIONS],
   statuses: ['NEEDS_REVIEW'],
 }
 
@@ -25,14 +25,14 @@ function parseReviewQueueQueryParams(params: Record<string, string | string[] | 
   const pageSize = Number(firstSearchParam(params.pageSize))
   const orderBy = firstSearchParam(params.orderBy) as DocumentsQueryParams['orderBy']
   const sortDirection = firstSearchParam(params.sortDirection) as DocumentsQueryParams['sortDirection']
-  const search = normalizeOverviewTextFilter(firstSearchParam(params.search))
-  const tag = normalizeOverviewTextFilter(firstSearchParam(params.tag))
-  const batch = normalizeOverviewTextFilter(firstSearchParam(params.batch))
-  const collection = normalizeOverviewTextFilter(firstSearchParam(params.collection))
-  const createdFrom = normalizeOverviewDateFilter(firstSearchParam(params.createdFrom))
-  const createdTo = normalizeOverviewDateFilter(firstSearchParam(params.createdTo))
-  const accessLevel = normalizeOverviewAccessLevel(firstSearchParam(params.accessLevel))
-  const documentType = normalizeOverviewDocumentType(firstSearchParam(params.documentType))
+  const search = normalizeTextFilter(firstSearchParam(params.search))
+  const tag = normalizeTextFilter(firstSearchParam(params.tag))
+  const batch = normalizeTextFilter(firstSearchParam(params.batch))
+  const collection = normalizeTextFilter(firstSearchParam(params.collection))
+  const createdFrom = normalizeDateFilter(firstSearchParam(params.createdFrom))
+  const createdTo = normalizeDateFilter(firstSearchParam(params.createdTo))
+  const accessLevel = normalizeAccessLevel(firstSearchParam(params.accessLevel))
+  const documentType = normalizeDocumentType(firstSearchParam(params.documentType))
   const cursorValue = firstSearchParam(params.cursorValue)
   const cursorId = firstSearchParam(params.cursorId)
   const cursorDirection = firstSearchParam(params.cursorDirection) as DocumentsQueryParams['cursorDirection']

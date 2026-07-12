@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { DocumentsTable } from '@components/organisms/DocumentsTable'
-import type { OverviewFilterOptions } from '@lib/overviewSearch'
+import type { FilterOptions } from '@lib/search'
 import type { Document } from 'types/documents'
 import type { DocumentsPageResult } from 'types/pagination'
 
@@ -37,7 +37,7 @@ const mockDocuments: Document[] = [
   },
 ]
 
-const filterOptions: OverviewFilterOptions = {
+const filterOptions: FilterOptions = {
   collections: ['Plateau', 'Southwest', 'Pacific Northwest'],
   accessLevels: ['open access', 'restricted', 'internal', 'confidential'],
   statuses: ['APPROVED', 'NEEDS_REVIEW', 'REJECTED', 'VALIDATED'],

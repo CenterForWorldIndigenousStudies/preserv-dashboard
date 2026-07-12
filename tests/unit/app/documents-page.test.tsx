@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@lib/queries', () => ({
   getAllDocuments: vi.fn(),
-  getOverviewFilterOptions: vi.fn(),
+  getDocumentFilterOptions: vi.fn(),
 }))
 
 vi.mock('@organisms/DocumentsTable', () => ({

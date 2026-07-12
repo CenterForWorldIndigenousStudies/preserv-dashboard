@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import type { OverviewAdvancedSearchFilters, OverviewFilterOptions } from '@lib/overviewSearch'
+import type { AdvancedSearchFilters, FilterOptions } from '@lib/search'
 
-import { OverviewAdvancedSearchModal } from './OverviewAdvancedSearchModal'
+import { AdvancedSearchModal } from './AdvancedSearchModal'
 
-const defaultFilters: OverviewAdvancedSearchFilters = {
+const defaultFilters: AdvancedSearchFilters = {
   author: '',
   statuses: [],
   documentType: 'all',
@@ -14,14 +14,14 @@ const defaultFilters: OverviewAdvancedSearchFilters = {
   accessLevel: undefined,
 }
 
-const defaultFilterOptions: OverviewFilterOptions = {
+const defaultFilterOptions: FilterOptions = {
   collections: ['Nicaragua Conflict Documentation', 'First Nations Canada', 'Indigenous Health Conference'],
   accessLevels: ['open access', 'restricted', 'internal', 'confidential'],
   statuses: ['APPROVED', 'NEEDS_REVIEW', 'REJECTED', 'VALIDATED'],
 }
 
-const meta: Meta<typeof OverviewAdvancedSearchModal> = {
-  component: OverviewAdvancedSearchModal,
+const meta: Meta<typeof AdvancedSearchModal> = {
+  component: AdvancedSearchModal,
   tags: ['autodocs'],
   args: {
     filters: defaultFilters,

@@ -10,7 +10,7 @@ import {
   getCollectionDocuments,
   getDocumentsForCollection,
   getDocumentsNotInCollection,
-  getOverviewFilterOptions,
+  getDocumentFilterOptions,
 } from '@lib/queries'
 import { resetTestDatabase } from '../support/test-db'
 import { withRollbackTransaction } from '../support/transaction'
@@ -64,7 +64,7 @@ describe('collection queries (integration)', () => {
           },
         })
 
-        const filterOptions = await getOverviewFilterOptions()
+        const filterOptions = await getDocumentFilterOptions()
         expect(filterOptions.collections).not.toContain('Not A Collection Tag')
       })
     })

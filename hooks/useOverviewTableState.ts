@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import type { MRT_SortingState } from 'material-react-table'
 
-import { serializeOverviewStatusesParam, type OverviewAdvancedSearchFilters } from '@lib/overviewSearch'
+import { serializeStatusesParam, type AdvancedSearchFilters } from '@lib/search'
 import type { DocumentsQueryParams } from '@lib/queries'
 import type { DocumentsCursor } from 'types/pagination'
 
@@ -45,7 +45,7 @@ function buildComparableQueryShape(queryParams: DocumentsQueryParams | undefined
     queryParams?.sortDirection,
     queryParams?.search,
     queryParams?.tag,
-    serializeOverviewStatusesParam(queryParams?.statuses),
+    serializeStatusesParam(queryParams?.statuses),
     queryParams?.documentType,
     queryParams?.batch,
     queryParams?.createdFrom,
@@ -71,7 +71,7 @@ function syncSearchParam(nextParams: URLSearchParams, key: string, value: string
 function syncOverviewFilterSearchParams(nextParams: URLSearchParams, queryParams: DocumentsQueryParams): void {
   syncSearchParam(nextParams, 'search', queryParams.search)
   syncSearchParam(nextParams, 'tag', queryParams.tag)
-  syncSearchParam(nextParams, 'statuses', serializeOverviewStatusesParam(queryParams.statuses))
+  syncSearchParam(nextParams, 'statuses', serializeStatusesParam(queryParams.statuses))
   syncSearchParam(
     nextParams,
     'documentType',
@@ -232,7 +232,7 @@ export function useOverviewTableState(initialQuery?: DocumentsQueryParams) {
       setGlobalFilter(nextValue)
       resetToFirstPage()
     },
-    setOverviewFilters: (filters: OverviewAdvancedSearchFilters) => {
+    setOverviewFilters: (filters: AdvancedSearchFilters) => {
       setGlobalFilter(filters.author ?? '')
       setTag(filters.tag)
       setStatuses(filters.statuses)

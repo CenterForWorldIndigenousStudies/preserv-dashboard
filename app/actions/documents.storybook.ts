@@ -14,7 +14,7 @@ const EMPTY_RESULT: DocumentsPageResult = {
 }
 
 /**
- * Storybook stub for the overview server action.
+ * Storybook stub for the `getDocumentsAction` server action.
  *
  * Stories provide `initialData` directly, so the real server action should not
  * run in the browser bundle. If a story does call it, return a stable empty

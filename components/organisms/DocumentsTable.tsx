@@ -20,11 +20,7 @@ import { DateAtom } from '@atoms/Date'
 import { FileSize } from '@atoms/FileSize'
 import { DOCUMENTS_PATH } from '@constants/paths'
 import { useOverviewTableState } from '@hooks/useOverviewTableState'
-import {
-  type OverviewAdvancedSearchFilters,
-  type OverviewFilterOptions,
-  type OverviewStatusOption,
-} from '@lib/overviewSearch'
+import { type AdvancedSearchFilters, type FilterOptions, type StatusOption } from '@lib/search'
 import type { DocumentsQueryParams } from '@lib/queries'
 import { truncateString } from '@lib/strings'
 import type { Document } from 'types/documents'
@@ -33,7 +29,7 @@ import type { ReviewQueueDecision } from 'types/reviewQueue'
 import { DocumentNameBlock } from '@molecules/DocumentNameBlock'
 import { DocumentTableAdvancedSearchTrigger } from '@molecules/DocumentTableAdvancedSearchTrigger'
 import { DocumentDataTable } from '@organisms/document-table/DocumentDataTable'
-import { OverviewAdvancedSearchModal } from '@organisms/OverviewAdvancedSearchModal'
+import { AdvancedSearchModal } from '@components/organisms/AdvancedSearchModal'
 
 // ---------------------------------------------------------------------------
 // Review Queue context persistence helpers (sessionStorage-backed)
@@ -74,10 +70,10 @@ function restoreScrollPosition(savedPosition: number): void {
 interface DocumentsTableProps {
   initialData?: DocumentsPageResult
   initialQuery?: DocumentsQueryParams
-  filterOptions: OverviewFilterOptions
+  filterOptions: FilterOptions
   variant?: 'overview' | 'reviewQueue'
-  fixedStatuses?: OverviewStatusOption[]
-  defaultStatuses?: OverviewStatusOption[]
+  fixedStatuses?: StatusOption[]
+  defaultStatuses?: StatusOption[]
   serverDriven?: boolean
 }
 
@@ -510,7 +506,7 @@ export function DocumentsTable({
 }: DocumentsTableProps): ReactElement {
   const router = useRouter()
   const isReviewQueue = variant === 'reviewQueue'
-  const resolveStatuses = (nextStatuses: OverviewStatusOption[] | undefined): OverviewStatusOption[] | undefined => {
+  const resolveStatuses = (nextStatuses: StatusOption[] | undefined): StatusOption[] | undefined => {
     if (fixedStatuses?.length) {
       return fixedStatuses
     }
@@ -578,7 +574,7 @@ export function DocumentsTable({
     return currentSearch ? `${pathname}?${currentSearch}` : pathname
   }, [pathname, searchParams])
 
-  const currentFilters: OverviewAdvancedSearchFilters = useMemo(
+  const currentFilters: AdvancedSearchFilters = useMemo(
     () => ({
       author: globalFilter || undefined,
       tag: tag || undefined,
@@ -765,7 +761,7 @@ export function DocumentsTable({
 
   return (
     <div>
-      <DocumentDataTable<Document, OverviewAdvancedSearchFilters>
+      <DocumentDataTable<Document, AdvancedSearchFilters>
         definition={{
           tableId: isReviewQueue ? 'review-queue-documents' : 'overview-documents',
           columns,
@@ -894,7 +890,7 @@ export function DocumentsTable({
               ].filter(Boolean).length
             }
           >
-            <OverviewAdvancedSearchModal
+            <AdvancedSearchModal
               filters={currentFilters}
               filterOptions={filterOptions}
               onApply={(filters) => {

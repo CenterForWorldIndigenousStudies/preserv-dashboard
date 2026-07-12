@@ -1,16 +1,16 @@
 import {
-  normalizeOverviewAccessLevel,
-  normalizeOverviewDateFilter,
-  normalizeOverviewDocumentType,
-  normalizeOverviewStatuses,
-  normalizeOverviewTextFilter,
-  OVERVIEW_ACCESS_LEVEL_OPTIONS,
-  type OverviewAccessLevelOption,
-  type OverviewAdvancedSearchFilters,
-  type OverviewDocumentTypeOption,
-  type OverviewFilterOptions,
-  type OverviewStatusOption,
-} from '@lib/overviewSearch'
+  normalizeAccessLevel,
+  normalizeDateFilter,
+  normalizeDocumentType,
+  normalizeStatuses,
+  normalizeTextFilter,
+  ACCESS_LEVEL_OPTIONS,
+  type AccessLevelOption,
+  type AdvancedSearchFilters,
+  type DocumentTypeOption,
+  type FilterOptions,
+  type StatusOption,
+} from '@lib/search'
 import { REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES, REVIEW_QUEUE_SORT_FIELDS } from '@constants/reviewQueue'
 import { db } from '@lib/db'
 import { createEditHistoryEntry } from '@lib/editHistory'
@@ -106,7 +106,7 @@ const DEFAULT_OVERVIEW_SORT_TIMESTAMP = new Date('1000-01-01T00:00:00.000Z')
 const OVERVIEW_TAG_SEARCH_LIMIT = 25
 const OVERVIEW_TAG_SEARCH_MIN_SCORE = 25
 
-export interface DocumentsQueryParams extends OverviewAdvancedSearchFilters {
+export interface DocumentsQueryParams extends AdvancedSearchFilters {
   page?: number
   pageSize?: number
   orderBy?: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
@@ -164,15 +164,15 @@ export async function getAllDocuments(
       pageSize,
       orderBy: params.orderBy,
       sortDirection: params.sortDirection,
-      search: normalizeOverviewTextFilter(params.search ?? params.author),
-      tagIds: await resolveOverviewTagIds(normalizeOverviewTextFilter(params.tag), client),
-      statuses: normalizeOverviewStatuses(params.statuses),
-      documentType: normalizeOverviewDocumentType(params.documentType),
-      batch: normalizeOverviewTextFilter(params.batch),
-      createdFrom: normalizeOverviewDateFilter(params.createdFrom),
-      createdTo: normalizeOverviewDateFilter(params.createdTo),
-      collection: normalizeOverviewTextFilter(params.collection),
-      accessLevel: normalizeOverviewAccessLevel(params.accessLevel),
+      search: normalizeTextFilter(params.search ?? params.author),
+      tagIds: await resolveOverviewTagIds(normalizeTextFilter(params.tag), client),
+      statuses: normalizeStatuses(params.statuses),
+      documentType: normalizeDocumentType(params.documentType),
+      batch: normalizeTextFilter(params.batch),
+      createdFrom: normalizeDateFilter(params.createdFrom),
+      createdTo: normalizeDateFilter(params.createdTo),
+      collection: normalizeTextFilter(params.collection),
+      accessLevel: normalizeAccessLevel(params.accessLevel),
       requireValidationStatus: params.requireValidationStatus,
       cursor: params.cursorValue && params.cursorId ? { value: params.cursorValue, id: params.cursorId } : null,
       cursorDirection: params.cursorDirection,
@@ -195,15 +195,15 @@ export async function getNeedsReviewDocuments(
       pageSize,
       orderBy: params.orderBy,
       sortDirection: params.sortDirection,
-      search: normalizeOverviewTextFilter(params.search ?? params.author),
+      search: normalizeTextFilter(params.search ?? params.author),
       statuses,
-      tagIds: await resolveOverviewTagIds(normalizeOverviewTextFilter(params.tag), client),
-      documentType: normalizeOverviewDocumentType(params.documentType),
-      batch: normalizeOverviewTextFilter(params.batch),
-      createdFrom: normalizeOverviewDateFilter(params.createdFrom),
-      createdTo: normalizeOverviewDateFilter(params.createdTo),
-      collection: normalizeOverviewTextFilter(params.collection),
-      accessLevel: normalizeOverviewAccessLevel(params.accessLevel),
+      tagIds: await resolveOverviewTagIds(normalizeTextFilter(params.tag), client),
+      documentType: normalizeDocumentType(params.documentType),
+      batch: normalizeTextFilter(params.batch),
+      createdFrom: normalizeDateFilter(params.createdFrom),
+      createdTo: normalizeDateFilter(params.createdTo),
+      collection: normalizeTextFilter(params.collection),
+      accessLevel: normalizeAccessLevel(params.accessLevel),
       cursor: params.cursorValue && params.cursorId ? { value: params.cursorValue, id: params.cursorId } : null,
       cursorDirection: params.cursorDirection,
     },
@@ -236,21 +236,21 @@ export async function getNeedsReviewDocumentsCount(
 ): Promise<number> {
   const statuses = resolveReviewQueueValidationStatuses(params.statuses)
   const whereSql = buildNeedsReviewDocumentsWhereSql({
-    accessLevel: normalizeOverviewAccessLevel(params.accessLevel),
-    batch: normalizeOverviewTextFilter(params.batch),
-    collection: normalizeOverviewTextFilter(params.collection),
-    createdFrom: normalizeOverviewDateFilter(params.createdFrom),
-    createdTo: normalizeOverviewDateFilter(params.createdTo),
+    accessLevel: normalizeAccessLevel(params.accessLevel),
+    batch: normalizeTextFilter(params.batch),
+    collection: normalizeTextFilter(params.collection),
+    createdFrom: normalizeDateFilter(params.createdFrom),
+    createdTo: normalizeDateFilter(params.createdTo),
     cursor: null,
     cursorDirection: 'next',
     defaultSecondarySortExpression: undefined,
-    documentType: normalizeOverviewDocumentType(params.documentType),
-    searchTerm: normalizeOverviewTextFilter(params.search ?? params.author),
+    documentType: normalizeDocumentType(params.documentType),
+    searchTerm: normalizeTextFilter(params.search ?? params.author),
     sortDirection: 'asc',
     sortExpression: Prisma.raw(OVERVIEW_SORT_EXPRESSIONS[DEFAULT_OVERVIEW_SORT_FIELD]),
     sortField: DEFAULT_OVERVIEW_SORT_FIELD,
     statuses,
-    tagIds: await resolveOverviewTagIds(normalizeOverviewTextFilter(params.tag), client),
+    tagIds: await resolveOverviewTagIds(normalizeTextFilter(params.tag), client),
   })
 
   const result = await client.$queryRaw<Array<{ total: bigint | number }>>(Prisma.sql`
@@ -1246,13 +1246,13 @@ async function getOverviewDocumentsPage(
     sortDirection?: 'asc' | 'desc'
     search?: string
     tagIds?: string[]
-    statuses?: OverviewStatusOption[]
-    documentType?: OverviewDocumentTypeOption
+    statuses?: StatusOption[]
+    documentType?: DocumentTypeOption
     batch?: string
     createdFrom?: string
     createdTo?: string
     collection?: string
-    accessLevel?: OverviewAccessLevelOption
+    accessLevel?: AccessLevelOption
     requireValidationStatus?: boolean
     cursor?: DocumentsCursor | null
     cursorDirection?: 'next' | 'prev'
@@ -1366,14 +1366,14 @@ async function getNeedsReviewDocumentsPage(
     orderBy?: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
     sortDirection?: 'asc' | 'desc'
     search?: string
-    statuses: OverviewStatusOption[]
+    statuses: StatusOption[]
     tagIds?: string[]
-    documentType?: OverviewDocumentTypeOption
+    documentType?: DocumentTypeOption
     batch?: string
     createdFrom?: string
     createdTo?: string
     collection?: string
-    accessLevel?: OverviewAccessLevelOption
+    accessLevel?: AccessLevelOption
     cursor?: DocumentsCursor | null
     cursorDirection?: 'next' | 'prev'
   },
@@ -1464,13 +1464,13 @@ async function getNeedsReviewDocumentsPage(
 function buildOverviewDocumentsWhereSql(params: {
   searchTerm?: string
   tagIds?: string[]
-  statuses?: OverviewStatusOption[]
-  documentType?: OverviewDocumentTypeOption
+  statuses?: StatusOption[]
+  documentType?: DocumentTypeOption
   batch?: string
   createdFrom?: string
   createdTo?: string
   collection?: string
-  accessLevel?: OverviewAccessLevelOption
+  accessLevel?: AccessLevelOption
   requireValidationStatus?: boolean
   cursor?: DocumentsCursor | null
   cursorDirection: 'next' | 'prev'
@@ -1549,14 +1549,14 @@ function buildOverviewDocumentsWhereSql(params: {
 
 function buildNeedsReviewDocumentsWhereSql(params: {
   searchTerm?: string
-  statuses: OverviewStatusOption[]
+  statuses: StatusOption[]
   tagIds?: string[]
-  documentType?: OverviewDocumentTypeOption
+  documentType?: DocumentTypeOption
   batch?: string
   createdFrom?: string
   createdTo?: string
   collection?: string
-  accessLevel?: OverviewAccessLevelOption
+  accessLevel?: AccessLevelOption
   cursor?: DocumentsCursor | null
   cursorDirection: 'next' | 'prev'
   defaultSecondarySortExpression?: Prisma.Sql
@@ -1620,14 +1620,14 @@ function buildNeedsReviewDocumentsWhereSql(params: {
   return Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`
 }
 
-function resolveReviewQueueValidationStatuses(statuses: OverviewStatusOption[] | undefined): OverviewStatusOption[] {
+function resolveReviewQueueValidationStatuses(statuses: StatusOption[] | undefined): StatusOption[] {
   const allowedStatuses = new Set<string>(REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES)
-  const filteredStatuses = normalizeOverviewStatuses(statuses)?.filter((status) => allowedStatuses.has(status)) ?? []
+  const filteredStatuses = normalizeStatuses(statuses)?.filter((status) => allowedStatuses.has(status)) ?? []
 
   return filteredStatuses.length > 0 ? filteredStatuses : [...REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES]
 }
 
-function buildOverviewStatusConditionSql(statuses: OverviewStatusOption[]): Prisma.Sql {
+function buildOverviewStatusConditionSql(statuses: StatusOption[]): Prisma.Sql {
   const normalizedStatuses = Array.from(new Set(statuses.map((status) => status.toLowerCase())))
   return Prisma.sql`LOWER(COALESCE(dq.validation_status, '')) IN (${Prisma.join(normalizedStatuses)})`
 }
@@ -2070,7 +2070,9 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
     },
     isCanonical: boolean,
   ): VersionFamilyDocument => {
-    const sourceIdMetadata = row.document_to_metadata?.find((metadataLink) => metadataLink.metadata.name === 'source_id')
+    const sourceIdMetadata = row.document_to_metadata?.find(
+      (metadataLink) => metadataLink.metadata.name === 'source_id',
+    )
     const sourceId = sourceIdMetadata
       ? parseMetadataValue(sourceIdMetadata.value, sourceIdMetadata.value_type).plainText || null
       : null
@@ -2198,12 +2200,12 @@ export async function getFailures(): Promise<FailureItem[]> {
   return await Promise.resolve([])
 }
 
-export async function getOverviewFilterOptions(): Promise<OverviewFilterOptions> {
+export async function getDocumentFilterOptions(): Promise<FilterOptions> {
   const [collections, statuses] = await Promise.all([getDistinctCollections(), getDistinctValidationStatuses()])
 
   return {
     collections,
-    accessLevels: [...OVERVIEW_ACCESS_LEVEL_OPTIONS],
+    accessLevels: [...ACCESS_LEVEL_OPTIONS],
     statuses,
   }
 }
