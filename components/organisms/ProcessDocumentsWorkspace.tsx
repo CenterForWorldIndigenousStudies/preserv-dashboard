@@ -1,10 +1,11 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useMemo, useState, useTransition, type ReactElement } from 'react'
 import { useRouter } from 'next/navigation'
-import { Stack } from '@mui/material'
+import { Box, Button, Card, CardContent, Stack, Typography } from '@mui/material'
 
-import { PROCESS_EVENTS_PATH, PROCESS_FOLDERS_PATH, PROCESS_START_PATH } from '@constants/paths'
+import { BATCHES_PATH, PROCESS_EVENTS_PATH, PROCESS_FOLDERS_PATH, PROCESS_START_PATH } from '@constants/paths'
 import type { ProfileId } from '@constants/pipeline'
 import type { DriveFolderOption } from '@lib/googleDrive'
 import {
@@ -284,7 +285,61 @@ export function ProcessDocumentsWorkspace({ initialBatches }: ProcessDocumentsWo
         onToggleFolderExpansion={toggleFolderExpansion}
       />
 
-      <ProcessBatchMonitor batches={recentBatches} />
+      <Card component="section" sx={{ p: 3, borderRadius: 2, border: 1, borderColor: 'rgba(53, 88, 52, 0.15)', boxShadow: 2 }}>
+        <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', md: 'row' },
+              alignItems: { xs: 'stretch', md: 'flex-start' },
+              justifyContent: 'space-between',
+              gap: 2,
+            }}
+          >
+            <Box sx={{ maxWidth: '42rem' }}>
+              <Typography
+                variant="overline"
+                sx={{ color: 'rgb(53, 88, 52)', fontWeight: 600, letterSpacing: '0.18em' }}
+              >
+                Recent Launch Activity
+              </Typography>
+              <Typography component="h2" variant="h6" sx={{ mt: 1.5, fontWeight: 600, color: 'ink.main' }}>
+                Keep early batch feedback nearby, then hand off to Batches.
+              </Typography>
+              <Typography sx={{ mt: 1.5, fontSize: '0.875rem', lineHeight: 1.6, color: 'text.secondary' }}>
+                These recent status cards help confirm that a launch was accepted and show the first operational signals.
+                Use Batches as the primary workspace for routine monitoring and deeper investigation.
+              </Typography>
+            </Box>
+            <Button
+              component={Link}
+              href={BATCHES_PATH}
+              variant="outlined"
+              sx={{
+                borderRadius: 999,
+                px: 2,
+                py: 1,
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                textTransform: 'none',
+                whiteSpace: 'nowrap',
+                borderColor: 'rgba(53, 88, 52, 0.25)',
+                color: 'rgb(53, 88, 52)',
+                '&:hover': {
+                  borderColor: 'rgb(53, 88, 52)',
+                  color: 'ink.main',
+                },
+              }}
+            >
+              Continue to Batches
+            </Button>
+          </Box>
+
+          <Box sx={{ mt: 3 }}>
+            <ProcessBatchMonitor batches={recentBatches} />
+          </Box>
+        </CardContent>
+      </Card>
     </Stack>
   )
 }

@@ -81,7 +81,10 @@ function BatchDetailPanel({ rows }: { rows: BatchSummary[] }): React.ReactElemen
               mb: 1,
             }}
           >
-            Batch Info
+            Batch Drill-In
+          </Typography>
+          <Typography sx={{ color: 'text.secondary', fontSize: '0.875rem', mb: 2 }}>
+            Inspect the current repository-backed details for this batch from the monitoring workspace.
           </Typography>
           <Stack divider={<Divider flexItem sx={{ borderColor: 'rgba(53,88,52,0.08)' }} />}>
             <KeyValueRow label="ID" value={batchId} />
@@ -191,26 +194,43 @@ export function BatchSummaryTable({ data }: BatchSummaryTableProps) {
 
   const columns = useMemo<MRT_ColumnDef<BatchSummaryGroup>[]>(
     () => [
-      {
-        accessorKey: 'batch_name',
-        header: 'Batch Name',
-        size: 320,
-        Cell: ({ row }) => (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 0.5, flexWrap: 'wrap' }}>
-            <Typography sx={{ fontWeight: 700, color: '#231f20' }}>{row.original.batch_name ?? '-'}</Typography>
-            <Chip
-              label={`${row.original.propertyCount} ${row.original.propertyCount === 1 ? 'property' : 'properties'}`}
-              size="small"
-              sx={{
-                backgroundColor: 'rgba(53,88,52,0.12)',
-                color: '#355834',
-                fontWeight: 600,
-              }}
-            />
-          </Box>
-        ),
-      },
-    ],
+          {
+            accessorKey: 'batch_name',
+            header: 'Batch',
+            size: 320,
+            Cell: ({ row }) => (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 0.5, flexWrap: 'wrap' }}>
+                <Box>
+                  <Typography sx={{ fontWeight: 700, color: '#231f20' }}>{row.original.batch_name ?? '-'}</Typography>
+                  <Typography sx={{ color: 'text.secondary', fontSize: '0.8rem', mt: 0.25 }}>
+                    Batch ID: {row.original.batch_id}
+                  </Typography>
+                </Box>
+                <Chip
+                  label={`${row.original.propertyCount} ${row.original.propertyCount === 1 ? 'property' : 'properties'}`}
+                  size="small"
+                  sx={{
+                    backgroundColor: 'rgba(53,88,52,0.12)',
+                    color: '#355834',
+                    fontWeight: 600,
+                  }}
+                />
+              </Box>
+            ),
+          },
+          {
+            id: 'inspection',
+            header: 'Inspection',
+            size: 220,
+            enableSorting: false,
+            enableColumnFilter: false,
+            Cell: () => (
+              <Typography sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>
+                Expand to inspect batch details
+              </Typography>
+            ),
+          },
+        ],
     [],
   )
 
@@ -265,5 +285,15 @@ export function BatchSummaryTable({ data }: BatchSummaryTableProps) {
     getRowId: (row) => row.batch_id,
   })
 
-  return <MaterialReactTable table={table} />
+  return (
+    <Stack spacing={2}>
+      <Box>
+        <Typography sx={{ color: 'text.primary', fontWeight: 600 }}>Primary batch drill-in starts here.</Typography>
+        <Typography sx={{ color: 'text.secondary', fontSize: '0.9rem', mt: 0.75 }}>
+          Expand a batch row to inspect the current repository-backed processing details for that run.
+        </Typography>
+      </Box>
+      <MaterialReactTable table={table} />
+    </Stack>
+  )
 }
