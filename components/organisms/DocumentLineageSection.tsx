@@ -12,7 +12,6 @@ import {
   TableRow,
   Typography,
 } from '@mui/material'
-import { alpha, type Theme } from '@mui/material/styles'
 
 import { DateAtom } from '@atoms/Date'
 import { SourceFolderId } from '@atoms/SourceFolderId'
@@ -48,32 +47,23 @@ const lineageCardSx = {
   p: 3,
 }
 
-function getMetadataValuePanelSx(theme: Theme) {
-  const sandColor = theme.palette.sand?.main ?? theme.palette.secondary.main
-
-  return {
-    backgroundColor: alpha(sandColor, 0.45),
-    borderRadius: 1.5,
-    p: 2,
-  }
+const metadataValuePanelSx = {
+  backgroundColor: 'rgba(244, 241, 240, 0.45)',
+  borderRadius: 1.5,
+  p: 2,
 }
 
-function getTableHeaderCellSx(theme: Theme) {
-  const mossColor = theme.palette.moss?.main ?? theme.palette.primary.main
-  const sandColor = theme.palette.sand?.main ?? theme.palette.secondary.main
-
-  return {
-    backgroundColor: sandColor,
-    borderBottom: '2px solid',
-    borderBottomColor: mossColor,
-    color: theme.palette.text.primary,
-    fontSize: '0.75rem',
-    fontWeight: 600,
-    letterSpacing: '0.1em',
-    px: 1.5,
-    py: 1,
-    textTransform: 'uppercase' as const,
-  }
+const tableHeaderCellSx = {
+  backgroundColor: 'sand.main',
+  borderBottom: '2px solid',
+  borderBottomColor: 'moss.main',
+  color: 'text.primary',
+  fontSize: '0.75rem',
+  fontWeight: 600,
+  letterSpacing: '0.1em',
+  px: 1.5,
+  py: 1,
+  textTransform: 'uppercase' as const,
 }
 
 const tableBodyCellSx = {
@@ -178,7 +168,7 @@ export function DocumentLineageSection({ detail }: { detail: DocumentDetail }): 
             }}
           >
             {currentDocumentStatus !== null ? (
-              <Box component="div" sx={getMetadataValuePanelSx}>
+              <Box component="div" sx={metadataValuePanelSx}>
                 <Typography component="dt" variant="overline" color="text.secondary">
                   Current document status
                 </Typography>
@@ -190,7 +180,7 @@ export function DocumentLineageSection({ detail }: { detail: DocumentDetail }): 
 
             {detail.version_family !== null ? (
               <>
-                <Box component="div" sx={getMetadataValuePanelSx}>
+                <Box component="div" sx={metadataValuePanelSx}>
                   <Typography component="dt" variant="overline" color="text.secondary">
                     Canonical document ID
                   </Typography>
@@ -198,7 +188,7 @@ export function DocumentLineageSection({ detail }: { detail: DocumentDetail }): 
                     {detail.version_family.canonical_document_id}
                   </Typography>
                 </Box>
-                <Box component="div" sx={getMetadataValuePanelSx}>
+                <Box component="div" sx={metadataValuePanelSx}>
                   <Typography component="dt" variant="overline" color="text.secondary">
                     Related documents
                   </Typography>
@@ -228,8 +218,8 @@ export function DocumentLineageSection({ detail }: { detail: DocumentDetail }): 
             <Table size="small" sx={{ minWidth: 520 }}>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={getTableHeaderCellSx}>Field</TableCell>
-                  <TableCell sx={getTableHeaderCellSx}>Value</TableCell>
+                  <TableCell sx={tableHeaderCellSx}>Field</TableCell>
+                  <TableCell sx={tableHeaderCellSx}>Value</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -256,9 +246,9 @@ export function DocumentLineageSection({ detail }: { detail: DocumentDetail }): 
             <Table size="small" sx={{ minWidth: 640 }}>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={getTableHeaderCellSx}>Batch name</TableCell>
-                  <TableCell sx={getTableHeaderCellSx}>Batch origin</TableCell>
-                  <TableCell sx={getTableHeaderCellSx}>Added at</TableCell>
+                  <TableCell sx={tableHeaderCellSx}>Batch name</TableCell>
+                  <TableCell sx={tableHeaderCellSx}>Batch origin</TableCell>
+                  <TableCell sx={tableHeaderCellSx}>Added at</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
