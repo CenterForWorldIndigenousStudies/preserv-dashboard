@@ -47,7 +47,8 @@ vi.mock('@lib/observability', () => ({
   logEvent: mockLogEvent,
 }))
 
-import { POST } from '../../../app/api/pipeline/document-splitter/callback/route'
+import { POST } from '@api/pipeline/document-splitter/callback/route'
+import { DOCUMENT_SPLITTER_CALLBACK_PATH } from '@constants/paths'
 
 describe('document-splitter callback route', () => {
   beforeEach(() => {
@@ -71,7 +72,7 @@ describe('document-splitter callback route', () => {
     mockShouldTriggerMetadataExtractor.mockReturnValue(true)
     mockTriggerMetadataExtractor.mockResolvedValue(undefined)
 
-    const request = new NextRequest('http://localhost/api/pipeline/document-splitter/callback', {
+    const request = new NextRequest(`http://localhost${DOCUMENT_SPLITTER_CALLBACK_PATH}`, {
       method: 'POST',
       headers: {
         authorization: 'Bearer document-splitter-token',

@@ -17,6 +17,7 @@ import {
   REPORTS_PAGE_PATH,
   REVIEW_QUEUE_PATH,
   TAGS_PAGE_PATH,
+  TAGS_PATH,
 } from '@constants/paths'
 
 describe('dashboard navigation constants', () => {
@@ -62,6 +63,6 @@ describe('dashboard navigation constants', () => {
     expect(shellHrefs).toContain(DOCUMENTS_PATH)
     expect(shellHrefs).toContain(TAGS_PAGE_PATH)
     expect(shellHrefs).toContain(REPORTS_PAGE_PATH)
-    expect(shellHrefs).not.toContain('/api/tags')
+    expect(shellHrefs).not.toContain(TAGS_PATH)
   })
 })

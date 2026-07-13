@@ -1,4 +1,4 @@
-import { getDashboardSession } from '../auth'
+import { getDashboardSession } from '@root/auth'
 import { db } from '@lib/db'
 import type { Prisma, PrismaClient } from '@lib/prisma/generated/client'
 

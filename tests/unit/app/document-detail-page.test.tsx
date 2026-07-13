@@ -31,6 +31,7 @@ vi.mock('@organisms/ReviewHistoryTable', () => ({
 }))
 
 import DocumentDetailPage from '@root/app/documents/[id]/page'
+import { DOCUMENTS_PATH, READY_FOR_LIBRARY_PATH } from '@constants/paths'
 
 describe('DocumentDetailPage', () => {
   afterEach(() => {
@@ -69,14 +70,14 @@ describe('DocumentDetailPage', () => {
       await DocumentDetailPage({
         params: Promise.resolve({ id: 'doc-1' }),
         searchParams: Promise.resolve({
-          from: '/ready-for-library?page=2&pageSize=50&search=Sample',
+          from: `${READY_FOR_LIBRARY_PATH}?page=2&pageSize=50&search=Sample`,
         }),
       }),
     )
 
     expect(mockDocumentVersionsButton).toHaveBeenCalledWith(
       expect.objectContaining({
-        overviewHref: '/documents/doc-1?from=%2Fready-for-library%3Fpage%3D2%26pageSize%3D50%26search%3DSample',
+        overviewHref: `${DOCUMENTS_PATH}/doc-1?from=%2Fready-for-library%3Fpage%3D2%26pageSize%3D50%26search%3DSample`,
       }),
       undefined,
     )

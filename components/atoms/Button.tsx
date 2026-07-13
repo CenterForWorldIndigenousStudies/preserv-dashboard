@@ -1,3 +1,5 @@
+'use client'
+
 import type { ReactElement, ReactNode, ButtonHTMLAttributes } from 'react'
 import MuiButton from '@mui/material/Button'
 import type { SxProps, Theme } from '@mui/material/styles'

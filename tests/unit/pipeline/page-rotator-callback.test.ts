@@ -53,7 +53,8 @@ vi.mock('@lib/observability', () => ({
   logEvent: mockLogEvent,
 }))
 
-import { POST } from '../../../app/api/pipeline/page-rotator/callback/route'
+import { POST } from '@api/pipeline/page-rotator/callback/route'
+import { PAGE_ROTATOR_CALLBACK_PATH } from '@constants/paths'
 
 describe('page-rotator callback route', () => {
   beforeEach(() => {
@@ -78,7 +79,7 @@ describe('page-rotator callback route', () => {
     mockShouldTriggerMetadataExtractor.mockReturnValue(false)
     mockTriggerDocumentSplitter.mockResolvedValue(undefined)
 
-    const request = new NextRequest('http://localhost/api/pipeline/page-rotator/callback', {
+    const request = new NextRequest(`http://localhost${PAGE_ROTATOR_CALLBACK_PATH}`, {
       method: 'POST',
       headers: {
         authorization: 'Bearer page-rotator-token',
@@ -114,7 +115,7 @@ describe('page-rotator callback route', () => {
     mockShouldTriggerMetadataExtractor.mockReturnValue(false)
     mockTriggerPageRotator.mockResolvedValue(undefined)
 
-    const request = new NextRequest('http://localhost/api/pipeline/page-rotator/callback', {
+    const request = new NextRequest(`http://localhost${PAGE_ROTATOR_CALLBACK_PATH}`, {
       method: 'POST',
       headers: {
         authorization: 'Bearer page-rotator-token',
@@ -150,7 +151,7 @@ describe('page-rotator callback route', () => {
     mockShouldTriggerMetadataExtractor.mockReturnValue(true)
     mockTriggerMetadataExtractor.mockResolvedValue(undefined)
 
-    const request = new NextRequest('http://localhost/api/pipeline/page-rotator/callback', {
+    const request = new NextRequest(`http://localhost${PAGE_ROTATOR_CALLBACK_PATH}`, {
       method: 'POST',
       headers: {
         authorization: 'Bearer page-rotator-token',

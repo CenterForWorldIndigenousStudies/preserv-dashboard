@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { DateAtom } from '@atoms/Date'
 import { DocumentDataTable } from '@organisms/document-table/DocumentDataTable'
 import type { FailureItem } from 'types/documents'
+import { DOCUMENTS_PATH } from '@constants/paths'
 
 interface FailuresDocumentTableProps {
   failures: FailureItem[]
@@ -20,7 +21,7 @@ export function FailuresDocumentTable({ failures }: FailuresDocumentTableProps):
         header: 'Document ID',
         size: 220,
         Cell: ({ row }) => (
-          <Link href={`/documents/${row.original.id}`} className="font-medium text-moss hover:text-ink">
+          <Link href={`${DOCUMENTS_PATH}/${row.original.id}`} className="font-medium text-moss hover:text-ink">
             {row.original.id}
           </Link>
         ),
@@ -35,9 +36,7 @@ export function FailuresDocumentTable({ failures }: FailuresDocumentTableProps):
         accessorKey: 'failure_reason',
         header: 'Failure Reason',
         size: 360,
-        Cell: ({ row }) => (
-          <span className="whitespace-pre-wrap">{row.original.failure_reason || 'Unknown'}</span>
-        ),
+        Cell: ({ row }) => <span className="whitespace-pre-wrap">{row.original.failure_reason || 'Unknown'}</span>,
       },
       {
         accessorKey: 'created_at',

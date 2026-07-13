@@ -32,7 +32,8 @@ vi.mock('@lib/observability', () => ({
   logEvent: mockLogEvent,
 }))
 
-import { POST } from '../../../app/api/pipeline/metadata-extractor/callback/route'
+import { POST } from '@api/pipeline/metadata-extractor/callback/route'
+import { METADATA_EXTRACTOR_CALLBACK_PATH } from '@constants/paths'
 
 describe('metadata-extractor callback route', () => {
   beforeEach(() => {
@@ -56,7 +57,7 @@ describe('metadata-extractor callback route', () => {
     mockShouldTriggerMetadataValidator.mockReturnValue(true)
     mockTriggerMetadataValidator.mockResolvedValue(undefined)
 
-    const request = new NextRequest('http://localhost/api/pipeline/metadata-extractor/callback', {
+    const request = new NextRequest(`http://localhost${METADATA_EXTRACTOR_CALLBACK_PATH}`, {
       method: 'POST',
       headers: {
         authorization: 'Bearer metadata-extractor-token',

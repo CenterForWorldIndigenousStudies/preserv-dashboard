@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 
+import { SIGNIN_PATH } from '@constants/paths'
+
 export function ErrorContent() {
   const params = useSearchParams()
   const error = params.get('error')
@@ -38,7 +40,7 @@ export function ErrorContent() {
 
         <div className="space-y-3">
           <Link
-            href="/auth/signin"
+            href={SIGNIN_PATH}
             className="block w-full rounded-full bg-moss px-4 py-2 text-sm font-medium text-white hover:bg-moss/80 text-center"
           >
             Try Again

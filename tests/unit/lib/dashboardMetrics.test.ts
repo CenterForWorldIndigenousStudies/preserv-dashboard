@@ -29,6 +29,7 @@ vi.mock('@lib/pipelineExecution', () => ({
 }))
 
 import { getDashboardKpiMetrics } from '@lib/dashboardMetrics'
+import { BATCHES_PATH, READY_FOR_LIBRARY_PATH, REVIEW_QUEUE_PATH } from '@constants/paths'
 
 describe('dashboardMetrics', () => {
   afterEach(() => {
@@ -61,17 +62,17 @@ describe('dashboardMetrics', () => {
       {
         title: 'Needs Review',
         value: 12,
-        href: '/review-queue',
+        href: REVIEW_QUEUE_PATH,
       },
       {
         title: 'Ready for Library',
         value: 4,
-        href: '/ready-for-library',
+        href: READY_FOR_LIBRARY_PATH,
       },
       {
         title: 'Active Batches',
         value: 1,
-        href: '/batches',
+        href: BATCHES_PATH,
       },
     ])
   })

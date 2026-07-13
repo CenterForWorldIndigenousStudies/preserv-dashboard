@@ -29,7 +29,8 @@ vi.mock('@lib/observability', () => ({
   logEvent: mockLogEvent,
 }))
 
-import { POST } from '../../../app/api/pipeline/content-dedup/callback/route'
+import { POST } from '@api/pipeline/content-dedup/callback/route'
+import { CONTENT_DEDUP_CALLBACK_PATH } from '@constants/paths'
 
 describe('content-dedup callback route', () => {
   beforeEach(() => {
@@ -50,7 +51,7 @@ describe('content-dedup callback route', () => {
     mockShouldTriggerMetadataExtractor.mockReturnValue(true)
     mockTriggerMetadataExtractor.mockResolvedValue(undefined)
 
-    const request = new NextRequest('http://localhost/api/pipeline/content-dedup/callback', {
+    const request = new NextRequest(`http://localhost${CONTENT_DEDUP_CALLBACK_PATH}`, {
       method: 'POST',
       headers: {
         authorization: 'Bearer content-dedup-token',

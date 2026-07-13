@@ -2,6 +2,7 @@ export const API_PATH = '/api' as const
 
 export const AUTH_PATH = `/auth` as const
 export const SIGNIN_PATH = `${AUTH_PATH}/signin` as const
+export const AUTH_ERROR_PATH = `${AUTH_PATH}/error` as const
 
 export const BATCHES_PATH = '/batches' as const
 
@@ -15,6 +16,8 @@ export const DB_SCHEMA_PATH = '/db' as const
 
 export const DOCUMENTS_API_PATH = `${API_PATH}/documents` as const
 export const DOCUMENTS_PATH = '/documents' as const
+export const getDocumentCollectionsPath = (documentId: string): string =>
+  `${DOCUMENTS_API_PATH}/${encodeURIComponent(documentId)}/collections`
 
 export const FAILED_PATH = `/failures` as const
 
@@ -44,3 +47,6 @@ export const REPORTS_PAGE_PATH = '/reports' as const
 export const TAGS_PATH = `${API_PATH}/tags` as const
 export const TAGS_PAGE_PATH = '/tags' as const
 export const TAG_SEARCH_PATH = `${TAGS_PATH}/search` as const
+
+export const getDocumentTagsPath = (documentId: string): string =>
+  `${DOCUMENTS_API_PATH}/${encodeURIComponent(documentId)}${TAGS_PAGE_PATH}`

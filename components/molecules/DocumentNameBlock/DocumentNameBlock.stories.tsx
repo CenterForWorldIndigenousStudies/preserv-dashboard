@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { DocumentNameBlock } from './DocumentNameBlock'
+import { DOCUMENTS_PATH } from '@constants/paths'
 
 const meta = {
   title: 'Molecules/DocumentNameBlock',
@@ -49,7 +50,7 @@ export const IsCanonical: Story = {
   parameters: {
     docs: {
       description: {
-          story: 'When isCanonical is true, a green "Canonical" Badge appears next to the document name.',
+        story: 'When isCanonical is true, a green "Canonical" Badge appears next to the document name.',
       },
     },
   },
@@ -167,7 +168,7 @@ export const WithHref: Story = {
     id: 'doc-2025-strat-plan-001',
     legacyId: 'SP-2025',
     sourceId: 'drive_abc123',
-    href: '/documents/doc-2025-strat-plan-001',
+    href: `${DOCUMENTS_PATH}/doc-2025-strat-plan-001`,
   },
   parameters: {
     docs: {

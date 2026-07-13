@@ -19,6 +19,7 @@ import {
 import Link from 'next/link'
 import { getReviewQueueAction } from '@actions/review-queue'
 import { Badge, type BadgeVariant } from '@atoms/Badges/Badge'
+import { DOCUMENTS_PATH } from '@constants/paths'
 import type { PagedResult } from 'types/pagination'
 import type { ReviewQueueDocumentsQueryParams, ReviewQueueItem, ReviewQueueSortField } from 'types/reviewQueue'
 
@@ -137,7 +138,7 @@ export function ReviewQueueTable({ initialData }: ReviewQueueTableProps) {
           }
 
           return (
-            <Link href={`/documents/${row.original.id}`} className="lnk-review-queue">
+            <Link href={`${DOCUMENTS_PATH}/${row.original.id}`} className="lnk-review-queue">
               {value}
             </Link>
           )

@@ -26,12 +26,13 @@ vi.mock('material-react-table', () => ({
 }))
 
 import { DocumentVersionsButton } from '@organisms/DocumentVersionsButton'
+import { DOCUMENTS_PATH } from '@constants/paths'
 
 describe('DocumentVersionsButton', () => {
   it('preserves the current document detail context when opening a related version', () => {
     const markup = renderToStaticMarkup(
       <DocumentVersionsButton
-        overviewHref="/documents/doc-1?from=%2Fcollections%3Fexpanded%3Dcollection-1"
+        overviewHref={`${DOCUMENTS_PATH}/doc-1?from=%2Fcollections%3Fexpanded%3Dcollection-1`}
         versionFamily={{
           version_group_id: 'vg-1',
           canonical_document_id: 'doc-1',
@@ -56,7 +57,7 @@ describe('DocumentVersionsButton', () => {
     )
 
     expect(markup).toContain(
-      '/documents/doc-2?from=%2Fdocuments%2Fdoc-1%3Ffrom%3D%252Fcollections%253Fexpanded%253Dcollection-1',
+      `${DOCUMENTS_PATH}/doc-2?from=%2Fdocuments%2Fdoc-1%3Ffrom%3D%252Fcollections%253Fexpanded%253Dcollection-1`,
     )
     expect(markup).toContain('Candidate')
     expect(markup).toContain('Source')

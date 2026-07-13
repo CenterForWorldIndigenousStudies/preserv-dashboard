@@ -16,11 +16,12 @@ vi.mock('next/cache', () => ({
   revalidatePath: mockRevalidatePath,
 }))
 
-vi.mock('../../../auth', () => ({
+vi.mock('@root/auth', () => ({
   getDashboardSession: mockGetDashboardSession,
 }))
 
 import { applyReviewQueueBatchApproveAction } from '@actions/review-queue'
+import { REVIEW_QUEUE_PATH } from '@constants/paths'
 
 describe('applyReviewQueueBatchApproveAction', () => {
   afterEach(() => {
@@ -61,7 +62,7 @@ describe('applyReviewQueueBatchApproveAction', () => {
       validatorName: 'Maria Reviewer',
     })
     expect(mockRevalidatePath).toHaveBeenCalledTimes(1)
-    expect(mockRevalidatePath).toHaveBeenCalledWith('/review-queue')
+    expect(mockRevalidatePath).toHaveBeenCalledWith(REVIEW_QUEUE_PATH)
   })
 
   it('rejects empty selections before invoking the approve flow', async () => {

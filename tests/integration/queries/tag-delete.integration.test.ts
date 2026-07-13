@@ -3,7 +3,7 @@ import { db } from '@lib/db'
 import { DUPLICATE_DOCUMENT } from '@constants/tags'
 
 import { deleteCollectionWithOptionsInTransaction, deleteTagInTransaction } from '@lib/queries'
-vi.mock('../../../auth', () => ({
+vi.mock('@root/auth', () => ({
   auth: () => Promise.resolve({ user: { email: 'test@example.com' } }),
   getDashboardSession: () => Promise.resolve({ user: { email: 'test@example.com' } }),
 }))

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import ThemeProvider from '@components/ThemeProvider'
 import { MetricCard } from '@molecules/MetricCard'
+import { REVIEW_QUEUE_PATH } from '@constants/paths'
 
 describe('MetricCard', () => {
   it('renders the KPI label, formatted value, description, and link action', () => {
@@ -12,7 +13,7 @@ describe('MetricCard', () => {
           title="Needs Review"
           value={1200}
           description="Documents waiting in the current human review queue."
-          href="/review-queue"
+          href={REVIEW_QUEUE_PATH}
         />
       </ThemeProvider>,
     )
@@ -20,7 +21,7 @@ describe('MetricCard', () => {
     expect(markup).toContain('Needs Review')
     expect(markup).toContain('1,200')
     expect(markup).toContain('Documents waiting in the current human review queue.')
-    expect(markup).toContain('/review-queue')
+    expect(markup).toContain(REVIEW_QUEUE_PATH)
     expect(markup).toContain('Open')
   })
 })

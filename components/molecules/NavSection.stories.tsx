@@ -3,14 +3,21 @@ import { expect, fn, within } from 'storybook/test'
 
 import { NavSection } from '@molecules/NavSection'
 import type { DashboardNavigationSection } from '@constants/navigation'
+import {
+  COMPONENT_LIBRARY_PATH,
+  DASHBOARD_PATH,
+  DB_SCHEMA_PATH,
+  DOCUMENTS_PATH,
+  PROCESS_DOCUMENTS_PATH,
+} from '@constants/paths'
 
 const primarySection: DashboardNavigationSection = {
   id: 'primary',
   label: 'Primary',
   items: [
-    { href: '/dashboard', iconKey: 'dashboard', label: 'Dashboard' },
-    { href: '/documents', iconKey: 'documents', label: 'Documents' },
-    { href: '/process-documents', iconKey: 'process', label: 'Process' },
+    { href: DASHBOARD_PATH, iconKey: 'dashboard', label: 'Dashboard' },
+    { href: DOCUMENTS_PATH, iconKey: 'documents', label: 'Documents' },
+    { href: PROCESS_DOCUMENTS_PATH, iconKey: 'process', label: 'Process' },
   ],
 }
 
@@ -18,8 +25,8 @@ const utilitySection: DashboardNavigationSection = {
   id: 'utility',
   label: 'Utility',
   items: [
-    { href: '/db', iconKey: 'db', label: 'DB' },
-    { href: '/component-library', iconKey: 'componentLibrary', label: 'Component Library' },
+    { href: DB_SCHEMA_PATH, iconKey: 'db', label: 'DB' },
+    { href: COMPONENT_LIBRARY_PATH, iconKey: 'componentLibrary', label: 'Component Library' },
   ],
 }
 
@@ -28,7 +35,7 @@ const meta = {
   component: NavSection,
   tags: ['autodocs'],
   args: {
-    activePathname: '/documents',
+    activePathname: DOCUMENTS_PATH,
     onNavigate: fn(),
     section: primarySection,
   },
@@ -50,13 +57,13 @@ export const DocumentsActive: Story = {
 
 export const DashboardActive: Story = {
   args: {
-    activePathname: '/dashboard',
+    activePathname: DASHBOARD_PATH,
   },
 }
 
 export const UtilitySection: Story = {
   args: {
-    activePathname: '/component-library',
+    activePathname: COMPONENT_LIBRARY_PATH,
     section: utilitySection,
   },
 }

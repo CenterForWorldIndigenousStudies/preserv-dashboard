@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import ThemeProvider from '@components/ThemeProvider'
 import { AppShell } from '@organisms/AppShell'
+import { DASHBOARD_PATH } from '@constants/paths'
 
 const { mockSignOut, mockUsePathname, mockUseSession } = vi.hoisted(() => ({
   mockSignOut: vi.fn(),
@@ -27,7 +28,7 @@ describe('AppShell', () => {
   })
 
   it('renders the shared shell header and preserves child content', () => {
-    mockUsePathname.mockReturnValue('/dashboard')
+    mockUsePathname.mockReturnValue(DASHBOARD_PATH)
     mockUseSession.mockReturnValue({
       data: { user: { email: 'reviewer@cwis.org' } },
       status: 'authenticated',
@@ -48,7 +49,7 @@ describe('AppShell', () => {
   })
 
   it('exposes the documents, tags, and reports routes in the shared shell', () => {
-    mockUsePathname.mockReturnValue('/dashboard')
+    mockUsePathname.mockReturnValue(DASHBOARD_PATH)
     mockUseSession.mockReturnValue({
       data: { user: { email: 'reviewer@cwis.org' } },
       status: 'authenticated',

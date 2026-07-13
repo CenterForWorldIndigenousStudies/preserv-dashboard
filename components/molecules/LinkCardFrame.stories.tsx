@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { Box, Typography } from '@mui/material'
 
 import { LinkCardFrame } from '@molecules/LinkCardFrame'
+import { DOCUMENTS_PATH, REVIEW_QUEUE_PATH } from '@constants/paths'
 
 const meta = {
   title: 'Molecules/LinkCardFrame',
@@ -10,7 +11,7 @@ const meta = {
   args: {
     actionLabel: 'Open',
     eyebrow: 'Shared Frame',
-    href: '/documents',
+    href: DOCUMENTS_PATH,
     title: 'Documents',
     children: <Typography variant="body2">Browse the document collection.</Typography>,
   },
@@ -28,7 +29,7 @@ export const WithoutEyebrow: Story = {
   args: {
     eyebrow: undefined,
     title: 'Review Queue',
-    href: '/review-queue',
+    href: REVIEW_QUEUE_PATH,
     children: <Typography variant="body2">Review documents requiring human decisions.</Typography>,
   },
 }
@@ -45,15 +46,10 @@ export const CardGrid: Story = {
         },
       }}
     >
-      <LinkCardFrame
-        actionLabel="Open Documents"
-        eyebrow="Collection"
-        href="/documents"
-        title="Documents"
-      >
+      <LinkCardFrame actionLabel="Open Documents" eyebrow="Collection" href={DOCUMENTS_PATH} title="Documents">
         <Typography variant="body2">Browse the document collection.</Typography>
       </LinkCardFrame>
-      <LinkCardFrame actionLabel="Open Review Queue" href="/review-queue" title="Review Queue">
+      <LinkCardFrame actionLabel="Open Review Queue" href={REVIEW_QUEUE_PATH} title="Review Queue">
         <Typography variant="body2">Review documents requiring human decisions.</Typography>
       </LinkCardFrame>
     </Box>

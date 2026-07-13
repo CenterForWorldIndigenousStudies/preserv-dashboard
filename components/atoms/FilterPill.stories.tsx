@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { Stack } from '@mui/material'
 import { FilterPill } from '@atoms/FilterPill'
+import { DOCUMENTS_PATH } from '@constants/paths'
 
 const meta = {
   title: 'Atoms/FilterPill',
@@ -8,7 +9,7 @@ const meta = {
   tags: ['autodocs'],
   args: {
     isActive: false,
-    href: '/documents',
+    href: DOCUMENTS_PATH,
     label: 'Filter',
   },
   argTypes: {
@@ -39,10 +40,10 @@ export const AllFilters: Story = {
   },
   render: () => (
     <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap' }}>
-      <FilterPill label="All" isActive={true} href="/documents" />
-      <FilterPill label="Completed" isActive={false} href="/documents?state=completed" />
-      <FilterPill label="Failed" isActive={false} href="/documents?state=failed" />
-      <FilterPill label="Under Review" isActive={false} href="/documents?state=under_review" />
+      <FilterPill label="All" isActive={true} href={DOCUMENTS_PATH} />
+      <FilterPill label="Completed" isActive={false} href={`${DOCUMENTS_PATH}?state=completed`} />
+      <FilterPill label="Failed" isActive={false} href={`${DOCUMENTS_PATH}?state=failed`} />
+      <FilterPill label="Under Review" isActive={false} href={`${DOCUMENTS_PATH}?state=under_review`} />
     </Stack>
   ),
 }

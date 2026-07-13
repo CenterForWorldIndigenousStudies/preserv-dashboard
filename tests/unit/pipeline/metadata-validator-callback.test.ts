@@ -32,7 +32,8 @@ vi.mock('@lib/observability', () => ({
   logEvent: mockLogEvent,
 }))
 
-import { POST } from '../../../app/api/pipeline/metadata-validator/callback/route'
+import { POST } from '@api/pipeline/metadata-validator/callback/route'
+import { METADATA_VALIDATOR_CALLBACK_PATH } from '@constants/paths'
 
 describe('metadata-validator callback route', () => {
   beforeEach(() => {
@@ -56,7 +57,7 @@ describe('metadata-validator callback route', () => {
     mockShouldTriggerRightsDeterminator.mockReturnValue(true)
     mockTriggerRightsDeterminator.mockResolvedValue(undefined)
 
-    const request = new NextRequest('http://localhost/api/pipeline/metadata-validator/callback', {
+    const request = new NextRequest(`http://localhost${METADATA_VALIDATOR_CALLBACK_PATH}`, {
       method: 'POST',
       headers: {
         authorization: 'Bearer metadata-validator-token',

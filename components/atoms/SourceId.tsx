@@ -7,6 +7,7 @@ import { validate as validateUuid } from 'uuid'
 
 import { isLikelyGoogleDriveId } from '@lib/google'
 import { truncateString } from '@lib/strings'
+import { DOCUMENTS_PATH } from '@constants/paths'
 
 interface SourceIdProps {
   value: string | null | undefined
@@ -23,7 +24,7 @@ export function SourceId({ value, maxTruncationLength = 0, sx }: SourceIdProps):
   let title = `View Google Drive file ${normalizedValue}`
 
   if (isUuid) {
-    href = `/documents/${normalizedValue}`
+    href = `${DOCUMENTS_PATH}/${normalizedValue}`
     title = `View preservation document ${normalizedValue}`
   }
 

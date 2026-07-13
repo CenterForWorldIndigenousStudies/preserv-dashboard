@@ -19,7 +19,8 @@ vi.mock('@lib/editHistory', () => ({
   createEditHistoryEntry: vi.fn(),
 }))
 
-import { DELETE } from '../../../app/api/documents/[id]/tags/route'
+import { DELETE } from '@api/documents/[id]/tags/route'
+import { getDocumentTagsPath } from '@constants/paths'
 
 describe('document tags delete route', () => {
   afterEach(() => {
@@ -36,7 +37,7 @@ describe('document tags delete route', () => {
       },
     })
 
-    const request = new NextRequest('http://localhost/api/documents/doc-1/tags', {
+    const request = new NextRequest(`http://localhost${getDocumentTagsPath('doc-1')}`, {
       method: 'DELETE',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({

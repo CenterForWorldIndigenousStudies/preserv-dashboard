@@ -1,11 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
-const {
-  mockGetDashboardSession,
-  mockLogEvent,
-  mockSetProcessBatchPipelineConfig,
-} = vi.hoisted(() => ({
+const { mockGetDashboardSession, mockLogEvent, mockSetProcessBatchPipelineConfig } = vi.hoisted(() => ({
   mockGetDashboardSession: vi.fn(),
   mockLogEvent: vi.fn(),
   mockSetProcessBatchPipelineConfig: vi.fn(),
@@ -23,7 +19,8 @@ vi.mock('@lib/processBatches', () => ({
   setProcessBatchPipelineConfig: mockSetProcessBatchPipelineConfig,
 }))
 
-import { POST } from '../../../app/api/process/start/route'
+import { POST } from '@api/process/start/route'
+import { PROCESS_START_PATH } from '@constants/paths'
 
 describe('process start route', () => {
   beforeEach(() => {
@@ -56,7 +53,7 @@ describe('process start route', () => {
       }),
     )
 
-    const request = new NextRequest('http://localhost/api/process/start', {
+    const request = new NextRequest(`http://localhost${PROCESS_START_PATH}`, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -99,7 +96,7 @@ describe('process start route', () => {
   })
 
   it('rejects process starts that omit pipeline config', async () => {
-    const request = new NextRequest('http://localhost/api/process/start', {
+    const request = new NextRequest(`http://localhost${PROCESS_START_PATH}`, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -151,7 +148,7 @@ describe('process start route', () => {
       ],
     }
 
-    const request = new NextRequest('http://localhost/api/process/start', {
+    const request = new NextRequest(`http://localhost${PROCESS_START_PATH}`, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',

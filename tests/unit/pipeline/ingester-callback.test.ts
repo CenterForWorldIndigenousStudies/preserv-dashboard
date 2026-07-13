@@ -53,7 +53,8 @@ vi.mock('@lib/observability', () => ({
   logEvent: mockLogEvent,
 }))
 
-import { POST } from '../../../app/api/pipeline/ingester/callback/route'
+import { POST } from '@api/pipeline/ingester/callback/route'
+import { DATA_INGESTER_CALLBACK_PATH } from '@constants/paths'
 
 describe('ingester callback route', () => {
   beforeEach(() => {
@@ -81,7 +82,7 @@ describe('ingester callback route', () => {
     mockShouldTriggerMetadataExtractor.mockReturnValue(false)
     mockTriggerDocumentSplitter.mockResolvedValue(undefined)
 
-    const request = new NextRequest('http://localhost/api/pipeline/ingester/callback', {
+    const request = new NextRequest(`http://localhost${DATA_INGESTER_CALLBACK_PATH}`, {
       method: 'POST',
       headers: {
         authorization: 'Bearer ingester-token',
@@ -117,7 +118,7 @@ describe('ingester callback route', () => {
     mockShouldTriggerMetadataExtractor.mockReturnValue(true)
     mockTriggerMetadataExtractor.mockResolvedValue(undefined)
 
-    const request = new NextRequest('http://localhost/api/pipeline/ingester/callback', {
+    const request = new NextRequest(`http://localhost${DATA_INGESTER_CALLBACK_PATH}`, {
       method: 'POST',
       headers: {
         authorization: 'Bearer ingester-token',

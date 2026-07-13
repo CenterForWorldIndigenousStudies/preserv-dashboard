@@ -14,6 +14,11 @@ import {
   triggerRightsDeterminator,
 } from '@lib/pipelineTriggerRequests'
 import type { ProcessBatchStatus } from 'types/pipelineContracts'
+import {
+  METADATA_EXTRACTOR_CALLBACK_PATH,
+  METADATA_VALIDATOR_CALLBACK_PATH,
+  RIGHTS_DETERMINATOR_CALLBACK_PATH,
+} from '@constants/paths'
 
 function buildBatchStatus(overrides: Partial<ProcessBatchStatus> = {}): ProcessBatchStatus {
   return {
@@ -88,7 +93,7 @@ describe('pipelineTriggerRequests', () => {
     expect(payload.started_by).toBe('archivist@example.org')
     expect(typeof payload.initiated_at).toBe('string')
     expect(payload.callback).toEqual({
-      url: 'http://localhost:3000/api/pipeline/metadata-extractor/callback',
+      url: `http://localhost:3000${METADATA_EXTRACTOR_CALLBACK_PATH}`,
       token: 'pipeline-callback-token',
     })
   })
@@ -116,7 +121,7 @@ describe('pipelineTriggerRequests', () => {
 
     const payload = JSON.parse(receivedBody) as Record<string, unknown>
     expect(payload.callback).toEqual({
-      url: 'http://localhost:3000/api/pipeline/metadata-validator/callback',
+      url: `http://localhost:3000${METADATA_VALIDATOR_CALLBACK_PATH}`,
       token: 'pipeline-callback-token',
     })
   })
@@ -144,7 +149,7 @@ describe('pipelineTriggerRequests', () => {
 
     const payload = JSON.parse(receivedBody) as Record<string, unknown>
     expect(payload.callback).toEqual({
-      url: 'http://localhost:3000/api/pipeline/rights-determinator/callback',
+      url: `http://localhost:3000${RIGHTS_DETERMINATOR_CALLBACK_PATH}`,
       token: 'pipeline-callback-token',
     })
   })

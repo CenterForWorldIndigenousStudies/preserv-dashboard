@@ -8,7 +8,8 @@ import {
   type DocumentsQueryParams,
 } from '@lib/queries'
 import type { ReviewQueueDecision, ReviewQueueDocumentsQueryParams } from 'types/reviewQueue'
-import { getDashboardSession } from '../../auth'
+import { getDashboardSession } from '@root/auth'
+import { REVIEW_QUEUE_PATH } from '@constants/paths'
 
 interface ReviewQueueBatchApproveFailure {
   documentId: string
@@ -56,7 +57,7 @@ export async function applyReviewQueueDecisionAction(
       validationTimestamp: Math.floor(Date.now() / 1000),
       validatorName,
     })
-    revalidatePath('/review-queue')
+    revalidatePath(REVIEW_QUEUE_PATH)
 
     return {
       ok: true,

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
+import { COLLECTIONS_PATH, DOCUMENTS_PATH } from '@constants/paths'
 
 const { mockReplace, mockSearchParams } = vi.hoisted(() => ({
   mockReplace: vi.fn(),
@@ -10,7 +11,7 @@ const { mockReplace, mockSearchParams } = vi.hoisted(() => ({
 }))
 
 vi.mock('next/navigation', () => ({
-  usePathname: () => '/collections',
+  usePathname: () => COLLECTIONS_PATH,
   useRouter: () => ({ replace: mockReplace, refresh: vi.fn() }),
   useSearchParams: () => mockSearchParams,
 }))
@@ -39,11 +40,7 @@ vi.mock('@organisms/document-table/DocumentDataTable', () => ({
       },
     }) as ReactNode
 
-    return (
-      <div data-testid="collection-document-link">
-        {renderedCell}
-      </div>
-    )
+    return <div data-testid="collection-document-link">{renderedCell}</div>
   },
 }))
 
@@ -76,7 +73,7 @@ describe('CollectionsAccordion', () => {
     )
 
     expect(markup).toContain(
-      '/documents/doc-1?from=%2Fcollections%3Fexpanded%3Dcollection-1%26collection-collection-1-page%3D2%26collection-collection-1-pageSize%3D50%26collection-collection-1-search%3Dthesis',
+      `${DOCUMENTS_PATH}/doc-1?from=%2Fcollections%3Fexpanded%3Dcollection-1%26collection-collection-1-page%3D2%26collection-collection-1-pageSize%3D50%26collection-collection-1-search%3Dthesis`,
     )
   })
 })

@@ -13,9 +13,9 @@ import { DocumentVersionsButton } from '@organisms/DocumentVersionsButton'
 import { ReviewHistoryTable } from '@organisms/ReviewHistoryTable'
 import { parseMetadataValue } from '@lib/metadata'
 import { getDocumentDetail } from '@lib/queries'
+import { DOCUMENTS_PATH } from '@constants/paths'
 
 export const dynamic = 'force-dynamic'
-const DOCUMENTS_PATH = '/documents'
 
 interface DocumentDetailPageProps {
   params: Promise<{
@@ -156,7 +156,9 @@ export default async function DocumentDetailPage({
                   Open the related document versions and duplicates for this record.
                 </p>
               </div>
-              {version_family ? <DocumentVersionsButton versionFamily={version_family} overviewHref={currentDocumentHref} /> : null}
+              {version_family ? (
+                <DocumentVersionsButton versionFamily={version_family} overviewHref={currentDocumentHref} />
+              ) : null}
             </div>
             {versions.length > 0 ? (
               <div className="mt-6 grid gap-x-6 gap-y-4 md:grid-cols-2">

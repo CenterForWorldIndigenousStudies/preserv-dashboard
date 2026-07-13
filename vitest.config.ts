@@ -21,12 +21,10 @@ export default defineConfig({
     alias: [
       {
         find: 'react-transition-group/TransitionGroupContext',
-        replacement: path.resolve(
-          dirname,
-          'node_modules/react-transition-group/cjs/TransitionGroupContext.js',
-        ),
+        replacement: path.resolve(dirname, 'node_modules/react-transition-group/cjs/TransitionGroupContext.js'),
       },
       { find: '@actions', replacement: path.resolve(dirname, 'app/actions') },
+      { find: '@api', replacement: path.resolve(dirname, 'app/api') },
       { find: '@atoms', replacement: path.resolve(dirname, 'components/atoms') },
       { find: '@components', replacement: path.resolve(dirname, 'components') },
       { find: '@constants', replacement: path.resolve(dirname, 'constants') },

@@ -19,6 +19,8 @@
     "paths": {
       "@actions": ["./app/actions"],
       "@actions/*": ["./app/actions/*"],
+      "@api": ["./app/api"],
+      "@api/*": ["./app/api/*"],
       "@atoms": ["./components/atoms"],
       "@atoms/*": ["./components/atoms/*"],
       "@components": ["./components"],

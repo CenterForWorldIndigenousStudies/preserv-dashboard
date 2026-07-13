@@ -1,15 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
-const {
-  mockRecordRightsDeterminatorCompletion,
-  mockMarkProcessStageCallbackReceived,
-  mockLogEvent,
-} = vi.hoisted(() => ({
-  mockRecordRightsDeterminatorCompletion: vi.fn(),
-  mockMarkProcessStageCallbackReceived: vi.fn(),
-  mockLogEvent: vi.fn(),
-}))
+const { mockRecordRightsDeterminatorCompletion, mockMarkProcessStageCallbackReceived, mockLogEvent } = vi.hoisted(
+  () => ({
+    mockRecordRightsDeterminatorCompletion: vi.fn(),
+    mockMarkProcessStageCallbackReceived: vi.fn(),
+    mockLogEvent: vi.fn(),
+  }),
+)
 
 vi.mock('@lib/processBatches', () => ({
   recordRightsDeterminatorCompletion: mockRecordRightsDeterminatorCompletion,
@@ -20,7 +18,8 @@ vi.mock('@lib/observability', () => ({
   logEvent: mockLogEvent,
 }))
 
-import { POST } from '../../../app/api/pipeline/rights-determinator/callback/route'
+import { POST } from '@api/pipeline/rights-determinator/callback/route'
+import { RIGHTS_DETERMINATOR_CALLBACK_PATH } from '@constants/paths'
 
 describe('rights-determinator callback route', () => {
   beforeEach(() => {
@@ -37,7 +36,7 @@ describe('rights-determinator callback route', () => {
     mockRecordRightsDeterminatorCompletion.mockResolvedValue(undefined)
     mockMarkProcessStageCallbackReceived.mockResolvedValue(undefined)
 
-    const request = new NextRequest('http://localhost/api/pipeline/rights-determinator/callback', {
+    const request = new NextRequest(`http://localhost${RIGHTS_DETERMINATOR_CALLBACK_PATH}`, {
       method: 'POST',
       headers: {
         authorization: 'Bearer rights-determinator-token',

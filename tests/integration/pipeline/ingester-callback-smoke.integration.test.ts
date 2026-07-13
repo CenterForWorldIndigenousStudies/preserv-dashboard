@@ -3,14 +3,15 @@ import { NextRequest } from 'next/server'
 
 import { db } from '@lib/db'
 
-vi.mock('../../../auth', () => ({
+vi.mock('@root/auth', () => ({
   auth: () => Promise.resolve({ user: { email: 'test@example.com' } }),
   getDashboardSession: () => Promise.resolve({ user: { email: 'test@example.com' } }),
 }))
 
-import { POST as processStartRoute } from '../../../app/api/process/start/route'
-import { POST as ingesterCallbackRoute } from '../../../app/api/pipeline/ingester/callback/route'
+import { POST as processStartRoute } from '@api/process/start/route'
+import { POST as ingesterCallbackRoute } from '@api/pipeline/ingester/callback/route'
 import { resetTestDatabase } from '../support/test-db'
+import { DATA_INGESTER_CALLBACK_PATH, DOCUMENT_SPLITTER_CALLBACK_PATH, PROCESS_START_PATH } from '@constants/paths'
 
 function toRequestUrl(value: unknown): string {
   if (value instanceof URL) {
@@ -124,7 +125,7 @@ describe('ingester callback smoke (integration)', () => {
         }),
       )
 
-    const startRequest = new NextRequest('http://localhost/api/process/start', {
+    const startRequest = new NextRequest(`http://localhost${PROCESS_START_PATH}`, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -140,7 +141,7 @@ describe('ingester callback smoke (integration)', () => {
 
     expect(startResponse.status).toBe(202)
 
-    const callbackRequest = new NextRequest('http://localhost/api/pipeline/ingester/callback', {
+    const callbackRequest = new NextRequest(`http://localhost${DATA_INGESTER_CALLBACK_PATH}`, {
       method: 'POST',
       headers: {
         authorization: 'Bearer pipeline-callback-token',
@@ -188,7 +189,7 @@ describe('ingester callback smoke (integration)', () => {
     expect(splitterBody.batch_id).toBe(batchId)
     expect(splitterBody.started_by).toBe('test@example.com')
     expect(splitterBody.callback).toEqual({
-      url: 'http://localhost:3000/api/pipeline/document-splitter/callback',
+      url: `http://localhost:3000${DOCUMENT_SPLITTER_CALLBACK_PATH}`,
       token: 'pipeline-callback-token',
     })
 

@@ -11,7 +11,8 @@ vi.mock('@lib/queries', () => ({
   deleteTagAndDocumentAssociations: mockDeleteTagAndDocumentAssociations,
 }))
 
-import { DELETE } from '../../../app/api/tags/[id]/route'
+import { DELETE } from '@api/tags/[id]/route'
+import { TAGS_PATH } from '@constants/paths'
 
 describe('tag delete route', () => {
   afterEach(() => {
@@ -23,7 +24,7 @@ describe('tag delete route', () => {
       new Error('Tag "duplicate_document" is protected and cannot be deleted from the system.'),
     )
 
-    const request = new NextRequest('http://localhost/api/tags/tag-1', {
+    const request = new NextRequest(`http://localhost${TAGS_PATH}/tag-1`, {
       method: 'DELETE',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ cascade: false }),

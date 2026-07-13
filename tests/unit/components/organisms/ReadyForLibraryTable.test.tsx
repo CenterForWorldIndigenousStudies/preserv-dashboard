@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
+import { DOCUMENTS_PATH, READY_FOR_LIBRARY_PATH } from '@constants/paths'
 
 const { mockReplace, mockSearchParams } = vi.hoisted(() => ({
   mockReplace: vi.fn(),
@@ -8,7 +9,7 @@ const { mockReplace, mockSearchParams } = vi.hoisted(() => ({
 }))
 
 vi.mock('next/navigation', () => ({
-  usePathname: () => '/ready-for-library',
+  usePathname: () => READY_FOR_LIBRARY_PATH,
   useRouter: () => ({ replace: mockReplace }),
   useSearchParams: () => mockSearchParams,
 }))
@@ -34,11 +35,7 @@ vi.mock('@organisms/document-table/DocumentDataTable', () => ({
       },
     }) as ReactNode
 
-    return (
-      <div data-testid="ready-for-library-link">
-        {renderedCell}
-      </div>
-    )
+    return <div data-testid="ready-for-library-link">{renderedCell}</div>
   },
 }))
 
@@ -71,7 +68,7 @@ describe('ReadyForLibraryTable', () => {
     )
 
     expect(markup).toContain(
-      '/documents/doc-1?from=%2Fready-for-library%3Fpage%3D2%26pageSize%3D50%26search%3DSample%26orderBy%3Dname%26sortDirection%3Ddesc',
+      `${DOCUMENTS_PATH}/doc-1?from=%2Fready-for-library%3Fpage%3D2%26pageSize%3D50%26search%3DSample%26orderBy%3Dname%26sortDirection%3Ddesc`,
     )
   })
 })

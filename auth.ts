@@ -1,5 +1,6 @@
 import NextAuth, { type Session } from 'next-auth'
 import Google from 'next-auth/providers/google'
+import { AUTH_ERROR_PATH, SIGNIN_PATH } from '@constants/paths'
 
 const AUTH_BYPASS_TOKEN_VALUE = 'dev-bypass'
 
@@ -21,8 +22,8 @@ const nextAuth = NextAuth({
   trustHost: true,
   providers: [Google],
   pages: {
-    signIn: '/auth/signin',
-    error: '/auth/error',
+    signIn: SIGNIN_PATH,
+    error: AUTH_ERROR_PATH,
   },
   callbacks: {
     authorized({ auth }) {

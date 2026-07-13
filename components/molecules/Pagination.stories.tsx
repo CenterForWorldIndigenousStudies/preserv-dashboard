@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { Pagination } from '@molecules/Pagination'
+import { DOCUMENTS_PATH } from '@constants/paths'
 
 const meta: Meta<typeof Pagination> = {
   title: 'Molecules/Pagination',
@@ -19,7 +20,7 @@ const meta: Meta<typeof Pagination> = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-const buildHref = (page: number) => `/documents?page=${page}`
+const buildHref = (page: number) => `${DOCUMENTS_PATH}?page=${page}`
 
 export const FirstPage: Story = {
   args: {

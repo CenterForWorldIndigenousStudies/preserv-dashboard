@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { DocumentsTable } from '@components/organisms/DocumentsTable'
+import { DocumentsTable } from '@organisms/DocumentsTable'
 import type { FilterOptions } from '@lib/search'
 import type { Document } from 'types/documents'
 import type { DocumentsPageResult } from 'types/pagination'
+import { DOCUMENTS_PATH } from '@constants/paths'
 
 const mockDocuments: Document[] = [
   {
@@ -83,7 +84,7 @@ const meta = {
     nextjs: {
       appDirectory: true,
       navigation: {
-        pathname: '/documents',
+        pathname: DOCUMENTS_PATH,
         query: {
           page: '1',
           pageSize: '25',

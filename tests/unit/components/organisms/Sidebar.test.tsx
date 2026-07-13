@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import ThemeProvider from '@components/ThemeProvider'
 import Sidebar from '@organisms/Sidebar'
+import { DASHBOARD_PATH } from '@constants/paths'
 
 const { mockSignOut, mockUsePathname, mockUseSession } = vi.hoisted(() => ({
   mockSignOut: vi.fn(),
@@ -37,7 +38,7 @@ describe('Sidebar', () => {
   })
 
   it('renders the approved visible routes after the tags and reports routes are introduced', () => {
-    mockUsePathname.mockReturnValue('/dashboard')
+    mockUsePathname.mockReturnValue(DASHBOARD_PATH)
     mockUseSession.mockReturnValue({
       data: { user: { email: 'reviewer@cwis.org' } },
       status: 'authenticated',
@@ -66,7 +67,7 @@ describe('Sidebar', () => {
   })
 
   it('preserves mobile close behavior in the drawer header', () => {
-    mockUsePathname.mockReturnValue('/dashboard')
+    mockUsePathname.mockReturnValue(DASHBOARD_PATH)
     mockUseSession.mockReturnValue({
       data: { user: { email: 'reviewer@cwis.org' } },
       status: 'authenticated',

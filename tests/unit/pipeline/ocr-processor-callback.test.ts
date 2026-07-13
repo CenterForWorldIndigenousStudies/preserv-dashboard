@@ -35,7 +35,8 @@ vi.mock('@lib/observability', () => ({
   logEvent: mockLogEvent,
 }))
 
-import { POST } from '../../../app/api/pipeline/ocr-processor/callback/route'
+import { POST } from '@api/pipeline/ocr-processor/callback/route'
+import { OCR_PROCESSOR_CALLBACK_PATH } from '@constants/paths'
 
 describe('ocr-processor callback route', () => {
   beforeEach(() => {
@@ -57,7 +58,7 @@ describe('ocr-processor callback route', () => {
     mockShouldTriggerMetadataExtractor.mockReturnValue(true)
     mockTriggerMetadataExtractor.mockResolvedValue(undefined)
 
-    const request = new NextRequest('http://localhost/api/pipeline/ocr-processor/callback', {
+    const request = new NextRequest(`http://localhost${OCR_PROCESSOR_CALLBACK_PATH}`, {
       method: 'POST',
       headers: {
         authorization: 'Bearer ocr-processor-token',
