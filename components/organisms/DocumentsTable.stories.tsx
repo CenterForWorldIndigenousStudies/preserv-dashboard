@@ -1,3 +1,4 @@
+import Box from '@mui/material/Box'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { DocumentsTable } from '@organisms/DocumentsTable'
 import type { FilterOptions } from '@lib/search'
@@ -92,6 +93,13 @@ const meta = {
       },
     },
   },
+  decorators: [
+    (Story) => (
+      <Box sx={{ width: '100%', px: { xs: 1, md: 3 }, py: 2 }}>
+        <Story />
+      </Box>
+    ),
+  ],
 } satisfies Meta<typeof DocumentsTable>
 
 export default meta

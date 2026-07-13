@@ -37,7 +37,7 @@ export function GoogleDriveFolderTree({
           >
             Google Drive
           </Typography>
-          <Typography variant="h5" sx={{ mt: 1 }}>
+          <Typography component="h2" variant="h5" sx={{ mt: 1 }}>
             {title}
           </Typography>
           <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>

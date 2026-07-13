@@ -18,7 +18,7 @@ export function ProcessSelectedFoldersPanel({ folders }: ProcessSelectedFoldersP
           >
             Selected Folders
           </Typography>
-          <Typography variant="h5" sx={{ mt: 1 }}>
+          <Typography component="h2" variant="h5" sx={{ mt: 1 }}>
             Review your sources
           </Typography>
         </div>

@@ -1,4 +1,6 @@
 import { Suspense, type ReactElement } from 'react'
+import { Card, CardContent, Stack, Typography } from '@mui/material'
+
 import { NeedsReviewReasons } from '@molecules/NeedsReviewReasons'
 import { PageHeader } from '@organisms/PageHeader'
 import { ReadyForLibraryTable } from '@organisms/ReadyForLibraryTable'
@@ -30,26 +32,40 @@ const READINESS_EXPLANATION_GROUPS = {
 
 function AuthorCountCard({ authorName, count }: { authorName: string; count: number }) {
   return (
-    <div className="rounded-2xl border border-moss/15 bg-white p-5 shadow-panel">
-      <p className="text-xs uppercase tracking-[0.15em] text-ink/60">Featured author</p>
-      <p className="mt-2 text-lg font-semibold text-ink">{authorName}</p>
-      <p className="mt-3 text-3xl font-semibold text-ink">{count}</p>
-      <p className="mt-1 text-sm text-ink/70">Unique documents linked to this author</p>
-    </div>
+    <Card component="section" sx={{ border: '1px solid', borderColor: 'rgba(53, 88, 52, 0.15)' }}>
+      <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
+        <Typography
+          variant="caption"
+          sx={{ color: 'text.secondary', letterSpacing: '0.15em', textTransform: 'uppercase' }}
+        >
+          Featured author
+        </Typography>
+        <Typography variant="h6" sx={{ color: 'ink.main', mt: 1 }}>
+          {authorName}
+        </Typography>
+        <Typography component="p" variant="h3" sx={{ color: 'ink.main', mt: 1.5 }}>
+          {count}
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          Unique documents linked to this author
+        </Typography>
+      </CardContent>
+    </Card>
   )
 }
 
 function ReadyForLibraryReadinessExplanation() {
   return (
-    <section aria-labelledby="ready-for-library-readiness-explanation" className="space-y-3">
-      <p
+    <Stack component="section" spacing={1.5} aria-labelledby="ready-for-library-readiness-explanation">
+      <Typography
         id="ready-for-library-readiness-explanation"
-        className="text-xs font-semibold uppercase tracking-[0.15em] text-ink/60"
+        variant="caption"
+        sx={{ color: 'text.secondary', fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase' }}
       >
         What this workspace tells you
-      </p>
+      </Typography>
       <NeedsReviewReasons value={READINESS_EXPLANATION_GROUPS} />
-    </section>
+    </Stack>
   )
 }
 
@@ -171,7 +187,7 @@ async function ReadyForLibraryContent({ searchParams }: ReadyForLibraryPageProps
 
 export default function ReadyForLibraryPage({ searchParams }: ReadyForLibraryPageProps): ReactElement {
   return (
-    <div className="w-full space-y-8">
+    <Stack spacing={4} sx={{ width: '100%' }}>
       <PageHeader
         eyebrow="Ready for Library"
         title="Post-approval handoff inspection"
@@ -183,6 +199,6 @@ export default function ReadyForLibraryPage({ searchParams }: ReadyForLibraryPag
       <Suspense fallback={null}>
         <ReadyForLibraryContent searchParams={searchParams} />
       </Suspense>
-    </div>
+    </Stack>
   )
 }

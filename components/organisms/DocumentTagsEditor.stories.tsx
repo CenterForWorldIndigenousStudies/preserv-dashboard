@@ -1,3 +1,4 @@
+import Box from '@mui/material/Box'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { DocumentTagsEditor } from '@organisms/DocumentTagsEditor'
 
@@ -47,6 +48,13 @@ const meta = {
     documentId: 'document-1',
     initialTags: initialTagsMap.populated,
   },
+  decorators: [
+    (Story) => (
+      <Box sx={{ width: 'min(100%, 48rem)', p: 2 }}>
+        <Story />
+      </Box>
+    ),
+  ],
 } satisfies Meta<typeof DocumentTagsEditor>
 
 export default meta

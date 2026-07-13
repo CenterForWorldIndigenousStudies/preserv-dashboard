@@ -1,5 +1,7 @@
 import type { ReactElement } from 'react'
 
+import { Paper, Stack, Typography } from '@mui/material'
+
 interface PageHeaderProps {
   eyebrow: string
   title: string
@@ -8,10 +10,37 @@ interface PageHeaderProps {
 
 export function PageHeader({ eyebrow, title, description }: PageHeaderProps): ReactElement {
   return (
-    <div className="rounded-3xl bg-ink px-8 py-10 text-sand shadow-panel">
-      <p className="text-xs uppercase tracking-[0.3em] text-sky/75">{eyebrow}</p>
-      <h1 className="mt-4 text-3xl font-semibold text-white md:text-4xl">{title}</h1>
-      <p className="mt-4 max-w-2xl text-sm leading-6 text-sky/90">{description}</p>
-    </div>
+    <Paper
+      component="header"
+      elevation={0}
+      sx={{
+        backgroundColor: 'ink.main',
+        borderRadius: 2,
+        boxShadow: 3,
+        color: 'sand.main',
+        px: { xs: 3, md: 4 },
+        py: { xs: 4, md: 5 },
+      }}
+    >
+      <Stack spacing={2}>
+        <Typography component="p" variant="overline" sx={{ color: 'sky.main', letterSpacing: '0.3em' }}>
+          {eyebrow}
+        </Typography>
+        <Typography
+          component="h1"
+          variant="h3"
+          sx={{
+            color: 'common.white',
+            fontSize: { xs: '1.875rem', md: '2.25rem' },
+            fontWeight: 600,
+          }}
+        >
+          {title}
+        </Typography>
+        <Typography variant="body2" sx={{ color: 'sky.main', maxWidth: '42rem', lineHeight: 1.5 }}>
+          {description}
+        </Typography>
+      </Stack>
+    </Paper>
   )
 }

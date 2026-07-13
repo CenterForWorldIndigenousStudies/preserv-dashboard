@@ -20,7 +20,7 @@ export function ProcessBatchSummaryHeader({
       >
         Batch
       </Typography>
-      <Typography variant="h5" sx={{ mt: 1 }}>
+      <Typography component="h2" variant="h5" sx={{ mt: 1 }}>
         {batchName || batchId}
       </Typography>
       <Typography variant="body2" sx={{ mt: 0.5, color: 'text.secondary' }}>

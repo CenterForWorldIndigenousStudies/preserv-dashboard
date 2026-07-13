@@ -11,6 +11,7 @@ import Typography from '@mui/material/Typography'
 import Alert from '@mui/material/Alert'
 import Snackbar from '@mui/material/Snackbar'
 import Tooltip from '@mui/material/Tooltip'
+import { alpha, type Theme } from '@mui/material/styles'
 import type { MRT_ColumnDef, MRT_RowSelectionState, MRT_Updater } from 'material-react-table'
 import { useRouter } from 'next/navigation'
 
@@ -129,31 +130,29 @@ function ReviewQueueChecklistPanel({
 
   return (
     <Box
-      sx={{
-        mx: 2,
-        mb: 2,
-        borderRadius: '0.75rem',
-        border: '1px solid rgba(53,88,52,0.12)',
-        backgroundColor: 'rgba(244,241,240,0.65)',
-        p: { xs: 2, sm: 2.5 },
+      sx={(theme: Theme) => {
+        const mossColor = theme.palette.moss?.main ?? theme.palette.primary.main
+        const sandColor = theme.palette.sand?.main ?? theme.palette.secondary.main
+
+        return {
+          mx: 2,
+          mb: 2,
+          border: 1,
+          borderColor: alpha(mossColor, 0.12),
+          borderRadius: 1.5,
+          backgroundColor: alpha(sandColor, 0.65),
+          p: { xs: 2, sm: 2.5 },
+        }
       }}
     >
       <Stack spacing={2}>
         <Box>
           <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
             <Box>
-              <Typography
-                sx={{
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                  color: '#355834',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.14em',
-                }}
-              >
+              <Typography variant="overline" color="primary">
                 Validation Checklist
               </Typography>
-              <Typography sx={{ mt: 0.75, fontSize: '0.875rem', color: '#231f20' }}>
+              <Typography variant="body2" color="text.primary" sx={{ mt: 0.75 }}>
                 {`${completedCount} of ${REVIEW_QUEUE_CHECKLIST_ITEMS.length} review steps marked complete`}
               </Typography>
             </Box>
@@ -170,7 +169,7 @@ function ReviewQueueChecklistPanel({
         </Box>
         <Collapse in={expanded} timeout="auto" unmountOnExit>
           <Stack spacing={2}>
-            <Divider flexItem sx={{ borderColor: 'rgba(53,88,52,0.08)' }} />
+            <Divider flexItem />
             <Stack spacing={0.5}>
               {REVIEW_QUEUE_CHECKLIST_ITEMS.map(({ key, label }) => (
                 <FormControlLabel
@@ -182,7 +181,7 @@ function ReviewQueueChecklistPanel({
                     alignItems: 'flex-start',
                     '& .MuiFormControlLabel-label': {
                       fontSize: '0.875rem',
-                      color: '#231f20',
+                      color: 'text.primary',
                     },
                   }}
                 />
@@ -227,10 +226,12 @@ function buildReviewQueueCommentTooltipContent(
   }
 
   return (
-    <>
-      {validationComment ? <div>{`Comment: ${validationComment}`}</div> : null}
-      {validationCommentAdditional ? <div>{`Additional information: ${validationCommentAdditional}`}</div> : null}
-    </>
+    <Stack spacing={0.5}>
+      {validationComment ? <Typography variant="body2">{`Comment: ${validationComment}`}</Typography> : null}
+      {validationCommentAdditional ? (
+        <Typography variant="body2">{`Additional information: ${validationCommentAdditional}`}</Typography>
+      ) : null}
+    </Stack>
   )
 }
 
@@ -273,7 +274,11 @@ function buildReviewQueueColumns(params: {
         },
       }) => {
         if (!validation_status) {
-          return <span className="txt-muted">{`-`}</span>
+          return (
+            <Typography variant="body2" color="text.secondary">
+              -
+            </Typography>
+          )
         }
 
         return <Badge variant={getValidationStatusBadgeVariant(validation_status)}>{validation_status}</Badge>
@@ -299,21 +304,26 @@ function buildReviewQueueColumns(params: {
         ) : null
 
         return (
-          <div className="flex flex-col gap-1">
+          <Stack spacing={0.5}>
             {reviewContextBadge ? (
               commentTooltipContent ? (
                 <Tooltip title={commentTooltipContent} enterDelay={400}>
-                  <span>{reviewContextBadge}</span>
+                  <Box component="span">{reviewContextBadge}</Box>
                 </Tooltip>
               ) : (
                 reviewContextBadge
               )
             ) : null}
-            <span className={validatorName || hasHumanReviewContext ? 'text-sm text-ink' : 'txt-muted text-sm'}>
+            <Typography
+              variant="body2"
+              color={validatorName || hasHumanReviewContext ? 'text.primary' : 'text.secondary'}
+            >
               {validatorName || (hasHumanReviewContext ? 'Reviewer not recorded' : '-')}
-            </span>
-            {validation_timestamp ? <DateAtom value={validation_timestamp} className="text-xs text-ink/60" /> : null}
-          </div>
+            </Typography>
+            {validation_timestamp ? (
+              <DateAtom value={validation_timestamp} sx={{ color: 'text.secondary', fontSize: '0.75rem' }} />
+            ) : null}
+          </Stack>
         )
       },
     },
@@ -376,9 +386,9 @@ function buildOverviewColumns(preservedOverviewHref: string): MRT_ColumnDef<Docu
         }
 
         return (
-          <span style={{ fontFamily: 'monospace', fontSize: '0.75rem' }} title={value}>
+          <Typography component="span" variant="caption" sx={{ fontFamily: 'monospace' }} title={value}>
             {truncateString(value, 12)}
-          </span>
+          </Typography>
         )
       },
     },
@@ -393,9 +403,9 @@ function buildOverviewColumns(preservedOverviewHref: string): MRT_ColumnDef<Docu
         }
 
         return (
-          <span style={{ fontFamily: 'monospace', fontSize: '0.75rem' }} title={value}>
+          <Typography component="span" variant="caption" sx={{ fontFamily: 'monospace' }} title={value}>
             {truncateString(value, 12)}
-          </span>
+          </Typography>
         )
       },
     },
@@ -760,7 +770,7 @@ export function DocumentsTable({
   )
 
   return (
-    <div>
+    <Box>
       <DocumentDataTable<Document, AdvancedSearchFilters>
         definition={{
           tableId: isReviewQueue ? 'review-queue-documents' : 'overview-documents',
@@ -772,7 +782,7 @@ export function DocumentsTable({
                 const isPending = isApprovePending || isRejectPending || batchApprovePending
 
                 return (
-                  <div className="flex items-center gap-2">
+                  <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                     <Button
                       variant="secondary"
                       size="sm"
@@ -795,7 +805,7 @@ export function DocumentsTable({
                     >
                       Reject
                     </Button>
-                  </div>
+                  </Stack>
                 )
               }
             : undefined,
@@ -926,6 +936,6 @@ export function DocumentsTable({
           {toastState.message}
         </Alert>
       </Snackbar>
-    </div>
+    </Box>
   )
 }

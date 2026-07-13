@@ -1,3 +1,4 @@
+import Box from '@mui/material/Box'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import type { VersionFamily, VersionFamilyDocument } from 'types/documents'
 
@@ -38,8 +39,20 @@ function makeDoc(n: number, name: string, isCanonical: boolean, isDup: boolean):
 }
 
 const meta = {
+  title: 'Organisms/DocumentVersionsButton',
   component: DocumentVersionsButton,
   tags: ['autodocs'],
+  parameters: {
+    backgrounds: { default: 'sand' },
+    layout: 'centered',
+  },
+  decorators: [
+    (Story) => (
+      <Box sx={{ p: 2 }}>
+        <Story />
+      </Box>
+    ),
+  ],
 } satisfies Meta<typeof DocumentVersionsButton>
 
 export default meta

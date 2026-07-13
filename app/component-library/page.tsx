@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { Box } from '@mui/material'
 
 import { COMPONENT_LIBRARY_PATH, SIGNIN_PATH } from '@constants/paths'
 import { getDashboardSession } from '@root/auth'
@@ -21,8 +22,14 @@ export default async function ComponentLibraryPage() {
   const src = buildStorybookUrl()
 
   return (
-    <div className="-m-6 -mt-4 h-[calc(100vh-8rem)]">
-      <iframe src={src} id="storybook-iframe" title="Storybook Component Library" className="h-full w-full border-0" />
-    </div>
+    <Box sx={{ height: 'calc(100vh - 8rem)', m: -3, mt: -2 }}>
+      <Box
+        component="iframe"
+        src={src}
+        id="storybook-iframe"
+        title="Storybook Component Library"
+        sx={{ border: 0, display: 'block', height: '100%', width: '100%' }}
+      />
+    </Box>
   )
 }

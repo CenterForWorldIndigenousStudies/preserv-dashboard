@@ -1,4 +1,5 @@
 import type { MRT_ColumnDef, MRT_RowData, MRT_TableOptions } from 'material-react-table'
+import { alpha, type Theme } from '@mui/material/styles'
 
 interface BuildDocumentTableMrtOptionsInput<TData extends MRT_RowData> {
   columns: MRT_ColumnDef<TData>[]
@@ -31,37 +32,47 @@ export function buildDocumentTableMrtOptions<TData extends MRT_RowData>({
       noRecordsToDisplay: emptyMessage,
     },
     muiTableHeadCellProps: {
-      sx: {
-        backgroundColor: '#f4f1f0',
-        color: '#231f20',
+      sx: (theme: Theme) => ({
+        backgroundColor: theme.palette.sand?.main ?? theme.palette.secondary.main,
+        color: theme.palette.ink?.main ?? theme.palette.text.primary,
         fontWeight: 600,
         fontSize: '0.75rem',
         textTransform: 'uppercase',
         letterSpacing: '0.1em',
         px: isReviewQueueDense ? 1.5 : undefined,
         py: isReviewQueueDense ? 1.25 : undefined,
-      },
+      }),
     },
     muiTableBodyCellProps: {
-      sx: {
-        color: '#231f20',
+      sx: (theme: Theme) => ({
+        color: theme.palette.ink?.main ?? theme.palette.text.primary,
         fontSize: '0.875rem',
         px: isReviewQueueDense ? 1.5 : undefined,
         py: isReviewQueueDense ? 1.25 : undefined,
         verticalAlign: isReviewQueueDense ? 'top' : undefined,
-      },
+      }),
     },
     muiTableBodyProps: {
-      sx: {
-        '& tr:nth-of-type(even)': { backgroundColor: 'rgba(244,241,240,0.3)' },
-        '& tr:hover': { backgroundColor: 'rgba(53,88,52,0.06)' },
+      sx: (theme: Theme) => {
+        const mossColor = theme.palette.moss?.main ?? theme.palette.primary.main
+        const sandColor = theme.palette.sand?.main ?? theme.palette.secondary.main
+
+        return {
+          '& tr:nth-of-type(even)': { backgroundColor: alpha(sandColor, 0.3) },
+          '& tr:hover': { backgroundColor: alpha(mossColor, 0.06) },
+        }
       },
     },
     muiTableContainerProps: {
-      sx: {
-        borderRadius: '0.75rem',
-        border: '1px solid rgba(53,88,52,0.125)',
-        maxHeight: isReviewQueueDense ? '70vh' : undefined,
+      sx: (theme: Theme) => {
+        const mossColor = theme.palette.moss?.main ?? theme.palette.primary.main
+
+        return {
+          borderRadius: 1.5,
+          border: 1,
+          borderColor: alpha(mossColor, 0.125),
+          maxHeight: isReviewQueueDense ? '70vh' : undefined,
+        }
       },
     },
   }

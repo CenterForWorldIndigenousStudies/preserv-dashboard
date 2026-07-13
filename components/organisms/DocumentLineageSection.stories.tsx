@@ -1,3 +1,4 @@
+import Box from '@mui/material/Box'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 
 import type { DocumentDetail } from 'types/documents'
@@ -115,6 +116,13 @@ const meta = {
     },
     layout: 'fullscreen',
   },
+  decorators: [
+    (Story) => (
+      <Box sx={{ width: 'min(100%, 80rem)', mx: 'auto', p: { xs: 2, md: 4 } }}>
+        <Story />
+      </Box>
+    ),
+  ],
 } satisfies Meta<typeof DocumentLineageSection>
 
 export default meta

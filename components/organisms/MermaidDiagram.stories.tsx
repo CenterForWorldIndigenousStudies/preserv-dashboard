@@ -1,3 +1,4 @@
+import Box from '@mui/material/Box'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { DOCUMENTS_API_PATH } from '@constants/paths'
 import { MermaidDiagram } from '@organisms/MermaidDiagram'
@@ -13,6 +14,13 @@ const meta = {
   parameters: {
     backgrounds: { default: 'sand' },
   },
+  decorators: [
+    (Story) => (
+      <Box sx={{ width: 'min(100%, 72rem)', mx: 'auto', p: 2 }}>
+        <Story />
+      </Box>
+    ),
+  ],
 } satisfies Meta<typeof MermaidDiagram>
 
 export default meta

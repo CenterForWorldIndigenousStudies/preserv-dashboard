@@ -2,6 +2,7 @@
 
 import { type ReactElement } from 'react'
 import Alert from '@mui/material/Alert'
+import Box from '@mui/material/Box'
 import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
@@ -129,11 +130,11 @@ export function CollectionDocumentManager({
         >
           {error ? <Alert severity="error">{error}</Alert> : null}
           {isLoading ? (
-            <div aria-live="polite" className="flex justify-center">
+            <Box aria-live="polite" sx={{ display: 'flex', justifyContent: 'center' }}>
               <Button loading variant="secondary">
                 Loading documents
               </Button>
-            </div>
+            </Box>
           ) : activeAction === 'add' ? (
             <SelectionTable
               title="Available Documents"

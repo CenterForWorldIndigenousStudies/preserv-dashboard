@@ -2,7 +2,7 @@ import type { ReactElement } from 'react'
 import { Box, Paper, Stack, Typography } from '@mui/material'
 
 import { PipelineStageStatusBadge } from '@atoms/Badges/PipelineStageStatusBadge'
-import { PipelineTimelineCard } from '@components/ProcessDocuments/PipelineTimelineCard'
+import { PipelineTimelineCard } from '@molecules/PipelineTimelineCard'
 import { ProcessBatchSummaryHeader } from '@molecules/ProcessBatchSummaryHeader'
 import { ProcessStageDetailList } from '@molecules/ProcessStageDetailList'
 import { ProcessStageDiagnosticsPanel } from '@molecules/ProcessStageDiagnosticsPanel'
@@ -151,7 +151,9 @@ function StageCard({ label, stage }: { label: string; stage: ProcessStageStatus 
             <Typography variant="overline" sx={{ color: 'text.secondary' }}>
               {label}
             </Typography>
-            <Typography variant="h6">{label}</Typography>
+            <Typography component="h3" variant="h6">
+              {label}
+            </Typography>
           </Box>
           <PipelineStageStatusBadge status={stage.status} />
         </Box>

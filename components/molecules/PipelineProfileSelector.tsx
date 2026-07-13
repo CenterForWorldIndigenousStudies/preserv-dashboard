@@ -49,7 +49,7 @@ export function PipelineProfileSelector({
           <Typography variant="overline" sx={{ color: 'text.secondary', letterSpacing: '0.16em' }}>
             Processing Profile
           </Typography>
-          <Typography variant="h5" sx={{ mt: 0.5 }}>
+          <Typography component="h2" variant="h5" sx={{ mt: 0.5 }}>
             Choose a pipeline profile
           </Typography>
           <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>

@@ -2,7 +2,10 @@
 
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
+import { AlertTriangle } from 'lucide-react'
+import { Box, Paper, Stack, Typography } from '@mui/material'
 
+import { Button } from '@atoms/Button'
 import { SIGNIN_PATH } from '@constants/paths'
 
 export function ErrorContent() {
@@ -21,38 +24,62 @@ export function ErrorContent() {
   const message = error ? errorMessages[error] || errorMessages.Default : errorMessages.Default
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-sand/20">
-      <div className="bg-white rounded-panel shadow-md p-8 max-w-md w-full text-center">
-        <div className="mb-6">
-          <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-serif font-bold text-ink mb-2">Sign In Error</h1>
-          <p className="text-sm text-ink/60">{message}</p>
-        </div>
-
-        <div className="space-y-3">
-          <Link
-            href={SIGNIN_PATH}
-            className="block w-full rounded-full bg-moss px-4 py-2 text-sm font-medium text-white hover:bg-moss/80 text-center"
+    <Box
+      sx={{
+        alignItems: 'center',
+        bgcolor: 'rgba(244, 241, 240, 0.2)',
+        display: 'flex',
+        justifyContent: 'center',
+        minHeight: '100dvh',
+        p: { xs: 2, sm: 3 },
+      }}
+    >
+      <Paper
+        component="section"
+        elevation={0}
+        sx={{
+          border: '1px solid',
+          borderColor: 'divider',
+          boxShadow: 2,
+          maxWidth: 448,
+          p: { xs: 3, sm: 4 },
+          textAlign: 'center',
+          width: '100%',
+        }}
+      >
+        <Stack spacing={3} sx={{ alignItems: 'center' }}>
+          <Box
+            sx={{
+              alignItems: 'center',
+              bgcolor: 'rgba(233, 105, 84, 0.08)',
+              borderRadius: '50%',
+              color: 'clay.main',
+              display: 'flex',
+              height: 64,
+              justifyContent: 'center',
+              width: 64,
+            }}
           >
-            Try Again
-          </Link>
-          <Link
-            href="/"
-            className="block w-full rounded-full border border-ink/20 bg-sand px-4 py-2 text-sm font-medium text-ink hover:bg-sky text-center"
-          >
-            Return Home
-          </Link>
-        </div>
-      </div>
-    </div>
+            <AlertTriangle aria-hidden="true" size={32} strokeWidth={1.5} />
+          </Box>
+          <Stack spacing={1}>
+            <Typography component="h1" variant="h4" sx={{ color: 'ink.main' }}>
+              Sign In Error
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {message}
+            </Typography>
+          </Stack>
+          <Stack spacing={1.5} sx={{ width: '100%' }}>
+            <Button component={Link} href={SIGNIN_PATH} fullWidth>
+              Try Again
+            </Button>
+            <Button component={Link} href="/" variant="secondary" fullWidth>
+              Return Home
+            </Button>
+          </Stack>
+        </Stack>
+      </Paper>
+    </Box>
   )
 }

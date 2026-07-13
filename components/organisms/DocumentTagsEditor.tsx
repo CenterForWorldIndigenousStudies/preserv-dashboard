@@ -2,7 +2,13 @@
 
 import { useMemo, useState, type ReactElement } from 'react'
 import Alert from '@mui/material/Alert'
+import Box from '@mui/material/Box'
+import IconButton from '@mui/material/IconButton'
+import Paper from '@mui/material/Paper'
+import Stack from '@mui/material/Stack'
 import Tooltip from '@mui/material/Tooltip'
+import Typography from '@mui/material/Typography'
+import { alpha, type Theme } from '@mui/material/styles'
 import { Button } from '@atoms/Button'
 import { CreateTagDialog } from '@atoms/CreateTagDialog'
 import { IconPlus } from '@atoms/icons/IconPlus'
@@ -153,58 +159,90 @@ export function DocumentTagsEditor({ documentId, initialTags }: DocumentTagsEdit
   }
 
   return (
-    <div className="space-y-4">
+    <Stack spacing={2}>
       {error ? <Alert severity="error">{error}</Alert> : null}
       {successMessage ? <Alert severity="success">{successMessage}</Alert> : null}
 
-      <div className="flex flex-wrap items-start gap-3">
+      <Stack direction="row" spacing={1.5} useFlexGap sx={{ alignItems: 'flex-start', flexWrap: 'wrap' }}>
         {sortedTags.length > 0 ? (
           sortedTags.map((tag) => (
-            <span
+            <Box
+              component="span"
               key={tag.id}
-              className="inline-flex items-center gap-2 rounded-full bg-moss/10 px-3 py-1.5 text-sm text-moss"
+              sx={(theme: Theme) => {
+                const mossColor = theme.palette.moss?.main ?? theme.palette.primary.main
+
+                return {
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  borderRadius: '9999px',
+                  backgroundColor: alpha(mossColor, 0.1),
+                  color: mossColor,
+                  px: 1.5,
+                  py: 0.75,
+                }
+              }}
             >
               <Tooltip title={tag.tags.notes ?? ''} disableHoverListener={!tag.tags.notes}>
-                <span>{tag.tags.name ?? 'Untitled tag'}</span>
+                <Typography component="span" variant="body2" color="inherit">
+                  {tag.tags.name ?? 'Untitled tag'}
+                </Typography>
               </Tooltip>
-              <button
-                type="button"
-                className="rounded-full p-0.5 text-moss transition hover:bg-moss/10"
+              <IconButton
+                size="small"
                 aria-label={`Remove ${tag.tags.name ?? 'tag'}`}
                 onClick={() => {
                   void openRemoveDialog(tag)
                 }}
               >
                 <IconX size={14} />
-              </button>
-            </span>
+              </IconButton>
+            </Box>
           ))
         ) : (
-          <p className="text-sm text-ink/60">No tags available.</p>
+          <Typography variant="body2" color="text.secondary">
+            No tags available.
+          </Typography>
         )}
-      </div>
+      </Stack>
 
       {isAdding ? (
-        <div className="space-y-3 rounded-2xl border border-moss/10 bg-sand/30 p-4">
-          <TagSearchCombobox
-            open
-            onSelectExisting={addExistingTag}
-            onSelectCreate={(tagName) => {
-              setPendingCreateName(normalizeTagName(tagName))
-            }}
-          />
-          <div className="flex justify-end">
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setIsAdding(false)
-                setPendingCreateName('')
+        <Paper
+          elevation={0}
+          sx={(theme: Theme) => {
+            const mossColor = theme.palette.moss?.main ?? theme.palette.primary.main
+            const sandColor = theme.palette.sand?.main ?? theme.palette.secondary.main
+
+            return {
+              border: 1,
+              borderColor: alpha(mossColor, 0.1),
+              backgroundColor: alpha(sandColor, 0.3),
+              p: 2,
+            }
+          }}
+        >
+          <Stack spacing={1.5}>
+            <TagSearchCombobox
+              open
+              onSelectExisting={addExistingTag}
+              onSelectCreate={(tagName) => {
+                setPendingCreateName(normalizeTagName(tagName))
               }}
-            >
-              Cancel
-            </Button>
-          </div>
-        </div>
+            />
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setIsAdding(false)
+                  setPendingCreateName('')
+                }}
+              >
+                Cancel
+              </Button>
+            </Box>
+          </Stack>
+        </Paper>
       ) : (
         <Button
           variant="primary"
@@ -235,6 +273,6 @@ export function DocumentTagsEditor({ documentId, initialTags }: DocumentTagsEdit
         }}
         onConfirm={confirmRemoveTag}
       />
-    </div>
+    </Stack>
   )
 }

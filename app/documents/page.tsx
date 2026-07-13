@@ -1,4 +1,6 @@
 import { Suspense } from 'react'
+import { Stack } from '@mui/material'
+
 import { DocumentsTable } from '@organisms/DocumentsTable'
 import { PageHeader } from '@organisms/PageHeader'
 import {
@@ -69,7 +71,7 @@ async function DocumentsContent({ searchParams }: DocumentsPageProps) {
 
 export default function DocumentsPage({ searchParams }: DocumentsPageProps) {
   return (
-    <div className="w-full space-y-8">
+    <Stack spacing={4} sx={{ width: '100%' }}>
       <PageHeader
         eyebrow="Documents"
         title="Documents"
@@ -79,6 +81,6 @@ export default function DocumentsPage({ searchParams }: DocumentsPageProps) {
       <Suspense fallback={null}>
         <DocumentsContent searchParams={searchParams} />
       </Suspense>
-    </div>
+    </Stack>
   )
 }

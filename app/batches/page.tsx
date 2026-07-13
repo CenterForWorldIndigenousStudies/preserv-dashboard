@@ -1,4 +1,6 @@
 import { Suspense, type ReactElement } from 'react'
+import { Box, Card, CardContent, Stack, Typography } from '@mui/material'
+
 import { BatchSummaryTable } from '@organisms/BatchSummaryTable'
 import { NoDataState } from '@organisms/NoDataState'
 import { PageHeader } from '@organisms/PageHeader'
@@ -7,17 +9,35 @@ import { getBatchSummary } from '@lib/queries'
 export const dynamic = 'force-dynamic'
 
 function SummaryCard({ totalBatches, totalDocuments }: { totalBatches: number; totalDocuments: number }) {
+  const metrics = [
+    { label: 'Total Batches', value: totalBatches },
+    { label: 'Total Documents', value: totalDocuments },
+  ]
+
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      <div className="rounded-2xl border border-moss/15 bg-white p-5 shadow-panel">
-        <p className="text-xs uppercase tracking-[0.15em] text-ink/60">Total Batches</p>
-        <p className="mt-2 text-3xl font-semibold text-ink">{totalBatches}</p>
-      </div>
-      <div className="rounded-2xl border border-moss/15 bg-white p-5 shadow-panel">
-        <p className="text-xs uppercase tracking-[0.15em] text-ink/60">Total Documents</p>
-        <p className="mt-2 text-3xl font-semibold text-ink">{totalDocuments}</p>
-      </div>
-    </div>
+    <Box
+      sx={{
+        display: 'grid',
+        gap: 2,
+        gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
+      }}
+    >
+      {metrics.map(({ label, value }) => (
+        <Card key={label} component="section" sx={{ border: '1px solid', borderColor: 'rgba(53, 88, 52, 0.15)' }}>
+          <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
+            <Typography
+              variant="caption"
+              sx={{ color: 'text.secondary', letterSpacing: '0.15em', textTransform: 'uppercase' }}
+            >
+              {label}
+            </Typography>
+            <Typography component="p" variant="h3" sx={{ color: 'ink.main', mt: 1 }}>
+              {value}
+            </Typography>
+          </CardContent>
+        </Card>
+      ))}
+    </Box>
   )
 }
 
@@ -47,7 +67,7 @@ async function BatchSummaryContent() {
 
 export default function BatchSummaryPage(): ReactElement {
   return (
-    <div className="w-full space-y-8">
+    <Stack spacing={4} sx={{ width: '100%' }}>
       <PageHeader
         eyebrow="Batch Summary"
         title="Batch processing details by batch."
@@ -57,6 +77,6 @@ export default function BatchSummaryPage(): ReactElement {
       <Suspense fallback={null}>
         <BatchSummaryContent />
       </Suspense>
-    </div>
+    </Stack>
   )
 }

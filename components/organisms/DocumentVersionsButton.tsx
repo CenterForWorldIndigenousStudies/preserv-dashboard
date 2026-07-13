@@ -1,6 +1,13 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react'
+import { useCallback, useMemo, useState, type ReactElement } from 'react'
+import Box from '@mui/material/Box'
+import Dialog from '@mui/material/Dialog'
+import DialogContent from '@mui/material/DialogContent'
+import DialogTitle from '@mui/material/DialogTitle'
+import IconButton from '@mui/material/IconButton'
+import Typography from '@mui/material/Typography'
+import { alpha, type Theme } from '@mui/material/styles'
 import {
   MaterialReactTable,
   useMaterialReactTable,
@@ -87,34 +94,14 @@ function buildVersionDocumentHref(documentId: string, overviewHref: string | und
 export function DocumentVersionsButton({ versionFamily, overviewHref }: DocumentVersionsButtonProps): ReactElement {
   const [isOpen, setIsOpen] = useState(false)
   const [sorting, setSorting] = useState<MRT_SortingState>([])
-  const dialogRef = useRef<HTMLDialogElement>(null)
 
   const openModal = useCallback(() => {
     setIsOpen(true)
-    requestAnimationFrame(() => dialogRef.current?.showModal())
   }, [])
 
   const closeModal = useCallback(() => {
-    dialogRef.current?.close()
     setIsOpen(false)
   }, [])
-
-  useEffect(() => {
-    if (!isOpen) {
-      return
-    }
-
-    const handleKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') {
-        closeModal()
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [closeModal, isOpen])
 
   const data = useMemo(() => sortVersionDocuments(versionFamily.documents, sorting), [sorting, versionFamily.documents])
 
@@ -157,9 +144,9 @@ export function DocumentVersionsButton({ versionFamily, overviewHref }: Document
           const value = row.original.hash_binary
           if (!value) return '—'
           return (
-            <span style={{ fontFamily: 'monospace', fontSize: '0.75rem' }} title={value}>
+            <Typography component="span" variant="caption" sx={{ fontFamily: 'monospace' }} title={value}>
               {value.length > 20 ? `${value.slice(0, 20)}...` : value}
-            </span>
+            </Typography>
           )
         },
       },
@@ -171,9 +158,9 @@ export function DocumentVersionsButton({ versionFamily, overviewHref }: Document
           const value = row.original.hash_content
           if (!value) return '—'
           return (
-            <span style={{ fontFamily: 'monospace', fontSize: '0.75rem' }} title={value}>
+            <Typography component="span" variant="caption" sx={{ fontFamily: 'monospace' }} title={value}>
               {value.length > 20 ? `${value.slice(0, 20)}...` : value}
-            </span>
+            </Typography>
           )
         },
       },
@@ -212,41 +199,60 @@ export function DocumentVersionsButton({ versionFamily, overviewHref }: Document
     onSortingChange: setSorting,
     state: { sorting },
     muiTableHeadCellProps: {
-      sx: {
-        backgroundColor: '#f4f1f0',
-        color: '#231f20',
+      sx: (theme: Theme) => ({
+        backgroundColor: theme.palette.sand?.main ?? theme.palette.secondary.main,
+        color: theme.palette.ink?.main ?? theme.palette.text.primary,
         fontWeight: 600,
         fontSize: '0.75rem',
         textTransform: 'uppercase',
         letterSpacing: '0.1em',
-        borderBottom: '2px solid #355834',
-      },
+        borderBottom: '2px solid',
+        borderBottomColor: theme.palette.moss?.main ?? theme.palette.primary.main,
+      }),
     },
     muiTableBodyCellProps: {
-      sx: { color: '#231f20', fontSize: '0.875rem' },
+      sx: (theme: Theme) => ({
+        color: theme.palette.ink?.main ?? theme.palette.text.primary,
+        fontSize: '0.875rem',
+      }),
     },
     muiTableBodyRowProps: ({ row }) => ({
-      sx: row.original.is_canonical
-        ? {
-            backgroundColor: 'rgba(53,88,52,0.12)',
-            '& td': {
-              borderTop: '1px solid rgba(53,88,52,0.18)',
-              borderBottom: '1px solid rgba(53,88,52,0.18)',
-            },
-            '&:hover td': { backgroundColor: 'rgba(53,88,52,0.18)' },
-          }
-        : row.original.is_duplicate
+      sx: (theme: Theme) => {
+        const clayColor = theme.palette.clay?.main ?? theme.palette.error.main
+        const mossColor = theme.palette.moss?.main ?? theme.palette.primary.main
+        const sandColor = theme.palette.sand?.main ?? theme.palette.secondary.main
+
+        return row.original.is_canonical
           ? {
-              backgroundColor: 'rgba(184, 96, 80, 0.12)',
-              '&:hover td': { backgroundColor: 'rgba(184, 96, 80, 0.18)' },
+              backgroundColor: alpha(mossColor, 0.12),
+              '& td': {
+                borderTop: '1px solid',
+                borderBottom: '1px solid',
+                borderColor: alpha(mossColor, 0.18),
+              },
+              '&:hover td': { backgroundColor: alpha(mossColor, 0.18) },
             }
-          : {
-              '&:nth-of-type(even) td': { backgroundColor: 'rgba(244,241,240,0.3)' },
-              '&:hover td': { backgroundColor: 'rgba(53,88,52,0.06)' },
-            },
+          : row.original.is_duplicate
+            ? {
+                backgroundColor: alpha(clayColor, 0.12),
+                '&:hover td': { backgroundColor: alpha(clayColor, 0.18) },
+              }
+            : {
+                '&:nth-of-type(even) td': { backgroundColor: alpha(sandColor, 0.3) },
+                '&:hover td': { backgroundColor: alpha(mossColor, 0.06) },
+              }
+      },
     }),
     muiTableContainerProps: {
-      sx: { borderRadius: '0.75rem', border: '1px solid rgba(53,88,52,0.125)' },
+      sx: (theme: Theme) => {
+        const mossColor = theme.palette.moss?.main ?? theme.palette.primary.main
+
+        return {
+          borderRadius: 1.5,
+          border: 1,
+          borderColor: alpha(mossColor, 0.125),
+        }
+      },
     },
     localization: {
       noRecordsToDisplay: 'No versions found.',
@@ -260,34 +266,35 @@ export function DocumentVersionsButton({ versionFamily, overviewHref }: Document
         View Versions ({versionFamily.documents.length})
       </Button>
 
-      <dialog
-        ref={dialogRef}
+      <Dialog
+        open={isOpen}
         onClose={closeModal}
-        className="rounded-2xl border border-moss/15 bg-white p-0 shadow-panel backdrop:bg-ink/30"
-        style={{ padding: 0, minWidth: 'min(1200px, 94vw)' }}
+        keepMounted
+        fullWidth
+        maxWidth="xl"
+        aria-labelledby="document-versions-dialog-title"
+        sx={{ '& .MuiDialog-paper': { borderRadius: 2, maxHeight: '90vh' } }}
       >
-        <div className="p-6">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-semibold text-ink">Document Versions</h3>
-              <p className="mt-2 text-sm text-ink/70">
-                The canonical document is pinned to the top and highlighted separately from duplicate variants.
-              </p>
-            </div>
-            <button
-              onClick={closeModal}
-              className="rounded-full p-1 text-ink/50 hover:bg-sand hover:text-ink"
-              aria-label="Close"
-            >
-              <IconX size={20} />
-            </button>
-          </div>
-
-          <div className="mt-6">
-            <MaterialReactTable table={table} />
-          </div>
-        </div>
-      </dialog>
+        <DialogTitle
+          id="document-versions-dialog-title"
+          sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, pr: 1.5 }}
+        >
+          <Box>
+            <Typography component="span" variant="h5" color="text.primary">
+              Document Versions
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              The canonical document is pinned to the top and highlighted separately from duplicate variants.
+            </Typography>
+          </Box>
+          <IconButton onClick={closeModal} aria-label="Close">
+            <IconX size={20} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers sx={{ px: 3, py: 2, minHeight: 0 }}>
+          <MaterialReactTable table={table} />
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

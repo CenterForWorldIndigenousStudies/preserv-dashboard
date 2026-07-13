@@ -91,7 +91,7 @@ export function ProcessStageMetricsGrid({ stageLabel, stage }: ProcessStageMetri
           <Typography variant="caption" sx={{ color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
             {label}
           </Typography>
-          <Typography variant="h6" sx={{ mt: 0.5 }}>
+          <Typography component="p" variant="h6" sx={{ mt: 0.5 }}>
             {value}
           </Typography>
         </Box>

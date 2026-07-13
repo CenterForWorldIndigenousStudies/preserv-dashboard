@@ -1,10 +1,18 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import Box from '@mui/material/Box'
 import { NoDataState } from '@organisms/NoDataState'
 
 const meta = {
   title: 'Organisms/NoDataState',
   component: NoDataState,
   tags: ['autodocs'],
+  decorators: [
+    (Story) => (
+      <Box sx={{ width: 'min(100%, 72rem)', mx: 'auto', p: 2 }}>
+        <Story />
+      </Box>
+    ),
+  ],
   argTypes: {
     title: {
       control: 'text',

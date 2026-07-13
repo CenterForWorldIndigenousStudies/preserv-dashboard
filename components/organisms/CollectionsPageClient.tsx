@@ -1,6 +1,9 @@
 'use client'
 
 import { useState, type ReactElement } from 'react'
+import Box from '@mui/material/Box'
+import Stack from '@mui/material/Stack'
+
 import { Button } from '@atoms/Button'
 import { IconPlus } from '@atoms/icons/IconPlus'
 import { CollectionsAccordion } from '@organisms/CollectionsAccordion'
@@ -16,22 +19,22 @@ export function CollectionsPageClient({ collections }: CollectionsPageClientProp
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
 
   return (
-    <div className="space-y-8">
+    <Stack spacing={4}>
       <PageHeader
         eyebrow="Collections"
         title="Document Collections"
         description="Browse all document collections and their associated documents."
       />
 
-      <div className="flex justify-end">
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
         <Button variant="primary" startIcon={<IconPlus size={16} />} onClick={() => setIsAddDialogOpen(true)}>
           Add Collection
         </Button>
-      </div>
+      </Box>
 
       <CollectionsAccordion collections={collections} />
 
       <AddCollectionDialog open={isAddDialogOpen} collections={collections} onClose={() => setIsAddDialogOpen(false)} />
-    </div>
+    </Stack>
   )
 }

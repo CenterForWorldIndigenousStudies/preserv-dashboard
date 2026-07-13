@@ -25,6 +25,10 @@ vi.mock('material-react-table', () => ({
   },
 }))
 
+vi.mock('@mui/material/Dialog', () => ({
+  default: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+}))
+
 import { DocumentVersionsButton } from '@organisms/DocumentVersionsButton'
 import { DOCUMENTS_PATH } from '@constants/paths'
 

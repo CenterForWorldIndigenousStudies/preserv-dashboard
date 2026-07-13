@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import { Stack } from '@mui/material'
 import { REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES } from '@constants/reviewQueue'
 import { DocumentsTable } from '@organisms/DocumentsTable'
 import { PageHeader } from '@organisms/PageHeader'
@@ -111,7 +112,7 @@ export default async function ReviewQueuePage({ searchParams }: ReviewQueuePageP
   ])
 
   return (
-    <div className="w-full space-y-8">
+    <Stack spacing={4} sx={{ width: '100%' }}>
       <PageHeader
         eyebrow="Review Queue"
         title="Documents needing review."
@@ -125,6 +126,6 @@ export default async function ReviewQueuePage({ searchParams }: ReviewQueuePageP
           needsReviewPanel={<ReviewQueueContent searchParams={searchParams} />}
         />
       </Suspense>
-    </div>
+    </Stack>
   )
 }

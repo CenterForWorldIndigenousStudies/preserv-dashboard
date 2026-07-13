@@ -4,7 +4,7 @@ import { type ReactElement, useCallback } from 'react'
 import { Box, Checkbox, FormControlLabel, Paper, Stack, Typography } from '@mui/material'
 
 import { getPass1HelperText, type PipelineSelectionDraft } from '@lib/pipelineConfig'
-import { NormalizePassCard } from './NormalizePassCard'
+import { NormalizePassCard } from '@molecules/NormalizePassCard'
 
 interface PipelineStepSelectorProps {
   draft: PipelineSelectionDraft
@@ -41,7 +41,15 @@ function StepRow({ label, description, checked, disabled = false, onChange }: St
       }}
     >
       <FormControlLabel
-        control={<Checkbox checked={checked} onChange={handleChange} disabled={disabled} size="small" />}
+        control={
+          <Checkbox
+            checked={checked}
+            onChange={handleChange}
+            disabled={disabled}
+            slotProps={{ input: { 'aria-label': label } }}
+            size="small"
+          />
+        }
         label={
           <Box>
             <Typography variant="body1" sx={{ fontWeight: 600 }}>
@@ -211,7 +219,7 @@ export function PipelineStepSelector({ draft, mode, onDraftChange }: PipelineSte
           <Typography variant="overline" sx={{ color: 'text.secondary', letterSpacing: '0.16em' }}>
             Pipeline Steps
           </Typography>
-          <Typography variant="h5" sx={{ mt: 0.5 }}>
+          <Typography component="h3" variant="h5" sx={{ mt: 0.5 }}>
             Select processing steps
           </Typography>
           <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>

@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { READY_FOR_LIBRARY_PATH } from '@constants/paths'
 import type { DocumentTableFetchResult, DocumentTableQuery } from '@organisms/document-table/types'
 import type { ReadyForLibraryItem } from 'types/documents'
 
@@ -69,6 +70,14 @@ function createInitialData(items: ReadyForLibraryItem[]): DocumentTableFetchResu
 const meta = {
   component: ReadyForLibraryTable,
   tags: ['autodocs'],
+  parameters: {
+    nextjs: {
+      appDirectory: true,
+      navigation: {
+        pathname: READY_FOR_LIBRARY_PATH,
+      },
+    },
+  },
 } satisfies Meta<typeof ReadyForLibraryTable>
 
 export default meta

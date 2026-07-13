@@ -1,3 +1,5 @@
+import type { ReactElement } from 'react'
+
 import {
   ACCESS_LEVEL_OPTIONS,
   normalizeAccessLevel,
@@ -8,7 +10,7 @@ import {
 } from '@lib/search'
 import { getNeedsReviewDocuments, type DocumentsQueryParams } from '@lib/queries'
 import { DocumentsTable } from '@organisms/DocumentsTable'
-import { ReviewQueuePageProps } from 'types/reviewQueue'
+import type { ReviewQueuePageProps } from 'types/reviewQueue'
 
 const REVIEW_QUEUE_FILTER_OPTIONS: FilterOptions = {
   collections: [],
@@ -58,7 +60,7 @@ function parseReviewQueueQueryParams(params: Record<string, string | string[] | 
   }
 }
 
-export async function ReviewQueueContent({ searchParams }: ReviewQueuePageProps) {
+export async function ReviewQueueContent({ searchParams }: ReviewQueuePageProps): Promise<ReactElement> {
   const resolvedSearchParams = await searchParams
   const initialQuery = parseReviewQueueQueryParams(resolvedSearchParams)
   const initialData = await getNeedsReviewDocuments(initialQuery)

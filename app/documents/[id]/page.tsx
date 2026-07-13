@@ -1,15 +1,28 @@
-import Link from 'next/link'
 import type { ReactElement } from 'react'
+import {
+  Box,
+  Link as MuiLink,
+  Paper,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Typography,
+} from '@mui/material'
+
 import { DateAtom } from '@atoms/Date'
 import { FileSize } from '@atoms/FileSize'
 import { SourceId } from '@atoms/SourceId'
 import { SourceFolderId } from '@atoms/SourceFolderId'
-import { NoDataState } from '@organisms/NoDataState'
-import { PageHeader } from '@organisms/PageHeader'
 import { AuditHistoryTable } from '@organisms/AuditHistoryTable'
 import { DocumentLineageSection } from '@organisms/DocumentLineageSection'
 import { DocumentTagsEditor } from '@organisms/DocumentTagsEditor'
 import { DocumentVersionsButton } from '@organisms/DocumentVersionsButton'
+import { NoDataState } from '@organisms/NoDataState'
+import { PageHeader } from '@organisms/PageHeader'
 import { ReviewHistoryTable } from '@organisms/ReviewHistoryTable'
 import { parseMetadataValue } from '@lib/metadata'
 import { getDocumentDetail } from '@lib/queries'
@@ -69,9 +82,83 @@ const documentFieldLabels: Array<{ key: string; label: string }> = [
   { key: 'updated_at', label: 'Updated At' },
 ]
 
-const detailTableClassName = 'min-w-full border-separate border-spacing-0 text-left text-sm text-ink'
-const detailTableHeadCellClassName = 'bg-[#f4f1eb] px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-ink'
-const detailTableBodyCellClassName = 'border-b border-moss/10 px-3 py-3 align-top'
+const panelSx = {
+  bgcolor: 'background.paper',
+  border: '1px solid',
+  borderColor: 'rgba(53, 88, 52, 0.15)',
+  boxShadow: 2,
+  p: { xs: 2.5, md: 3 },
+}
+
+const insetSx = {
+  bgcolor: 'rgba(244, 241, 240, 0.45)',
+  borderRadius: 3,
+  p: 2,
+}
+
+const detailGridSx = {
+  display: 'grid',
+  gap: 2,
+  gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' },
+  m: 0,
+  mt: 3,
+}
+
+const detailLabelSx = {
+  color: 'text.secondary',
+  fontSize: '0.75rem',
+  fontWeight: 600,
+  letterSpacing: '0.15em',
+  textTransform: 'uppercase',
+}
+
+const detailValueSx = {
+  color: 'text.primary',
+  mt: 1,
+  overflowWrap: 'anywhere',
+}
+
+const tableHeadCellSx = {
+  bgcolor: '#f4f1eb',
+  borderBottom: '2px solid',
+  borderBottomColor: 'moss.main',
+  color: 'ink.main',
+  fontSize: '0.75rem',
+  fontWeight: 600,
+  letterSpacing: '0.1em',
+  px: 1.5,
+  py: 1,
+  textTransform: 'uppercase',
+}
+
+const tableBodyCellSx = {
+  borderBottom: '1px solid rgba(53, 88, 52, 0.1)',
+  color: 'text.primary',
+  fontSize: '0.875rem',
+  px: 1.5,
+  py: 1.5,
+  verticalAlign: 'top',
+}
+
+function BackToOverviewLink({ href }: { href: string }): ReactElement {
+  return (
+    <MuiLink
+      href={href}
+      underline="hover"
+      sx={{ alignSelf: 'flex-start', color: 'moss.main', fontSize: '0.875rem', fontWeight: 500 }}
+    >
+      ← Back to Overview
+    </MuiLink>
+  )
+}
+
+function DetailValue({ children }: { children: React.ReactNode }): ReactElement {
+  return (
+    <Box component="dd" sx={{ ...detailValueSx, m: 0 }}>
+      {children}
+    </Box>
+  )
+}
 
 export default async function DocumentDetailPage({
   params,
@@ -87,17 +174,15 @@ export default async function DocumentDetailPage({
 
     if (!detail) {
       return (
-        <div className="space-y-8">
+        <Stack spacing={4} sx={{ width: '100%' }}>
           <PageHeader
             eyebrow="Document Detail"
             title="No Data"
             description="Inspect the full document record, metadata payload, audit trail, review history, and duplicate relationships."
           />
-          <Link href={overviewHref} className="inline-flex text-sm font-medium text-moss transition hover:text-moss/80">
-            ← Back to Overview
-          </Link>
+          <BackToOverviewLink href={overviewHref} />
           <NoDataState message="No document data is available for this record yet." />
-        </div>
+        </Stack>
       )
     }
 
@@ -115,120 +200,140 @@ export default async function DocumentDetailPage({
     } as Record<string, string | bigint | number | null | undefined>
 
     return (
-      <div className="space-y-8">
-        <Link href={overviewHref} className="inline-flex text-sm font-medium text-moss transition hover:text-moss/80">
-          ← Back to Overview
-        </Link>
+      <Stack spacing={4} sx={{ width: '100%' }}>
+        <BackToOverviewLink href={overviewHref} />
         <PageHeader
           eyebrow="Document Detail"
           title={document.name || document.id}
           description="Inspect the full document record, metadata payload, audit trail, review history, and duplicate relationships."
         />
 
-        <section>
-          <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
-            <h2 className="text-xl font-semibold text-ink">Document Fields</h2>
-            <dl className="mt-6 grid gap-x-6 gap-y-4 md:grid-cols-2">
-              {documentFieldLabels.map((field) => (
-                <div key={field.key} className="rounded-xl bg-sand/45 p-4">
-                  <dt className="text-xs uppercase tracking-[0.15em] text-ink/60">{field.label}</dt>
-                  <dd className="mt-2 break-words text-sm text-ink">
-                    {field.key === 'filesize' ? (
-                      <FileSize value={documentFieldValues.filesize as bigint | number | null | undefined} />
-                    ) : field.key === 'created_at' || field.key === 'updated_at' ? (
-                      <DateAtom value={documentFieldValues[field.key] as string | Date | null | undefined} />
-                    ) : (
-                      documentFieldValues[field.key] || '—'
-                    )}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        </section>
+        <Paper component="section" elevation={0} sx={panelSx}>
+          <Typography component="h2" variant="h5" color="text.primary">
+            Document Fields
+          </Typography>
+          <Box component="dl" sx={detailGridSx}>
+            {documentFieldLabels.map((field) => (
+              <Box key={field.key} component="div" sx={insetSx}>
+                <Typography component="dt" variant="caption" sx={detailLabelSx}>
+                  {field.label}
+                </Typography>
+                <DetailValue>
+                  {field.key === 'filesize' ? (
+                    <FileSize value={documentFieldValues.filesize as bigint | number | null | undefined} />
+                  ) : field.key === 'created_at' || field.key === 'updated_at' ? (
+                    <DateAtom value={documentFieldValues[field.key] as string | Date | null | undefined} />
+                  ) : (
+                    documentFieldValues[field.key] || '—'
+                  )}
+                </DetailValue>
+              </Box>
+            ))}
+          </Box>
+        </Paper>
 
-        <section className="space-y-8">
-          <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-semibold text-ink">Versions</h2>
-                <p className="mt-2 text-sm text-ink/60">
+        <Stack component="section" spacing={4}>
+          <Paper component="section" elevation={0} sx={panelSx}>
+            <Stack
+              direction={{ xs: 'column', md: 'row' }}
+              spacing={2}
+              sx={{ alignItems: { xs: 'stretch', md: 'flex-start' }, justifyContent: 'space-between' }}
+            >
+              <Box>
+                <Typography component="h2" variant="h5" color="text.primary">
+                  Versions
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                   Open the related document versions and duplicates for this record.
-                </p>
-              </div>
+                </Typography>
+              </Box>
               {version_family ? (
                 <DocumentVersionsButton versionFamily={version_family} overviewHref={currentDocumentHref} />
               ) : null}
-            </div>
+            </Stack>
             {versions.length > 0 ? (
-              <div className="mt-6 grid gap-x-6 gap-y-4 md:grid-cols-2">
+              <Box sx={{ ...detailGridSx, mt: 3 }}>
                 {versions.map((version) => (
-                  <div key={version.id} className="rounded-xl bg-sand/45 p-4">
-                    <dl className="grid gap-3">
-                      <div>
-                        <dt className="text-xs uppercase tracking-[0.15em] text-ink/60">Version Group</dt>
-                        <dd className="mt-1 break-words text-sm font-medium text-ink">{version.version_group_id}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-xs uppercase tracking-[0.15em] text-ink/60">Changes Summary</dt>
-                        <dd className="mt-1 break-words text-sm text-ink">{version.changes_summary ?? '-'}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-xs uppercase tracking-[0.15em] text-ink/60">Notes</dt>
-                        <dd className="mt-1 break-words text-sm text-ink">{version.notes ?? '-'}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-xs uppercase tracking-[0.15em] text-ink/60">Similarity</dt>
-                        <dd className="mt-1 break-words text-sm text-ink">
-                          {version.similarity_score !== null ? version.similarity_score : '-'}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-xs uppercase tracking-[0.15em] text-ink/60">Analyzed At</dt>
-                        <dd className="mt-1 break-words text-sm text-ink">
+                  <Box key={version.id} component="div" sx={insetSx}>
+                    <Stack component="dl" spacing={1.5} sx={{ m: 0 }}>
+                      <Box component="div">
+                        <Typography component="dt" variant="caption" sx={detailLabelSx}>
+                          Version Group
+                        </Typography>
+                        <DetailValue>{version.version_group_id}</DetailValue>
+                      </Box>
+                      <Box component="div">
+                        <Typography component="dt" variant="caption" sx={detailLabelSx}>
+                          Changes Summary
+                        </Typography>
+                        <DetailValue>{version.changes_summary ?? '-'}</DetailValue>
+                      </Box>
+                      <Box component="div">
+                        <Typography component="dt" variant="caption" sx={detailLabelSx}>
+                          Notes
+                        </Typography>
+                        <DetailValue>{version.notes ?? '-'}</DetailValue>
+                      </Box>
+                      <Box component="div">
+                        <Typography component="dt" variant="caption" sx={detailLabelSx}>
+                          Similarity
+                        </Typography>
+                        <DetailValue>{version.similarity_score !== null ? version.similarity_score : '-'}</DetailValue>
+                      </Box>
+                      <Box component="div">
+                        <Typography component="dt" variant="caption" sx={detailLabelSx}>
+                          Analyzed At
+                        </Typography>
+                        <DetailValue>
                           {version.analyzed_at !== null ? <DateAtom value={version.analyzed_at} /> : '-'}
-                        </dd>
-                      </div>
-                    </dl>
-                  </div>
+                        </DetailValue>
+                      </Box>
+                    </Stack>
+                  </Box>
                 ))}
-              </div>
+              </Box>
             ) : null}
             {version_family && versions.length === 0 ? (
-              <p className="mt-4 text-sm text-ink/60">No version membership records are stored for this document.</p>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                No version membership records are stored for this document.
+              </Typography>
             ) : null}
             {!version_family && detail.document.is_duplicate ? (
-              <p className="mt-4 text-sm text-ink/60">
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
                 This document is tagged as a duplicate, but the current registry data did not include a version group or
                 duplicate family for it. The overview can flag it as duplicate, but the related duplicate set is not
                 available to display here yet.
-              </p>
+              </Typography>
             ) : null}
             {!version_family && !detail.document.is_duplicate ? (
-              <p className="mt-4 text-sm text-ink/60">No related versions available.</p>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                No related versions available.
+              </Typography>
             ) : null}
-          </div>
+          </Paper>
 
-          <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
-            <h2 className="text-xl font-semibold text-ink">Metadata</h2>
+          <Paper component="section" elevation={0} sx={panelSx}>
+            <Typography component="h2" variant="h5" color="text.primary">
+              Metadata
+            </Typography>
             {metadata.length > 0 ? (
-              <div className="mt-6 overflow-x-auto">
-                <table className={detailTableClassName}>
-                  <thead>
-                    <tr>
-                      <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
+              <TableContainer sx={{ mt: 3, overflowX: 'auto' }}>
+                <Table size="small" sx={{ minWidth: 560 }}>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell scope="col" sx={tableHeadCellSx}>
                         Field
-                      </th>
-                      <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
+                      </TableCell>
+                      <TableCell scope="col" sx={tableHeadCellSx}>
                         Value
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                      </TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
                     {metadata.map(({ name, value, value_type }, i) => (
-                      <tr key={i}>
-                        <td className={`${detailTableBodyCellClassName} font-medium`}>{name}</td>
-                        <td className={detailTableBodyCellClassName}>
+                      <TableRow key={i}>
+                        <TableCell sx={{ ...tableBodyCellSx, fontWeight: 500 }}>{name}</TableCell>
+                        <TableCell sx={tableBodyCellSx}>
                           {(() => {
                             const parsed = parseMetadataValue(value, value_type)
                             return [
@@ -251,100 +356,115 @@ export default async function DocumentDetailPage({
                               parsed.display
                             )
                           })()}
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
-              </div>
+                  </TableBody>
+                </Table>
+              </TableContainer>
             ) : (
-              <p className="mt-4 text-sm text-ink/60">No metadata available.</p>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                No metadata available.
+              </Typography>
             )}
-          </div>
+          </Paper>
 
           <DocumentLineageSection detail={detail} />
 
-          <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
-            <h2 className="text-xl font-semibold text-ink">Tags</h2>
-            <div className="mt-6">
+          <Paper component="section" elevation={0} sx={panelSx}>
+            <Typography component="h2" variant="h5" color="text.primary">
+              Tags
+            </Typography>
+            <Box sx={{ mt: 3 }}>
               <DocumentTagsEditor documentId={document.id} initialTags={detail.document_to_tags} />
-            </div>
-          </div>
+            </Box>
+          </Paper>
 
-          <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
-            <h2 className="text-xl font-semibold text-ink">Batches</h2>
+          <Paper component="section" elevation={0} sx={panelSx}>
+            <Typography component="h2" variant="h5" color="text.primary">
+              Batches
+            </Typography>
             {detail.document_to_batches.length > 0 ? (
-              <div className="mt-6 overflow-x-auto">
-                <table className={detailTableClassName}>
-                  <thead>
-                    <tr>
-                      <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
+              <TableContainer sx={{ mt: 3, overflowX: 'auto' }}>
+                <Table size="small" sx={{ minWidth: 760 }}>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell scope="col" sx={tableHeadCellSx}>
                         Batch ID
-                      </th>
-                      <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
+                      </TableCell>
+                      <TableCell scope="col" sx={tableHeadCellSx}>
                         Batch Origin
-                      </th>
-                      <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
+                      </TableCell>
+                      <TableCell scope="col" sx={tableHeadCellSx}>
                         Processing Time
-                      </th>
-                      <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
+                      </TableCell>
+                      <TableCell scope="col" sx={tableHeadCellSx}>
                         OCR Low
-                      </th>
-                      <th className={`${detailTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
+                      </TableCell>
+                      <TableCell scope="col" sx={tableHeadCellSx}>
                         OCR Medium
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                      </TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
                     {detail.document_to_batches.map((batchLink) => (
-                      <tr key={batchLink.id}>
-                        <td className={`${detailTableBodyCellClassName} font-medium`}>
+                      <TableRow key={batchLink.id}>
+                        <TableCell sx={{ ...tableBodyCellSx, fontWeight: 500 }}>
                           {batchLink.batch_legacy_id ?? batchLink.batch_id}
-                        </td>
-                        <td className={detailTableBodyCellClassName}>{batchLink.batch_origin ?? '—'}</td>
-                        <td className={detailTableBodyCellClassName}>{batchLink.processing_time_seconds ?? '—'}</td>
-                        <td className={detailTableBodyCellClassName}>{batchLink.ocr_quality_low ? 'True' : 'False'}</td>
-                        <td className={detailTableBodyCellClassName}>
+                        </TableCell>
+                        <TableCell sx={tableBodyCellSx}>{batchLink.batch_origin ?? '—'}</TableCell>
+                        <TableCell sx={tableBodyCellSx}>{batchLink.processing_time_seconds ?? '—'}</TableCell>
+                        <TableCell sx={tableBodyCellSx}>{batchLink.ocr_quality_low ? 'True' : 'False'}</TableCell>
+                        <TableCell sx={tableBodyCellSx}>
                           {batchLink.ocr_quality_medium ? 'True' : 'False'}
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
-              </div>
+                  </TableBody>
+                </Table>
+              </TableContainer>
             ) : (
-              <p className="mt-4 text-sm text-ink/60">No batch links available.</p>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                No batch links available.
+              </Typography>
             )}
-          </div>
-        </section>
+          </Paper>
+        </Stack>
 
-        <section className="grid gap-8 xl:grid-cols-2">
-          <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
-            <h2 className="text-xl font-semibold text-ink">Audit History</h2>
-            <div className="mt-6">
+        <Box
+          component="section"
+          sx={{ display: 'grid', gap: 4, gridTemplateColumns: { xs: '1fr', xl: 'repeat(2, minmax(0, 1fr))' } }}
+        >
+          <Paper component="section" elevation={0} sx={panelSx}>
+            <Typography component="h2" variant="h5" color="text.primary">
+              Audit History
+            </Typography>
+            <Box sx={{ mt: 3 }}>
               <AuditHistoryTable audits={audits} />
-            </div>
-          </div>
+            </Box>
+          </Paper>
 
-          <div className="rounded-2xl border border-moss/15 bg-white p-6 shadow-panel">
-            <h2 className="text-xl font-semibold text-ink">Review History</h2>
-            <div className="mt-6">
+          <Paper component="section" elevation={0} sx={panelSx}>
+            <Typography component="h2" variant="h5" color="text.primary">
+              Review History
+            </Typography>
+            <Box sx={{ mt: 3 }}>
               <ReviewHistoryTable reviews={reviews} />
-            </div>
-          </div>
-        </section>
-      </div>
+            </Box>
+          </Paper>
+        </Box>
+      </Stack>
     )
   } catch {
     return (
-      <div className="space-y-8">
+      <Stack spacing={4} sx={{ width: '100%' }}>
         <PageHeader
           eyebrow="Document Detail"
           title="No Data"
           description="Inspect the full document record, metadata payload, audit trail, review history, and duplicate relationships."
         />
         <NoDataState message="No data is available right now. The database may be empty, unavailable, or still being initialized." />
-      </div>
+      </Stack>
     )
   }
 }

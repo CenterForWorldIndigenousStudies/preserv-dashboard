@@ -1,6 +1,16 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState, type MouseEvent, type ReactElement } from 'react'
+import { useCallback, useEffect, useState, type ReactElement } from 'react'
+import Alert from '@mui/material/Alert'
+import Box from '@mui/material/Box'
+import Dialog from '@mui/material/Dialog'
+import DialogActions from '@mui/material/DialogActions'
+import DialogContent from '@mui/material/DialogContent'
+import DialogTitle from '@mui/material/DialogTitle'
+import IconButton from '@mui/material/IconButton'
+import Stack from '@mui/material/Stack'
+import TextField from '@mui/material/TextField'
+import Typography from '@mui/material/Typography'
 import { Button } from '@atoms/Button'
 import { IconX } from '@atoms/icons/IconX'
 import { DOCUMENTS_API_PATH, getDocumentCollectionsPath } from '@constants/paths'
@@ -42,7 +52,6 @@ export function AssignCollectionButton({ documentId, currentTags }: AssignCollec
   const [isFetchingTags, setIsFetchingTags] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  const dialogRef = useRef<HTMLDialogElement>(null)
 
   // Load available collection tags when modal opens
   useEffect(() => {
@@ -74,18 +83,23 @@ export function AssignCollectionButton({ documentId, currentTags }: AssignCollec
     setSuccess(false)
     setError(null)
     setCustomTag('')
-    // Let the dialog open, then focus the first tag button
-    requestAnimationFrame(() => dialogRef.current?.showModal())
   }, [])
 
   const closeModal = useCallback(() => {
-    dialogRef.current?.close()
     setIsOpen(false)
   }, [])
 
   const toggleTag = useCallback((tag: string) => {
     setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]))
   }, [])
+
+  const addCustomTag = useCallback(() => {
+    const trimmedTag = customTag.trim()
+    if (!trimmedTag) return
+
+    toggleTag(trimmedTag)
+    setCustomTag('')
+  }, [customTag, toggleTag])
 
   const handleSave = useCallback(async () => {
     const tagsToSave = selectedTags.filter((t) => t.trim().length > 0)
@@ -130,147 +144,152 @@ export function AssignCollectionButton({ documentId, currentTags }: AssignCollec
   return (
     <>
       {/* Trigger button — shown in the Collection Tags field row on the detail page */}
-      <div className="mt-3 flex items-center gap-3">
+      <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', mt: 1.5 }}>
         {alreadyAssigned ? (
-          <span className="text-xs text-ink/50">
-            Tags assigned.{' '}
-            <button onClick={openModal} className="text-moss underline hover:text-ink">
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: 'baseline' }}>
+            <Typography variant="caption" color="text.secondary">
+              Tags assigned.
+            </Typography>
+            <Button
+              onClick={openModal}
+              variant="ghost"
+              size="sm"
+              sx={{
+                minWidth: 0,
+                p: 0,
+                verticalAlign: 'baseline',
+                textDecoration: 'underline',
+                '&:hover': { textDecoration: 'underline' },
+              }}
+            >
               Edit assignment
-            </button>
-          </span>
+            </Button>
+          </Stack>
         ) : (
           <Button onClick={openModal} variant="primary">
             Assign Collection
           </Button>
         )}
-      </div>
+      </Stack>
 
       {/* Modal dialog */}
-      <dialog
-        ref={dialogRef}
-        onClose={closeModal}
-        className="rounded-2xl border border-moss/15 bg-white p-0 shadow-panel backdrop:bg-ink/30"
-        style={{ padding: 0, minWidth: 'min(480px, 90vw)' }}
+      <Dialog
+        open={isOpen}
+        onClose={isLoading ? undefined : closeModal}
+        fullWidth
+        maxWidth="sm"
+        aria-labelledby="assign-collection-dialog-title"
+        sx={{ '& .MuiDialog-paper': { borderRadius: 2 } }}
       >
-        <div className="p-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-ink">Assign Collection</h3>
-            <button
-              onClick={closeModal}
-              className="rounded-full p-1 text-ink/50 hover:bg-sand hover:text-ink"
-              aria-label="Close"
-            >
-              <IconX size={20} />
-            </button>
-          </div>
+        <DialogTitle
+          id="assign-collection-dialog-title"
+          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pr: 1.5 }}
+        >
+          Assign Collection
+          <IconButton onClick={closeModal} disabled={isLoading} aria-label="Close">
+            <IconX size={20} />
+          </IconButton>
+        </DialogTitle>
 
-          <p className="mt-2 text-sm text-ink/70">
+        <DialogContent sx={{ display: 'grid', gap: 2.5, pt: 1.5 }}>
+          <Typography variant="body2" color="text.secondary">
             Select one or more collections to assign to this document. This is the Path B fallback for documents that
-            arrived without a <code className="text-xs">primary_collection_tag</code>.
-          </p>
+            arrived without a{' '}
+            <Box component="code" sx={{ fontSize: '0.75rem' }}>
+              primary_collection_tag
+            </Box>
+            .
+          </Typography>
 
-          {error && (
-            <div className="mt-4 rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700">{error}</div>
-          )}
+          {error ? <Alert severity="error">{error}</Alert> : null}
 
-          {success && (
-            <div className="mt-4 rounded-xl bg-green-50 border border-green-200 p-3 text-sm text-green-700">
-              Collection tags saved. Reloading...
-            </div>
-          )}
+          {success ? <Alert severity="success">Collection tags saved. Reloading...</Alert> : null}
 
           {isFetchingTags ? (
-            <Button className="mt-6" loading={true} variant={`ghost`}>{`Loading available collections...`}</Button>
+            <Button loading variant="ghost">
+              Loading available collections...
+            </Button>
           ) : (
             <>
               {/* Existing tag selections */}
               {availableTags.length > 0 && (
-                <div className="mt-5">
-                  <p className="mb-2 text-xs font-medium uppercase tracking-[0.15em] text-ink/60">Known Collections</p>
-                  <div className="flex flex-wrap gap-2">
+                <Box>
+                  <Typography variant="overline" color="text.secondary">
+                    Known Collections
+                  </Typography>
+                  <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap', mt: 1 }}>
                     {availableTags.map((tag) => (
-                      <button
+                      <Button
                         key={tag}
-                        onClick={() => {
-                          toggleTag(tag)
-                        }}
-                        className={`rounded-full px-3 py-1 text-sm transition-colors ${selectedTags.includes(tag) ? 'bg-moss text-white' : 'bg-sand text-ink hover:bg-sky'}`}
+                        onClick={() => toggleTag(tag)}
+                        variant={selectedTags.includes(tag) ? 'primary' : 'secondary'}
+                        size="sm"
+                        sx={{ borderRadius: '9999px', px: 1.5, py: 0.5 }}
                       >
                         {tag}
-                      </button>
+                      </Button>
                     ))}
-                  </div>
-                </div>
+                  </Stack>
+                </Box>
               )}
 
               {/* Custom tag input */}
-              <div className="mt-5">
-                <p className="mb-2 text-xs font-medium uppercase tracking-[0.15em] text-ink/60">
-                  Add Custom Collection
-                </p>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={customTag}
-                    onChange={(e) => setCustomTag(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault()
-                        if (customTag.trim()) toggleTag(customTag.trim())
-                      }
-                    }}
-                    placeholder="Enter collection name..."
-                    className="flex-1 rounded-xl border border-moss/20 bg-sand/40 px-3 py-2 text-sm text-ink placeholder:text-ink/30 focus:border-moss focus:outline-none focus:ring-1 focus:ring-moss"
-                  />
-                  <Button
-                    onClick={() => {
-                      if (customTag.trim()) {
-                        toggleTag(customTag.trim())
-                        setCustomTag('')
-                      }
-                    }}
-                    variant="primary"
-                    size="sm"
-                  >
-                    Add
-                  </Button>
-                </div>
-              </div>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ alignItems: { sm: 'flex-start' } }}>
+                <TextField
+                  label="Add Custom Collection"
+                  value={customTag}
+                  onChange={(event) => setCustomTag(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault()
+                      addCustomTag()
+                    }
+                  }}
+                  placeholder="Enter collection name..."
+                  size="small"
+                  fullWidth
+                />
+                <Button
+                  onClick={addCustomTag}
+                  variant="primary"
+                  size="sm"
+                  sx={{ flexShrink: 0, alignSelf: { xs: 'flex-start', sm: 'center' } }}
+                >
+                  Add
+                </Button>
+              </Stack>
 
               {/* Selected preview */}
               {selectedTags.length > 0 && (
-                <div className="mt-5">
-                  <p className="mb-2 text-xs font-medium uppercase tracking-[0.15em] text-ink/60">
+                <Box>
+                  <Typography variant="overline" color="text.secondary">
                     Selected ({selectedTags.length})
-                  </p>
-                  <div className="flex flex-wrap gap-2">
+                  </Typography>
+                  <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap', mt: 1 }}>
                     {selectedTags.map((tag) => (
                       <TagPill key={tag} tag={tag} onRemove={toggleTag} />
                     ))}
-                  </div>
-                </div>
+                  </Stack>
+                </Box>
               )}
             </>
           )}
-        </div>
+        </DialogContent>
 
-        {/* Modal footer */}
-        <div className="flex items-center justify-end gap-3 border-t border-moss/10 px-6 py-4">
-          <Button onClick={closeModal} variant="ghost">
+        <DialogActions sx={{ px: 3, pt: 2, pb: 3 }}>
+          <Button onClick={closeModal} variant="ghost" disabled={isLoading}>
             Cancel
           </Button>
           <Button
-            onClick={(_event: MouseEvent<HTMLButtonElement>) => {
-              void handleSave()
-            }}
+            onClick={() => void handleSave()}
             disabled={isLoading || selectedTags.length === 0}
             variant="primary"
             loading={isLoading}
           >
             Save Collection Tags
           </Button>
-        </div>
-      </dialog>
+        </DialogActions>
+      </Dialog>
     </>
   )
 }

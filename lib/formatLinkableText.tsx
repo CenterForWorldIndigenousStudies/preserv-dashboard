@@ -1,3 +1,5 @@
+import Link from '@mui/material/Link'
+
 import type { DisplayAndString } from 'types/shapes'
 
 export function formatLinkableText(text: string): DisplayAndString {
@@ -5,9 +7,15 @@ export function formatLinkableText(text: string): DisplayAndString {
   if (/^https?:\/\//i.test(trimmed)) {
     return {
       display: (
-        <a href={trimmed} target="_blank" rel="noopener noreferrer" className="text-[#355834] hover:underline">
+        <Link
+          href={trimmed}
+          target="_blank"
+          rel="noopener noreferrer"
+          underline="hover"
+          sx={{ color: 'moss.main' }}
+        >
           {trimmed}
-        </a>
+        </Link>
       ),
       plainText: trimmed,
     }

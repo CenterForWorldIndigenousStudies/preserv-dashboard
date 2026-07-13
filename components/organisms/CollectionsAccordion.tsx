@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState, type ReactElement } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { Accordion, AccordionDetails, AccordionSummary, Box, Chip, Typography } from '@mui/material'
+import { Accordion, AccordionDetails, AccordionSummary, Box, Chip, Paper, Stack, Typography } from '@mui/material'
+import { alpha, type Theme } from '@mui/material/styles'
 import type { MRT_ColumnDef } from 'material-react-table'
 
 import { deleteCollectionAction, getDocumentsForCollectionAction } from '@actions/collections'
@@ -302,15 +303,17 @@ export function CollectionsAccordion({ collections }: CollectionsAccordionProps)
 
   if (collections.length === 0) {
     return (
-      <section className="rounded-2xl border border-moss/15 bg-white p-8 shadow-panel">
-        <p className="text-sm text-ink/70">No collections found.</p>
-      </section>
+      <Paper component="section" sx={{ border: 1, borderColor: 'divider', p: 4 }}>
+        <Typography variant="body2" color="text.secondary">
+          No collections found.
+        </Typography>
+      </Paper>
     )
   }
 
   return (
     <>
-      <div className="space-y-4">
+      <Stack spacing={2}>
         {collections.map((collection) => {
           const isExpanded = expandedCollections.has(collection.id)
           const queryForCollection =
@@ -331,45 +334,57 @@ export function CollectionsAccordion({ collections }: CollectionsAccordionProps)
               disableGutters
               expanded={isExpanded}
               onChange={handleAccordionChange(collection.id)}
-              sx={{
-                border: '1px solid rgba(53,88,52,0.125)',
-                borderRadius: '1rem',
-                boxShadow: '0 12px 32px rgba(35,31,32,0.08)',
+              slots={{ heading: 'h2' }}
+              sx={(theme: Theme) => ({
+                border: 1,
+                borderColor: alpha(theme.palette.moss?.main ?? theme.palette.primary.main, 0.15),
+                borderRadius: 2,
+                boxShadow: 3,
                 '&::before': { display: 'none' },
                 overflow: 'hidden',
-              }}
+              })}
             >
               <AccordionSummary
                 expandIcon={<span aria-hidden="true">▾</span>}
                 sx={{
-                  backgroundColor: 'white',
+                  backgroundColor: 'background.paper',
                   px: 3,
                   py: 1,
                   '& .MuiAccordionSummary-content': {
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    gap: 16,
+                    gap: 2,
                     marginY: 1,
                   },
                 }}
               >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Typography sx={{ color: '#231f20', fontSize: '1rem', fontWeight: 600 }}>
+                  <Typography component="span" variant="h6" color="text.primary">
                     {collection.collection_name}
                   </Typography>
                   <Chip
                     label={`${collection.document_count} document${collection.document_count === 1 ? '' : 's'}`}
-                    sx={{
-                      backgroundColor: 'rgba(53,88,52,0.1)',
-                      color: '#355834',
-                      fontWeight: 600,
+                    sx={(theme: Theme) => {
+                      const mossColor = theme.palette.moss?.main ?? theme.palette.primary.main
+
+                      return {
+                        backgroundColor: alpha(mossColor, 0.1),
+                        color: mossColor,
+                        fontWeight: 600,
+                      }
                     }}
                   />
                 </Box>
               </AccordionSummary>
-              <AccordionDetails sx={{ backgroundColor: 'rgba(244,241,240,0.25)', px: 3, py: 2 }}>
+              <AccordionDetails
+                sx={(theme: Theme) => ({
+                  backgroundColor: alpha(theme.palette.sand?.main ?? theme.palette.secondary.main, 0.25),
+                  px: 3,
+                  py: 2,
+                })}
+              >
                 {collection.notes ? (
-                  <Typography sx={{ color: 'rgba(35,31,32,0.7)', fontSize: '0.875rem', mb: 1.5 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
                     {collection.notes}
                   </Typography>
                 ) : null}
@@ -418,11 +433,11 @@ export function CollectionsAccordion({ collections }: CollectionsAccordionProps)
                   </Button>
                 </Box>
                 {!isExpanded && collection.document_count === 0 ? (
-                  <Typography sx={{ color: 'rgba(35,31,32,0.7)', fontSize: '0.95rem' }}>
+                  <Typography variant="body2" color="text.secondary">
                     No documents associated with this collection.
                   </Typography>
                 ) : !isExpanded ? null : collection.document_count === 0 ? (
-                  <Typography sx={{ color: 'rgba(35,31,32,0.7)', fontSize: '0.95rem' }}>
+                  <Typography variant="body2" color="text.secondary">
                     No documents associated with this collection.
                   </Typography>
                 ) : (
@@ -440,7 +455,7 @@ export function CollectionsAccordion({ collections }: CollectionsAccordionProps)
             </Accordion>
           )
         })}
-      </div>
+      </Stack>
       {managerState ? (
         <CollectionDocumentManager
           collectionId={managerState.collectionId}

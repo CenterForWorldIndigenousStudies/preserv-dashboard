@@ -1,4 +1,6 @@
+import Box from '@mui/material/Box'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { expect, within } from 'storybook/test'
 
 import { COLLECTIONS_PATH } from '@constants/paths'
 import type { CollectionWithMeta } from 'types/collections'
@@ -103,7 +105,15 @@ const meta = {
         pathname: COLLECTIONS_PATH,
       },
     },
+    layout: 'centered',
   },
+  decorators: [
+    (Story) => (
+      <Box sx={{ width: 'min(72rem, 100%)', p: 2 }}>
+        <Story />
+      </Box>
+    ),
+  ],
 } satisfies Meta<typeof CollectionsAccordion>
 
 export default meta
@@ -116,6 +126,9 @@ export const Default: Story = {
 export const Empty: Story = {
   args: {
     collections: [],
+  },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByText('No collections found.')).toBeVisible()
   },
 }
 

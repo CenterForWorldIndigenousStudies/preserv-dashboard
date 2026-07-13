@@ -2,7 +2,16 @@
 
 import { useEffect, useId, useState, useCallback, type ReactElement } from 'react'
 import mermaid from 'mermaid'
+import Box from '@mui/material/Box'
+import Dialog from '@mui/material/Dialog'
+import DialogContent from '@mui/material/DialogContent'
+import DialogTitle from '@mui/material/DialogTitle'
+import IconButton from '@mui/material/IconButton'
+import Stack from '@mui/material/Stack'
+import Typography from '@mui/material/Typography'
+import { alpha, type Theme } from '@mui/material/styles'
 import { Button } from '@atoms/Button'
+import { IconX } from '@atoms/icons/IconX'
 
 let mermaidInitialized = false
 
@@ -23,6 +32,7 @@ export function MermaidDiagram({ source, className = '' }: MermaidDiagramProps):
 
   useEffect(() => {
     async function doRender() {
+      setError(null)
       try {
         if (!mermaidInitialized) {
           mermaid.initialize({})
@@ -37,71 +47,104 @@ export function MermaidDiagram({ source, className = '' }: MermaidDiagramProps):
       }
     }
     void doRender()
-  }, [source])
-
-  useEffect(() => {
-    if (!isModalOpen) return
-
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape' || e.key === 'Enter') {
-        closeModal()
-      }
-    }
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [isModalOpen, closeModal])
+  }, [source, uid])
 
   return (
     <>
       {/* Inline diagram with Enlarge button */}
-      <div
-        className={`relative my-4 rounded-xl border border-moss/20 bg-white w-full max-w-full overflow-hidden ${className}`}
+      <Box
+        className={className || undefined}
+        sx={(theme: Theme) => {
+          const mossColor = theme.palette.moss?.main ?? theme.palette.primary.main
+
+          return {
+            position: 'relative',
+            my: 2,
+            width: '100%',
+            maxWidth: '100%',
+            overflow: 'hidden',
+            border: 1,
+            borderColor: alpha(mossColor, 0.2),
+            borderRadius: 1.5,
+            backgroundColor: 'background.paper',
+          }
+        }}
       >
-        <div className="absolute right-2 top-2 z-10">
+        <Box sx={{ position: 'absolute', right: 1, top: 1, zIndex: 1 }}>
           <Button type="button" onClick={() => setIsModalOpen(true)} variant="secondary" size="sm">
             Enlarge
           </Button>
-        </div>
+        </Box>
         {error ? (
-          <div className="p-4 text-sm text-clay">Diagram error: {error}</div>
+          <Typography color="error.main" variant="body2" sx={{ p: 2 }}>
+            Diagram error: {error}
+          </Typography>
         ) : svg ? (
-          <div dangerouslySetInnerHTML={{ __html: svg }} className="w-full" />
+          <Box
+            component="div"
+            dangerouslySetInnerHTML={{ __html: svg }}
+            sx={{
+              width: '100%',
+              '& svg': {
+                display: 'block',
+                maxWidth: '100%',
+                height: 'auto',
+              },
+            }}
+          />
         ) : (
-          <div className="flex w-full items-center justify-center p-8">
-            <span className="text-sm text-ink/50">Rendering diagram...</span>
-          </div>
+          <Stack sx={{ width: '100%', alignItems: 'center', justifyContent: 'center', p: 4 }}>
+            <Typography variant="body2" color="text.secondary">
+              Rendering diagram...
+            </Typography>
+          </Stack>
         )}
-      </div>
+      </Box>
 
       {/* Full-screen modal */}
-      {isModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-ink/80 overflow-auto p-4"
-          onClick={closeModal}
+      <Dialog
+        open={isModalOpen}
+        onClose={closeModal}
+        fullScreen
+        aria-labelledby="mermaid-diagram-dialog-title"
+        sx={(theme: Theme) => ({
+          '& .MuiDialog-paper': {
+            backgroundColor: theme.palette.background.paper,
+          },
+        })}
+      >
+        <DialogTitle
+          id="mermaid-diagram-dialog-title"
+          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pr: 1.5 }}
         >
-          <div
-            className="relative bg-white rounded-2xl shadow-2xl overflow-auto max-w-full max-h-full"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="absolute right-2 top-2 z-10">
-              <Button type="button" onClick={closeModal} variant="secondary" size="sm">
-                Close
-              </Button>
-            </div>
-            {svg ? (
-              <div
-                dangerouslySetInnerHTML={{ __html: svg }}
-                className="[&_svg]:scale-[3]"
-                style={{ minWidth: '200vw', minHeight: '200vh' }}
-              />
-            ) : (
-              <div className="flex items-center justify-center p-16">
-                <span className="text-sm text-ink/50">Rendering diagram...</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+          Diagram preview
+          <IconButton onClick={closeModal} aria-label="Close diagram preview">
+            <IconX size={20} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers sx={{ overflow: 'auto', p: 2 }}>
+          {svg ? (
+            <Box
+              component="div"
+              dangerouslySetInnerHTML={{ __html: svg }}
+              sx={{
+                minWidth: '200vw',
+                minHeight: '200vh',
+                '& svg': {
+                  transform: 'scale(3)',
+                  transformOrigin: 'top left',
+                },
+              }}
+            />
+          ) : (
+            <Stack sx={{ alignItems: 'center', justifyContent: 'center', p: 8 }}>
+              <Typography variant="body2" color="text.secondary">
+                Rendering diagram...
+              </Typography>
+            </Stack>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

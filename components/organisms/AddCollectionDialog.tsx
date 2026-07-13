@@ -130,7 +130,12 @@ export function AddCollectionDialog({ open, collections, onClose }: AddCollectio
         ) : null}
 
         {selectedTag || pendingCreateName ? (
-          <Button variant="ghost" onClick={resetSelection} disabled={isSubmitting} className="justify-self-start">
+          <Button
+            variant="ghost"
+            onClick={resetSelection}
+            disabled={isSubmitting}
+            sx={{ justifySelf: 'start' }}
+          >
             Clear selection
           </Button>
         ) : null}

@@ -69,7 +69,13 @@ export function NormalizePassCard({
           bgcolor: state.enabled ? 'rgba(53, 88, 52, 0.04)' : 'transparent',
         }}
       >
-        <Checkbox checked={state.enabled} onChange={handleCheckboxChange} disabled={disabled} size="small" />
+        <Checkbox
+          checked={state.enabled}
+          onChange={handleCheckboxChange}
+          disabled={disabled}
+          slotProps={{ input: { 'aria-label': `Enable Normalize Pass ${passNumber}` } }}
+          size="small"
+        />
         <Box sx={{ flex: 1 }}>
           <Typography variant="body1" sx={{ fontWeight: 600 }}>
             Normalize Pass {passNumber}
@@ -78,7 +84,7 @@ export function NormalizePassCard({
             {passNumber === 1 ? 'Split and rotate original documents' : 'Split and rotate artifacts from Pass 1'}
           </Typography>
           {helperText && (
-            <Typography variant="caption" sx={{ color: 'warning.main', mt: 0.5 }}>
+            <Typography variant="caption" sx={{ color: 'text.primary', mt: 0.5 }}>
               {helperText}
             </Typography>
           )}
@@ -128,6 +134,7 @@ export function NormalizePassCard({
                     <Checkbox
                       checked={option.id === 'split' ? state.subSelection.split : state.subSelection.rotate}
                       onChange={option.id === 'split' ? handleSplitChange : handleRotateChange}
+                      slotProps={{ input: { 'aria-label': option.label } }}
                       size="small"
                     />
                   }

@@ -15,8 +15,8 @@ import {
 } from '@mui/material'
 
 import type { PipelineSelectionDraft } from '@lib/pipelineConfig'
-import { PipelineSelectionSummary } from './PipelineSelectionSummary'
-import { PipelineStepSelector } from './PipelineStepSelector'
+import { PipelineSelectionSummary } from '@molecules/PipelineSelectionSummary'
+import { PipelineStepSelector } from '@molecules/PipelineStepSelector'
 
 interface PipelineStepsModalProps {
   open: boolean
@@ -31,9 +31,11 @@ export function PipelineStepsModal({ open, draft, onClose, onDraftChange }: Pipe
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md" fullScreen={fullScreen} scroll="paper">
-      <DialogTitle>
+      <DialogTitle component="div">
         <Stack spacing={0.5}>
-          <Typography variant="h5">Pipeline Steps</Typography>
+          <Typography component="h2" variant="h5">
+            Pipeline Steps
+          </Typography>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
             Configure the steps for this processing run. Changes update the summary right away.
           </Typography>

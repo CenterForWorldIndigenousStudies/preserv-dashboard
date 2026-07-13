@@ -3,6 +3,7 @@
 import { useMemo, type ReactElement } from 'react'
 import type { MRT_ColumnDef } from 'material-react-table'
 import Link from 'next/link'
+import { Link as MuiLink, Typography } from '@mui/material'
 
 import { DateAtom } from '@atoms/Date'
 import { DocumentDataTable } from '@organisms/document-table/DocumentDataTable'
@@ -21,9 +22,14 @@ export function FailuresDocumentTable({ failures }: FailuresDocumentTableProps):
         header: 'Document ID',
         size: 220,
         Cell: ({ row }) => (
-          <Link href={`${DOCUMENTS_PATH}/${row.original.id}`} className="font-medium text-moss hover:text-ink">
+          <MuiLink
+            component={Link}
+            href={`${DOCUMENTS_PATH}/${row.original.id}`}
+            underline="hover"
+            sx={{ color: 'moss.main', fontWeight: 500, '&:hover': { color: 'ink.main' } }}
+          >
             {row.original.id}
-          </Link>
+          </MuiLink>
         ),
       },
       {
@@ -36,7 +42,11 @@ export function FailuresDocumentTable({ failures }: FailuresDocumentTableProps):
         accessorKey: 'failure_reason',
         header: 'Failure Reason',
         size: 360,
-        Cell: ({ row }) => <span className="whitespace-pre-wrap">{row.original.failure_reason || 'Unknown'}</span>,
+        Cell: ({ row }) => (
+          <Typography component="span" variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+            {row.original.failure_reason || 'Unknown'}
+          </Typography>
+        ),
       },
       {
         accessorKey: 'created_at',

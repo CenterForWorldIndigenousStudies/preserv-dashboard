@@ -1,10 +1,18 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import Box from '@mui/material/Box'
 import { PageHeader } from '@organisms/PageHeader'
 
 const meta = {
   title: 'Organisms/PageHeader',
   component: PageHeader,
   tags: ['autodocs'],
+  decorators: [
+    (Story) => (
+      <Box sx={{ width: 'min(100%, 80rem)', mx: 'auto', p: 2 }}>
+        <Story />
+      </Box>
+    ),
+  ],
   argTypes: {
     eyebrow: {
       control: 'text',

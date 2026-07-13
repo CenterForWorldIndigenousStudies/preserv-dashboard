@@ -27,7 +27,7 @@ interface BadgeProps {
  */
 export function Badge({ variant = 'info', outlined = false, children, className = '', sx }: BadgeProps): ReactNode {
   const paletteKey = variantMap[variant]
-  const textPaletteKey = variant === 'danger' || variant === 'warning' || variant === 'success' ? paletteKey : 'ink'
+  const textPaletteKey = variant === 'success' ? paletteKey : 'ink'
   const backgroundOpacity = variant === 'danger' || variant === 'warning' ? 0.15 : variant === 'success' ? 0.1 : 1
 
   return (

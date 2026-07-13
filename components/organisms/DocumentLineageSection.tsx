@@ -1,16 +1,24 @@
 import type { ReactElement, ReactNode } from 'react'
 
+import {
+  Box,
+  Paper,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Typography,
+} from '@mui/material'
+import { alpha, type Theme } from '@mui/material/styles'
+
 import { DateAtom } from '@atoms/Date'
 import { SourceFolderId } from '@atoms/SourceFolderId'
 import { SourceId } from '@atoms/SourceId'
 import { parseMetadataValue } from '@lib/metadata'
 import type { DocumentDetail, DocumentMetadataField } from 'types/documents'
-
-const lineageCardClassName = 'rounded-2xl border border-moss/15 bg-white p-6 shadow-panel'
-const metadataTableClassName = 'min-w-full border-separate border-spacing-0 text-left text-sm text-ink'
-const metadataTableHeadCellClassName =
-  'bg-[#f4f1eb] px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-ink'
-const metadataTableBodyCellClassName = 'border-b border-moss/10 px-3 py-3 align-top'
 
 const provenanceMetadataKeys = new Set([
   'content_dedup_text_source_id',
@@ -33,6 +41,48 @@ const provenanceMetadataKeys = new Set([
   'split_parent_document_id',
   'split_parent_document_name',
 ])
+
+const lineageCardSx = {
+  border: 1,
+  borderColor: 'divider',
+  p: 3,
+}
+
+function getMetadataValuePanelSx(theme: Theme) {
+  const sandColor = theme.palette.sand?.main ?? theme.palette.secondary.main
+
+  return {
+    backgroundColor: alpha(sandColor, 0.45),
+    borderRadius: 1.5,
+    p: 2,
+  }
+}
+
+function getTableHeaderCellSx(theme: Theme) {
+  const mossColor = theme.palette.moss?.main ?? theme.palette.primary.main
+  const sandColor = theme.palette.sand?.main ?? theme.palette.secondary.main
+
+  return {
+    backgroundColor: sandColor,
+    borderBottom: '2px solid',
+    borderBottomColor: mossColor,
+    color: theme.palette.text.primary,
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    letterSpacing: '0.1em',
+    px: 1.5,
+    py: 1,
+    textTransform: 'uppercase' as const,
+  }
+}
+
+const tableBodyCellSx = {
+  borderBottom: '1px solid',
+  borderColor: 'divider',
+  px: 1.5,
+  py: 1.5,
+  verticalAlign: 'top',
+}
 
 function renderMetadataValue(field: DocumentMetadataField): ReactNode {
   const parsed = parseMetadataValue(field.value, field.value_type)
@@ -93,116 +143,141 @@ export function DocumentLineageSection({ detail }: { detail: DocumentDetail }): 
     batchLinks.length > 0
 
   return (
-    <section className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold text-ink">Lineage and Provenance</h2>
-        <p className="mt-2 text-sm text-ink/60">
+    <Stack component="section" spacing={3}>
+      <Box>
+        <Typography component="h2" variant="h5" color="text.primary">
+          Lineage and Provenance
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
           Review related version family details, recorded source metadata, and batch links that are already stored for
           this document.
-        </p>
-      </div>
+        </Typography>
+      </Box>
 
       {!hasSignals ? (
-        <div className={lineageCardClassName}>
-          <p className="text-sm text-ink/60">No lineage or provenance details are available for this document.</p>
-        </div>
+        <Paper elevation={0} sx={lineageCardSx}>
+          <Typography variant="body2" color="text.secondary">
+            No lineage or provenance details are available for this document.
+          </Typography>
+        </Paper>
       ) : null}
 
       {detail.version_family !== null || currentDocumentStatus !== null ? (
-        <div className={lineageCardClassName}>
-          <h3 className="text-lg font-semibold text-ink">Related version family</h3>
-          <dl className="mt-6 grid gap-x-6 gap-y-4 md:grid-cols-2">
+        <Paper elevation={0} sx={lineageCardSx}>
+          <Typography component="h3" variant="h6" color="text.primary">
+            Related version family
+          </Typography>
+          <Box
+            component="dl"
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' },
+              gap: 2,
+              m: 0,
+              mt: 3,
+            }}
+          >
             {currentDocumentStatus !== null ? (
-              <div className="rounded-xl bg-sand/45 p-4">
-                <dt className="text-xs uppercase tracking-[0.15em] text-ink/60">Current document status</dt>
-                <dd className="mt-2 break-words text-sm text-ink">{currentDocumentStatus}</dd>
-              </div>
+              <Box component="div" sx={getMetadataValuePanelSx}>
+                <Typography component="dt" variant="overline" color="text.secondary">
+                  Current document status
+                </Typography>
+                <Typography component="dd" variant="body2" color="text.primary" sx={{ m: 0, mt: 1 }}>
+                  {currentDocumentStatus}
+                </Typography>
+              </Box>
             ) : null}
 
             {detail.version_family !== null ? (
               <>
-                <div className="rounded-xl bg-sand/45 p-4">
-                  <dt className="text-xs uppercase tracking-[0.15em] text-ink/60">Canonical document ID</dt>
-                  <dd className="mt-2 break-words text-sm text-ink">{detail.version_family.canonical_document_id}</dd>
-                </div>
-                <div className="rounded-xl bg-sand/45 p-4">
-                  <dt className="text-xs uppercase tracking-[0.15em] text-ink/60">Related documents</dt>
-                  <dd className="mt-2 break-words text-sm text-ink">{detail.version_family.documents.length}</dd>
-                </div>
+                <Box component="div" sx={getMetadataValuePanelSx}>
+                  <Typography component="dt" variant="overline" color="text.secondary">
+                    Canonical document ID
+                  </Typography>
+                  <Typography component="dd" variant="body2" color="text.primary" sx={{ m: 0, mt: 1, overflowWrap: 'anywhere' }}>
+                    {detail.version_family.canonical_document_id}
+                  </Typography>
+                </Box>
+                <Box component="div" sx={getMetadataValuePanelSx}>
+                  <Typography component="dt" variant="overline" color="text.secondary">
+                    Related documents
+                  </Typography>
+                  <Typography component="dd" variant="body2" color="text.primary" sx={{ m: 0, mt: 1 }}>
+                    {detail.version_family.documents.length}
+                  </Typography>
+                </Box>
               </>
             ) : null}
-          </dl>
+          </Box>
 
           {detail.version_family === null && detail.document.is_duplicate ? (
-            <p className="mt-4 text-sm text-ink/60">
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
               A duplicate document tag is recorded for this document, but no related version family is available to
               display.
-            </p>
+            </Typography>
           ) : null}
-        </div>
+        </Paper>
       ) : null}
 
       {recordedSourceMetadata.length > 0 ? (
-        <div className={lineageCardClassName}>
-          <h3 className="text-lg font-semibold text-ink">Recorded source metadata</h3>
-          <div className="mt-6 overflow-x-auto">
-            <table className={metadataTableClassName}>
-              <thead>
-                <tr>
-                  <th className={`${metadataTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
-                    Field
-                  </th>
-                  <th className={`${metadataTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
-                    Value
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
+        <Paper elevation={0} sx={lineageCardSx}>
+          <Typography component="h3" variant="h6" color="text.primary">
+            Recorded source metadata
+          </Typography>
+          <TableContainer sx={{ mt: 3, overflowX: 'auto' }}>
+            <Table size="small" sx={{ minWidth: 520 }}>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={getTableHeaderCellSx}>Field</TableCell>
+                  <TableCell sx={getTableHeaderCellSx}>Value</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {recordedSourceMetadata.map((field) => (
-                  <tr key={field.name}>
-                    <td className={`${metadataTableBodyCellClassName} font-medium`}>{field.name}</td>
-                    <td className={metadataTableBodyCellClassName}>{renderMetadataValue(field)}</td>
-                  </tr>
+                  <TableRow key={field.name}>
+                    <TableCell component="th" scope="row" sx={{ ...tableBodyCellSx, fontWeight: 600 }}>
+                      {field.name}
+                    </TableCell>
+                    <TableCell sx={tableBodyCellSx}>{renderMetadataValue(field)}</TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
       ) : null}
 
       {batchLinks.length > 0 ? (
-        <div className={lineageCardClassName}>
-          <h3 className="text-lg font-semibold text-ink">Batch links</h3>
-          <div className="mt-6 overflow-x-auto">
-            <table className={metadataTableClassName}>
-              <thead>
-                <tr>
-                  <th className={`${metadataTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
-                    Batch name
-                  </th>
-                  <th className={`${metadataTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
-                    Batch origin
-                  </th>
-                  <th className={`${metadataTableHeadCellClassName} border-b-2 border-[#5e7a52]`} scope="col">
-                    Added at
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
+        <Paper elevation={0} sx={lineageCardSx}>
+          <Typography component="h3" variant="h6" color="text.primary">
+            Batch links
+          </Typography>
+          <TableContainer sx={{ mt: 3, overflowX: 'auto' }}>
+            <Table size="small" sx={{ minWidth: 640 }}>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={getTableHeaderCellSx}>Batch name</TableCell>
+                  <TableCell sx={getTableHeaderCellSx}>Batch origin</TableCell>
+                  <TableCell sx={getTableHeaderCellSx}>Added at</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {batchLinks.map((batchLink) => (
-                  <tr key={batchLink.id}>
-                    <td className={`${metadataTableBodyCellClassName} font-medium`}>{batchLink.batch_name ?? '—'}</td>
-                    <td className={metadataTableBodyCellClassName}>{batchLink.batch_origin ?? '—'}</td>
-                    <td className={metadataTableBodyCellClassName}>
+                  <TableRow key={batchLink.id}>
+                    <TableCell component="th" scope="row" sx={{ ...tableBodyCellSx, fontWeight: 600 }}>
+                      {batchLink.batch_name ?? '—'}
+                    </TableCell>
+                    <TableCell sx={tableBodyCellSx}>{batchLink.batch_origin ?? '—'}</TableCell>
+                    <TableCell sx={tableBodyCellSx}>
                       <DateAtom value={batchLink.added_at} />
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
       ) : null}
-    </section>
+    </Stack>
   )
 }

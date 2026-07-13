@@ -112,7 +112,7 @@ export function PipelineTimelineCard({ batch }: PipelineTimelineCardProps): Reac
     >
       <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
         <Box>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+          <Typography component="h3" variant="h6" sx={{ fontWeight: 700 }}>
             Pipeline Timeline
           </Typography>
           {batch.createdAt && (

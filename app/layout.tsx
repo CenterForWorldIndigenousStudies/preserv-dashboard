@@ -36,7 +36,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className={`${rethinkSans.variable} ${workSans.variable}`}>
-      <body className="font-sans antialiased">
+      <body>
         <AppRouterCacheProvider>
           <Providers session={session}>
             <LayoutBody isAuthenticated={!!session}>{children}</LayoutBody>

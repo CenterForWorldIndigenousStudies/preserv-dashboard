@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import type { ReactElement } from 'react'
+import { Box, Paper, Stack, Typography } from '@mui/material'
 import ReactMarkdown, { type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { PageHeader } from '@organisms/PageHeader'
@@ -19,7 +20,26 @@ export default function DbPage(): ReactElement {
 
   const components: Components = {
     pre({ children }: { children?: React.ReactNode }) {
-      return <pre className="not-prose rounded bg-sand p-4 overflow-x-auto">{children}</pre>
+      return (
+        <Box
+          component="pre"
+          sx={{
+            bgcolor: 'sand.main',
+            borderRadius: 2,
+            color: 'ink.main',
+            m: 0,
+            overflowX: 'auto',
+            p: 2,
+            '& code': {
+              backgroundColor: 'transparent',
+              display: 'block',
+              p: 0,
+            },
+          }}
+        >
+          {children}
+        </Box>
+      )
     },
     code(args: { className?: string; children?: React.ReactNode }) {
       const className = args.className
@@ -34,39 +54,115 @@ export default function DbPage(): ReactElement {
 
       if (language) {
         return (
-          <code className={`rounded bg-clay/10 px-1.5 py-0.5 text-xs font-medium text-ink ${className ?? ''}`}>
+          <Box
+            component="code"
+            sx={{
+              bgcolor: 'rgba(233, 105, 84, 0.1)',
+              borderRadius: 1,
+              color: 'ink.main',
+              display: 'block',
+              fontFamily: 'monospace',
+              fontSize: '0.75rem',
+              fontWeight: 500,
+              px: 0.75,
+              py: 0.25,
+            }}
+          >
             {children}
-          </code>
+          </Box>
         )
       }
 
-      return <code className={className}>{children}</code>
+      return (
+        <Box
+          component="code"
+          sx={{
+            bgcolor: 'sand.main',
+            borderRadius: 1,
+            color: 'ink.main',
+            fontFamily: 'monospace',
+            fontSize: '0.75rem',
+            fontWeight: 500,
+            px: 0.75,
+            py: 0.25,
+          }}
+        >
+          {children}
+        </Box>
+      )
+    },
+    h1({ children }: { children?: React.ReactNode }) {
+      return (
+        <Typography component="h2" variant="h4" sx={{ color: 'ink.main', mb: 2, mt: 0 }}>
+          {children}
+        </Typography>
+      )
     },
   }
 
   return (
-    <div className="space-y-8">
+    <Stack spacing={4} sx={{ width: '100%' }}>
       <PageHeader
         eyebrow="Database Schema"
         title="CWIS Preservation Database"
         description="Entity-relationship diagram and design notes for the preservation MySQL database."
       />
 
-      <div className="rounded-2xl border border-moss/15 bg-white/80 px-6 py-4 shadow-panel">
-        <p className="text-sm text-ink/70">
+      <Paper
+        component="section"
+        elevation={0}
+        sx={{
+          bgcolor: 'rgba(255, 255, 255, 0.8)',
+          border: '1px solid',
+          borderColor: 'rgba(53, 88, 52, 0.15)',
+          boxShadow: 2,
+          px: { xs: 2, md: 3 },
+          py: 2,
+        }}
+      >
+        <Typography variant="body2" color="text.secondary">
           Edit the schema diagram in{' '}
-          <code className="rounded bg-sand px-1.5 py-0.5 text-xs font-medium text-ink">
+          <Box
+            component="code"
+            sx={{
+              bgcolor: 'sand.main',
+              borderRadius: 1,
+              color: 'ink.main',
+              fontFamily: 'monospace',
+              fontSize: '0.75rem',
+              fontWeight: 500,
+              px: 0.75,
+              py: 0.25,
+            }}
+          >
             documentation/db/PRESERVATION_DB.md
-          </code>
+          </Box>
           . Changes appear here after deployment.
-        </p>
-      </div>
+        </Typography>
+      </Paper>
 
-      <article className="prose prose-sm max-w-none rounded-2xl border border-moss/15 bg-white p-8 shadow-panel prose-headings:text-ink prose-p:text-ink/80 prose-a:text-moss prose-strong:text-ink prose-code:rounded prose-code:bg-sand prose-code:px-1.5 prose-code:py-0.5 prose-code:text-xs prose-ul:list-disc prose-ol:list-decimal prose-li:text-ink/80">
+      <Paper
+        component="article"
+        elevation={0}
+        sx={{
+          bgcolor: 'background.paper',
+          border: '1px solid',
+          borderColor: 'rgba(53, 88, 52, 0.15)',
+          boxShadow: 2,
+          p: { xs: 3, md: 4 },
+          '& h2, & h3, & h4, & h5, & h6': { color: 'ink.main' },
+          '& p': { color: 'text.primary', lineHeight: 1.6 },
+          '& a': { color: 'moss.main' },
+          '& strong': { color: 'ink.main' },
+          '& ul': { listStyleType: 'disc', pl: 3 },
+          '& ol': { listStyleType: 'decimal', pl: 3 },
+          '& li': { color: 'text.primary', mb: 0.75 },
+        }}
+      >
         <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
           {source}
         </ReactMarkdown>
-      </article>
-    </div>
+      </Paper>
+    </Stack>
   )
 }

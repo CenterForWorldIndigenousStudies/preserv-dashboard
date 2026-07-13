@@ -50,7 +50,7 @@ export function ProcessBatchFormPanel({
           >
             Batch Details
           </Typography>
-          <Typography variant="h5" sx={{ mt: 1 }}>
+          <Typography component="h2" variant="h5" sx={{ mt: 1 }}>
             Create a new batch
           </Typography>
           <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
