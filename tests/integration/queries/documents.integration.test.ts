@@ -109,6 +109,7 @@ describe('documents queries (integration)', () => {
         id: `b${token}`,
         id_legacy: `legacy-${token}`,
         name,
+        processing_details: JSON.stringify({}),
       },
       select: { id: true },
     })
@@ -128,6 +129,7 @@ describe('documents queries (integration)', () => {
         id: `b${token}`,
         id_legacy: overrides.id_legacy ?? `legacy-${token}`,
         name: overrides.name ?? `Batch ${token}`,
+        processing_details: JSON.stringify({}),
       },
       select: { id: true, id_legacy: true, name: true },
     })
@@ -205,6 +207,7 @@ describe('documents queries (integration)', () => {
                 id: `db-${document.id}-${batch.id}`.slice(0, 36),
                 document_id: document.id,
                 batch_id: batch.id,
+                processing_details: JSON.stringify({}),
               },
             })
           }),
@@ -389,6 +392,7 @@ describe('documents queries (integration)', () => {
             id: `ab-${matchingDoc.id}`,
             document_id: matchingDoc.id,
             batch_id: batch.id,
+            processing_details: JSON.stringify({}),
           },
         })
         await tx.document_quality.create({
@@ -475,6 +479,7 @@ describe('documents queries (integration)', () => {
             document_id: matchingDoc.id,
             batch_id: batch.id,
             batch_origin: 'General Inventory Batch Origin',
+            processing_details: JSON.stringify({}),
           },
         })
         await tx.batch_to_batches_metadata.create({

@@ -65,7 +65,7 @@ model batches {
   id_legacy                 String?                     @db.VarChar(255)
   name                      String?                     @db.Text
   name_hash                 String?                     @unique(map: "uk_batches_name_hash") @db.VarChar(64)
-  processing_details        String                      @default("{}") @db.LongText
+  processing_details        String                      @db.LongText
   created_at                DateTime?                   @default(now()) @db.DateTime(0)
   updated_at                DateTime?                   @default(now()) @db.DateTime(0)
   started_at                DateTime?                   @db.DateTime(0)
@@ -150,7 +150,7 @@ model document_to_batches {
   processing_time_seconds Int?
   ocr_quality_low         Boolean?
   ocr_quality_medium      Boolean?
-  processing_details      String    @default("{}") @db.LongText
+  processing_details      String    @db.LongText
   batches                 batches   @relation(fields: [batch_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_to_batches_batch_id")
   documents               documents @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_to_batches_document_id")
 
@@ -276,6 +276,25 @@ model metadata {
   document_to_metadata document_to_metadata[]
 
   @@index([name(length: 255)], map: "idx_metadata_name")
+}
+
+model pipeline_queue_items {
+  id                String    @id @db.VarChar(36)
+  stage             String    @db.VarChar(64)
+  batch_id          String    @db.VarChar(255)
+  payload           String    @db.LongText
+  status            String    @db.VarChar(32)
+  attempt_count     Int       @default(0)
+  queued_at         DateTime  @default(now()) @db.DateTime(0)
+  claimed_at        DateTime? @db.DateTime(0)
+  completed_at      DateTime? @db.DateTime(0)
+  error_type        String?   @db.VarChar(255)
+  error_message     String?   @db.Text
+  callback_delivery String?   @db.LongText
+
+  @@index([batch_id], map: "ix_pipeline_queue_items_batch_id")
+  @@index([stage], map: "ix_pipeline_queue_items_stage")
+  @@index([status], map: "ix_pipeline_queue_items_status")
 }
 
 model publishers {
