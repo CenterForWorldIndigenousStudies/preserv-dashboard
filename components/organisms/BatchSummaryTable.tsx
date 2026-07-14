@@ -1,8 +1,8 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Accordion, AccordionDetails, AccordionSummary, Box, Chip, Divider, Stack, Typography } from '@mui/material'
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import { Box, Chip, Divider, Stack, Typography } from '@mui/material'
+import { alpha, type Theme } from '@mui/material/styles'
 import {
   MaterialReactTable,
   useMaterialReactTable,
@@ -13,6 +13,7 @@ import {
 import { DateAtom } from '@atoms/Date'
 import { KeyValueRow } from '@molecules/KeyValueRow'
 import { NestedValueRenderer } from '@molecules/NestedValueRenderer'
+import { AccordionPanel } from '@molecules/AccordionPanel'
 import type { BatchSummary } from 'types/batches'
 
 interface BatchSummaryTableProps {
@@ -60,13 +61,18 @@ function BatchDetailPanel({ rows }: { rows: BatchSummary[] }): React.ReactElemen
 
   return (
     <Box
-      sx={{
-        mx: 2,
-        mb: 2,
-        borderRadius: '0.75rem',
-        border: '1px solid rgba(53,88,52,0.12)',
-        backgroundColor: 'rgba(244,241,240,0.65)',
-        p: { xs: 2, sm: 3 },
+      sx={(theme: Theme) => {
+        const mossColor = theme.palette.moss?.main ?? theme.palette.primary.main
+        const sandColor = theme.palette.sand?.main ?? theme.palette.secondary.main
+
+        return {
+          mx: 0,
+          mb: 2,
+          border: 1,
+          borderColor: alpha(mossColor, 0.15),
+          backgroundColor: sandColor,
+          p: { xs: 2, sm: 3 },
+        }
       }}
     >
       <Stack spacing={2.5}>
@@ -106,7 +112,7 @@ function BatchDetailPanel({ rows }: { rows: BatchSummary[] }): React.ReactElemen
           >
             Processing Details
           </Typography>
-          <Stack divider={<Divider flexItem sx={{ borderColor: 'rgba(53,88,52,0.08)' }} />}>
+          <Stack spacing={1.5}>
             {rows.map((propertyRow) => {
               const parsedValue = parsePropertyValue(propertyRow.property_value)
               const isComplex = typeof parsedValue === 'object' && parsedValue !== null && !Array.isArray(parsedValue)
@@ -122,25 +128,9 @@ function BatchDetailPanel({ rows }: { rows: BatchSummary[] }): React.ReactElemen
               }
 
               return (
-                <Accordion
+                <AccordionPanel
                   key={`${propertyRow.batch_id}-${propertyRow.property_key}`}
-                  disableGutters
-                  elevation={0}
-                  sx={{
-                    backgroundColor: 'transparent',
-                    '&:before': { display: 'none' },
-                  }}
-                >
-                  <AccordionSummary
-                    expandIcon={<ExpandMoreIcon sx={{ color: 'text.secondary', fontSize: '1rem' }} />}
-                    sx={{
-                      px: 0,
-                      minHeight: 'unset',
-                      '& .MuiAccordionSummary-content': { my: 0.5 },
-                      '&.Mui-expanded': { minHeight: 'unset' },
-                      '&.Mui-expanded .MuiAccordionSummary-content': { my: 0.5 },
-                    }}
-                  >
+                  summary={
                     <Typography
                       sx={{
                         fontSize: '0.8rem',
@@ -152,11 +142,12 @@ function BatchDetailPanel({ rows }: { rows: BatchSummary[] }): React.ReactElemen
                     >
                       {propertyRow.property_key}
                     </Typography>
-                  </AccordionSummary>
-                  <AccordionDetails sx={{ px: 0, pt: 0, pb: 0.5 }}>
-                    <NestedValueRenderer value={parsedValue} />
-                  </AccordionDetails>
-                </Accordion>
+                  }
+                  summarySx={{ px: 1.5, '& .MuiAccordionSummary-content': { my: 1 } }}
+                  detailsSx={{ px: 1.5, pt: 0, pb: 1.5 }}
+                >
+                  <NestedValueRenderer value={parsedValue} />
+                </AccordionPanel>
               )
             })}
           </Stack>
@@ -194,43 +185,41 @@ export function BatchSummaryTable({ data }: BatchSummaryTableProps) {
 
   const columns = useMemo<MRT_ColumnDef<BatchSummaryGroup>[]>(
     () => [
-          {
-            accessorKey: 'batch_name',
-            header: 'Batch',
-            size: 320,
-            Cell: ({ row }) => (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 0.5, flexWrap: 'wrap' }}>
-                <Box>
-                  <Typography sx={{ fontWeight: 700, color: '#231f20' }}>{row.original.batch_name ?? '-'}</Typography>
-                  <Typography sx={{ color: 'text.secondary', fontSize: '0.8rem', mt: 0.25 }}>
-                    Batch ID: {row.original.batch_id}
-                  </Typography>
-                </Box>
-                <Chip
-                  label={`${row.original.propertyCount} ${row.original.propertyCount === 1 ? 'property' : 'properties'}`}
-                  size="small"
-                  sx={{
-                    backgroundColor: 'rgba(53,88,52,0.12)',
-                    color: '#355834',
-                    fontWeight: 600,
-                  }}
-                />
-              </Box>
-            ),
-          },
-          {
-            id: 'inspection',
-            header: 'Inspection',
-            size: 220,
-            enableSorting: false,
-            enableColumnFilter: false,
-            Cell: () => (
-              <Typography sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>
-                Expand to inspect batch details
+      {
+        accessorKey: 'batch_name',
+        header: 'Batch',
+        size: 320,
+        Cell: ({ row }) => (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 0.5, flexWrap: 'wrap' }}>
+            <Box>
+              <Typography sx={{ fontWeight: 700, color: '#231f20' }}>{row.original.batch_name ?? '-'}</Typography>
+              <Typography sx={{ color: 'text.secondary', fontSize: '0.8rem', mt: 0.25 }}>
+                Batch ID: {row.original.batch_id}
               </Typography>
-            ),
-          },
-        ],
+            </Box>
+            <Chip
+              label={`${row.original.propertyCount} ${row.original.propertyCount === 1 ? 'property' : 'properties'}`}
+              size="small"
+              sx={{
+                backgroundColor: 'rgba(53,88,52,0.12)',
+                color: '#355834',
+                fontWeight: 600,
+              }}
+            />
+          </Box>
+        ),
+      },
+      {
+        id: 'inspection',
+        header: 'Inspection',
+        size: 220,
+        enableSorting: false,
+        enableColumnFilter: false,
+        Cell: () => (
+          <Typography sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>Expand to inspect batch details</Typography>
+        ),
+      },
+    ],
     [],
   )
 
@@ -242,34 +231,105 @@ export function BatchSummaryTable({ data }: BatchSummaryTableProps) {
     onGlobalFilterChange: setGlobalFilter,
     renderDetailPanel: ({ row }) => <BatchDetailPanel rows={groupedBatches.get(row.original.batch_id) ?? []} />,
     state: { sorting, globalFilter },
-    muiTableHeadCellProps: {
+    muiTablePaperProps: {
       sx: {
-        backgroundColor: '#f4f1f0',
-        color: '#231f20',
-        fontWeight: 600,
-        fontSize: '0.75rem',
-        textTransform: 'uppercase',
-        letterSpacing: '0.1em',
-        borderBottom: '2px solid #355834',
+        backgroundColor: 'transparent',
+        border: 0,
+        boxShadow: 'none',
+      },
+    },
+    muiTableBodyProps: {
+      sx: {
+        backgroundColor: 'transparent',
+      },
+    },
+    muiTableHeadCellProps: {
+      sx: (theme: Theme) => {
+        const mossColor = theme.palette.moss?.main ?? theme.palette.primary.main
+        const sandColor = theme.palette.sand?.main ?? theme.palette.secondary.main
+        const borderColor = alpha(mossColor, 0.15)
+
+        return {
+          backgroundColor: sandColor,
+          color: '#231f20',
+          fontWeight: 600,
+          fontSize: '0.75rem',
+          textTransform: 'uppercase',
+          letterSpacing: '0.1em',
+          borderBottom: 1,
+          borderColor,
+          '&:first-of-type': {
+            borderLeft: 1,
+            borderColor,
+            borderBottomLeftRadius: 24,
+          },
+          '&:last-of-type': {
+            borderRight: 1,
+            borderColor,
+            borderBottomRightRadius: 24,
+          },
+        }
       },
     },
     muiTableBodyCellProps: ({ row }) => ({
-      sx: {
-        color: '#231f20',
-        fontSize: '0.875rem',
-        fontWeight: row.getCanExpand() ? 600 : 400,
-        backgroundColor: row.getIsExpanded() ? 'rgba(53,88,52,0.04)' : 'inherit',
+      sx: (theme: Theme) => {
+        const mossColor = theme.palette.moss?.main ?? theme.palette.primary.main
+        const borderColor = alpha(mossColor, 0.15)
+        const isExpanded = row.getIsExpanded()
+
+        return {
+          color: theme.palette.ink?.main ?? theme.palette.text.primary,
+          fontSize: '0.875rem',
+          fontWeight: row.getCanExpand() ? 600 : 400,
+          backgroundColor: 'background.paper',
+          borderTop: 1,
+          borderBottom: isExpanded ? 0 : 1,
+          borderColor,
+          '&:first-of-type': {
+            borderLeft: 1,
+            borderColor,
+            borderTopLeftRadius: 24,
+            borderBottomLeftRadius: isExpanded ? 0 : 24,
+          },
+          '&:last-of-type': {
+            borderRight: 1,
+            borderColor,
+            borderTopRightRadius: 24,
+            borderBottomRightRadius: isExpanded ? 0 : 24,
+          },
+        }
       },
     }),
-    muiTableBodyRowProps: ({ row }) => ({
-      sx: {
-        backgroundColor: row.getIsExpanded() ? 'rgba(53,88,52,0.04)' : 'rgba(244,241,240,0.45)',
-        '&:hover': { backgroundColor: 'rgba(53,88,52,0.08)' },
+    muiTableBodyRowProps: () => ({
+      sx: (theme: Theme) => {
+        const mossColor = theme.palette.moss?.main ?? theme.palette.primary.main
+
+        return {
+          '&:hover > td': { backgroundColor: alpha(mossColor, 0.04) },
+        }
       },
     }),
-    muiDetailPanelProps: { sx: { backgroundColor: 'transparent' } },
+    muiDetailPanelProps: {
+      sx: (theme: Theme) => {
+        const mossColor = theme.palette.moss?.main ?? theme.palette.primary.main
+        const borderColor = alpha(mossColor, 0.15)
+
+        return {
+          backgroundColor: 'background.paper',
+          borderLeft: 1,
+          borderRight: 1,
+          borderColor,
+          borderRadius: '0  0 24px 24px',
+          '& > td': {
+            backgroundColor: 'transparent',
+            border: 0,
+            p: 0,
+          },
+        }
+      },
+    },
     muiTableContainerProps: {
-      sx: { borderRadius: '0.75rem', border: '1px solid rgba(53,88,52,0.125)' },
+      sx: { backgroundColor: 'transparent', borderRadius: 0, border: 0, overflow: 'visible' },
     },
     muiSearchTextFieldProps: {
       placeholder: 'Search batches...',

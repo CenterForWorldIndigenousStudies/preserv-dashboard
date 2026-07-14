@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactElement } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { Accordion, AccordionDetails, AccordionSummary, Box, Chip, Paper, Stack, Typography } from '@mui/material'
+import { Box, Chip, Paper, Stack, Typography } from '@mui/material'
 import { alpha, type Theme } from '@mui/material/styles'
 import type { MRT_ColumnDef } from 'material-react-table'
 
@@ -13,6 +13,7 @@ import { DateAtom } from '@atoms/Date'
 import { getDocumentDetailPath } from '@constants/paths'
 import { PAGE_LABELS } from '@constants/pageLabels'
 import { DocumentNameBlock } from '@molecules/DocumentNameBlock'
+import { AccordionPanel } from '@molecules/AccordionPanel'
 import { CollectionDocumentManager } from '@organisms/CollectionDocumentManager'
 import { DocumentDataTable } from '@organisms/document-table/DocumentDataTable'
 import type { DocumentTableQuery } from '@organisms/document-table/types'
@@ -33,7 +34,10 @@ interface CollectionManagerState {
 
 const COLLECTION_EXPANDED_PARAM = 'expanded'
 
-function buildCollectionQueryParamKey(collectionId: string, key: 'page' | 'pageSize' | 'search' | 'orderBy' | 'sortDirection') {
+function buildCollectionQueryParamKey(
+  collectionId: string,
+  key: 'page' | 'pageSize' | 'search' | 'orderBy' | 'sortDirection',
+) {
   return `collection-${collectionId}-${key}`
 }
 
@@ -239,8 +243,12 @@ export function CollectionsAccordion({ collections }: CollectionsAccordionProps)
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [managerState, setManagerState] = useState<CollectionManagerState | null>(null)
-  const [expandedCollections, setExpandedCollections] = useState<Set<string>>(() => parseExpandedCollections(searchParams))
-  const [collectionQueries, setCollectionQueries] = useState<Record<string, DocumentTableQuery<Record<string, never>>>>({})
+  const [expandedCollections, setExpandedCollections] = useState<Set<string>>(() =>
+    parseExpandedCollections(searchParams),
+  )
+  const [collectionQueries, setCollectionQueries] = useState<Record<string, DocumentTableQuery<Record<string, never>>>>(
+    {},
+  )
   const [collectionToDelete, setCollectionToDelete] = useState<CollectionWithMeta | null>(null)
   const [isDeletingCollection, setIsDeletingCollection] = useState(false)
 
@@ -330,35 +338,11 @@ export function CollectionsAccordion({ collections }: CollectionsAccordionProps)
           )
 
           return (
-            <Accordion
+            <AccordionPanel
               key={collection.id}
-              disableGutters
               expanded={isExpanded}
               onChange={handleAccordionChange(collection.id)}
-              slots={{ heading: 'h2' }}
-              sx={(theme: Theme) => ({
-                border: 1,
-                borderColor: alpha(theme.palette.moss?.main ?? theme.palette.primary.main, 0.15),
-                borderRadius: 2,
-                boxShadow: 3,
-                '&::before': { display: 'none' },
-                overflow: 'hidden',
-              })}
-            >
-              <AccordionSummary
-                expandIcon={<span aria-hidden="true">▾</span>}
-                sx={{
-                  backgroundColor: 'background.paper',
-                  px: 3,
-                  py: 1,
-                  '& .MuiAccordionSummary-content': {
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 2,
-                    marginY: 1,
-                  },
-                }}
-              >
+              summary={
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <Typography component="span" variant="h6" color="text.primary">
                     {collection.collection_name}
@@ -376,20 +360,29 @@ export function CollectionsAccordion({ collections }: CollectionsAccordionProps)
                     }}
                   />
                 </Box>
-              </AccordionSummary>
-              <AccordionDetails
-                sx={(theme: Theme) => ({
-                  backgroundColor: alpha(theme.palette.sand?.main ?? theme.palette.secondary.main, 0.25),
-                  px: 3,
-                  py: 2,
-                })}
-              >
-                {collection.notes ? (
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                    {collection.notes}
-                  </Typography>
-                ) : null}
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 2 }}>
+              }
+            >
+              {collection.notes ? (
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                  {collection.notes}
+                </Typography>
+              ) : null}
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 2 }}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={(event) => {
+                    event.preventDefault()
+                    setManagerState({
+                      collectionId: collection.id,
+                      collectionName: collection.collection_name,
+                      initialAction: 'add',
+                    })
+                  }}
+                >
+                  Add documents
+                </Button>
+                {collection.document_count > 0 ? (
                   <Button
                     variant="secondary"
                     size="sm"
@@ -398,62 +391,46 @@ export function CollectionsAccordion({ collections }: CollectionsAccordionProps)
                       setManagerState({
                         collectionId: collection.id,
                         collectionName: collection.collection_name,
-                        initialAction: 'add',
+                        initialAction: 'remove',
                       })
                     }}
                   >
-                    Add documents
+                    Remove documents
                   </Button>
-                  {collection.document_count > 0 ? (
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={(event) => {
-                        event.preventDefault()
-                        setManagerState({
-                          collectionId: collection.id,
-                          collectionName: collection.collection_name,
-                          initialAction: 'remove',
-                        })
-                      }}
-                    >
-                      Remove documents
-                    </Button>
-                  ) : null}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    startIcon={<IconX size={14} />}
-                    onClick={(event) => {
-                      event.preventDefault()
-                      setIsDeletingCollection(false)
-                      setCollectionToDelete(collection)
-                    }}
-                  >
-                    Delete collection
-                  </Button>
-                </Box>
-                {!isExpanded && collection.document_count === 0 ? (
-                  <Typography variant="body2" color="text.secondary">
-                    No documents associated with this collection.
-                  </Typography>
-                ) : !isExpanded ? null : collection.document_count === 0 ? (
-                  <Typography variant="body2" color="text.secondary">
-                    No documents associated with this collection.
-                  </Typography>
-                ) : (
-                  <CollectionDocumentsTable
-                    collectionId={collection.id}
-                    documentCount={collection.document_count}
-                    initialQuery={queryForCollection}
-                    originHref={originHref}
-                    onQueryChange={(query) => {
-                      handleCollectionQueryChange(collection.id, query)
-                    }}
-                  />
-                )}
-              </AccordionDetails>
-            </Accordion>
+                ) : null}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  startIcon={<IconX size={14} />}
+                  onClick={(event) => {
+                    event.preventDefault()
+                    setIsDeletingCollection(false)
+                    setCollectionToDelete(collection)
+                  }}
+                >
+                  Delete collection
+                </Button>
+              </Box>
+              {!isExpanded && collection.document_count === 0 ? (
+                <Typography variant="body2" color="text.secondary">
+                  No documents associated with this collection.
+                </Typography>
+              ) : !isExpanded ? null : collection.document_count === 0 ? (
+                <Typography variant="body2" color="text.secondary">
+                  No documents associated with this collection.
+                </Typography>
+              ) : (
+                <CollectionDocumentsTable
+                  collectionId={collection.id}
+                  documentCount={collection.document_count}
+                  initialQuery={queryForCollection}
+                  originHref={originHref}
+                  onQueryChange={(query) => {
+                    handleCollectionQueryChange(collection.id, query)
+                  }}
+                />
+              )}
+            </AccordionPanel>
           )
         })}
       </Stack>
