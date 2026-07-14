@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { type ReactElement } from 'react'
 import { Box, Button, Card, CardContent, Stack, Typography } from '@mui/material'
 
@@ -36,7 +35,6 @@ export default async function ProcessDocumentsPage(): Promise<ReactElement> {
           </Typography>
           <Box sx={{ mt: 2 }}>
             <Button
-              component={Link}
               href={BATCHES_PATH}
               variant="outlined"
               sx={{
