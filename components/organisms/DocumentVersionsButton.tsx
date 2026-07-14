@@ -18,13 +18,15 @@ import { DateAtom } from '@atoms/Date'
 import { FileSize } from '@atoms/FileSize'
 import { Button } from '@atoms/Button'
 import { IconX } from '@atoms/icons/IconX'
-import { DOCUMENTS_PATH } from '@constants/paths'
+import { getDocumentDetailPath } from '@constants/paths'
+import { PAGE_LABELS } from '@constants/pageLabels'
 import { DocumentNameBlock } from '@molecules/DocumentNameBlock'
 import type { VersionFamily, VersionFamilyDocument } from 'types/documents'
 
 interface DocumentVersionsButtonProps {
   versionFamily: VersionFamily
-  overviewHref?: string
+  returnHref?: string
+  returnDocumentName?: string | null
 }
 
 function compareNullableStrings(a: string | null, b: string | null): number {
@@ -83,15 +85,22 @@ function sortVersionDocuments(documents: VersionFamilyDocument[], sorting: MRT_S
   })
 }
 
-function buildVersionDocumentHref(documentId: string, overviewHref: string | undefined): string {
-  if (!overviewHref) {
-    return `${DOCUMENTS_PATH}/${documentId}`
-  }
+function buildVersionDocumentHref(
+  documentId: string,
+  returnHref: string | undefined,
+  returnDocumentName: string | null | undefined,
+): string {
+  const normalizedName = returnDocumentName?.trim()
+  const returnLabel = normalizedName ? `${PAGE_LABELS.documentDetail}: ${normalizedName}` : PAGE_LABELS.documentDetail
 
-  return `${DOCUMENTS_PATH}/${documentId}?${new URLSearchParams({ from: overviewHref }).toString()}`
+  return getDocumentDetailPath(documentId, returnHref, returnLabel)
 }
 
-export function DocumentVersionsButton({ versionFamily, overviewHref }: DocumentVersionsButtonProps): ReactElement {
+export function DocumentVersionsButton({
+  versionFamily,
+  returnHref,
+  returnDocumentName,
+}: DocumentVersionsButtonProps): ReactElement {
   const [isOpen, setIsOpen] = useState(false)
   const [sorting, setSorting] = useState<MRT_SortingState>([])
 
@@ -125,7 +134,7 @@ export function DocumentVersionsButton({ versionFamily, overviewHref }: Document
               isCanonical={is_canonical}
               legacyId={id_legacy}
               sourceId={source_id}
-              href={buildVersionDocumentHref(id, overviewHref)}
+              href={buildVersionDocumentHref(id, returnHref, returnDocumentName)}
             />
           )
         },
@@ -183,7 +192,7 @@ export function DocumentVersionsButton({ versionFamily, overviewHref }: Document
         Cell: ({ row }) => (row.original.is_duplicate ? 'True' : 'False'),
       },
     ],
-    [overviewHref],
+    [returnDocumentName, returnHref],
   )
 
   const table = useMaterialReactTable({

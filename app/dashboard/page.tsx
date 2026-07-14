@@ -9,6 +9,7 @@ import {
   REVIEW_QUEUE_PATH,
 } from '@constants/paths'
 import { getDashboardKpiMetrics } from '@lib/dashboardMetrics'
+import { PAGE_LABELS } from '@constants/pageLabels'
 import { ActionCard } from '@molecules/ActionCard'
 import { MetricCard } from '@molecules/MetricCard'
 import { PageHeader } from '@organisms/PageHeader'
@@ -74,7 +75,7 @@ export default async function DashboardPage(): Promise<ReactElement> {
   return (
     <Stack spacing={8} sx={{ width: '100%' }}>
       <PageHeader
-        eyebrow="Dashboard"
+        eyebrow={PAGE_LABELS.dashboard}
         title="Operational dashboard."
         description="Start here for a live snapshot of review backlog, ingest-ready work, and current batch activity across the preservation dashboard."
       />

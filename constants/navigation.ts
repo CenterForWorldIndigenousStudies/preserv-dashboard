@@ -11,6 +11,7 @@ import {
   REVIEW_QUEUE_PATH,
   TAGS_PAGE_PATH,
 } from '@constants/paths'
+import { PAGE_LABELS } from '@constants/pageLabels'
 
 export type DashboardNavigationGroupId = 'primary' | 'utility'
 
@@ -40,20 +41,20 @@ export interface DashboardNavigationSection {
 }
 
 export const PRIMARY_DASHBOARD_NAVIGATION_ITEMS: readonly DashboardNavigationItem[] = [
-  { href: DASHBOARD_PATH, iconKey: 'dashboard', label: 'Dashboard' },
-  { href: DOCUMENTS_PATH, iconKey: 'documents', label: 'Documents' },
-  { href: PROCESS_DOCUMENTS_PATH, iconKey: 'process', label: 'Process' },
-  { href: BATCHES_PATH, iconKey: 'batches', label: 'Batches' },
-  { href: REVIEW_QUEUE_PATH, iconKey: 'reviewQueue', label: 'Review Queue' },
-  { href: READY_FOR_LIBRARY_PATH, iconKey: 'readyForLibrary', label: 'Ready for Library' },
-  { href: COLLECTIONS_PATH, iconKey: 'collections', label: 'Collections' },
-  { href: TAGS_PAGE_PATH, iconKey: 'tags', label: 'Tags' },
-  { href: REPORTS_PAGE_PATH, iconKey: 'reports', label: 'Reports' },
+  { href: DASHBOARD_PATH, iconKey: 'dashboard', label: PAGE_LABELS.dashboard },
+  { href: DOCUMENTS_PATH, iconKey: 'documents', label: PAGE_LABELS.documents },
+  { href: PROCESS_DOCUMENTS_PATH, iconKey: 'process', label: PAGE_LABELS.process },
+  { href: BATCHES_PATH, iconKey: 'batches', label: PAGE_LABELS.batches },
+  { href: REVIEW_QUEUE_PATH, iconKey: 'reviewQueue', label: PAGE_LABELS.reviewQueue },
+  { href: READY_FOR_LIBRARY_PATH, iconKey: 'readyForLibrary', label: PAGE_LABELS.readyForLibrary },
+  { href: COLLECTIONS_PATH, iconKey: 'collections', label: PAGE_LABELS.collections },
+  { href: TAGS_PAGE_PATH, iconKey: 'tags', label: PAGE_LABELS.tags },
+  { href: REPORTS_PAGE_PATH, iconKey: 'reports', label: PAGE_LABELS.reports },
 ] as const
 
 export const UTILITY_DASHBOARD_NAVIGATION_ITEMS: readonly DashboardNavigationItem[] = [
-  { href: DB_SCHEMA_PATH, iconKey: 'db', label: 'DB' },
-  { href: COMPONENT_LIBRARY_PATH, iconKey: 'componentLibrary', label: 'Component Library' },
+  { href: DB_SCHEMA_PATH, iconKey: 'db', label: PAGE_LABELS.db },
+  { href: COMPONENT_LIBRARY_PATH, iconKey: 'componentLibrary', label: PAGE_LABELS.componentLibrary },
 ] as const
 
 export const DASHBOARD_NAVIGATION_SECTIONS: readonly DashboardNavigationSection[] = [

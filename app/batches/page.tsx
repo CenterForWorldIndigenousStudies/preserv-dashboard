@@ -1,6 +1,6 @@
-import Link from 'next/link'
 import { Suspense, type ReactElement } from 'react'
 import { PROCESS_DOCUMENTS_PATH } from '@constants/paths'
+import { PAGE_LABELS } from '@constants/pageLabels'
 import { Box, Button, Card, CardContent, Stack, Typography } from '@mui/material'
 import { BatchSummaryTable } from '@organisms/BatchSummaryTable'
 import { NoDataState } from '@organisms/NoDataState'
@@ -70,7 +70,7 @@ export default function BatchSummaryPage(): ReactElement {
   return (
     <Stack spacing={4} sx={{ width: '100%' }}>
       <PageHeader
-        eyebrow="Batches"
+        eyebrow={PAGE_LABELS.batches}
         title="Monitor batch health and investigate batch history."
         description="Use this workspace for routine monitoring, in-flight inspection, and historical batch details from the current operational data. Start and configure new runs in Process."
       />
@@ -91,7 +91,6 @@ export default function BatchSummaryPage(): ReactElement {
           </Typography>
           <Box sx={{ mt: 2 }}>
             <Button
-              component={Link}
               href={PROCESS_DOCUMENTS_PATH}
               variant="outlined"
               sx={{

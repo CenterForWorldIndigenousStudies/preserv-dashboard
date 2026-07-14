@@ -9,6 +9,7 @@ import { IconPlus } from '@atoms/icons/IconPlus'
 import { CollectionsAccordion } from '@organisms/CollectionsAccordion'
 import { PageHeader } from '@organisms/PageHeader'
 import { AddCollectionDialog } from '@organisms/AddCollectionDialog'
+import { PAGE_LABELS } from '@constants/pageLabels'
 import type { CollectionWithMeta } from 'types/collections'
 
 interface CollectionsPageClientProps {
@@ -21,7 +22,7 @@ export function CollectionsPageClient({ collections }: CollectionsPageClientProp
   return (
     <Stack spacing={4}>
       <PageHeader
-        eyebrow="Collections"
+        eyebrow={PAGE_LABELS.collections}
         title="Document Collections"
         description="Browse all document collections and their associated documents."
       />

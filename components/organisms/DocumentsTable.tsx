@@ -19,7 +19,8 @@ import { Badge, type BadgeVariant } from '@atoms/Badges/Badge'
 import { Button } from '@atoms/Button'
 import { DateAtom } from '@atoms/Date'
 import { FileSize } from '@atoms/FileSize'
-import { DOCUMENTS_PATH } from '@constants/paths'
+import { getDocumentDetailPath } from '@constants/paths'
+import { PAGE_LABELS } from '@constants/pageLabels'
 import { useOverviewTableState } from '@hooks/useOverviewTableState'
 import { type AdvancedSearchFilters, type FilterOptions, type StatusOption } from '@lib/search'
 import type { DocumentsQueryParams } from '@lib/queries'
@@ -258,7 +259,7 @@ function buildReviewQueueColumns(params: {
             id={id}
             legacyId={id_legacy}
             sourceId={source_id}
-            href={`${DOCUMENTS_PATH}/${id}?from=${params.preservedOverviewHref}`}
+            href={getDocumentDetailPath(id, params.preservedOverviewHref, PAGE_LABELS.reviewQueue)}
           />
         )
       },
@@ -364,7 +365,7 @@ function buildOverviewColumns(preservedOverviewHref: string): MRT_ColumnDef<Docu
             id={id}
             legacyId={id_legacy}
             sourceId={source_id}
-            href={`${DOCUMENTS_PATH}/${id}?from=${preservedOverviewHref}`}
+            href={getDocumentDetailPath(id, preservedOverviewHref, PAGE_LABELS.documents)}
           />
         )
       },

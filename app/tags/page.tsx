@@ -2,6 +2,7 @@ import type { ReactElement } from 'react'
 import { Box, Card, CardContent, Stack, Typography } from '@mui/material'
 
 import { DOCUMENTS_PATH, REVIEW_QUEUE_PATH } from '@constants/paths'
+import { PAGE_LABELS } from '@constants/pageLabels'
 import { ActionCard } from '@molecules/ActionCard'
 import { PageHeader } from '@organisms/PageHeader'
 
@@ -30,8 +31,8 @@ export default function TagsPage(): ReactElement {
   return (
     <Stack spacing={8}>
       <PageHeader
-        eyebrow="Tags"
-        title="Tags"
+        eyebrow={PAGE_LABELS.tags}
+        title={PAGE_LABELS.tags}
         description="Tags help organize, classify, and filter preservation documents across the dashboard. Current tag management happens in Document Detail, while this workspace provides a starting point for tag-focused navigation."
       />
 

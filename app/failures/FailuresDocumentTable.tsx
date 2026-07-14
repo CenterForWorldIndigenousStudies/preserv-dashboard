@@ -8,7 +8,8 @@ import { Link as MuiLink, Typography } from '@mui/material'
 import { DateAtom } from '@atoms/Date'
 import { DocumentDataTable } from '@organisms/document-table/DocumentDataTable'
 import type { FailureItem } from 'types/documents'
-import { DOCUMENTS_PATH } from '@constants/paths'
+import { FAILED_PATH, getDocumentDetailPath } from '@constants/paths'
+import { PAGE_LABELS } from '@constants/pageLabels'
 
 interface FailuresDocumentTableProps {
   failures: FailureItem[]
@@ -24,7 +25,7 @@ export function FailuresDocumentTable({ failures }: FailuresDocumentTableProps):
         Cell: ({ row }) => (
           <MuiLink
             component={Link}
-            href={`${DOCUMENTS_PATH}/${row.original.id}`}
+            href={getDocumentDetailPath(row.original.id, FAILED_PATH, PAGE_LABELS.processingFailures)}
             underline="hover"
             sx={{ color: 'moss.main', fontWeight: 500, '&:hover': { color: 'ink.main' } }}
           >

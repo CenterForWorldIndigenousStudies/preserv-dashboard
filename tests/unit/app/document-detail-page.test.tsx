@@ -66,18 +66,21 @@ describe('DocumentDetailPage', () => {
       reviews: [],
     })
 
-    renderToStaticMarkup(
+    const markup = renderToStaticMarkup(
       await DocumentDetailPage({
         params: Promise.resolve({ id: 'doc-1' }),
         searchParams: Promise.resolve({
           from: `${READY_FOR_LIBRARY_PATH}?page=2&pageSize=50&search=Sample`,
+          fromLabel: 'Ready for Library',
         }),
       }),
     )
 
+    expect(markup).toContain('Return to Ready for Library')
     expect(mockDocumentVersionsButton).toHaveBeenCalledWith(
       expect.objectContaining({
-        overviewHref: `${DOCUMENTS_PATH}/doc-1?from=%2Fready-for-library%3Fpage%3D2%26pageSize%3D50%26search%3DSample`,
+        returnHref: `${DOCUMENTS_PATH}/doc-1?from=%2Fready-for-library%3Fpage%3D2%26pageSize%3D50%26search%3DSample&fromLabel=Ready+for+Library`,
+        returnDocumentName: 'Document One',
       }),
       undefined,
     )

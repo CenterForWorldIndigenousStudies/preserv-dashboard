@@ -11,6 +11,7 @@ import {
   parseStatusesParam,
 } from '@lib/search'
 import { getAllDocuments, getDocumentFilterOptions, type DocumentsQueryParams } from '@lib/queries'
+import { PAGE_LABELS } from '@constants/pageLabels'
 
 export const dynamic = 'force-dynamic'
 
@@ -73,8 +74,8 @@ export default function DocumentsPage({ searchParams }: DocumentsPageProps) {
   return (
     <Stack spacing={4} sx={{ width: '100%' }}>
       <PageHeader
-        eyebrow="Documents"
-        title="Documents"
+        eyebrow={PAGE_LABELS.documents}
+        title={PAGE_LABELS.documents}
         description="Use this canonical browse and discovery workspace to search, filter, and open documents across the preservation system."
       />
 

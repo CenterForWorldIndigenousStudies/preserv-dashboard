@@ -6,7 +6,8 @@ import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { getReadyForLibraryAction } from '@actions/ready-for-library'
-import { DOCUMENTS_PATH } from '@constants/paths'
+import { getDocumentDetailPath } from '@constants/paths'
+import { PAGE_LABELS } from '@constants/pageLabels'
 import { DateAtom } from '@atoms/Date'
 import { DocumentDataTable } from '@organisms/document-table/DocumentDataTable'
 import { useDocumentTableController } from '@organisms/document-table/useDocumentTableController'
@@ -31,8 +32,8 @@ function syncReadyForLibrarySearchParam(nextParams: URLSearchParams, key: string
   nextParams.delete(key)
 }
 
-function buildDocumentDetailHref(documentId: string, overviewHref: string): string {
-  return `${DOCUMENTS_PATH}/${documentId}?${new URLSearchParams({ from: overviewHref }).toString()}`
+function buildDocumentDetailHref(documentId: string, returnHref: string): string {
+  return getDocumentDetailPath(documentId, returnHref, PAGE_LABELS.readyForLibrary)
 }
 
 function getReadyForLibrarySortValue(item: ReadyForLibraryItem, orderBy: string): number | string {

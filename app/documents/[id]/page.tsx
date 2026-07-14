@@ -1,7 +1,6 @@
 import type { ReactElement } from 'react'
 import {
   Box,
-  Link as MuiLink,
   Paper,
   Stack,
   Table,
@@ -15,6 +14,7 @@ import {
 
 import { DateAtom } from '@atoms/Date'
 import { FileSize } from '@atoms/FileSize'
+import { ReturnToPreviousPage } from '@atoms/ReturnToPreviousPage'
 import { SourceId } from '@atoms/SourceId'
 import { SourceFolderId } from '@atoms/SourceFolderId'
 import { AuditHistoryTable } from '@organisms/AuditHistoryTable'
@@ -26,7 +26,14 @@ import { PageHeader } from '@organisms/PageHeader'
 import { ReviewHistoryTable } from '@organisms/ReviewHistoryTable'
 import { parseMetadataValue } from '@lib/metadata'
 import { getDocumentDetail } from '@lib/queries'
-import { DOCUMENTS_PATH } from '@constants/paths'
+import {
+  COLLECTIONS_PATH,
+  DOCUMENTS_PATH,
+  FAILED_PATH,
+  READY_FOR_LIBRARY_PATH,
+  REVIEW_QUEUE_PATH,
+} from '@constants/paths'
+import { PAGE_LABELS } from '@constants/pageLabels'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,12 +48,39 @@ function firstSearchParam(value: string | string[] | undefined): string | undefi
   return Array.isArray(value) ? value[0] : value
 }
 
-function resolveOverviewHref(searchParams: Record<string, string | string[] | undefined>): string {
+function resolveReturnHref(searchParams: Record<string, string | string[] | undefined>): string {
   const from = firstSearchParam(searchParams.from)
-  if (from && from.startsWith('/')) {
+  if (from && from.startsWith('/') && !from.startsWith('//')) {
     return from
   }
-  return '/'
+  return DOCUMENTS_PATH
+}
+
+function resolveReturnPageName(
+  searchParams: Record<string, string | string[] | undefined>,
+  returnHref: string,
+): string | undefined {
+  const capturedLabel = firstSearchParam(searchParams.fromLabel)?.trim()
+  if (capturedLabel) {
+    return capturedLabel.slice(0, 80)
+  }
+
+  let returnPathname: string
+  try {
+    returnPathname = new URL(returnHref, 'http://dashboard.local').pathname
+  } catch {
+    return undefined
+  }
+
+  return (
+    {
+      [COLLECTIONS_PATH]: PAGE_LABELS.collections,
+      [DOCUMENTS_PATH]: PAGE_LABELS.documents,
+      [FAILED_PATH]: PAGE_LABELS.processingFailures,
+      [READY_FOR_LIBRARY_PATH]: PAGE_LABELS.readyForLibrary,
+      [REVIEW_QUEUE_PATH]: PAGE_LABELS.reviewQueue,
+    } as Record<string, string>
+  )[returnPathname]
 }
 
 function buildCurrentDocumentHref(id: string, searchParams: Record<string, string | string[] | undefined>): string {
@@ -140,18 +174,6 @@ const tableBodyCellSx = {
   verticalAlign: 'top',
 }
 
-function BackToOverviewLink({ href }: { href: string }): ReactElement {
-  return (
-    <MuiLink
-      href={href}
-      underline="hover"
-      sx={{ alignSelf: 'flex-start', color: 'moss.main', fontSize: '0.875rem', fontWeight: 500 }}
-    >
-      ← Back to Overview
-    </MuiLink>
-  )
-}
-
 function DetailValue({ children }: { children: React.ReactNode }): ReactElement {
   return (
     <Box component="dd" sx={{ ...detailValueSx, m: 0 }}>
@@ -166,7 +188,9 @@ export default async function DocumentDetailPage({
 }: DocumentDetailPageProps): Promise<ReactElement> {
   const { id } = await params
   const resolvedSearchParams = await searchParams
-  const overviewHref = resolveOverviewHref(resolvedSearchParams)
+  const returnHref = resolveReturnHref(resolvedSearchParams)
+  const returnPageName = resolveReturnPageName(resolvedSearchParams, returnHref)
+  const returnLabel = returnPageName ? `Return to ${returnPageName}` : undefined
   const currentDocumentHref = buildCurrentDocumentHref(id, resolvedSearchParams)
 
   try {
@@ -176,11 +200,11 @@ export default async function DocumentDetailPage({
       return (
         <Stack spacing={4} sx={{ width: '100%' }}>
           <PageHeader
-            eyebrow="Document Detail"
+            eyebrow={PAGE_LABELS.documentDetail}
             title="No Data"
             description="Inspect the full document record, metadata payload, audit trail, review history, and duplicate relationships."
           />
-          <BackToOverviewLink href={overviewHref} />
+          <ReturnToPreviousPage href={returnHref} label={returnLabel} />
           <NoDataState message="No document data is available for this record yet." />
         </Stack>
       )
@@ -201,9 +225,9 @@ export default async function DocumentDetailPage({
 
     return (
       <Stack spacing={4} sx={{ width: '100%' }}>
-        <BackToOverviewLink href={overviewHref} />
+        <ReturnToPreviousPage href={returnHref} label={returnLabel} />
         <PageHeader
-          eyebrow="Document Detail"
+          eyebrow={PAGE_LABELS.documentDetail}
           title={document.name || document.id}
           description="Inspect the full document record, metadata payload, audit trail, review history, and duplicate relationships."
         />
@@ -248,7 +272,11 @@ export default async function DocumentDetailPage({
                 </Typography>
               </Box>
               {version_family ? (
-                <DocumentVersionsButton versionFamily={version_family} overviewHref={currentDocumentHref} />
+                <DocumentVersionsButton
+                  versionFamily={version_family}
+                  returnHref={currentDocumentHref}
+                  returnDocumentName={document.name || document.id}
+                />
               ) : null}
             </Stack>
             {versions.length > 0 ? (
@@ -415,9 +443,7 @@ export default async function DocumentDetailPage({
                         <TableCell sx={tableBodyCellSx}>{batchLink.batch_origin ?? '—'}</TableCell>
                         <TableCell sx={tableBodyCellSx}>{batchLink.processing_time_seconds ?? '—'}</TableCell>
                         <TableCell sx={tableBodyCellSx}>{batchLink.ocr_quality_low ? 'True' : 'False'}</TableCell>
-                        <TableCell sx={tableBodyCellSx}>
-                          {batchLink.ocr_quality_medium ? 'True' : 'False'}
-                        </TableCell>
+                        <TableCell sx={tableBodyCellSx}>{batchLink.ocr_quality_medium ? 'True' : 'False'}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -459,7 +485,7 @@ export default async function DocumentDetailPage({
     return (
       <Stack spacing={4} sx={{ width: '100%' }}>
         <PageHeader
-          eyebrow="Document Detail"
+          eyebrow={PAGE_LABELS.documentDetail}
           title="No Data"
           description="Inspect the full document record, metadata payload, audit trail, review history, and duplicate relationships."
         />

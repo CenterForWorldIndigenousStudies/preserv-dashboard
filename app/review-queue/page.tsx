@@ -19,6 +19,7 @@ import {
   getReadyForLibraryDocuments,
   type DocumentsQueryParams,
 } from '@lib/queries'
+import { PAGE_LABELS } from '@constants/pageLabels'
 
 import { ReviewQueueTabbedWorkspace } from './ReviewQueueTabbedWorkspace'
 
@@ -114,7 +115,7 @@ export default async function ReviewQueuePage({ searchParams }: ReviewQueuePageP
   return (
     <Stack spacing={4} sx={{ width: '100%' }}>
       <PageHeader
-        eyebrow="Review Queue"
+        eyebrow={PAGE_LABELS.reviewQueue}
         title="Documents needing review."
         description="Use this human judgment workspace to review documents that need a deliberate approve or reject decision before they move forward."
       />

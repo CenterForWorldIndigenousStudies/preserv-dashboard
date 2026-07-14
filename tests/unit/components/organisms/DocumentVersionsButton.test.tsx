@@ -36,7 +36,8 @@ describe('DocumentVersionsButton', () => {
   it('preserves the current document detail context when opening a related version', () => {
     const markup = renderToStaticMarkup(
       <DocumentVersionsButton
-        overviewHref={`${DOCUMENTS_PATH}/doc-1?from=%2Fcollections%3Fexpanded%3Dcollection-1`}
+        returnHref={`${DOCUMENTS_PATH}/doc-1?from=%2Fcollections%3Fexpanded%3Dcollection-1`}
+        returnDocumentName="Original document"
         versionFamily={{
           version_group_id: 'vg-1',
           canonical_document_id: 'doc-1',
@@ -63,6 +64,7 @@ describe('DocumentVersionsButton', () => {
     expect(markup).toContain(
       `${DOCUMENTS_PATH}/doc-2?from=%2Fdocuments%2Fdoc-1%3Ffrom%3D%252Fcollections%253Fexpanded%253Dcollection-1`,
     )
+    expect(markup).toContain('fromLabel=Document+Detail%3A+Original+document')
     expect(markup).toContain('Candidate')
     expect(markup).toContain('Source')
     expect(markup).toContain('drive-file-123')

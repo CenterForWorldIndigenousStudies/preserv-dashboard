@@ -4,6 +4,7 @@ import { Stack } from '@mui/material'
 import { NoDataState } from '@organisms/NoDataState'
 import { PageHeader } from '@organisms/PageHeader'
 import { getFailures } from '@lib/queries'
+import { PAGE_LABELS } from '@constants/pageLabels'
 
 import { FailuresDocumentTable } from './FailuresDocumentTable'
 
@@ -16,7 +17,7 @@ export default async function FailuresPage(): Promise<ReactElement> {
     return (
       <Stack spacing={4} sx={{ width: '100%' }}>
         <PageHeader
-          eyebrow="Processing Failures"
+          eyebrow={PAGE_LABELS.processingFailures}
           title="Inspect documents that did not complete processing."
           description="Failed documents are sorted by ingestion time. Failure reasons are derived from metadata when an error-like field is present."
         />
@@ -32,7 +33,7 @@ export default async function FailuresPage(): Promise<ReactElement> {
     return (
       <Stack spacing={4} sx={{ width: '100%' }}>
         <PageHeader
-          eyebrow="Processing Failures"
+          eyebrow={PAGE_LABELS.processingFailures}
           title="Inspect documents that did not complete processing."
           description="Failed documents are sorted by ingestion time. Failure reasons are derived from metadata when an error-like field is present."
         />

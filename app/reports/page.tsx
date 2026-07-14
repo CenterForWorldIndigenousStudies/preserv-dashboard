@@ -7,6 +7,7 @@ import {
   READY_FOR_LIBRARY_PATH,
   REVIEW_QUEUE_PATH,
 } from '@constants/paths'
+import { PAGE_LABELS } from '@constants/pageLabels'
 import { ActionCard } from '@molecules/ActionCard'
 import { PageHeader } from '@organisms/PageHeader'
 
@@ -26,17 +27,17 @@ const REPORT_WORKSPACE_LINKS: ReportWorkspaceLink[] = [
   },
   {
     href: BATCHES_PATH,
-    title: 'Batches',
+    title: PAGE_LABELS.batches,
     description: 'Review the current batch processing details and batch-level activity already available in the dashboard.',
   },
   {
     href: REVIEW_QUEUE_PATH,
-    title: 'Review Queue',
+    title: PAGE_LABELS.reviewQueue,
     description: 'Open the current document review workflow for records that still need human attention.',
   },
   {
     href: READY_FOR_LIBRARY_PATH,
-    title: 'Ready for Library',
+    title: PAGE_LABELS.readyForLibrary,
     description: 'Review documents that meet the current dashboard-visible library criteria without implying final handoff readiness.',
   },
 ]

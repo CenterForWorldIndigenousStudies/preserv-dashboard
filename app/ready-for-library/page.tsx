@@ -8,6 +8,7 @@ import { NoDataState } from '@organisms/NoDataState'
 import type { DocumentTableFetchResult, DocumentTableQuery } from '@organisms/document-table/types'
 import { getReadyForLibraryDocuments } from '@lib/queries'
 import { getUniqueDocumentCountByAuthor } from '@lib/readyForLibraryAuthorMetrics'
+import { PAGE_LABELS } from '@constants/pageLabels'
 import type { ReadyForLibraryItem } from 'types/documents'
 
 export const dynamic = 'force-dynamic'
@@ -189,7 +190,7 @@ export default function ReadyForLibraryPage({ searchParams }: ReadyForLibraryPag
   return (
     <Stack spacing={4} sx={{ width: '100%' }}>
       <PageHeader
-        eyebrow="Ready for Library"
+        eyebrow={PAGE_LABELS.readyForLibrary}
         title="Post-approval handoff inspection"
         description="Use this workspace to inspect approved documents with an access level before the next handoff. Metadata completeness is shown to support review, but this page does not confirm final Fedora readiness."
       />

@@ -16,6 +16,20 @@ export const DB_SCHEMA_PATH = '/db' as const
 
 export const DOCUMENTS_API_PATH = `${API_PATH}/documents` as const
 export const DOCUMENTS_PATH = '/documents' as const
+export const getDocumentDetailPath = (documentId: string, returnHref?: string, returnLabel?: string): string => {
+  const searchParams = new URLSearchParams()
+
+  if (returnHref) {
+    searchParams.set('from', returnHref)
+  }
+  if (returnLabel) {
+    searchParams.set('fromLabel', returnLabel)
+  }
+
+  const search = searchParams.toString()
+  return `${DOCUMENTS_PATH}/${encodeURIComponent(documentId)}${search ? `?${search}` : ''}`
+}
+
 export const getDocumentCollectionsPath = (documentId: string): string =>
   `${DOCUMENTS_API_PATH}/${encodeURIComponent(documentId)}/collections`
 

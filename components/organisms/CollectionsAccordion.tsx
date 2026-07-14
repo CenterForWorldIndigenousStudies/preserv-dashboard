@@ -10,7 +10,8 @@ import { deleteCollectionAction, getDocumentsForCollectionAction } from '@action
 import { Button } from '@atoms/Button'
 import { IconX } from '@atoms/icons/IconX'
 import { DateAtom } from '@atoms/Date'
-import { DOCUMENTS_PATH } from '@constants/paths'
+import { getDocumentDetailPath } from '@constants/paths'
+import { PAGE_LABELS } from '@constants/pageLabels'
 import { DocumentNameBlock } from '@molecules/DocumentNameBlock'
 import { CollectionDocumentManager } from '@organisms/CollectionDocumentManager'
 import { DocumentDataTable } from '@organisms/document-table/DocumentDataTable'
@@ -114,8 +115,8 @@ function serializeCollectionsState(
   return nextSearch ? `${pathname}?${nextSearch}` : pathname
 }
 
-function buildCollectionDocumentHref(documentId: string, overviewHref: string): string {
-  return `${DOCUMENTS_PATH}/${documentId}?${new URLSearchParams({ from: overviewHref }).toString()}`
+function buildCollectionDocumentHref(documentId: string, returnHref: string): string {
+  return getDocumentDetailPath(documentId, returnHref, PAGE_LABELS.collections)
 }
 
 function buildCollectionDocumentsPageInfo(page: number, pageSize: number, total: number) {

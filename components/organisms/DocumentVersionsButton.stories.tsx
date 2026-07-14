@@ -61,6 +61,8 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   args: {
     versionFamily: canonicalFamily,
+    returnHref: `/documents/${docId(1)}`,
+    returnDocumentName: 'Nicaragua: A History',
   },
 }
 
