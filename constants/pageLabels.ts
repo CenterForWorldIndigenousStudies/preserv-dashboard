@@ -3,6 +3,7 @@ export const PAGE_LABELS = {
   documents: 'Documents',
   process: 'Process',
   batches: 'Batches',
+  exclusionReview: 'Exclusion Review',
   reviewQueue: 'Review Queue',
   readyForLibrary: 'Ready for Library',
   collections: 'Collections',

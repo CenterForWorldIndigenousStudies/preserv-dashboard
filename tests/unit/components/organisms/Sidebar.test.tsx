@@ -54,6 +54,7 @@ describe('Sidebar', () => {
     expect(markup).toContain('Documents')
     expect(markup).toContain('Process')
     expect(markup).toContain('Batches')
+    expect(markup).toContain('Exclusion Review')
     expect(markup).toContain('Review Queue')
     expect(markup).toContain('Ready for Library')
     expect(markup).toContain('Collections')

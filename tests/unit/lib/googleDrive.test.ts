@@ -16,6 +16,7 @@ describe('googleDrive', () => {
 
   beforeEach(() => {
     vi.resetModules()
+    vi.useFakeTimers()
     fetchMock.mockReset()
     vi.stubGlobal('fetch', fetchMock)
     process.env.GOOGLE_SERVICE_ACCOUNT_JSON = SERVICE_ACCOUNT_JSON
@@ -24,6 +25,7 @@ describe('googleDrive', () => {
   })
 
   afterEach(() => {
+    vi.useRealTimers()
     vi.unstubAllGlobals()
     delete process.env.GOOGLE_SERVICE_ACCOUNT_JSON
     delete process.env.GOOGLE_SERVICE_ACCOUNT_FILE
@@ -96,5 +98,34 @@ describe('googleDrive', () => {
       { id: 'child-2', name: 'Zulu' },
     ])
     expect(String(fetchMock.mock.calls[1]?.[0])).toContain('parent-123')
+  })
+
+  it('fails with a clear message when the Drive API request times out', async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ access_token: 'test-token', expires_in: 3600 }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      )
+      .mockImplementationOnce((_input, init?: RequestInit) => {
+        const signal = init?.signal
+
+        return new Promise((_, reject) => {
+          signal?.addEventListener('abort', () => {
+            reject(new DOMException('The operation was aborted.', 'AbortError'))
+          })
+        })
+      })
+
+    const { listChildDriveFolders } = await import('@lib/googleDrive')
+
+    const requestPromise = listChildDriveFolders('parent-123')
+    const expectation = expect(requestPromise).rejects.toThrow(
+      'Google Drive request timed out.',
+    )
+    await vi.advanceTimersByTimeAsync(15000)
+
+    await expectation
   })
 })

@@ -1,10 +1,13 @@
 import { createSign } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 
-const GOOGLE_FOLDER_MIME = 'application/vnd.google-apps.folder'
+import { fetchWithTimeout } from '@lib/fetchWithTimeout'
+
+export const GOOGLE_FOLDER_MIME = 'application/vnd.google-apps.folder'
 const DRIVE_RO_SCOPE = 'https://www.googleapis.com/auth/drive.readonly'
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
 const GOOGLE_DRIVE_API_BASE = 'https://www.googleapis.com/drive/v3'
+const GOOGLE_DRIVE_REQUEST_TIMEOUT_MS = 15_000
 
 export interface DriveFolderOption {
   id: string
@@ -21,10 +24,11 @@ interface GoogleTokenResponse {
   access_token?: string
 }
 
-interface DriveFileResponse {
+export interface DriveFileResponse {
   id?: string | null
   name?: string | null
   mimeType?: string | null
+  parents?: string[] | null
 }
 
 interface DriveListResponse {
@@ -116,16 +120,23 @@ function createJwtAssertion(credentials: GoogleServiceAccountCredentials): strin
 async function fetchDriveAccessToken(): Promise<string> {
   const credentials = await loadServiceAccountCredentials()
   const assertion = createJwtAssertion(credentials)
-  const response = await fetch(GOOGLE_TOKEN_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
+  const response = await fetchWithTimeout(
+    GOOGLE_TOKEN_URL,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+        assertion,
+      }),
     },
-    body: new URLSearchParams({
-      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-      assertion,
-    }),
-  })
+    {
+      timeoutMs: GOOGLE_DRIVE_REQUEST_TIMEOUT_MS,
+      timeoutMessage: 'Google OAuth token request timed out.',
+    },
+  )
 
   if (!response.ok) {
     const detail = await response.text()
@@ -138,6 +149,34 @@ async function fetchDriveAccessToken(): Promise<string> {
     throw new Error('Google OAuth token response did not include access_token')
   }
   return accessToken
+}
+
+export async function fetchDriveJson<T>(path: string, params: Record<string, string>): Promise<T> {
+  const accessToken = await fetchDriveAccessToken()
+  const url = new URL(`${GOOGLE_DRIVE_API_BASE}${path}`)
+  for (const [key, value] of Object.entries(params)) {
+    url.searchParams.set(key, value)
+  }
+
+  const response = await fetchWithTimeout(
+    url,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+    {
+      timeoutMs: GOOGLE_DRIVE_REQUEST_TIMEOUT_MS,
+      timeoutMessage: 'Google Drive request timed out.',
+    },
+  )
+
+  if (!response.ok) {
+    const detail = await response.text()
+    throw new Error(`Google Drive request failed (${response.status}): ${detail}`)
+  }
+
+  return (await response.json()) as T
 }
 
 function parseConfiguredRootFolderIds(raw: string | undefined): string[] {
@@ -169,27 +208,6 @@ function toDriveFolderOption(file: DriveFileResponse | undefined): DriveFolderOp
     id: file.id,
     name: file.name,
   }
-}
-
-async function fetchDriveJson<T>(path: string, params: Record<string, string>): Promise<T> {
-  const accessToken = await fetchDriveAccessToken()
-  const url = new URL(`${GOOGLE_DRIVE_API_BASE}${path}`)
-  for (const [key, value] of Object.entries(params)) {
-    url.searchParams.set(key, value)
-  }
-
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  })
-
-  if (!response.ok) {
-    const detail = await response.text()
-    throw new Error(`Google Drive request failed (${response.status}): ${detail}`)
-  }
-
-  return (await response.json()) as T
 }
 
 async function getDriveFile(folderId: string): Promise<DriveFileResponse> {

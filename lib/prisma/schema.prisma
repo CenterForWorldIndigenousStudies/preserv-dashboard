@@ -252,6 +252,37 @@ model documents {
   @@index([updated_at, id], map: "idx_documents_updated_at_id")
 }
 
+model drive_exclusion_review_items {
+  id                             String    @id @db.VarChar(36)
+  root_drive_id                  String    @db.VarChar(255)
+  drive_id                       String    @db.VarChar(255)
+  parent_drive_id                String?   @db.VarChar(255)
+  item_type                      String    @db.VarChar(16)
+  name                           String    @db.VarChar(1024)
+  mime_type                      String?   @db.VarChar(255)
+  drive_url                      String?   @db.Text
+  path                           String    @db.Text
+  depth                          Int       @default(0)
+  explicit_review_decision       String?   @db.VarChar(16)
+  explicit_reviewed_by_email     String?   @db.VarChar(255)
+  explicit_reviewed_at           DateTime? @db.DateTime(0)
+  effective_ancestor_drive_id    String?   @db.VarChar(255)
+  effective_ancestor_decision    String?   @db.VarChar(16)
+  effective_ancestor_reviewed_at DateTime? @db.DateTime(0)
+  subtree_index_status           String    @default("pending") @db.VarChar(16)
+  discovered_at                  DateTime? @default(now()) @db.DateTime(0)
+  last_synced_at                 DateTime? @db.DateTime(0)
+  last_sync_error                String?   @db.Text
+  created_at                     DateTime? @default(now()) @db.DateTime(0)
+  updated_at                     DateTime? @default(now()) @db.DateTime(0)
+
+  @@unique([root_drive_id, drive_id], map: "uk_drive_exclusion_review_items_root_drive")
+  @@index([root_drive_id, effective_ancestor_drive_id], map: "ix_drive_exclusion_review_items_effective_ancestor")
+  @@index([root_drive_id, parent_drive_id, name(length: 255)], map: "ix_drive_exclusion_review_items_parent_name")
+  @@index([root_drive_id, subtree_index_status], map: "ix_drive_exclusion_review_items_subtree_status")
+  @@index([root_drive_id, item_type, name(length: 255)], map: "ix_drive_exclusion_review_items_type_name")
+}
+
 model edit_history {
   id             String    @id @db.VarChar(36)
   entity_id      String?   @db.VarChar(36)

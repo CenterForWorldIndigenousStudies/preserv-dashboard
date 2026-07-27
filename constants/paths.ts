@@ -35,6 +35,9 @@ export const getDocumentCollectionsPath = (documentId: string): string =>
 
 export const FAILED_PATH = `/failures` as const
 
+export const EXCLUSION_REVIEW_PATH = '/exclusion-review' as const
+export const EXCLUSION_REVIEW_API_PATH = `${API_PATH}/exclusion-review` as const
+
 export const PIPELINE_PATH = `${API_PATH}/pipeline` as const
 export const DATA_INGESTER_CALLBACK_PATH = `${PIPELINE_PATH}/ingester/callback` as const
 export const DOCUMENT_SPLITTER_CALLBACK_PATH = `${PIPELINE_PATH}/document-splitter/callback` as const

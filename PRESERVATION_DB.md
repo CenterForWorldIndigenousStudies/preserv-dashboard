@@ -226,6 +226,31 @@ erDiagram
         timestamp edited_at
     }
 
+    drive_exclusion_review_items {
+        varchar id PK, UK
+        varchar root_drive_id
+        varchar drive_id
+        varchar parent_drive_id
+        varchar item_type
+        varchar name
+        varchar mime_type
+        text drive_url
+        text path
+        int depth
+        varchar explicit_review_decision
+        varchar explicit_reviewed_by_email
+        timestamp explicit_reviewed_at
+        varchar effective_ancestor_drive_id
+        varchar effective_ancestor_decision
+        timestamp effective_ancestor_reviewed_at
+        varchar subtree_index_status
+        timestamp discovered_at
+        timestamp last_synced_at
+        text last_sync_error
+        timestamp created_at
+        timestamp updated_at
+    }
+
     documents ||--o{ document_access : "access"
     documents ||--o| document_quality : "quality"
     documents ||--o{ document_to_authors : "authors"
@@ -264,6 +289,8 @@ erDiagram
 - `documents` is the anchor table. Most queries start there and join outward.
 - `batches` is the anchor table for processing runs and registry-derived batch context.
 - `pipeline_queue_items` is the durable queue control table for the combined pipeline server.
+- `drive_exclusion_review_items` is the indexed Google Drive tree backing the dashboard's
+  `Exclusion Review` workspace.
 - `document_to_*` tables and `batch_to_batches_metadata` are association tables. They connect a
   core entity to a lookup table or to typed metadata values.
 - `metadata` and `batch_metadata` define field names. The actual values live in
@@ -304,6 +331,8 @@ erDiagram
 - `document_to_tags` supports both document-first and tag-first access patterns.
 - `collections` is indexed and unique on `tag_id`.
 - `pipeline_queue_items` is indexed on `stage`, `batch_id`, and `status`.
+- `drive_exclusion_review_items` is indexed for root-scoped parent, item-type, effective-ancestor,
+  and subtree-status access patterns.
 - Association tables use composite unique constraints to prevent duplicate links.
 
 ## Meaningful Metadata
@@ -761,3 +790,34 @@ Generic audit log for edited entities.
 | `edited_at` | `TIMESTAMP` | Edit timestamp. |
 
 Query note: because this table is generic, analysts typically filter by `entity_table` first.
+
+### drive_exclusion_review_items
+
+Dashboard-local index of one configured Google Drive root for the `Exclusion Review` workspace.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `VARCHAR(36)` | Primary key. |
+| `root_drive_id` | `VARCHAR(255)` | Configured root folder that scopes this index row. |
+| `drive_id` | `VARCHAR(255)` | Google Drive file or folder identifier. |
+| `parent_drive_id` | `VARCHAR(255)` | Direct parent folder ID, nullable for the configured root row. |
+| `item_type` | `VARCHAR(16)` | `folder` or `file`. |
+| `name` | `VARCHAR(1024)` | Current Drive item name. |
+| `mime_type` | `VARCHAR(255)` | Drive mime type. |
+| `drive_url` | `TEXT` | Canonical open-in-Drive URL. |
+| `path` | `TEXT` | Serialized ancestor chain from the configured root through the direct parent. |
+| `depth` | `INT` | Depth from the configured root. |
+| `explicit_review_decision` | `VARCHAR(16)` | Direct reviewer decision on this exact item, if any. |
+| `explicit_reviewed_by_email` | `VARCHAR(255)` | Reviewer email for the direct decision. |
+| `explicit_reviewed_at` | `TIMESTAMP` | Timestamp for the direct decision. |
+| `effective_ancestor_drive_id` | `VARCHAR(255)` | Nearest marked ancestor folder currently governing this row, if any. |
+| `effective_ancestor_decision` | `VARCHAR(16)` | Cached inherited include or exclude state from that ancestor. |
+| `effective_ancestor_reviewed_at` | `TIMESTAMP` | Timestamp of the governing ancestor decision. |
+| `subtree_index_status` | `VARCHAR(16)` | Branch indexing state such as `pending`, `syncing`, `complete`, or `error`. |
+| `discovered_at` | `TIMESTAMP` | When the item first entered the local index. |
+| `last_synced_at` | `TIMESTAMP` | Last successful Drive reconciliation timestamp. |
+| `last_sync_error` | `TEXT` | Last recorded branch sync error, if any. |
+| `created_at` | `TIMESTAMP` | Row creation time. |
+| `updated_at` | `TIMESTAMP` | Row update time. |
+
+Constraint notes: unique on `(root_drive_id, drive_id)`.
