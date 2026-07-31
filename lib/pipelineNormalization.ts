@@ -1,9 +1,12 @@
 import { parsePipelineConfig } from '@lib/pipelineConfig'
 import type {
   CallbackStageKey,
+  NormalizedDocumentFailure,
+  NormalizedOpenAIBatchWaveStatus,
   NormalizedProcessBatchDetails,
   NormalizedProcessStageStatus,
   PassStagePrefix,
+  RawOpenAIBatchWaveDetails,
   RawProcessBatchDetails,
   RawProcessStageDetails,
 } from 'types/pipelineContracts'
@@ -129,6 +132,65 @@ function parseStageCollectionFields(
   }
 }
 
+function parseOpenAIBatchWave(
+  wave: RawOpenAIBatchWaveDetails | null | undefined,
+): NormalizedOpenAIBatchWaveStatus | null {
+  if (!wave) {
+    return null
+  }
+
+  return {
+    status: normalizeText(wave.status),
+    openaiBatchId: normalizeText(wave.openai_batch_id),
+    submittedAt: parseTimestamp(wave.submitted_at),
+    checkedAt: parseTimestamp(wave.checked_at),
+    completedAt: parseTimestamp(wave.completed_at),
+    processedCount: parseNumber(wave.processed_count),
+    succeededCount: parseNumber(wave.succeeded_count),
+    failedCount: parseNumber(wave.failed_count),
+    failures: parseFailures(wave.failures),
+  }
+}
+
+function parseFailureText(record: Record<string, unknown>, key: 'document_id' | 'filename' | 'reason'): string | null {
+  const value = record[key]
+  if (typeof value === 'string') {
+    return value
+  }
+
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+    return String(value)
+  }
+
+  if (value === null || value === undefined) {
+    return null
+  }
+
+  return null
+}
+
+function parseFailures(value: unknown): NormalizedDocumentFailure[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value
+    .map((item) => {
+      if (typeof item !== 'object' || item === null) {
+        return null
+      }
+
+      const record = item as Record<string, unknown>
+
+      return {
+        documentId: normalizeText(parseFailureText(record, 'document_id')),
+        filename: normalizeText(parseFailureText(record, 'filename')),
+        reason: normalizeText(parseFailureText(record, 'reason')),
+      }
+    })
+    .filter((item): item is NormalizedDocumentFailure => item !== null)
+}
+
 export function normalizeStage(stage: RawProcessStageDetails | null | undefined): NormalizedProcessStageStatus | null {
   if (!stage) {
     return null
@@ -140,6 +202,7 @@ export function normalizeStage(stage: RawProcessStageDetails | null | undefined)
 
   return {
     status: normalizeText(stage.status),
+    mode: normalizeText(stage.mode),
     requestId: normalizeText(stage.request_id ?? null),
     requestedByApp: normalizeText(stage.requested_by_app ?? null),
     initiatedAt: parseTimestamp(stage.initiated_at ?? null),
@@ -154,6 +217,8 @@ export function normalizeStage(stage: RawProcessStageDetails | null | undefined)
     completedPasses,
     sourceFolderIds: parseStringArray(stage.source_folder_ids),
     ...parseStageCollectionFields(stage),
+    openaiBatchWave1: parseOpenAIBatchWave(stage.openai_batch?.wave_1),
+    openaiBatchWave2: parseOpenAIBatchWave(stage.openai_batch?.wave_2),
   }
 }
 

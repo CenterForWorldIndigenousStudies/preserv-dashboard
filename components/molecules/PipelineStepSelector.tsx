@@ -204,6 +204,18 @@ export function PipelineStepSelector({ draft, mode, onDraftChange }: PipelineSte
     [draft, onDraftChange],
   )
 
+  const handleMetadataExtractionModeToggle = useCallback(
+    (enabled: boolean) => {
+      onDraftChange({
+        ...draft,
+        metadataExtraction: {
+          mode: enabled ? 'openai_batch' : 'direct',
+        },
+      })
+    },
+    [draft, onDraftChange],
+  )
+
   return (
     <Paper
       elevation={0}
@@ -272,12 +284,54 @@ export function PipelineStepSelector({ draft, mode, onDraftChange }: PipelineSte
           />
 
           {draft.steps.metadataExtraction !== undefined && (
-            <StepRow
-              label="Metadata Extraction"
-              description="Extract metadata from documents (future)"
-              checked={draft.steps.metadataExtraction}
-              onChange={(value) => handleSimpleStepToggle('metadataExtraction', value)}
-            />
+            <Stack spacing={1}>
+              <StepRow
+                label="Metadata Extraction"
+                description="Extract metadata from documents"
+                checked={draft.steps.metadataExtraction}
+                onChange={(value) => handleSimpleStepToggle('metadataExtraction', value)}
+              />
+              {draft.steps.metadataExtraction && (
+                <Paper
+                  elevation={0}
+                  sx={{
+                    ml: { xs: 0, sm: 4 },
+                    p: 2,
+                    borderRadius: 3,
+                    bgcolor: 'background.default',
+                    border: '1px dashed',
+                    borderColor: 'divider',
+                  }}
+                >
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={draft.metadataExtraction.mode === 'openai_batch'}
+                        onChange={(_event, value) => handleMetadataExtractionModeToggle(value)}
+                        slotProps={{
+                          input: {
+                            'aria-label': 'Use OpenAI Batch Service for metadata extraction',
+                          },
+                        }}
+                        size="small"
+                      />
+                    }
+                    label={
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          Use OpenAI Batch Service for metadata extraction
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                          Submits the first metadata extraction wave to OpenAI Batch. This is separate from the
+                          dashboard processing batch.
+                        </Typography>
+                      </Box>
+                    }
+                    sx={{ alignItems: 'flex-start', m: 0, width: '100%' }}
+                  />
+                </Paper>
+              )}
+            </Stack>
           )}
 
           {draft.steps.metadataValidation !== undefined && (

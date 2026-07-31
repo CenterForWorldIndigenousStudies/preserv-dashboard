@@ -1,3 +1,4 @@
+import net from 'node:net'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -16,6 +17,8 @@ const DEFAULT_TEST_DB_ENV = {
   DB_NAME: 'preservationtest',
 } as const
 
+const DASHBOARD_INTEGRATION_SKIP_REASON = 'DASHBOARD_INTEGRATION_SKIP_REASON'
+
 type TestDbConfig = {
   host: string
   port: number
@@ -23,6 +26,8 @@ type TestDbConfig = {
   password: string
   database: string
 }
+
+type DbConnectionError = NodeJS.ErrnoException
 
 interface SchemaObjectRow extends RowDataPacket {
   TABLE_NAME: string
@@ -57,6 +62,68 @@ export function getTestDbConfig(): TestDbConfig {
     user: process.env.DB_USER ?? DEFAULT_TEST_DB_ENV.DB_USER,
     password: process.env.DB_PASS ?? DEFAULT_TEST_DB_ENV.DB_PASS,
     database,
+  }
+}
+
+export function isSandboxDbAccessError(error: unknown): boolean {
+  const dbError = error as DbConnectionError | undefined
+  return dbError?.code === 'EPERM' || dbError?.code === 'EACCES'
+}
+
+export function shouldSkipDashboardIntegrationSuite(): boolean {
+  return Boolean(process.env[DASHBOARD_INTEGRATION_SKIP_REASON])
+}
+
+export function getDashboardIntegrationSkipReason(): string | null {
+  return process.env[DASHBOARD_INTEGRATION_SKIP_REASON] ?? null
+}
+
+async function probeTestDatabasePort(config: TestDbConfig): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const socket = net.createConnection({
+      host: config.host,
+      port: config.port,
+    })
+
+    const cleanup = (): void => {
+      socket.removeAllListeners()
+    }
+
+    socket.setTimeout(1_000)
+
+    socket.once('connect', () => {
+      cleanup()
+      socket.end()
+      resolve()
+    })
+
+    socket.once('error', (error) => {
+      cleanup()
+      reject(error)
+    })
+
+    socket.once('timeout', () => {
+      cleanup()
+      socket.destroy()
+      resolve()
+    })
+  })
+}
+
+export async function initializeDashboardIntegrationSkipReason(): Promise<void> {
+  const config = getTestDbConfig()
+
+  try {
+    await probeTestDatabasePort(config)
+    delete process.env[DASHBOARD_INTEGRATION_SKIP_REASON]
+  } catch (error) {
+    if (!isSandboxDbAccessError(error)) {
+      delete process.env[DASHBOARD_INTEGRATION_SKIP_REASON]
+      return
+    }
+
+    process.env[DASHBOARD_INTEGRATION_SKIP_REASON] =
+      `Managed environment blocked localhost MariaDB access at ${config.host}:${config.port}.`
   }
 }
 

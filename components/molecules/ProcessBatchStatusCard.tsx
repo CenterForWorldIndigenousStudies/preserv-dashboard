@@ -2,6 +2,7 @@ import type { ReactElement } from 'react'
 import { Box, Paper, Stack, Typography } from '@mui/material'
 
 import { PipelineStageStatusBadge } from '@atoms/Badges/PipelineStageStatusBadge'
+import { MetadataExtractorOpenAIBatchActions } from '@molecules/MetadataExtractorOpenAIBatchActions'
 import { PipelineTimelineCard } from '@molecules/PipelineTimelineCard'
 import { ProcessBatchSummaryHeader } from '@molecules/ProcessBatchSummaryHeader'
 import { ProcessStageDetailList } from '@molecules/ProcessStageDetailList'
@@ -16,6 +17,7 @@ interface ProcessBatchStatusCardProps {
 function buildPendingStage(): ProcessStageStatus {
   return {
     status: 'pending',
+    mode: null,
     requestId: null,
     requestedByApp: 'preserv-dashboard',
     initiatedAt: null,
@@ -55,6 +57,8 @@ function buildPendingStage(): ProcessStageStatus {
     sourceFolderIds: [],
     collectionName: null,
     collectionNotes: null,
+    openaiBatchWave1: null,
+    openaiBatchWave2: null,
   }
 }
 
@@ -130,7 +134,17 @@ function DetailRow({ label, value }: { label: string; value: string }): ReactEle
   )
 }
 
-function StageCard({ label, stage }: { label: string; stage: ProcessStageStatus | null }): ReactElement | null {
+function StageCard({
+  label,
+  stage,
+  batchId,
+  showOpenAIBatchActions = false,
+}: {
+  label: string
+  stage: ProcessStageStatus | null
+  batchId?: string
+  showOpenAIBatchActions?: boolean
+}): ReactElement | null {
   if (!stage) {
     return null
   }
@@ -158,6 +172,13 @@ function StageCard({ label, stage }: { label: string; stage: ProcessStageStatus 
           <PipelineStageStatusBadge status={stage.status} />
         </Box>
 
+        {showOpenAIBatchActions && batchId ? (
+          <MetadataExtractorOpenAIBatchActions
+            batchId={batchId}
+            canCheckStatus={!!stage.openaiBatchWave1?.openaiBatchId}
+            waveOneStatus={stage.openaiBatchWave1?.status ?? null}
+          />
+        ) : null}
         <ProcessStageMetricsGrid stageLabel={label} stage={stage} />
         <ProcessStageDetailList stage={stage} />
         <ProcessStageDiagnosticsPanel stage={stage} />
@@ -171,6 +192,10 @@ export function ProcessBatchStatusCard({ batch }: ProcessBatchStatusCardProps): 
   const metadataExtractorStage = batch.metadataExtractor ?? (shouldShowPendingMetadataExtractor(batch) ? buildPendingStage() : null)
   const metadataValidatorStage = batch.metadataValidator ?? (shouldShowPendingMetadataValidator(batch) ? buildPendingStage() : null)
   const rightsDeterminatorStage = batch.rightsDeterminator ?? (shouldShowPendingRightsDeterminator(batch) ? buildPendingStage() : null)
+  const showMetadataExtractorOpenAIBatchActions =
+    (metadataExtractorStage?.mode === 'openai_batch' ||
+      batch.pipelineConfig?.metadataExtraction.mode === 'openai_batch') &&
+    metadataExtractorStage !== null
 
   return (
     <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, p: 3 }}>
@@ -194,7 +219,12 @@ export function ProcessBatchStatusCard({ batch }: ProcessBatchStatusCardProps): 
         <StageCard label="Page Rotator" stage={batch.pageRotator} />
         <StageCard label="OCR Processor" stage={ocrProcessorStage} />
         <StageCard label="Content Dedup" stage={batch.contentDedup} />
-        <StageCard label="Metadata Extractor" stage={metadataExtractorStage} />
+        <StageCard
+          label="Metadata Extractor"
+          stage={metadataExtractorStage}
+          batchId={batch.batchId}
+          showOpenAIBatchActions={showMetadataExtractorOpenAIBatchActions}
+        />
         <StageCard label="Metadata Validator" stage={metadataValidatorStage} />
         <StageCard label="Rights Determinator" stage={rightsDeterminatorStage} />
       </Stack>

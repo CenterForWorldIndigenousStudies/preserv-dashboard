@@ -69,6 +69,9 @@ This starts:
 - the Next.js app on `http://localhost:3000`
 - the Storybook dev server on `http://localhost:6006`
 
+The Next.js app uses webpack in local development so pipeline callback runs do
+not depend on the current Turbopack path.
+
 If you only want the Next.js app:
 
 ```bash

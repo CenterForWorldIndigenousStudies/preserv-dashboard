@@ -16,6 +16,7 @@ export interface RawProcessStageCallbackDetails {
 
 export interface RawProcessStageDetails {
   status?: string | null
+  mode?: string | null
   request_id?: string | null
   requested_by_app?: string | null
   initiated_at?: unknown
@@ -49,6 +50,30 @@ export interface RawProcessStageDetails {
   completed_passes?: unknown
   callback?: RawProcessStageCallbackDetails | null
   error?: string | null
+  openai_batch?: RawOpenAIBatchDetails | null
+}
+
+export interface RawOpenAIBatchWaveDetails {
+  status?: string | null
+  openai_batch_id?: string | null
+  submitted_at?: unknown
+  checked_at?: unknown
+  completed_at?: unknown
+  processed_count?: unknown
+  succeeded_count?: unknown
+  failed_count?: unknown
+  failures?: RawDocumentFailure[] | null
+}
+
+export interface RawOpenAIBatchDetails {
+  wave_1?: RawOpenAIBatchWaveDetails | null
+  wave_2?: RawOpenAIBatchWaveDetails | null
+}
+
+export interface RawDocumentFailure {
+  document_id?: string | null
+  filename?: string | null
+  reason?: string | null
 }
 
 export interface RawProcessPipelineDetails {
@@ -92,6 +117,7 @@ export type CallbackStageKey =
 
 export interface NormalizedProcessStageStatus {
   status: string | null
+  mode: string | null
   requestId: string | null
   requestedByApp: string | null
   initiatedAt: string | null
@@ -131,6 +157,26 @@ export interface NormalizedProcessStageStatus {
   sourceFolderIds: string[]
   collectionName: string | null
   collectionNotes: string | null
+  openaiBatchWave1: NormalizedOpenAIBatchWaveStatus | null
+  openaiBatchWave2: NormalizedOpenAIBatchWaveStatus | null
+}
+
+export interface NormalizedOpenAIBatchWaveStatus {
+  status: string | null
+  openaiBatchId: string | null
+  submittedAt: string | null
+  checkedAt: string | null
+  completedAt: string | null
+  processedCount: number
+  succeededCount: number
+  failedCount: number
+  failures: NormalizedDocumentFailure[]
+}
+
+export interface NormalizedDocumentFailure {
+  documentId: string | null
+  filename: string | null
+  reason: string | null
 }
 
 export interface NormalizedProcessBatchDetails {

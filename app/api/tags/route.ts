@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Prisma } from '@lib/prisma/generated/client'
 import { createEditHistoryEntry } from '@lib/editHistory'
 import { db } from '@lib/db'
-import { buildNameHash, normalizeTagName } from '@lib/tagUtils'
+import { buildNameHash } from '@lib/tagHash'
+import { normalizeTagName } from '@lib/tagUtils'
 
 interface CreateTagRequestBody {
   name?: unknown

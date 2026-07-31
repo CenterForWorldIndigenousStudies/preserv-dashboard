@@ -70,6 +70,7 @@ export function buildAcceptedBatchStatus({
     pipelineConfig,
     ingester: {
       status: 'accepted',
+      mode: null,
       requestId: null,
       requestedByApp: 'preserv-dashboard',
       initiatedAt: submittedAt,
@@ -109,6 +110,8 @@ export function buildAcceptedBatchStatus({
       sourceFolderIds: selectedFolderIds,
       collectionName: collectionName.trim() || null,
       collectionNotes: collectionNotes.trim() || null,
+      openaiBatchWave1: null,
+      openaiBatchWave2: null,
     },
     documentSplitter: null,
     pageRotator: null,

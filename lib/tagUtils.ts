@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto'
 import { PROTECTED_TAGS } from '@constants/tags'
 
 export interface TagSearchResult {
@@ -21,10 +20,6 @@ export function normalizeTagName(value: string): string {
 
 export function normalizeTagKey(value: string): string {
   return normalizeTagName(value).toLowerCase()
-}
-
-export function buildNameHash(value: string): string {
-  return createHash('sha256').update(normalizeTagKey(value)).digest('hex')
 }
 
 export function isProtectedTagName(value: string | null | undefined): boolean {

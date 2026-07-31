@@ -84,7 +84,7 @@ export default defineConfig({
         test: {
           name: 'integration',
           globals: true,
-          setupFiles: [],
+          setupFiles: ['tests/integration/support/test-db.setup.ts'],
           environment: 'node',
           hookTimeout: 30000,
           testTimeout: 30000,

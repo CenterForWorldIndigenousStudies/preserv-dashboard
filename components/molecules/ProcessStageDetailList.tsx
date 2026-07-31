@@ -32,6 +32,16 @@ function DetailRow({ label, value }: { label: string; value: string }): ReactEle
 }
 
 export function ProcessStageDetailList({ stage }: ProcessStageDetailListProps): ReactElement {
+  const modeLabel =
+    stage.mode === 'openai_batch' ? 'OpenAI Batch Service' : stage.mode === 'direct' ? 'Direct' : '—'
+
+  const waveOneLabel = stage.openaiBatchWave1
+    ? `${stage.openaiBatchWave1.status ?? '—'} (${stage.openaiBatchWave1.succeededCount} succeeded, ${stage.openaiBatchWave1.failedCount} failed)`
+    : '—'
+  const waveTwoLabel = stage.openaiBatchWave2
+    ? `${stage.openaiBatchWave2.status ?? '—'} (${stage.openaiBatchWave2.succeededCount} succeeded, ${stage.openaiBatchWave2.failedCount} failed)`
+    : '—'
+
   return (
     <Box>
       <Box
@@ -49,8 +59,11 @@ export function ProcessStageDetailList({ stage }: ProcessStageDetailListProps): 
         <DetailRow label="Completed" value={formatDateTime(stage.completedAt)} />
         <DetailRow label="Last Transition" value={formatDateTime(stage.lastTransitionAt)} />
         <DetailRow label="Pass" value={`${stage.currentPass} / ${stage.maxPasses}`} />
+        <DetailRow label="Mode" value={modeLabel} />
         <DetailRow label="Callback Delivery" value={stage.callbackDeliveryStatus ?? '—'} />
         <DetailRow label="Callback Received" value={formatDateTime(stage.callbackReceivedAt)} />
+        {stage.mode === 'openai_batch' ? <DetailRow label="Wave 1" value={waveOneLabel} /> : null}
+        {stage.mode === 'openai_batch' ? <DetailRow label="Wave 2" value={waveTwoLabel} /> : null}
       </Box>
 
       {stage.collectionName ? (

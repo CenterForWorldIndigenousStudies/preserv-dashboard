@@ -7,10 +7,12 @@ vi.mock('@lib/editHistory', () => ({
 }))
 
 import { getAllDocuments, getDocuments } from '@lib/queries'
-import { resetTestDatabase } from '../support/test-db'
+import { resetTestDatabase, shouldSkipDashboardIntegrationSuite } from '../support/test-db'
 import { withRollbackTransaction } from '../support/transaction'
 
-describe('documents queries (integration)', () => {
+const describeDbIntegration = shouldSkipDashboardIntegrationSuite() ? describe.skip : describe
+
+describeDbIntegration('documents queries (integration)', () => {
   let sourceIdMetadataId: string
   let duplicateTagId: string
   let restrictedAccessLevelId: string

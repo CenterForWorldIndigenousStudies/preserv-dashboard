@@ -8,10 +8,12 @@ vi.mock('@root/auth', () => ({
   getDashboardSession: () => Promise.resolve({ user: { email: 'test@example.com' } }),
 }))
 
-import { resetTestDatabase } from '../support/test-db'
+import { resetTestDatabase, shouldSkipDashboardIntegrationSuite } from '../support/test-db'
 import { withRollbackTransaction } from '../support/transaction'
 
-describe('deleteTag (integration)', () => {
+const describeDbIntegration = shouldSkipDashboardIntegrationSuite() ? describe.skip : describe
+
+describeDbIntegration('deleteTag (integration)', () => {
   beforeAll(async () => {
     await resetTestDatabase()
     await db.$connect()

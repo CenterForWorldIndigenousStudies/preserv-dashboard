@@ -23,9 +23,14 @@ export interface NormalizePassState {
   subSelection: NormalizePassSubSelection
 }
 
+export interface MetadataExtractionConfig {
+  mode: 'direct' | 'openai_batch'
+}
+
 export interface PipelineSelectionDraft {
   profileId: ProfileId
   mode: 'preset' | 'custom'
+  metadataExtraction: MetadataExtractionConfig
   steps: {
     ingester: true
     normalizePass1: NormalizePassState
@@ -56,6 +61,7 @@ export interface PipelineExecutionStep {
 export interface PipelineConfig {
   profileId: ProfileId
   mode: 'preset' | 'custom'
+  metadataExtraction: MetadataExtractionConfig
   executionPlan: PipelineExecutionStep[]
 }
 
@@ -151,6 +157,17 @@ function parseExecutionPlan(value: unknown): PipelineExecutionStep[] {
   })
 }
 
+function parseMetadataExtractionConfig(value: unknown): MetadataExtractionConfig {
+  if (typeof value !== 'object' || value === null) {
+    return { mode: 'direct' }
+  }
+
+  const record = value as Record<string, unknown>
+  return {
+    mode: record.mode === 'openai_batch' ? 'openai_batch' : 'direct',
+  }
+}
+
 export function parsePipelineConfig(value: unknown): PipelineConfig | null {
   if (typeof value !== 'object' || value === null) {
     return null
@@ -169,6 +186,7 @@ export function parsePipelineConfig(value: unknown): PipelineConfig | null {
   return {
     profileId: record.profileId as ProfileId,
     mode: record.mode === 'custom' ? 'custom' : 'preset',
+    metadataExtraction: parseMetadataExtractionConfig(record.metadataExtraction),
     executionPlan: executionPlan.sort((left, right) => left.order - right.order),
   }
 }
@@ -214,6 +232,9 @@ export function expandPresetToDraft(profileId: ProfileId): PipelineSelectionDraf
   return {
     profileId,
     mode: profileId === 'custom' ? 'custom' : 'preset',
+    metadataExtraction: {
+      mode: 'direct',
+    },
     steps: {
       ingester: true,
       normalizePass1: {
@@ -403,6 +424,9 @@ export function draftToPipelineConfig(draft: PipelineSelectionDraft): PipelineCo
   return {
     profileId: draft.profileId,
     mode: draft.mode,
+    metadataExtraction: {
+      mode: draft.metadataExtraction.mode,
+    },
     executionPlan: plan,
   }
 }

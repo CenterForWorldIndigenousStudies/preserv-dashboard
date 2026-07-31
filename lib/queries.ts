@@ -14,6 +14,7 @@ import {
 import { REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES, REVIEW_QUEUE_SORT_FIELDS } from '@constants/reviewQueue'
 import { db } from '@lib/db'
 import { createEditHistoryEntry } from '@lib/editHistory'
+import { buildNameHash } from '@lib/tagHash'
 import { parseMetadataValue } from '@lib/metadata'
 import {
   Prisma,
@@ -21,7 +22,6 @@ import {
   type document_quality_validation_status as DocumentQualityValidationStatus,
 } from '@lib/prisma/generated/client'
 import {
-  buildNameHash,
   getProtectedTagDeletionMessage,
   getTagSearchCandidateLimit,
   isProtectedTagName,

@@ -3,10 +3,12 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { applyExclusionReviewDecision } from '@lib/exclusionReviewQueries'
 import { db } from '@lib/db'
 import type { Prisma } from '@lib/prisma/generated/client'
-import { resetTestDatabase } from '../support/test-db'
+import { resetTestDatabase, shouldSkipDashboardIntegrationSuite } from '../support/test-db'
 import { withRollbackTransaction } from '../support/transaction'
 
-describe('exclusion review queries (integration)', () => {
+const describeDbIntegration = shouldSkipDashboardIntegrationSuite() ? describe.skip : describe
+
+describeDbIntegration('exclusion review queries (integration)', () => {
   beforeAll(async () => {
     process.env.EXCLUSION_REVIEW_ROOT_FOLDER_ID = 'root-folder'
     await resetTestDatabase()

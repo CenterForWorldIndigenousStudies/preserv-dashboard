@@ -2,10 +2,12 @@ import type { Prisma } from '@lib/prisma/generated/client'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { db } from '@lib/db'
 import { scoreTags, type TagSearchResult } from '@lib/tagUtils'
-import { resetTestDatabase } from '../support/test-db'
+import { resetTestDatabase, shouldSkipDashboardIntegrationSuite } from '../support/test-db'
 import { withRollbackTransaction } from '../support/transaction'
 
-describe('tag search (integration)', () => {
+const describeDbIntegration = shouldSkipDashboardIntegrationSuite() ? describe.skip : describe
+
+describeDbIntegration('tag search (integration)', () => {
   beforeAll(async () => {
     await resetTestDatabase()
     await db.$connect()

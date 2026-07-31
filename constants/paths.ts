@@ -52,6 +52,10 @@ export const PROCESS_PATH = `${API_PATH}/process` as const
 export const PROCESS_EVENTS_PATH = `${PROCESS_PATH}/events` as const
 export const PROCESS_FOLDERS_PATH = `${PROCESS_PATH}/folders` as const
 export const PROCESS_START_PATH = `${PROCESS_PATH}/start` as const
+export const METADATA_EXTRACTOR_OPENAI_BATCH_STATUS_PATH =
+  `${PROCESS_PATH}/metadata-extractor/openai-batch-status` as const
+export const METADATA_EXTRACTOR_RUN_WAVE_TWO_PATH =
+  `${PROCESS_PATH}/metadata-extractor/run-wave-two` as const
 
 export const PROCESS_DOCUMENTS_PATH = `/process-documents` as const
 

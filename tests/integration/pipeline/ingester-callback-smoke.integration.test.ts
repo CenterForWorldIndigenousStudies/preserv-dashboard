@@ -10,7 +10,7 @@ vi.mock('@root/auth', () => ({
 
 import { POST as processStartRoute } from '@api/process/start/route'
 import { POST as ingesterCallbackRoute } from '@api/pipeline/ingester/callback/route'
-import { resetTestDatabase } from '../support/test-db'
+import { resetTestDatabase, shouldSkipDashboardIntegrationSuite } from '../support/test-db'
 import { DATA_INGESTER_CALLBACK_PATH, DOCUMENT_SPLITTER_CALLBACK_PATH, PROCESS_START_PATH } from '@constants/paths'
 
 function toRequestUrl(value: unknown): string {
@@ -25,11 +25,16 @@ function toRequestUrl(value: unknown): string {
   throw new Error('Expected fetch to be called with a URL or string target.')
 }
 
-describe('ingester callback smoke (integration)', () => {
+const describeDbIntegration = shouldSkipDashboardIntegrationSuite() ? describe.skip : describe
+
+describeDbIntegration('ingester callback smoke (integration)', () => {
   const batchId = 'batch-smoke-ingester-callback-0001'
   const pipelineConfig = {
     profileId: 'custom',
     mode: 'custom' as const,
+    metadataExtraction: {
+      mode: 'direct' as const,
+    },
     executionPlan: [
       {
         id: 'step-ingester',

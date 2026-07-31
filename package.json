@@ -1,6 +1,6 @@
 {
   "name": "cwis-preservation-dashboard",
-  "version": "0.2.70",
+  "version": "0.2.71",
   "private": true,
   "scripts": {
     "build": "run-s db:prisma:generate build:next",
@@ -10,7 +10,7 @@
     "db:prisma:pull": "prisma db pull --schema=./lib/prisma/schema.prisma --force",
     "db:prisma:studio": "prisma studio",
     "dev": "run-p storybook dev:next",
-    "dev:next": "next dev",
+    "dev:next": "next dev --webpack",
     "format:check": "prettier --check .",
     "format:fix": "prettier --write .",
     "lint": "run-p lint:project lint:markdown",

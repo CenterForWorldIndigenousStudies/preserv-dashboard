@@ -12,10 +12,12 @@ import {
   getDocumentsNotInCollection,
   getDocumentFilterOptions,
 } from '@lib/queries'
-import { resetTestDatabase } from '../support/test-db'
+import { resetTestDatabase, shouldSkipDashboardIntegrationSuite } from '../support/test-db'
 import { withRollbackTransaction } from '../support/transaction'
 
-describe('collection queries (integration)', () => {
+const describeDbIntegration = shouldSkipDashboardIntegrationSuite() ? describe.skip : describe
+
+describeDbIntegration('collection queries (integration)', () => {
   beforeAll(async () => {
     await resetTestDatabase()
     await db.$connect()

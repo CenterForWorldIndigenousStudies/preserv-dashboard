@@ -48,16 +48,26 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
+    const currentBatch = await getProcessBatchStatus(batchId)
+    if (!currentBatch) {
+      throw new Error(`Batch ${batchId} was not found before recording metadata-extractor callback.`)
+    }
+    const isOpenAIBatchMode =
+      currentBatch.metadataExtractor?.mode === 'openai_batch' ||
+      currentBatch.pipelineConfig?.metadataExtraction.mode === 'openai_batch'
+
     const completedAt = new Date().toISOString()
     const receivedAt = Math.floor(Date.now() / 1000)
-    await recordMetadataExtractorCompletion(batchId, {
-      requestId,
-      initiatedAt: completedAt,
-      completedAt,
-      processedCount: parseCount(body.processed_count),
-      extractedCount: parseCount(body.extracted_count),
-      failedCount: parseCount(body.failed_count),
-    })
+    if (!isOpenAIBatchMode) {
+      await recordMetadataExtractorCompletion(batchId, {
+        requestId,
+        initiatedAt: completedAt,
+        completedAt,
+        processedCount: parseCount(body.processed_count),
+        extractedCount: parseCount(body.extracted_count),
+        failedCount: parseCount(body.failed_count),
+      })
+    }
     await markProcessStageCallbackReceived(batchId, 'metadata_extractor', receivedAt)
     logEvent('info', 'metadata_extractor_callback_received', {
       batchId,

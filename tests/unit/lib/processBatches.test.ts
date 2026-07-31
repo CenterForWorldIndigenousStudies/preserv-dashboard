@@ -236,6 +236,85 @@ describe('processBatches', () => {
     expect(batch?.metadataExtractor?.processedCount).toBe(4)
   })
 
+  it('parses metadata extractor openai batch wave summaries from processing details', async () => {
+    mockFindUnique.mockResolvedValue(
+      buildBatchRow({
+        pipeline: {
+          requested_stages: ['metadata-extraction'],
+          config: {
+            profileId: 'custom',
+            mode: 'custom',
+            metadataExtraction: {
+              mode: 'openai_batch',
+            },
+            executionPlan: [
+              {
+                id: 'step-ingester',
+                stepId: 'ingester',
+                service: 'ingester',
+                label: 'Ingest',
+                order: 0,
+                enabled: true,
+              },
+              {
+                id: 'step-metadata-extraction',
+                stepId: 'metadata-extraction',
+                service: 'metadata-extraction',
+                label: 'Metadata Extraction',
+                order: 1,
+                enabled: true,
+              },
+            ],
+          },
+        },
+        metadata_extractor: {
+          status: 'in_progress',
+          mode: 'openai_batch',
+          openai_batch: {
+            wave_1: {
+              status: 'submitted',
+              openai_batch_id: 'provider-batch-1',
+              submitted_at: '2026-07-29T12:01:00.000Z',
+              succeeded_count: 0,
+              failed_count: 0,
+            },
+            wave_2: {
+              status: 'not_started',
+              processed_count: 0,
+              succeeded_count: 0,
+              failed_count: 0,
+            },
+          },
+        },
+      }),
+    )
+
+    const batch = await getProcessBatchStatus('batch-1')
+    const extractor = batch?.metadataExtractor as (typeof batch.metadataExtractor & {
+      mode?: string | null
+      openaiBatchWave1?: {
+        status: string | null
+        openaiBatchId: string | null
+        submittedAt: string | null
+      } | null
+      openaiBatchWave2?: {
+        status: string | null
+        processedCount: number
+      } | null
+    }) | null
+
+    expect(extractor?.mode).toBe('openai_batch')
+    expect(extractor?.openaiBatchWave1).toEqual(
+      expect.objectContaining({
+        status: 'submitted',
+        openaiBatchId: 'provider-batch-1',
+        submittedAt: '2026-07-29T12:01:00.000Z',
+      }),
+    )
+    expect(extractor?.openaiBatchWave2?.status).toBe('not_started')
+    expect(extractor?.openaiBatchWave2?.processedCount).toBe(0)
+  })
+
   it('parses metadata validator details from processing details', async () => {
     mockFindUnique.mockResolvedValue(
       buildBatchRow({

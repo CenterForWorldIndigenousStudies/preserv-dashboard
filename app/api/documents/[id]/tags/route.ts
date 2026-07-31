@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Prisma } from '@lib/prisma/generated/client'
 import { createEditHistoryEntry } from '@lib/editHistory'
 import { db } from '@lib/db'
-import { buildNameHash, getProtectedTagDeletionMessage, isProtectedTagName, normalizeTagName } from '@lib/tagUtils'
+import { buildNameHash } from '@lib/tagHash'
+import { getProtectedTagDeletionMessage, isProtectedTagName, normalizeTagName } from '@lib/tagUtils'
 
 interface RouteContext {
   params: Promise<{

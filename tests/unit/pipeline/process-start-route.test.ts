@@ -127,6 +127,9 @@ describe('process start route', () => {
     const pipelineConfig = {
       profileId: 'custom',
       mode: 'custom',
+      metadataExtraction: {
+        mode: 'direct',
+      },
       executionPlan: [
         {
           id: 'step-ingester',

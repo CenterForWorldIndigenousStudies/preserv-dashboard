@@ -1,5 +1,11 @@
 import { renderToStaticMarkup } from 'react-dom/server'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    refresh: vi.fn(),
+  }),
+}))
 
 import ThemeProvider from '@components/ThemeProvider'
 import { ProcessBatchStatusCard } from '@molecules/ProcessBatchStatusCard'
@@ -50,6 +56,26 @@ describe('ProcessBatchStatusCard', () => {
 
     expect(markup).toContain('Metadata Extractor')
     expect(markup).toContain('pending')
+  })
+
+  it('keeps the OpenAI batch status action unavailable before wave one submission exists', () => {
+    const markup = renderToStaticMarkup(
+      <ThemeProvider>
+        <ProcessBatchStatusCard
+          batch={buildBatchStatus({
+            pipelineConfig: {
+              profileId: 'custom',
+              mode: 'custom',
+              metadataExtraction: { mode: 'openai_batch' },
+              executionPlan: [],
+            },
+          })}
+        />
+      </ThemeProvider>,
+    )
+
+    expect(markup).toContain('Check OpenAI batch status becomes available after wave 1 has been submitted.')
+    expect(markup).toContain('Run wave 2 becomes available after wave 1 has been imported.')
   })
 
   it('shows metadata validator details and validator-specific metrics', () => {
