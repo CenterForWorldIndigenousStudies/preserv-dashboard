@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { logEvent } from '@lib/observability'
 import { parseBearerToken, parsePipelineCallbackBody } from '@lib/pipelineCallbacks'
+import { shouldTriggerFedoraIngester, triggerFedoraIngester } from '@lib/pipelineTriggers'
 import {
+  getProcessBatchStatus,
   markProcessStageCallbackReceived,
   recordRightsDeterminatorCompletion,
 } from '@lib/processBatches'
@@ -65,6 +67,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       status,
       errorMessage: errorMessage || null,
     })
+    const batch = await getProcessBatchStatus(batchId)
+    if (batch && shouldTriggerFedoraIngester(batch)) {
+      await triggerFedoraIngester(batch)
+    }
     return new NextResponse(null, { status: 204 })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to record rights-determinator callback.'

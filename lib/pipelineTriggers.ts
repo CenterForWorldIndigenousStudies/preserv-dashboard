@@ -20,6 +20,7 @@ export {
   triggerOcrProcessor,
   triggerPageRotator,
   triggerRightsDeterminator,
+  triggerFedoraIngester,
 } from '@lib/pipelineTriggerRequests'
 import type { PipelineExecutionStep } from '@lib/pipelineConfig'
 import type { ProcessBatchStatus } from 'types/pipelineContracts'
@@ -87,6 +88,11 @@ export function shouldTriggerMetadataValidator(batch: ProcessBatchStatus): boole
 export function shouldTriggerRightsDeterminator(batch: ProcessBatchStatus): boolean {
   getPipelineConfigForBatch(batch)
   return isNextEligibleStep(batch, RIGHTS_DETERMINATOR_STAGE)
+}
+
+export function shouldTriggerFedoraIngester(batch: ProcessBatchStatus): boolean {
+  getPipelineConfigForBatch(batch)
+  return isNextEligibleStep(batch, 'fedora-ingester')
 }
 
 export function shouldCloseProcessStream(batch: ProcessBatchStatus): boolean {

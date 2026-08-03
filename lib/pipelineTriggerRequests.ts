@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 
 import {
   CONTENT_DEDUP_CALLBACK_PATH,
+  FEDORA_INGESTER_CALLBACK_PATH,
   DOCUMENT_SPLITTER_CALLBACK_PATH,
   METADATA_EXTRACTOR_CALLBACK_PATH,
   METADATA_VALIDATOR_CALLBACK_PATH,
@@ -22,6 +23,7 @@ type TriggerConfig = {
     | 'metadata_extractor'
     | 'metadata_validator'
     | 'rights_determinator'
+    | 'fedora_ingester'
   endpointPath: string
   callbackPath: string
 }
@@ -190,5 +192,13 @@ export async function triggerRightsDeterminator(batch: ProcessBatchStatus): Prom
     serviceName: 'rights_determinator',
     callbackPath: RIGHTS_DETERMINATOR_CALLBACK_PATH,
     endpointPath: '/rights-determinator',
+  })
+}
+
+export async function triggerFedoraIngester(batch: ProcessBatchStatus): Promise<void> {
+  await triggerPipelineService(batch, {
+    serviceName: 'fedora_ingester',
+    callbackPath: FEDORA_INGESTER_CALLBACK_PATH,
+    endpointPath: '/fedora-ingester',
   })
 }

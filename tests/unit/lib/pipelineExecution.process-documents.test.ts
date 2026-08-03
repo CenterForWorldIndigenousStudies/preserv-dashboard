@@ -4,6 +4,7 @@ import {
   getExecutionStepRuntimeStatus,
   getNextEligibleExecutionStep,
   getOrchestratedExecutionPlan,
+  isPipelineBatchTerminal,
   type PipelineStepRuntimeStatus,
 } from '@lib/pipelineExecution'
 import type { PipelineConfig, PipelineExecutionStep } from '@lib/pipelineConfig'
@@ -179,6 +180,13 @@ function buildBatchStatus(overrides: Partial<ProcessBatchStatus> = {}): ProcessB
 }
 
 describe('pipelineExecution process-documents behavior', () => {
+  test('keeps an active rollback batch live until rollback reaches a terminal state', () => {
+    const batch = buildBatchStatus({ rollbackStatus: 'reverting' })
+
+    expect(isPipelineBatchTerminal(batch)).toBe(false)
+    expect(isPipelineBatchTerminal({ ...batch, rollbackStatus: 'failed', lifecycleStatus: 'rollback_failed' })).toBe(true)
+  })
+
   test('returns rotate pass 2 as next eligible step after split pass 2 completes', () => {
     const batch = buildBatchStatus({
       documentSplitter: buildStageStatus({

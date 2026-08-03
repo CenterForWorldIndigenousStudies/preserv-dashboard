@@ -96,6 +96,7 @@ export interface RawProcessBatchDetails {
   metadata_extractor?: RawProcessStageDetails | null
   metadata_validator?: RawProcessStageDetails | null
   rights_determinator?: RawProcessStageDetails | null
+  fedora_ingester?: RawProcessStageDetails | null
 }
 
 export interface PipelineCallbackBody {
@@ -114,6 +115,7 @@ export type CallbackStageKey =
   | 'metadata_extractor'
   | 'metadata_validator'
   | 'rights_determinator'
+  | 'fedora_ingester'
 
 export interface NormalizedProcessStageStatus {
   status: string | null
@@ -190,6 +192,7 @@ export interface NormalizedProcessBatchDetails {
   metadataExtractor: NormalizedProcessStageStatus | null
   metadataValidator: NormalizedProcessStageStatus | null
   rightsDeterminator: NormalizedProcessStageStatus | null
+  fedoraIngester?: NormalizedProcessStageStatus | null
 }
 
 export type ProcessStageStatus = NormalizedProcessStageStatus
@@ -199,6 +202,19 @@ export interface ProcessBatchStatus extends NormalizedProcessBatchDetails {
   batchName: string | null
   startedBy: string | null
   createdAt: string | null
+  lifecycleStatus?: string | null
+  publicationStatus?: string | null
+  publicationTarget?: string | null
+  manualEditAfterStart?: boolean
+  rollbackStatus?: string | null
+  rollbackFailure?: string | null
+  rollbackCounts?: {
+    restored: number
+    deleted: number
+    cancelled: number
+    conflicts: number
+    failed: number
+  } | null
 }
 
 export type PassStagePrefix = 'document_splitter' | 'page_rotator'

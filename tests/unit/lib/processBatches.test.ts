@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-const { mockFindUnique, mockUpdate } = vi.hoisted(() => ({
+const { mockEditHistoryFindFirst, mockFindUnique, mockUpdate } = vi.hoisted(() => ({
+  mockEditHistoryFindFirst: vi.fn(),
   mockFindUnique: vi.fn(),
   mockUpdate: vi.fn(),
 }))
@@ -10,6 +11,9 @@ vi.mock('@lib/db', () => ({
     batches: {
       findUnique: mockFindUnique,
       update: mockUpdate,
+    },
+    edit_history: {
+      findFirst: mockEditHistoryFindFirst,
     },
   },
 }))
@@ -50,6 +54,30 @@ function getUpdatedProcessingDetails(): Record<string, unknown> {
 describe('processBatches', () => {
   afterEach(() => {
     vi.clearAllMocks()
+  })
+
+  it('reports a post-start Dashboard edit as rollback ineligibility', async () => {
+    const startedAt = new Date('2026-05-29T04:00:00.000Z')
+    mockFindUnique.mockResolvedValue({
+      ...buildBatchRow({ data_ingester: { status: 'completed' } }),
+      started_at: startedAt,
+      lifecycle_status: 'completed',
+      publication_status: 'not_started',
+      publication_target: 'fedora',
+      batch_rollbacks: null,
+    })
+    mockEditHistoryFindFirst.mockResolvedValue({ id: 'edit-1' })
+
+    const batch = await getProcessBatchStatus('batch-1')
+
+    expect(batch?.manualEditAfterStart).toBe(true)
+    expect(mockEditHistoryFindFirst).toHaveBeenCalledWith({
+      where: {
+        editor_email: { not: null },
+        edited_at: { gt: startedAt },
+      },
+      select: { id: true },
+    })
   })
 
   function queueCurrentBatchRow(): void {

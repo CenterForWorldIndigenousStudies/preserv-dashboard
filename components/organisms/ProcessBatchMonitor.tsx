@@ -6,9 +6,10 @@ import type { ProcessBatchStatus } from 'types/pipelineContracts'
 
 interface ProcessBatchMonitorProps {
   batches: ProcessBatchStatus[]
+  onRollbackRequested?: () => void
 }
 
-export function ProcessBatchMonitor({ batches }: ProcessBatchMonitorProps): ReactElement {
+export function ProcessBatchMonitor({ batches, onRollbackRequested }: ProcessBatchMonitorProps): ReactElement {
   if (batches.length === 0) {
     return (
       <Box
@@ -34,7 +35,11 @@ export function ProcessBatchMonitor({ batches }: ProcessBatchMonitorProps): Reac
   return (
     <Stack spacing={3}>
       {batches.map((batch) => (
-        <ProcessBatchStatusCard key={batch.batchId} batch={batch} />
+        <ProcessBatchStatusCard
+          key={batch.batchId}
+          batch={batch}
+          onRollbackRequested={onRollbackRequested}
+        />
       ))}
     </Stack>
   )

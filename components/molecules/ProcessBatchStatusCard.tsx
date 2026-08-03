@@ -3,6 +3,7 @@ import { Box, Paper, Stack, Typography } from '@mui/material'
 
 import { PipelineStageStatusBadge } from '@atoms/Badges/PipelineStageStatusBadge'
 import { MetadataExtractorOpenAIBatchActions } from '@molecules/MetadataExtractorOpenAIBatchActions'
+import { BatchRollbackControl } from '@molecules/BatchRollbackControl'
 import { PipelineTimelineCard } from '@molecules/PipelineTimelineCard'
 import { ProcessBatchSummaryHeader } from '@molecules/ProcessBatchSummaryHeader'
 import { ProcessStageDetailList } from '@molecules/ProcessStageDetailList'
@@ -12,6 +13,7 @@ import type { ProcessBatchStatus, ProcessStageStatus } from 'types/pipelineContr
 
 interface ProcessBatchStatusCardProps {
   batch: ProcessBatchStatus
+  onRollbackRequested?: () => void
 }
 
 function buildPendingStage(): ProcessStageStatus {
@@ -71,7 +73,9 @@ function shouldShowPendingMetadataExtractor(batch: ProcessBatchStatus): boolean 
     return true
   }
 
-  return batch.pipelineConfig?.executionPlan.some((step) => step.enabled && step.service === 'metadata-extraction') ?? false
+  return (
+    batch.pipelineConfig?.executionPlan.some((step) => step.enabled && step.service === 'metadata-extraction') ?? false
+  )
 }
 
 function shouldShowPendingOcrProcessor(batch: ProcessBatchStatus): boolean {
@@ -95,7 +99,9 @@ function shouldShowPendingMetadataValidator(batch: ProcessBatchStatus): boolean 
     return true
   }
 
-  return batch.pipelineConfig?.executionPlan.some((step) => step.enabled && step.service === 'metadata-validation') ?? false
+  return (
+    batch.pipelineConfig?.executionPlan.some((step) => step.enabled && step.service === 'metadata-validation') ?? false
+  )
 }
 
 function shouldShowPendingRightsDeterminator(batch: ProcessBatchStatus): boolean {
@@ -107,7 +113,9 @@ function shouldShowPendingRightsDeterminator(batch: ProcessBatchStatus): boolean
     return true
   }
 
-  return batch.pipelineConfig?.executionPlan.some((step) => step.enabled && step.service === 'rights-determinator') ?? false
+  return (
+    batch.pipelineConfig?.executionPlan.some((step) => step.enabled && step.service === 'rights-determinator') ?? false
+  )
 }
 
 function formatDateTime(value: string | null): string {
@@ -187,16 +195,35 @@ function StageCard({
   )
 }
 
-export function ProcessBatchStatusCard({ batch }: ProcessBatchStatusCardProps): ReactElement {
-  const ocrProcessorStage = batch.ocrProcessor ?? (shouldShowPendingOcrProcessor(batch) ? buildPendingStage() : null)
-  const metadataExtractorStage = batch.metadataExtractor ?? (shouldShowPendingMetadataExtractor(batch) ? buildPendingStage() : null)
-  const metadataValidatorStage = batch.metadataValidator ?? (shouldShowPendingMetadataValidator(batch) ? buildPendingStage() : null)
-  const rightsDeterminatorStage = batch.rightsDeterminator ?? (shouldShowPendingRightsDeterminator(batch) ? buildPendingStage() : null)
-  const showMetadataExtractorOpenAIBatchActions =
-    (metadataExtractorStage?.mode === 'openai_batch' ||
-      batch.pipelineConfig?.metadataExtraction.mode === 'openai_batch') &&
-    metadataExtractorStage !== null
+function MetadataExtractorStageCard({
+  batch,
+  stage,
+}: {
+  batch: ProcessBatchStatus
+  stage: ProcessStageStatus | null
+}): ReactElement | null {
+  const showOpenAIBatchActions =
+    (stage?.mode === 'openai_batch' || batch.pipelineConfig?.metadataExtraction.mode === 'openai_batch') &&
+    stage !== null
 
+  return (
+    <StageCard
+      label="Metadata Extractor"
+      stage={stage}
+      batchId={batch.batchId}
+      showOpenAIBatchActions={showOpenAIBatchActions}
+    />
+  )
+}
+
+export function ProcessBatchStatusCard({ batch, onRollbackRequested }: ProcessBatchStatusCardProps): ReactElement {
+  const ocrProcessorStage = batch.ocrProcessor ?? (shouldShowPendingOcrProcessor(batch) ? buildPendingStage() : null)
+  const metadataExtractorStage =
+    batch.metadataExtractor ?? (shouldShowPendingMetadataExtractor(batch) ? buildPendingStage() : null)
+  const metadataValidatorStage =
+    batch.metadataValidator ?? (shouldShowPendingMetadataValidator(batch) ? buildPendingStage() : null)
+  const rightsDeterminatorStage =
+    batch.rightsDeterminator ?? (shouldShowPendingRightsDeterminator(batch) ? buildPendingStage() : null)
   return (
     <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, p: 3 }}>
       <Stack spacing={2.5}>
@@ -211,6 +238,30 @@ export function ProcessBatchStatusCard({ batch }: ProcessBatchStatusCardProps): 
           label="Requested Stages"
           value={batch.pipelineRequestedStages.length > 0 ? batch.pipelineRequestedStages.join(', ') : 'Ingest only'}
         />
+        <DetailRow label="Lifecycle" value={batch.lifecycleStatus ?? 'unknown'} />
+        <DetailRow label="Publication" value={batch.publicationStatus ?? 'unknown'} />
+        {batch.rollbackStatus ? (
+          <DetailRow
+            label="Rollback"
+            value={[
+              batch.rollbackStatus,
+              batch.rollbackCounts
+                ? `(deleted ${batch.rollbackCounts.deleted}, restored ${batch.rollbackCounts.restored}, cancelled ${batch.rollbackCounts.cancelled}, failed ${batch.rollbackCounts.failed}, conflicts ${batch.rollbackCounts.conflicts})`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(' ')}
+          />
+        ) : null}
+        {batch.rollbackFailure ? <DetailRow label="Rollback failure" value={batch.rollbackFailure} /> : null}
+        <BatchRollbackControl
+          batchId={batch.batchId}
+          lifecycleStatus={batch.lifecycleStatus}
+          publicationStatus={batch.publicationStatus}
+          manualEditAfterStart={batch.manualEditAfterStart}
+          rollbackStatus={batch.rollbackStatus}
+          onRollbackRequested={onRollbackRequested}
+        />
 
         <PipelineTimelineCard batch={batch} />
 
@@ -219,14 +270,10 @@ export function ProcessBatchStatusCard({ batch }: ProcessBatchStatusCardProps): 
         <StageCard label="Page Rotator" stage={batch.pageRotator} />
         <StageCard label="OCR Processor" stage={ocrProcessorStage} />
         <StageCard label="Content Dedup" stage={batch.contentDedup} />
-        <StageCard
-          label="Metadata Extractor"
-          stage={metadataExtractorStage}
-          batchId={batch.batchId}
-          showOpenAIBatchActions={showMetadataExtractorOpenAIBatchActions}
-        />
+        <MetadataExtractorStageCard batch={batch} stage={metadataExtractorStage} />
         <StageCard label="Metadata Validator" stage={metadataValidatorStage} />
         <StageCard label="Rights Determinator" stage={rightsDeterminatorStage} />
+        <StageCard label="Fedora Ingester" stage={batch.fedoraIngester ?? null} />
       </Stack>
     </Paper>
   )

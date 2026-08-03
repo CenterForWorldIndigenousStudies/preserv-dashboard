@@ -32,6 +32,49 @@ function buildBatchStatus(overrides: Partial<ProcessBatchStatus> = {}): ProcessB
 }
 
 describe('ProcessBatchStatusCard', () => {
+  it('explains when a post-start Dashboard edit blocks rollback', () => {
+    const markup = renderToStaticMarkup(
+      <ThemeProvider>
+        <ProcessBatchStatusCard
+          batch={buildBatchStatus({
+            lifecycleStatus: 'completed',
+            publicationStatus: 'not_started',
+            manualEditAfterStart: true,
+          })}
+        />
+      </ThemeProvider>,
+    )
+
+    expect(markup).toContain('Rollback unavailable: a Dashboard edit was made after the batch started.')
+    expect(markup).not.toContain('Undo batch')
+  })
+
+  it('shows rollback failure details', () => {
+    const markup = renderToStaticMarkup(
+      <ThemeProvider>
+        <ProcessBatchStatusCard
+          batch={buildBatchStatus({
+            lifecycleStatus: 'rollback_failed',
+            publicationStatus: 'not_started',
+            rollbackStatus: 'failed',
+            rollbackFailure: 'Tag is still referenced',
+            rollbackCounts: {
+              deleted: 8,
+              restored: 7,
+              cancelled: 0,
+              conflicts: 15,
+              failed: 0,
+            },
+          })}
+        />
+      </ThemeProvider>,
+    )
+
+    expect(markup).toContain('Rollback:</span> failed')
+    expect(markup).toContain('Rollback failure:</span> Tag is still referenced')
+    expect(markup).toContain('Retry rollback')
+  })
+
   it('shows ocr processor service details when ocr was requested but has not started yet', () => {
     const markup = renderToStaticMarkup(
       <ThemeProvider>

@@ -97,6 +97,9 @@ erDiagram
         timestamp completed_at
         timestamp last_processed
         varchar started_by
+        varchar lifecycle_status
+        varchar publication_status
+        varchar publication_target
     }
 
     pipeline_queue_items {
@@ -109,9 +112,88 @@ erDiagram
         timestamp queued_at
         timestamp claimed_at
         timestamp completed_at
+        timestamp cancelled_at
+        text cancel_reason
         varchar error_type
         text error_message
         json callback_delivery
+    }
+
+    batch_rollbacks {
+        varchar id PK, UK
+        varchar batch_id FK, UK
+        text original_batch_name
+        int reversion_number
+        varchar requested_by
+        text reason
+        varchar idempotency_key UK
+        varchar status
+        timestamp requested_at
+        timestamp started_at
+        timestamp completed_at
+        timestamp resolved_at
+        int restored_count
+        int deleted_count
+        int cancelled_count
+        int conflict_count
+        int failed_count
+        text last_failure
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    batch_mutations {
+        varchar id PK, UK
+        varchar batch_id FK
+        int execution_order
+        varchar rollback_id FK
+        varchar stage
+        int pass_number
+        varchar resource_type
+        varchar resource_id
+        varchar operation
+        json before_snapshot
+        varchar after_fingerprint
+        varchar rollback_action
+        varchar status
+        int attempts
+        timestamp planned_at
+        timestamp applied_at
+        timestamp rolled_back_at
+        text last_error
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    batch_external_operations {
+        varchar id PK, UK
+        varchar batch_id FK
+        varchar stage
+        varchar provider
+        varchar operation
+        varchar resource_type
+        varchar idempotency_key UK
+        json request
+        json external_ids
+        varchar status
+        int attempts
+        timestamp planned_at
+        timestamp started_at
+        timestamp applied_at
+        timestamp completed_at
+        timestamp next_recovery_at
+        text last_error
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    pipeline_worker_leases {
+        varchar id PK, UK
+        varchar active_batch_id FK
+        varchar lease_token
+        timestamp acquired_at
+        timestamp heartbeat_at
+        timestamp released_at
     }
 
     batch_to_batches_metadata {
@@ -265,6 +347,11 @@ erDiagram
     publishers ||--o{ document_to_publishers : "document_to_publishers"
     batches ||--o{ document_to_batches : "document_to_batches"
     batches ||--o{ batch_to_batches_metadata : "batch_metadata"
+    batches ||--o| batch_rollbacks : "rollback"
+    batches ||--o{ batch_mutations : "mutations"
+    batches ||--o{ batch_external_operations : "external work"
+    batches ||--o{ pipeline_worker_leases : "active_batch"
+    batch_rollbacks ||--o{ batch_mutations : "journal"
     metadata ||--o{ document_to_metadata : "document_to_metadata"
     batch_metadata ||--o{ batch_to_batches_metadata : "batch_metadata"
     tags ||--o{ document_to_tags : "document_to_tags"
@@ -318,6 +405,20 @@ erDiagram
 - `pipeline_queue_items.payload` stores the original accepted trigger payload used by the worker.
 - `pipeline_queue_items.callback_delivery` stores the callback delivery result recorded after worker
   completion.
+- `batches.lifecycle_status` is the durable batch workflow state. The rollback-eligible states
+  are pre-publication states; `publication_locked`, `published`, and `unknown` are not rollback
+  eligible.
+- `batches.publication_status` records the provider boundary independently from the workflow
+  state. `publication_target` identifies the configured provider, currently `fedora`.
+- `batch_rollbacks` retains the requested rollback, operator information, progress counts,
+  failures, retries, and explicit resolutions. There is at most one rollback record per batch.
+- `batch_mutations` is the rollback journal. It records database before-images and generated
+  Google Drive artifacts; it does not authorize modifying pre-existing source files.
+- `batch_external_operations` is the durable intent ledger for external work. It is written
+  before a Drive request, carries an idempotency key and recovery metadata, and remains available
+  when a worker dies before the resulting Drive ID can be attached to `batch_mutations`.
+- `pipeline_worker_leases` is a singleton durable coordination row. Its active batch lease keeps
+  later batches queued while the current batch drains or rolls back, including after worker restart.
 
 ## Index Highlights
 
@@ -331,8 +432,11 @@ erDiagram
 - `document_to_tags` supports both document-first and tag-first access patterns.
 - `collections` is indexed and unique on `tag_id`.
 - `pipeline_queue_items` is indexed on `stage`, `batch_id`, and `status`.
-- `drive_exclusion_review_items` is indexed for root-scoped parent, item-type, effective-ancestor,
-  and subtree-status access patterns.
+- `drive_exclusion_review_items` is indexed for root-scoped parent, item-type, effective-ancestor, and subtree-status access patterns.
+- `batch_rollbacks` is indexed on `batch_id` and `status`.
+- `batch_mutations` is indexed on batch execution order, rollback, and mutation status.
+  The durable `execution_order` is assigned within each batch so compensation does not depend on database timestamps, which may be truncated to whole seconds. It is unique within a batch.
+- `batch_external_operations` is indexed on batch/status and status/next recovery time so scheduled reconciliation does not poll the provider on every worker loop.
 - Association tables use composite unique constraints to prevent duplicate links.
 
 ## Meaningful Metadata
@@ -674,13 +778,16 @@ Core batch/process-run records.
 | `id_legacy` | `VARCHAR(255)` | Source-system batch identifier. Indexed. |
 | `name` | `TEXT` | Optional batch label. |
 | `name_hash` | `VARCHAR(64)` | Generated stored SHA-256 hash of normalized `name`. Unique when present. |
-| `processing_details` | `JSON` | Core processing details stored directly on the batch row. Non-null with default `{}`. |
+| `processing_details` | `JSON` | Core processing details on the batch row. Non-null with default `{}`. Rollback stores document-link cost at `rollback.document_cost_total` and its capture time at `rollback.document_cost_captured_at`. |
 | `created_at` | `TIMESTAMP` | Row creation time. |
 | `updated_at` | `TIMESTAMP` | Row update time. |
 | `started_at` | `TIMESTAMP` | Batch start time. |
 | `completed_at` | `TIMESTAMP` | Batch completion time. |
 | `last_processed` | `TIMESTAMP` | Last processing timestamp. |
 | `started_by` | `VARCHAR(255)` | Initiator name/process label. |
+| `lifecycle_status` | `VARCHAR(32)` | Durable workflow state, including `running`, `reverting`, `reverted`, and `completed`. |
+| `publication_status` | `VARCHAR(32)` | Publication boundary state: `not_started`, `publication_locked`, `published`, or `unknown`. |
+| `publication_target` | `VARCHAR(64)` | Provider identifier for the publication endpoint; currently `fedora`. |
 
 Query note: batch-specific metrics and registry-derived attributes often live in
 `batch_to_batches_metadata`, not as top-level columns here.
@@ -700,12 +807,83 @@ Durable queue entries for the combined pipeline server.
 | `queued_at` | `TIMESTAMP` | Time the queue item was created. |
 | `claimed_at` | `TIMESTAMP` | Time the worker claimed the queue item for execution. |
 | `completed_at` | `TIMESTAMP` | Time the queue item reached a terminal state. |
+| `cancelled_at` | `TIMESTAMP` | Time a queued item was cancelled during rollback. |
+| `cancel_reason` | `TEXT` | Operator or coordinator reason for cancellation. |
 | `error_type` | `VARCHAR(255)` | Exception type or failure category recorded on worker failure. |
 | `error_message` | `TEXT` | Failure detail recorded on worker failure. |
 | `callback_delivery` | `JSON` | Callback delivery result recorded after completion, including HTTP status and notification time when available. |
 
 Query note: this table intentionally has no foreign keys. It is a durable orchestration/control
 table for the combined pipeline worker rather than a lineage or metadata table.
+
+### batch_rollbacks
+
+Durable rollback operation records. The batch row, processing details, costs, rollback record,
+and mutation ledger remain historical; batch-created operational rows are purged after
+compensation succeeds. The retained batch is renamed with an
+`<original-name>-reverted-<reversion-number>` suffix.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `VARCHAR(36)` | Primary key. |
+| `batch_id` | `VARCHAR(36)` | Unique FK to `batches.id`; one rollback record per batch. |
+| `original_batch_name` | `TEXT` | Batch name before successful rollback renaming. |
+| `reversion_number` | `INT` | Monotonic suffix number for the original batch name. |
+| `requested_by` | `VARCHAR(255)` | Operator or calling application identity. |
+| `reason` | `TEXT` | Optional operator explanation. |
+| `idempotency_key` | `VARCHAR(255)` | Optional unique request key. |
+| `status` | `VARCHAR(32)` | Rollback operation state, including `requested`, `reverting`, `reverted`, and `failed`. |
+| `requested_at` / `started_at` / `completed_at` / `resolved_at` | `TIMESTAMP` | Rollback lifecycle timestamps. |
+| `restored_count` / `deleted_count` / `cancelled_count` / `conflict_count` / `failed_count` | `INT` | Counts for restored rows, purged rows/artifacts, cancelled queue items, conflicts, and failures. |
+| `last_failure` | `TEXT` | Latest failure or operator-resolution detail. |
+
+### batch_mutations
+
+Mutation journal for reversible database changes and batch-owned Google Drive artifacts. Created
+documents and related operational rows are purged during rollback; pre-existing rows are restored
+from before-images only when their after-value fingerprints still match.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `VARCHAR(36)` | Primary key. |
+| `batch_id` / `rollback_id` | `VARCHAR(36)` | Batch FK and optional rollback FK. |
+| `stage` / `pass_number` | `VARCHAR(64)` / `INT` | Execution context that caused the mutation. |
+| `resource_type` / `resource_id` | `VARCHAR(64)` / `VARCHAR(255)` | Mutated resource identity. |
+| `operation` | `VARCHAR(64)` | Insert, update, delete, create-file, or similar operation. |
+| `before_snapshot` | `JSON` | Database before-image where applicable. |
+| `after_fingerprint` | `VARCHAR(128)` | Fingerprint used for conflict-safe compensation. |
+| `rollback_action` | `VARCHAR(255)` | Inverse operation to execute. |
+| `status` | `VARCHAR(32)` | Journal state such as `planned`, `applied`, `rolled_back`, `conflict`, or `unknown`. |
+| `attempts` / timestamps / `last_error` | — | Retry and failure tracking. |
+
+### batch_external_operations
+
+Durable intents for external provider operations. An operation may remain unresolved after a
+process crash; recovery reconciles it by idempotency key before rollback is allowed to complete.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `VARCHAR(36)` | Primary key. |
+| `batch_id` | `VARCHAR(36)` | FK to `batches.id`. |
+| `stage` / `provider` / `operation` | `VARCHAR(64)` | Originating stage, provider, and operation type. |
+| `resource_type` | `VARCHAR(64)` | External resource category, such as `google_drive_file`. |
+| `idempotency_key` | `VARCHAR(255)` | Unique key reused after worker restart. |
+| `request` | `JSON` | Non-secret request metadata needed for reconciliation. |
+| `external_ids` | `JSON` | Provider IDs discovered or created by the operation. |
+| `status` | `VARCHAR(32)` | `planned`, `executing`, `applied`, `uncertain`, `failed`, or `compensated`. |
+| `attempts` / timestamps / `last_error` | — | Recovery and failure tracking. |
+| `next_recovery_at` | `TIMESTAMP` | Earliest time for the next provider reconciliation attempt; used for bounded backoff. |
+
+### pipeline_worker_leases
+
+Singleton durable lease that enforces one active batch across worker processes and restarts.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `VARCHAR(36)` | Singleton key, initialized as `pipeline-worker`. |
+| `active_batch_id` | `VARCHAR(36)` | Current batch holding the worker slot. |
+| `lease_token` | `VARCHAR(255)` | Token used for ownership and recovery checks. |
+| `acquired_at` / `heartbeat_at` / `released_at` | `TIMESTAMP` | Lease lifecycle and recovery timestamps. |
 
 ### batch_to_batches_metadata
 

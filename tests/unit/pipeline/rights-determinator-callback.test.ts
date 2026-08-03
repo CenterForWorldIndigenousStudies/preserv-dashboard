@@ -1,17 +1,22 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
-const { mockRecordRightsDeterminatorCompletion, mockMarkProcessStageCallbackReceived, mockLogEvent } = vi.hoisted(
-  () => ({
+const {
+  mockRecordRightsDeterminatorCompletion,
+  mockMarkProcessStageCallbackReceived,
+  mockGetProcessBatchStatus,
+  mockLogEvent,
+} = vi.hoisted(() => ({
     mockRecordRightsDeterminatorCompletion: vi.fn(),
     mockMarkProcessStageCallbackReceived: vi.fn(),
+    mockGetProcessBatchStatus: vi.fn(),
     mockLogEvent: vi.fn(),
-  }),
-)
+}))
 
 vi.mock('@lib/processBatches', () => ({
   recordRightsDeterminatorCompletion: mockRecordRightsDeterminatorCompletion,
   markProcessStageCallbackReceived: mockMarkProcessStageCallbackReceived,
+  getProcessBatchStatus: mockGetProcessBatchStatus,
 }))
 
 vi.mock('@lib/observability', () => ({
@@ -35,6 +40,7 @@ describe('rights-determinator callback route', () => {
     vi.setSystemTime(new Date('2026-07-02T21:00:00.000Z'))
     mockRecordRightsDeterminatorCompletion.mockResolvedValue(undefined)
     mockMarkProcessStageCallbackReceived.mockResolvedValue(undefined)
+    mockGetProcessBatchStatus.mockResolvedValue(null)
 
     const request = new NextRequest(`http://localhost${RIGHTS_DETERMINATOR_CALLBACK_PATH}`, {
       method: 'POST',

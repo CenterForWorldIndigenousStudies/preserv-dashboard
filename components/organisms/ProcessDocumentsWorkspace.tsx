@@ -21,6 +21,7 @@ import {
   pipelineConfigToRequestedStages,
   type PipelineSelectionDraft,
 } from '@lib/pipelineConfig'
+import { isPipelineBatchTerminal } from '@lib/pipelineExecution'
 import { ProcessBatchCreationWorkspace } from '@organisms/ProcessBatchCreationWorkspace'
 import { ProcessBatchMonitor } from '@organisms/ProcessBatchMonitor'
 import type { ProcessBatchStatus } from 'types/pipelineContracts'
@@ -85,6 +86,7 @@ export function ProcessDocumentsWorkspace({ initialBatches }: ProcessDocumentsWo
       return undefined
     }
 
+    const terminalBatchIds = new Set<string>()
     const eventSources = monitoredBatchIds.map((batchId) => {
       const eventSource = new EventSource(`${PROCESS_EVENTS_PATH}?batchId=${encodeURIComponent(batchId)}`)
 
@@ -92,6 +94,10 @@ export function ProcessDocumentsWorkspace({ initialBatches }: ProcessDocumentsWo
         const message = event as MessageEvent<string>
         const batch = JSON.parse(message.data) as ProcessBatchStatus
         setRecentBatches((current) => upsertBatchStatus(current, batch))
+        if (isPipelineBatchTerminal(batch)) {
+          terminalBatchIds.add(batchId)
+          eventSource.close()
+        }
       })
 
       eventSource.addEventListener('batch_missing', () => {
@@ -100,6 +106,9 @@ export function ProcessDocumentsWorkspace({ initialBatches }: ProcessDocumentsWo
       })
 
       eventSource.onerror = () => {
+        if (terminalBatchIds.has(batchId)) {
+          return
+        }
         setSubmitError('Live updates disconnected. Use Refresh Status to reload the latest batch state.')
         eventSource.close()
       }
@@ -336,7 +345,7 @@ export function ProcessDocumentsWorkspace({ initialBatches }: ProcessDocumentsWo
           </Box>
 
           <Box sx={{ mt: 3 }}>
-            <ProcessBatchMonitor batches={recentBatches} />
+            <ProcessBatchMonitor batches={recentBatches} onRollbackRequested={() => router.refresh()} />
           </Box>
         </CardContent>
       </Card>

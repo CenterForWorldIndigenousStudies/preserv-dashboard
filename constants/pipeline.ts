@@ -30,6 +30,7 @@ export const CONTENT_DEDUP_STAGE = 'content-dedup' as const
 export const METADATA_EXTRACTOR_STAGE = 'metadata-extraction' as const
 export const METADATA_VALIDATOR_STAGE = 'metadata-validation' as const
 export const RIGHTS_DETERMINATOR_STAGE = 'rights-determinator' as const
+export const FEDORA_INGESTER_STAGE = 'fedora-ingester' as const
 
 export const SUPPORTED_DOWNSTREAM_STAGES = [
   DOCUMENT_SPLITTER_STAGE,

@@ -301,6 +301,7 @@ export function normalizeProcessBatchDetails(details: RawProcessBatchDetails): N
     metadataExtractor: normalizeStage(details.metadata_extractor),
     metadataValidator: normalizeStage(details.metadata_validator),
     rightsDeterminator: normalizeStage(details.rights_determinator),
+    fedoraIngester: normalizeStage(details.fedora_ingester),
   }
 }
 
@@ -310,6 +311,7 @@ const DIRECT_STAGE_DETAIL_KEYS: Record<Exclude<CallbackStageKey, 'ingester' | 'd
   metadata_extractor: 'metadata_extractor',
   metadata_validator: 'metadata_validator',
   rights_determinator: 'rights_determinator',
+  fedora_ingester: 'fedora_ingester',
 }
 
 export function resolveStageDetailKey(details: RawProcessBatchDetails, stageKey: CallbackStageKey): string | null {

@@ -1,6 +1,7 @@
 import {
   CONTENT_DEDUP_STAGE,
   DOCUMENT_SPLITTER_STAGE,
+  FEDORA_INGESTER_STAGE,
   METADATA_EXTRACTOR_STAGE,
   METADATA_VALIDATOR_STAGE,
   OCR_PROCESSOR_STAGE,
@@ -24,6 +25,7 @@ const ORCHESTRATED_SERVICES = new Set<string>([
   METADATA_EXTRACTOR_STAGE,
   METADATA_VALIDATOR_STAGE,
   RIGHTS_DETERMINATOR_STAGE,
+  FEDORA_INGESTER_STAGE,
 ])
 
 const INGEST_ONLY_PIPELINE_CONFIG: PipelineConfig = {
@@ -80,6 +82,8 @@ function getStageForService(
       return batch.metadataValidator
     case RIGHTS_DETERMINATOR_STAGE:
       return batch.rightsDeterminator
+    case FEDORA_INGESTER_STAGE:
+      return batch.fedoraIngester ?? null
     default:
       return null
   }
@@ -158,6 +162,21 @@ export function areExecutionStepDependenciesSatisfied(
 }
 
 export function getNextEligibleExecutionStep(batch: ProcessBatchStatus): PipelineExecutionStep | null {
+  if (
+    [
+      'rollback_requested',
+      'draining',
+      'reverting',
+      'reverted',
+      'rollback_failed',
+      'publication_locked',
+      'completed',
+    ].includes(batch.lifecycleStatus ?? '') ||
+    ['publication_locked', 'published', 'unknown'].includes(batch.publicationStatus ?? '')
+  ) {
+    return null
+  }
+
   const executionPlan = getOrchestratedExecutionPlan(batch)
 
   for (const step of executionPlan) {
@@ -193,6 +212,18 @@ export function hasTerminalPipelineFailure(batch: ProcessBatchStatus): boolean {
 }
 
 export function isPipelineBatchTerminal(batch: ProcessBatchStatus): boolean {
+  if (['requested', 'draining', 'reverting'].includes(batch.rollbackStatus ?? '')) {
+    return false
+  }
+
+  if (
+    ['reverted', 'completed', 'rollback_failed'].includes(batch.lifecycleStatus ?? '') ||
+    batch.rollbackStatus === 'failed' ||
+    ['published', 'unknown'].includes(batch.publicationStatus ?? '')
+  ) {
+    return true
+  }
+
   const executionPlan = getOrchestratedExecutionPlan(batch)
   if (executionPlan.length === 0) {
     return false

@@ -15,7 +15,20 @@ type SelectedBatchFields = {
   name: string | null
   started_by: string | null
   created_at: Date | null
+  started_at: Date | null
   processing_details: string | null
+  lifecycle_status: string
+  publication_status: string
+  publication_target: string
+  batch_rollbacks: {
+    status: string
+    restored_count: number
+    deleted_count: number
+    cancelled_count: number
+    conflict_count: number
+    failed_count: number
+    last_failure: string | null
+  } | null
 }
 
 function normalizeText(value: string | null | undefined): string | null {
@@ -31,14 +44,47 @@ function toIsoString(value: Date | null): string | null {
   return value?.toISOString() ?? null
 }
 
-function toProcessBatchStatus(batch: SelectedBatchFields): ProcessBatchStatus {
+async function hasManualEditAfterStart(startedAt: Date | null): Promise<boolean> {
+  if (!startedAt) {
+    return false
+  }
+
+  const edit = await db.edit_history.findFirst({
+    where: {
+      editor_email: { not: null },
+      edited_at: { gt: startedAt },
+    },
+    select: { id: true },
+  })
+
+  return edit !== null
+}
+
+async function toProcessBatchStatus(batch: SelectedBatchFields): Promise<ProcessBatchStatus> {
   const details = normalizeProcessBatchDetails(parseProcessingDetails(batch.processing_details))
+  const rollback = batch.batch_rollbacks
+  const manualEditAfterStart = await hasManualEditAfterStart(batch.started_at)
 
   return {
     batchId: batch.id,
     batchName: normalizeText(batch.name),
     startedBy: normalizeText(batch.started_by),
     createdAt: toIsoString(batch.created_at),
+    lifecycleStatus: batch.lifecycle_status,
+    publicationStatus: batch.publication_status,
+    publicationTarget: batch.publication_target,
+    manualEditAfterStart,
+    rollbackStatus: rollback?.status ?? null,
+    rollbackFailure: rollback?.last_failure ?? null,
+    rollbackCounts: rollback
+      ? {
+          restored: rollback.restored_count,
+          deleted: rollback.deleted_count,
+          cancelled: rollback.cancelled_count,
+          conflicts: rollback.conflict_count,
+          failed: rollback.failed_count,
+        }
+      : null,
     ...details,
   }
 }
@@ -53,7 +99,8 @@ function hasProcessState(batch: ProcessBatchStatus): boolean {
     batch.contentDedup !== null ||
     batch.metadataExtractor !== null ||
     batch.metadataValidator !== null ||
-    batch.rightsDeterminator !== null
+    batch.rightsDeterminator !== null ||
+    (batch.fedoraIngester !== null && batch.fedoraIngester !== undefined)
   )
 }
 
@@ -62,7 +109,22 @@ const processBatchSelect = {
   name: true,
   started_by: true,
   created_at: true,
+  started_at: true,
   processing_details: true,
+  lifecycle_status: true,
+  publication_status: true,
+  publication_target: true,
+  batch_rollbacks: {
+    select: {
+      status: true,
+      restored_count: true,
+      deleted_count: true,
+      cancelled_count: true,
+      conflict_count: true,
+      failed_count: true,
+      last_failure: true,
+    },
+  },
 } as const
 
 export async function getProcessBatchStatuses(limit = 25): Promise<ProcessBatchStatus[]> {
@@ -72,7 +134,8 @@ export async function getProcessBatchStatuses(limit = 25): Promise<ProcessBatchS
     select: processBatchSelect,
   })
 
-  return batches.map(toProcessBatchStatus).filter(hasProcessState)
+  const statuses = await Promise.all(batches.map(toProcessBatchStatus))
+  return statuses.filter(hasProcessState)
 }
 
 export async function getProcessBatchStatus(batchId: string): Promise<ProcessBatchStatus | null> {
@@ -81,13 +144,10 @@ export async function getProcessBatchStatus(batchId: string): Promise<ProcessBat
     select: processBatchSelect,
   })
 
-  return batch ? toProcessBatchStatus(batch) : null
+  return batch ? await toProcessBatchStatus(batch) : null
 }
 
-function withRequestedStages(
-  details: RawProcessBatchDetails,
-  requestedStages: string[],
-): RawProcessBatchDetails {
+function withRequestedStages(details: RawProcessBatchDetails, requestedStages: string[]): RawProcessBatchDetails {
   return {
     ...details,
     pipeline: {
@@ -219,14 +279,7 @@ interface RightsDeterminatorCompletionArgs {
 
 export async function recordMetadataExtractorCompletion(
   batchId: string,
-  {
-    requestId,
-    initiatedAt,
-    completedAt,
-    processedCount,
-    extractedCount,
-    failedCount,
-  }: MetadataExtractorCompletionArgs,
+  { requestId, initiatedAt, completedAt, processedCount, extractedCount, failedCount }: MetadataExtractorCompletionArgs,
 ): Promise<void> {
   const batch = await db.batches.findUnique({
     where: { id: batchId },

@@ -32,6 +32,32 @@ model authors {
   @@index([name(length: 255)], map: "idx_authors_name")
 }
 
+model batch_external_operations {
+  id               String    @id @db.VarChar(36)
+  batch_id         String    @db.VarChar(36)
+  stage            String    @db.VarChar(64)
+  provider         String    @db.VarChar(64)
+  operation        String    @db.VarChar(64)
+  resource_type    String    @db.VarChar(64)
+  idempotency_key  String    @unique(map: "uk_batch_external_operations_idempotency_key") @db.VarChar(255)
+  request          String?   @db.LongText
+  external_ids     String?   @db.LongText
+  status           String    @default("planned") @db.VarChar(32)
+  attempts         Int       @default(0)
+  planned_at       DateTime? @db.DateTime(0)
+  started_at       DateTime? @db.DateTime(0)
+  applied_at       DateTime? @db.DateTime(0)
+  completed_at     DateTime? @db.DateTime(0)
+  next_recovery_at DateTime? @db.DateTime(0)
+  last_error       String?   @db.Text
+  created_at       DateTime? @default(now()) @db.DateTime(0)
+  updated_at       DateTime? @default(now()) @db.DateTime(0)
+  batches          batches   @relation(fields: [batch_id], references: [id], onUpdate: Restrict, map: "fk_batch_external_operations_batch_id")
+
+  @@index([batch_id, status], map: "idx_batch_external_operations_batch_status")
+  @@index([status, next_recovery_at], map: "idx_batch_external_operations_recovery")
+}
+
 model batch_metadata {
   id                        String                      @id @db.VarChar(36)
   name                      String                      @db.Text
@@ -42,6 +68,64 @@ model batch_metadata {
   batch_to_batches_metadata batch_to_batches_metadata[]
 
   @@index([name(length: 255)], map: "idx_batch_metadata_name")
+}
+
+model batch_mutations {
+  id                String           @id @db.VarChar(36)
+  batch_id          String           @db.VarChar(36)
+  execution_order   Int?
+  rollback_id       String?          @db.VarChar(36)
+  stage             String           @db.VarChar(64)
+  pass_number       Int?
+  resource_type     String           @db.VarChar(64)
+  resource_id       String           @db.VarChar(255)
+  operation         String           @db.VarChar(64)
+  before_snapshot   String?          @db.LongText
+  after_fingerprint String?          @db.VarChar(128)
+  rollback_action   String?          @db.VarChar(255)
+  status            String           @default("planned") @db.VarChar(32)
+  attempts          Int              @default(0)
+  planned_at        DateTime?        @db.DateTime(0)
+  applied_at        DateTime?        @db.DateTime(0)
+  rolled_back_at    DateTime?        @db.DateTime(0)
+  last_error        String?          @db.Text
+  created_at        DateTime?        @default(now()) @db.DateTime(0)
+  updated_at        DateTime?        @default(now()) @db.DateTime(0)
+  batches           batches          @relation(fields: [batch_id], references: [id], onUpdate: Restrict, map: "fk_batch_mutations_batch_id")
+  batch_rollbacks   batch_rollbacks? @relation(fields: [rollback_id], references: [id], onUpdate: Restrict, map: "fk_batch_mutations_rollback_id")
+
+  @@unique([batch_id, execution_order], map: "uk_batch_mutations_batch_execution_order")
+  @@index([batch_id, execution_order, created_at, id], map: "idx_batch_mutations_batch_order")
+  @@index([rollback_id], map: "idx_batch_mutations_rollback_id")
+  @@index([status], map: "idx_batch_mutations_status")
+}
+
+model batch_rollbacks {
+  id                  String            @id @db.VarChar(36)
+  batch_id            String            @unique(map: "uk_batch_rollbacks_batch_id") @db.VarChar(36)
+  original_batch_name String?           @db.Text
+  reversion_number    Int               @default(1)
+  requested_by        String?           @db.VarChar(255)
+  reason              String?           @db.Text
+  idempotency_key     String?           @unique(map: "uk_batch_rollbacks_idempotency_key") @db.VarChar(255)
+  status              String            @default("requested") @db.VarChar(32)
+  requested_at        DateTime?         @default(now()) @db.DateTime(0)
+  started_at          DateTime?         @db.DateTime(0)
+  completed_at        DateTime?         @db.DateTime(0)
+  resolved_at         DateTime?         @db.DateTime(0)
+  restored_count      Int               @default(0)
+  deleted_count       Int               @default(0)
+  cancelled_count     Int               @default(0)
+  conflict_count      Int               @default(0)
+  failed_count        Int               @default(0)
+  last_failure        String?           @db.Text
+  created_at          DateTime?         @default(now()) @db.DateTime(0)
+  updated_at          DateTime?         @default(now()) @db.DateTime(0)
+  batch_mutations     batch_mutations[]
+  batches             batches           @relation(fields: [batch_id], references: [id], onUpdate: Restrict, map: "fk_batch_rollbacks_batch_id")
+
+  @@index([batch_id], map: "idx_batch_rollbacks_batch_id")
+  @@index([status], map: "idx_batch_rollbacks_status")
 }
 
 model batch_to_batches_metadata {
@@ -72,8 +156,15 @@ model batches {
   completed_at              DateTime?                   @db.DateTime(0)
   last_processed            DateTime?                   @db.DateTime(0)
   started_by                String?                     @db.VarChar(255)
+  lifecycle_status          String                      @default("created") @db.VarChar(32)
+  publication_status        String                      @default("not_started") @db.VarChar(32)
+  publication_target        String                      @default("fedora") @db.VarChar(64)
+  batch_external_operations batch_external_operations[]
+  batch_mutations           batch_mutations[]
+  batch_rollbacks           batch_rollbacks?
   batch_to_batches_metadata batch_to_batches_metadata[]
   document_to_batches       document_to_batches[]
+  pipeline_worker_leases    pipeline_worker_leases[]
 
   @@index([id_legacy], map: "idx_batches_id_legacy")
   @@index([name(length: 255)], map: "idx_batches_name")
@@ -319,6 +410,8 @@ model pipeline_queue_items {
   queued_at         DateTime  @default(now()) @db.DateTime(0)
   claimed_at        DateTime? @db.DateTime(0)
   completed_at      DateTime? @db.DateTime(0)
+  cancelled_at      DateTime? @db.DateTime(0)
+  cancel_reason     String?   @db.Text
   error_type        String?   @db.VarChar(255)
   error_message     String?   @db.Text
   callback_delivery String?   @db.LongText
@@ -326,6 +419,18 @@ model pipeline_queue_items {
   @@index([batch_id], map: "ix_pipeline_queue_items_batch_id")
   @@index([stage], map: "ix_pipeline_queue_items_stage")
   @@index([status], map: "ix_pipeline_queue_items_status")
+}
+
+model pipeline_worker_leases {
+  id              String    @id @db.VarChar(36)
+  active_batch_id String?   @db.VarChar(36)
+  lease_token     String?   @db.VarChar(255)
+  acquired_at     DateTime? @db.DateTime(0)
+  heartbeat_at    DateTime? @db.DateTime(0)
+  released_at     DateTime? @db.DateTime(0)
+  batches         batches?  @relation(fields: [active_batch_id], references: [id], onUpdate: Restrict, map: "fk_pipeline_worker_leases_active_batch_id")
+
+  @@index([active_batch_id], map: "fk_pipeline_worker_leases_active_batch_id")
 }
 
 model publishers {
