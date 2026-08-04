@@ -51,7 +51,6 @@ export const FullPipeline: Story = {
         metadataExtraction: true,
         metadataValidation: true,
         rightsDeterminator: true,
-        fedoraIngester: true,
       },
     },
     mode: 'custom',

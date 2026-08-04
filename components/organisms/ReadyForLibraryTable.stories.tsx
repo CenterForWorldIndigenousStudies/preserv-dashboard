@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { READY_FOR_LIBRARY_PATH } from '@constants/paths'
-import type { DocumentTableFetchResult, DocumentTableQuery } from '@organisms/document-table/types'
+import type { DocumentTableFetchResult, DocumentTableQuery } from '@organisms/DocumentTable/types'
+import type { AdvancedSearchFilters, FilterOptions } from '@lib/search'
 import type { ReadyForLibraryItem } from 'types/documents'
 
 import { ReadyForLibraryTable } from './ReadyForLibraryTable'
@@ -47,10 +48,16 @@ const sampleItems: ReadyForLibraryItem[] = [
   },
 ]
 
-const initialQuery: DocumentTableQuery<Record<string, never>> = {
+const initialQuery: DocumentTableQuery<AdvancedSearchFilters> = {
   page: 1,
   pageSize: 25,
   filters: {},
+}
+
+const filterOptions: FilterOptions = {
+  collections: ['Collection A', 'Collection B'],
+  accessLevels: ['open access', 'restricted', 'internal', 'confidential'],
+  statuses: ['APPROVED', 'VALIDATED'],
 }
 
 function createInitialData(items: ReadyForLibraryItem[]): DocumentTableFetchResult<ReadyForLibraryItem> {
@@ -87,6 +94,7 @@ export const Default: Story = {
   args: {
     initialData: createInitialData(sampleItems),
     initialQuery,
+    filterOptions,
   },
 }
 
@@ -94,6 +102,7 @@ export const Empty: Story = {
   args: {
     initialData: createInitialData([]),
     initialQuery,
+    filterOptions,
   },
 }
 
@@ -111,5 +120,6 @@ export const SomeIncomplete: Story = {
       },
     ]),
     initialQuery,
+    filterOptions,
   },
 }

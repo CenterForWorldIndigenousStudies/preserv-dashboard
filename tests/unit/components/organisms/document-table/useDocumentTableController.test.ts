@@ -5,7 +5,7 @@ import type {
   DocumentTableFetcher,
   DocumentTableQuery,
   DocumentTableSelectionState,
-} from '@components/organisms/document-table/types'
+} from '@components/organisms/DocumentTable/types'
 import type { Document } from 'types/documents'
 
 describe('document table contract', () => {

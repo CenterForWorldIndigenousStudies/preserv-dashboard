@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { Link as MuiLink, Typography } from '@mui/material'
 
 import { DateAtom } from '@atoms/Date'
-import { DocumentDataTable } from '@organisms/document-table/DocumentDataTable'
+import { DocumentDataTable } from '@organisms/DocumentTable/DocumentDataTable'
 import type { FailureItem } from 'types/documents'
 import { FAILED_PATH, getDocumentDetailPath } from '@constants/paths'
 import { PAGE_LABELS } from '@constants/pageLabels'

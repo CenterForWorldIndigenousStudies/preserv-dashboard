@@ -1,7 +1,7 @@
-import type { ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
-import { COLLECTIONS_PATH, DOCUMENTS_PATH } from '@constants/paths'
+import { COLLECTIONS_PATH } from '@constants/paths'
+import type { FilterOptions } from '@lib/search'
 
 const { mockReplace, mockSearchParams } = vi.hoisted(() => ({
   mockReplace: vi.fn(),
@@ -9,6 +9,16 @@ const { mockReplace, mockSearchParams } = vi.hoisted(() => ({
     'expanded=collection-1&collection-collection-1-page=2&collection-collection-1-pageSize=50&collection-collection-1-search=thesis',
   ),
 }))
+
+const mocks = vi.hoisted(() => ({
+  collectionDocumentsTableProps: undefined as Record<string, unknown> | undefined,
+}))
+
+const filterOptions: FilterOptions = {
+  collections: ['Collection One'],
+  accessLevels: ['open access', 'restricted', 'internal', 'confidential'],
+  statuses: ['APPROVED', 'NEEDS_REVIEW'],
+}
 
 vi.mock('next/navigation', () => ({
   usePathname: () => COLLECTIONS_PATH,
@@ -21,26 +31,10 @@ vi.mock('@actions/collections', () => ({
   getDocumentsForCollectionAction: vi.fn(),
 }))
 
-vi.mock('@organisms/document-table/DocumentDataTable', () => ({
-  DocumentDataTable: ({ definition }: { definition: { columns: Array<{ Cell?: (args: unknown) => unknown }> } }) => {
-    const cell = definition.columns[0]?.Cell
-
-    if (!cell) {
-      return <div>No cell</div>
-    }
-
-    const renderedCell = cell({
-      row: {
-        original: {
-          id: 'doc-1',
-          id_legacy: 'legacy-1',
-          name: 'Sample document',
-          source_id: 'source-1',
-        },
-      },
-    }) as ReactNode
-
-    return <div data-testid="collection-document-link">{renderedCell}</div>
+vi.mock('@organisms/CollectionDocumentsTable', () => ({
+  CollectionDocumentsTable: (props: Record<string, unknown>) => {
+    mocks.collectionDocumentsTableProps = props
+    return <div data-testid="collection-documents-table">Collection documents table</div>
   },
 }))
 
@@ -58,6 +52,7 @@ describe('CollectionsAccordion', () => {
   it('links document detail back to the expanded collection state', () => {
     const markup = renderToStaticMarkup(
       <CollectionsAccordion
+        filterOptions={filterOptions}
         collections={[
           {
             id: 'collection-1',
@@ -72,8 +67,12 @@ describe('CollectionsAccordion', () => {
       />,
     )
 
-    expect(markup).toContain(
-      `${DOCUMENTS_PATH}/doc-1?from=%2Fcollections%3Fexpanded%3Dcollection-1%26collection-collection-1-page%3D2%26collection-collection-1-pageSize%3D50%26collection-collection-1-search%3Dthesis`,
-    )
+    expect(markup).toContain('Collection documents table')
+    expect(mocks.collectionDocumentsTableProps).toMatchObject({
+      collectionId: 'collection-1',
+      documentCount: 1,
+      originHref:
+        '/collections?expanded=collection-1&collection-collection-1-page=2&collection-collection-1-pageSize=50&collection-collection-1-search=thesis&collection-collection-1-collection=Collection+One',
+    })
   })
 })

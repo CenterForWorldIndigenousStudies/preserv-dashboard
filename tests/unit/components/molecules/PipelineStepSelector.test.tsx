@@ -6,6 +6,16 @@ import { PipelineStepSelector } from '@molecules/PipelineStepSelector'
 import { createDefaultDraft } from '@lib/pipelineConfig'
 
 describe('PipelineStepSelector', () => {
+  it('does not expose the downstream Fedora translator as a process step', () => {
+    const markup = renderToStaticMarkup(
+      <ThemeProvider>
+        <PipelineStepSelector draft={createDefaultDraft()} mode="custom" onDraftChange={vi.fn()} />
+      </ThemeProvider>,
+    )
+
+    expect(markup).not.toContain('Fedora Ingester')
+  })
+
   it('shows the OpenAI batch helper copy only when metadata extraction is enabled', () => {
     const disabledDraft = createDefaultDraft()
     const disabledMarkup = renderToStaticMarkup(

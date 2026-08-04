@@ -1,16 +1,36 @@
-import { afterAll, afterEach, beforeAll, describe, it, expect, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, it, expect, vi } from 'vitest'
 
 // ---------------------------------------------------------------------------
 // Mock the Prisma client via vi.hoisted() — ensures mocks are available at
 // module scope before vi.mock() hoists the factory
 // ---------------------------------------------------------------------------
-const { mockQueryRaw } = vi.hoisted(() => ({
+const {
+  mockQueryRaw,
+  mockMetadataFindMany,
+  mockQualityFindMany,
+  mockAccessFindMany,
+  mockDocumentMetadataFindMany,
+  mockDocumentsFindMany,
+  mockTagsFindMany,
+} = vi.hoisted(() => ({
   mockQueryRaw: vi.fn(),
+  mockMetadataFindMany: vi.fn(),
+  mockQualityFindMany: vi.fn(),
+  mockAccessFindMany: vi.fn(),
+  mockDocumentMetadataFindMany: vi.fn(),
+  mockDocumentsFindMany: vi.fn(),
+  mockTagsFindMany: vi.fn(),
 }))
 
 vi.mock('@lib/db', () => ({
   db: {
     $queryRaw: mockQueryRaw,
+    metadata: { findMany: mockMetadataFindMany },
+    document_quality: { findMany: mockQualityFindMany },
+    document_access: { findMany: mockAccessFindMany },
+    document_to_metadata: { findMany: mockDocumentMetadataFindMany },
+    documents: { findMany: mockDocumentsFindMany },
+    tags: { findMany: mockTagsFindMany },
   },
 }))
 
@@ -18,7 +38,13 @@ vi.mock('@lib/editHistory', () => ({
   createEditHistoryEntry: vi.fn(),
 }))
 
-import { getAllDocuments, getDocuments, getNeedsReviewDocuments } from '@lib/queries'
+import {
+  buildReadyForLibraryItems,
+  getAllDocuments,
+  getDocuments,
+  getNeedsReviewDocuments,
+  getReadyForLibraryDocuments,
+} from '@lib/queries'
 
 // ---------------------------------------------------------------------------
 // Shared call inspection helpers
@@ -84,6 +110,103 @@ describe('buildSearchWhere (via getAllDocuments)', () => {
 
     const call = queryCall(0)
     expect(call.values.slice(0, 2)).toEqual(['%rudy%', '%ryser%'])
+  })
+})
+
+describe('getReadyForLibraryDocuments advanced filters', () => {
+  beforeEach(() => {
+    mockQueryRaw.mockReset()
+    mockMetadataFindMany.mockReset()
+    mockQualityFindMany.mockReset()
+    mockAccessFindMany.mockReset()
+    mockDocumentMetadataFindMany.mockReset()
+    mockDocumentsFindMany.mockReset()
+    mockTagsFindMany.mockReset()
+
+    mockMetadataFindMany.mockResolvedValue([
+      { id: 'meta-title', name: 'dc_title' },
+      { id: 'meta-type', name: 'dc_type' },
+      { id: 'meta-subject', name: 'dc_subject' },
+      { id: 'meta-rights', name: 'dc_rights' },
+    ])
+    mockQualityFindMany.mockResolvedValue([
+      { document_id: 'doc-ready', validation_status: 'APPROVED', validation_timestamp: null },
+    ])
+    mockAccessFindMany.mockResolvedValue([
+      {
+        document_id: 'doc-ready',
+        access_level_id: 'access-open',
+        access_levels: { level_name: 'open access' },
+      },
+    ])
+    mockDocumentMetadataFindMany.mockResolvedValue([
+      { document_id: 'doc-ready', metadata_id: 'meta-title' },
+      { document_id: 'doc-ready', metadata_id: 'meta-type' },
+      { document_id: 'doc-ready', metadata_id: 'meta-subject' },
+      { document_id: 'doc-ready', metadata_id: 'meta-rights' },
+    ])
+    mockDocumentsFindMany.mockResolvedValue([{ id: 'doc-ready', name: 'Ready document' }])
+    mockTagsFindMany.mockResolvedValue([{ id: 'tag-collection', name: 'collection-tag', notes: null }])
+    mockQueryRaw.mockResolvedValueOnce([])
+  })
+
+  it('applies the full Advanced Search filter set to ready candidates before returning items', async () => {
+    await getReadyForLibraryDocuments({
+      author: 'Matching Author',
+      tag: 'collection-tag',
+      statuses: ['APPROVED'],
+      documentType: 'duplicate',
+      batch: 'batch-2026',
+      createdFrom: '2026-04-01',
+      createdTo: '2026-04-30',
+      collection: 'Collection A',
+      accessLevel: 'open access',
+    })
+
+    const sql = queryText(0)
+    expect(sql).toContain('d.id IN')
+    expect(sql).toContain('FROM document_to_authors dta')
+    expect(sql).toContain('FROM document_to_tags dtt')
+    expect(sql).toContain('FROM document_to_batches dtb')
+    expect(sql).toContain('d.created_at >=')
+    expect(sql).toContain('d.created_at < DATE_ADD')
+    expect(sql).toContain('LOWER(t.name)')
+    expect(sql).toContain('LOWER(al.level_name)')
+  })
+
+  it('returns no ready documents when an explicit status filter excludes APPROVED', async () => {
+    const result = await getReadyForLibraryDocuments({ statuses: ['NEEDS_REVIEW'] })
+
+    expect(result).toEqual({ items: [], total: 0 })
+    expect(mockQueryRaw).not.toHaveBeenCalled()
+  })
+})
+
+describe('buildReadyForLibraryItems', () => {
+  it('builds readiness items only for approved documents with access', () => {
+    const items = buildReadyForLibraryItems(
+      [
+        { document_id: 'doc-ready', validation_status: 'APPROVED', validation_timestamp: 123 },
+        { document_id: 'doc-without-access', validation_status: 'APPROVED', validation_timestamp: null },
+      ],
+      new Map([
+        ['doc-ready', 'open access'],
+        ['doc-without-access', undefined],
+      ]),
+      new Map([['doc-ready', new Set(['dc_title', 'dc_type', 'dc_subject', 'dc_rights'])]]),
+      ['dc_title', 'dc_type', 'dc_subject', 'dc_rights'],
+    )
+
+    expect(items).toEqual([
+      {
+        id: 'doc-ready',
+        name: null,
+        validation_status: 'APPROVED',
+        validation_timestamp: 123,
+        metadata_complete: true,
+        access_level: 'open access',
+      },
+    ])
   })
 })
 

@@ -9,14 +9,17 @@ import { getReadyForLibraryAction } from '@actions/ready-for-library'
 import { getDocumentDetailPath } from '@constants/paths'
 import { PAGE_LABELS } from '@constants/pageLabels'
 import { DateAtom } from '@atoms/Date'
-import { DocumentDataTable } from '@organisms/document-table/DocumentDataTable'
-import { useDocumentTableController } from '@organisms/document-table/useDocumentTableController'
-import type { DocumentTableFetchResult, DocumentTableQuery } from '@organisms/document-table/types'
+import { DocumentTable } from '@organisms/DocumentTable/DocumentTable'
+import { useDocumentTableController } from '@organisms/DocumentTable/useDocumentTableController'
+import type { DocumentTableConfig, DocumentTableFetchResult, DocumentTableQuery } from '@organisms/DocumentTable/types'
+import { serializeStatusesParam, type AdvancedSearchFilters, type FilterOptions } from '@lib/search'
+import type { DocumentsQueryParams } from '@lib/queries'
 import type { ReadyForLibraryItem } from 'types/documents'
 
 interface ReadyForLibraryTableProps {
   initialData?: DocumentTableFetchResult<ReadyForLibraryItem>
-  initialQuery: DocumentTableQuery<Record<string, never>>
+  initialQuery: DocumentTableQuery<AdvancedSearchFilters>
+  filterOptions: FilterOptions
 }
 
 export function normalizeReadyForLibrarySearch(value: string | undefined): string {
@@ -72,11 +75,15 @@ export function sortReadyForLibraryItems(
   })
 }
 
-export function ReadyForLibraryTable({ initialData, initialQuery }: ReadyForLibraryTableProps): ReactElement {
+export function ReadyForLibraryTable({
+  initialData,
+  initialQuery,
+  filterOptions,
+}: ReadyForLibraryTableProps): ReactElement {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const controller = useDocumentTableController<Record<string, never>>({ initialQuery })
+  const controller = useDocumentTableController<AdvancedSearchFilters>({ initialQuery })
 
   useEffect(() => {
     const nextParams = new URLSearchParams(searchParams.toString())
@@ -84,6 +91,19 @@ export function ReadyForLibraryTable({ initialData, initialQuery }: ReadyForLibr
     nextParams.set('page', String(controller.query.page))
     nextParams.set('pageSize', String(controller.query.pageSize))
     syncReadyForLibrarySearchParam(nextParams, 'search', controller.query.search)
+    syncReadyForLibrarySearchParam(nextParams, 'author', controller.query.filters.author)
+    syncReadyForLibrarySearchParam(nextParams, 'tag', controller.query.filters.tag)
+    syncReadyForLibrarySearchParam(nextParams, 'statuses', serializeStatusesParam(controller.query.filters.statuses))
+    syncReadyForLibrarySearchParam(
+      nextParams,
+      'documentType',
+      controller.query.filters.documentType === 'all' ? undefined : controller.query.filters.documentType,
+    )
+    syncReadyForLibrarySearchParam(nextParams, 'batch', controller.query.filters.batch)
+    syncReadyForLibrarySearchParam(nextParams, 'createdFrom', controller.query.filters.createdFrom)
+    syncReadyForLibrarySearchParam(nextParams, 'createdTo', controller.query.filters.createdTo)
+    syncReadyForLibrarySearchParam(nextParams, 'collection', controller.query.filters.collection)
+    syncReadyForLibrarySearchParam(nextParams, 'accessLevel', controller.query.filters.accessLevel)
     syncReadyForLibrarySearchParam(nextParams, 'orderBy', controller.query.orderBy)
     syncReadyForLibrarySearchParam(nextParams, 'sortDirection', controller.query.sortDirection)
 
@@ -149,43 +169,54 @@ export function ReadyForLibraryTable({ initialData, initialQuery }: ReadyForLibr
     [preservedOverviewHref],
   )
 
-  return (
-    <DocumentDataTable<ReadyForLibraryItem, Record<string, never>>
-      definition={{
-        tableId: 'ready-for-library-documents',
-        columns,
-        fetcher: async (query) => {
-          const result = await getReadyForLibraryAction()
-          const normalizedSearch = normalizeReadyForLibrarySearch(query.search)
-          const filteredItems = normalizedSearch
-            ? result.items.filter((item) =>
-                String(item.name ?? '')
-                  .toLowerCase()
-                  .includes(normalizedSearch),
-              )
-            : result.items
-          const sortedItems = sortReadyForLibraryItems(filteredItems, query.orderBy, query.sortDirection)
-          const offset = (query.page - 1) * query.pageSize
-          const pagedItems = sortedItems.slice(offset, offset + query.pageSize)
+  const tableConfig: DocumentTableConfig<ReadyForLibraryItem, AdvancedSearchFilters> = {
+    definition: {
+      tableId: 'ready-for-library-documents',
+      columns,
+      fetcher: async (query) => {
+        const result = await getReadyForLibraryAction({
+          ...query.filters,
+          page: query.page,
+          pageSize: query.pageSize,
+          search: query.search,
+          orderBy: query.orderBy as DocumentsQueryParams['orderBy'],
+          sortDirection: query.sortDirection,
+        })
+        const normalizedSearch = normalizeReadyForLibrarySearch(query.search)
+        const filteredItems = normalizedSearch
+          ? result.items.filter((item) =>
+              String(item.name ?? '')
+                .toLowerCase()
+                .includes(normalizedSearch),
+            )
+          : result.items
+        const sortedItems = sortReadyForLibraryItems(filteredItems, query.orderBy, query.sortDirection)
+        const offset = (query.page - 1) * query.pageSize
+        const pagedItems = sortedItems.slice(offset, offset + query.pageSize)
 
-          return {
-            data: pagedItems,
-            totalCount: sortedItems.length,
-            pageInfo: {
-              pageSize: query.pageSize,
-              hasNextPage: offset + query.pageSize < sortedItems.length,
-              hasPreviousPage: query.page > 1,
-              startCursor: null,
-              endCursor: null,
-            },
-          }
-        },
-      }}
-      controller={controller}
-      initialData={initialData}
-      initialQuery={initialQuery}
-      emptyMessage="No documents currently meet the dashboard-visible library eligibility criteria."
-      searchPlaceholder="Search ready for library..."
-    />
+        return {
+          data: pagedItems,
+          totalCount: sortedItems.length,
+          pageInfo: {
+            pageSize: query.pageSize,
+            hasNextPage: offset + query.pageSize < sortedItems.length,
+            hasPreviousPage: query.page > 1,
+            startCursor: null,
+            endCursor: null,
+          },
+        }
+      },
+    },
+    emptyMessage: 'No documents currently meet the dashboard-visible library eligibility criteria.',
+    searchPlaceholder: 'Search ready for library...',
+    advancedSearch: {
+      filters: controller.filters,
+      filterOptions,
+      onApply: controller.setFilters,
+    },
+  }
+
+  return (
+    <DocumentTable config={tableConfig} controller={controller} initialData={initialData} initialQuery={initialQuery} />
   )
 }

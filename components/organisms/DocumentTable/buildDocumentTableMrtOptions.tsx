@@ -19,6 +19,9 @@ export function buildDocumentTableMrtOptions<TData extends MRT_RowData>({
   return {
     columns,
     data,
+    enableGrouping: false,
+    enableTopToolbar: false,
+    enableBottomToolbar: false,
     enableDensityToggle: false,
     enableFullScreenToggle: false,
     enableColumnActions: false,
@@ -28,6 +31,7 @@ export function buildDocumentTableMrtOptions<TData extends MRT_RowData>({
     enableHiding: false,
     enableMultiSort: false,
     enableStickyHeader: true,
+    positionToolbarDropZone: 'none',
     localization: {
       noRecordsToDisplay: emptyMessage,
     },

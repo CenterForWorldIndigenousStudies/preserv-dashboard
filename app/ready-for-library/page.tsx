@@ -4,10 +4,12 @@ import { Card, CardContent, Stack, Typography } from '@mui/material'
 import { NeedsReviewReasons } from '@molecules/NeedsReviewReasons'
 import { PageHeader } from '@organisms/PageHeader'
 import { ReadyForLibraryTable } from '@organisms/ReadyForLibraryTable'
-import { NoDataState } from '@organisms/NoDataState'
-import type { DocumentTableFetchResult, DocumentTableQuery } from '@organisms/document-table/types'
-import { getReadyForLibraryDocuments } from '@lib/queries'
+import { ReadyForLibraryHandoff } from '@organisms/ReadyForLibraryHandoff'
+import type { DocumentTableFetchResult, DocumentTableQuery } from '@organisms/DocumentTable/types'
+import { getDocumentFilterOptions, getReadyForLibraryDocuments, type DocumentsQueryParams } from '@lib/queries'
 import { getUniqueDocumentCountByAuthor } from '@lib/readyForLibraryAuthorMetrics'
+import type { AdvancedSearchFilters } from '@lib/search'
+import { parseReadyForLibraryQueryParams } from './query'
 import { PAGE_LABELS } from '@constants/pageLabels'
 import type { ReadyForLibraryItem } from 'types/documents'
 
@@ -16,16 +18,13 @@ export const dynamic = 'force-dynamic'
 const FEATURED_AUTHOR_NAME = 'Ryser, Rudolph C.'
 
 const READINESS_EXPLANATION_GROUPS = {
-  'Why documents appear here': [
-    'Validation status is APPROVED.',
-    'An access level is set.',
-  ],
+  'Why documents appear here': ['Validation status is APPROVED.', 'An access level is set.'],
   'What to inspect before handoff': [
     'This page shows whether required Dublin Core fields are present: dc_title, dc_type, dc_subject, and dc_rights.',
     'Documents can still appear here when Metadata Complete is Incomplete.',
   ],
   'What this page does not confirm': [
-    'This page does not confirm final Fedora handoff readiness.',
+    'This page does not confirm final library handoff readiness until the handoff is queued and completes.',
     'Collection linkage, Fedora collection mapping, duplicate and review exclusions, and other ingest checks may still block handoff.',
     'Drive, Fedora, and Workbench conditions are still evaluated at execution time.',
   ],
@@ -114,31 +113,9 @@ function sortReadyForLibraryItems(
   })
 }
 
-function firstSearchParam(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value
-}
-
-function parseReadyForLibraryQueryParams(
-  params: Record<string, string | string[] | undefined>,
-): DocumentTableQuery<Record<string, never>> {
-  const page = Number(firstSearchParam(params.page))
-  const pageSize = Number(firstSearchParam(params.pageSize))
-  const sortDirection = firstSearchParam(params.sortDirection)
-  const search = firstSearchParam(params.search)?.trim()
-
-  return {
-    page: Number.isFinite(page) && page > 0 ? page : 1,
-    pageSize: Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 25,
-    search: search || undefined,
-    orderBy: firstSearchParam(params.orderBy),
-    sortDirection: sortDirection === 'asc' ? 'asc' : sortDirection === 'desc' ? 'desc' : undefined,
-    filters: {},
-  }
-}
-
 function buildReadyForLibraryInitialData(
   result: { items: ReadyForLibraryItem[]; total: number },
-  query: DocumentTableQuery<Record<string, never>>,
+  query: DocumentTableQuery<AdvancedSearchFilters>,
 ): DocumentTableFetchResult<ReadyForLibraryItem> {
   const normalizedSearch = normalizeReadyForLibrarySearch(query.search)
   const filteredItems = normalizedSearch
@@ -168,8 +145,16 @@ function buildReadyForLibraryInitialData(
 async function ReadyForLibraryContent({ searchParams }: ReadyForLibraryPageProps) {
   const resolvedSearchParams = await searchParams
   const initialQuery = parseReadyForLibraryQueryParams(resolvedSearchParams)
-  const [result, featuredAuthorDocumentCount] = await Promise.all([
-    getReadyForLibraryDocuments(),
+  const [result, filterOptions, featuredAuthorDocumentCount] = await Promise.all([
+    getReadyForLibraryDocuments({
+      ...initialQuery.filters,
+      page: initialQuery.page,
+      pageSize: initialQuery.pageSize,
+      search: initialQuery.search,
+      orderBy: initialQuery.orderBy as DocumentsQueryParams['orderBy'],
+      sortDirection: initialQuery.sortDirection,
+    }),
+    getDocumentFilterOptions(),
     getUniqueDocumentCountByAuthor(FEATURED_AUTHOR_NAME),
   ])
   const initialData = buildReadyForLibraryInitialData(result, initialQuery)
@@ -177,11 +162,7 @@ async function ReadyForLibraryContent({ searchParams }: ReadyForLibraryPageProps
   return (
     <>
       <AuthorCountCard authorName={FEATURED_AUTHOR_NAME} count={featuredAuthorDocumentCount} />
-      {result.total === 0 ? (
-        <NoDataState message="No documents currently meet the dashboard-visible library eligibility criteria." />
-      ) : (
-        <ReadyForLibraryTable initialData={initialData} initialQuery={initialQuery} />
-      )}
+      <ReadyForLibraryTable initialData={initialData} initialQuery={initialQuery} filterOptions={filterOptions} />
     </>
   )
 }
@@ -192,10 +173,12 @@ export default function ReadyForLibraryPage({ searchParams }: ReadyForLibraryPag
       <PageHeader
         eyebrow={PAGE_LABELS.readyForLibrary}
         title="Post-approval handoff inspection"
-        description="Use this workspace to inspect approved documents with an access level before the next handoff. Metadata completeness is shown to support review, but this page does not confirm final Fedora readiness."
+        description="Use this workspace to inspect approved documents with an access level and queue the downstream library handoff when the current review is complete. Metadata completeness is shown to support review, but runtime checks still apply."
       />
 
       <ReadyForLibraryReadinessExplanation />
+
+      <ReadyForLibraryHandoff />
 
       <Suspense fallback={null}>
         <ReadyForLibraryContent searchParams={searchParams} />

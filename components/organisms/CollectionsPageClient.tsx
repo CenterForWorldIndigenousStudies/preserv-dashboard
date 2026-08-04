@@ -10,13 +10,15 @@ import { CollectionsAccordion } from '@organisms/CollectionsAccordion'
 import { PageHeader } from '@organisms/PageHeader'
 import { AddCollectionDialog } from '@organisms/AddCollectionDialog'
 import { PAGE_LABELS } from '@constants/pageLabels'
+import type { FilterOptions } from '@lib/search'
 import type { CollectionWithMeta } from 'types/collections'
 
 interface CollectionsPageClientProps {
   collections: CollectionWithMeta[]
+  filterOptions: FilterOptions
 }
 
-export function CollectionsPageClient({ collections }: CollectionsPageClientProps): ReactElement {
+export function CollectionsPageClient({ collections, filterOptions }: CollectionsPageClientProps): ReactElement {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
 
   return (
@@ -33,7 +35,7 @@ export function CollectionsPageClient({ collections }: CollectionsPageClientProp
         </Button>
       </Box>
 
-      <CollectionsAccordion collections={collections} />
+      <CollectionsAccordion collections={collections} filterOptions={filterOptions} />
 
       <AddCollectionDialog open={isAddDialogOpen} collections={collections} onClose={() => setIsAddDialogOpen(false)} />
     </Stack>

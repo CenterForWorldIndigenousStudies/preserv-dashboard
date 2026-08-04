@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { expect, fn, within } from 'storybook/test'
 
 import { DocumentTableCursorPager } from '@molecules/DocumentTableCursorPager'
-import type { DocumentTablePageInfo } from '@organisms/document-table/types'
+import type { DocumentTablePageInfo } from '@organisms/DocumentTable/types'
 
 const pageInfo = (hasPreviousPage: boolean, hasNextPage: boolean): DocumentTablePageInfo => ({
   pageSize: 25,

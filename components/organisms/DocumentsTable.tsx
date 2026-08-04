@@ -29,9 +29,8 @@ import type { Document } from 'types/documents'
 import type { DocumentsPageResult } from 'types/pagination'
 import type { ReviewQueueDecision } from 'types/reviewQueue'
 import { DocumentNameBlock } from '@molecules/DocumentNameBlock'
-import { DocumentTableAdvancedSearchTrigger } from '@molecules/DocumentTableAdvancedSearchTrigger'
-import { DocumentDataTable } from '@organisms/document-table/DocumentDataTable'
-import { AdvancedSearchModal } from '@components/organisms/AdvancedSearchModal'
+import { DocumentTable } from '@organisms/DocumentTable/DocumentTable'
+import type { DocumentTableConfig } from '@organisms/DocumentTable/types'
 
 // ---------------------------------------------------------------------------
 // Review Queue context persistence helpers (sessionStorage-backed)
@@ -770,71 +769,95 @@ export function DocumentsTable({
     [expandedReviewQueueDocumentIds, isReviewQueue, preservedOverviewHref, reviewQueueChecklistByDocumentId],
   )
 
+  const tableConfig: DocumentTableConfig<Document, AdvancedSearchFilters> = {
+    definition: {
+      tableId: isReviewQueue ? 'review-queue-documents' : 'overview-documents',
+      columns,
+      fetcher: async (query) => {
+        return fetchDocumentsTablePage(
+          {
+            page: query.page,
+            pageSize: query.pageSize,
+            orderBy: query.orderBy as DocumentsQueryParams['orderBy'],
+            sortDirection: query.sortDirection,
+            search: query.search,
+            author: query.filters.author ?? query.search,
+            tag: query.filters.tag,
+            statuses: resolveStatuses(query.filters.statuses),
+            documentType: query.filters.documentType,
+            batch: query.filters.batch,
+            createdFrom: query.filters.createdFrom,
+            createdTo: query.filters.createdTo,
+            collection: query.filters.collection,
+            accessLevel: query.filters.accessLevel,
+            cursorValue: query.cursorValue,
+            cursorId: query.cursorId,
+            cursorDirection: query.cursorDirection,
+          },
+          isReviewQueue,
+        )
+      },
+    },
+    rowActions: isReviewQueue
+      ? [
+          {
+            id: 'review-decisions',
+            render: ({ row }) => {
+              const isApprovePending = activeDecision?.documentId === row.id && activeDecision.decision === 'APPROVED'
+              const isRejectPending = activeDecision?.documentId === row.id && activeDecision.decision === 'REJECTED'
+              const isPending = isApprovePending || isRejectPending || batchApprovePending
+
+              return (
+                <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    loading={isApprovePending}
+                    disabled={isPending}
+                    onClick={() => {
+                      void handleReviewDecision(row.id, 'APPROVED')
+                    }}
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    loading={isRejectPending}
+                    disabled={isPending}
+                    onClick={() => {
+                      void handleReviewDecision(row.id, 'REJECTED')
+                    }}
+                  >
+                    Reject
+                  </Button>
+                </Stack>
+              )
+            },
+          },
+        ]
+      : undefined,
+    emptyMessage: getDocumentsTableEmptyMessage(isReviewQueue),
+    searchPlaceholder: 'Search by name, legacy ID, batch...',
+    styleVariant: isReviewQueue ? 'reviewQueueDense' : 'default',
+    ...reviewQueueSelectionProps,
+    advancedSearch: {
+      filters: currentFilters,
+      filterOptions,
+      onApply: (filters) => {
+        setOverviewFilters({
+          ...filters,
+          statuses: resolveStatuses(filters.statuses),
+        })
+      },
+    },
+    trailingToolbarSlot,
+  }
+
   return (
     <Box>
-      <DocumentDataTable<Document, AdvancedSearchFilters>
-        definition={{
-          tableId: isReviewQueue ? 'review-queue-documents' : 'overview-documents',
-          columns,
-          renderRowActions: isReviewQueue
-            ? (row) => {
-                const isApprovePending = activeDecision?.documentId === row.id && activeDecision.decision === 'APPROVED'
-                const isRejectPending = activeDecision?.documentId === row.id && activeDecision.decision === 'REJECTED'
-                const isPending = isApprovePending || isRejectPending || batchApprovePending
-
-                return (
-                  <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      loading={isApprovePending}
-                      disabled={isPending}
-                      onClick={() => {
-                        void handleReviewDecision(row.id, 'APPROVED')
-                      }}
-                    >
-                      Approve
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      loading={isRejectPending}
-                      disabled={isPending}
-                      onClick={() => {
-                        void handleReviewDecision(row.id, 'REJECTED')
-                      }}
-                    >
-                      Reject
-                    </Button>
-                  </Stack>
-                )
-              }
-            : undefined,
-          fetcher: async (query) => {
-            return fetchDocumentsTablePage(
-              {
-                page: query.page,
-                pageSize: query.pageSize,
-                orderBy: query.orderBy as DocumentsQueryParams['orderBy'],
-                sortDirection: query.sortDirection,
-                search: query.search,
-                author: query.filters.author ?? query.search,
-                tag: query.filters.tag,
-                statuses: resolveStatuses(query.filters.statuses),
-                documentType: query.filters.documentType,
-                batch: query.filters.batch,
-                createdFrom: query.filters.createdFrom,
-                createdTo: query.filters.createdTo,
-                collection: query.filters.collection,
-                accessLevel: query.filters.accessLevel,
-                cursorValue: query.cursorValue,
-                cursorId: query.cursorId,
-                cursorDirection: query.cursorDirection,
-              },
-              isReviewQueue,
-            )
-          },
-        }}
+      <DocumentTable
+        config={tableConfig}
         controller={{
           currentQueryKey: JSON.stringify(effectiveQueryParams),
           filters: currentFilters,
@@ -881,39 +904,6 @@ export function DocumentsTable({
           cursorDirection: effectiveQueryParams.cursorDirection,
           filters: currentFilters,
         }}
-        emptyMessage={getDocumentsTableEmptyMessage(isReviewQueue)}
-        searchPlaceholder="Search by name, legacy ID, batch..."
-        styleVariant={isReviewQueue ? 'reviewQueueDense' : 'default'}
-        {...reviewQueueSelectionProps}
-        leadingToolbarSlot={
-          <DocumentTableAdvancedSearchTrigger
-            activeFilterCount={
-              [
-                currentFilters.author,
-                currentFilters.statuses?.length ? 'statuses' : undefined,
-                currentFilters.documentType && currentFilters.documentType !== 'all'
-                  ? currentFilters.documentType
-                  : undefined,
-                currentFilters.batch,
-                currentFilters.createdFrom || currentFilters.createdTo ? 'dates' : undefined,
-                currentFilters.collection,
-                currentFilters.accessLevel,
-              ].filter(Boolean).length
-            }
-          >
-            <AdvancedSearchModal
-              filters={currentFilters}
-              filterOptions={filterOptions}
-              onApply={(filters) => {
-                setOverviewFilters({
-                  ...filters,
-                  statuses: resolveStatuses(filters.statuses),
-                })
-              }}
-            />
-          </DocumentTableAdvancedSearchTrigger>
-        }
-        trailingToolbarSlot={trailingToolbarSlot}
       />
       <Snackbar
         open={toastState.open}

@@ -6,7 +6,7 @@ import {
   applyDocumentTableSorting,
   applyNextDocumentTableCursor,
   buildInitialDocumentTableSorting,
-} from '../../../../../components/organisms/document-table/query-state'
+} from '../../../../../components/organisms/DocumentTable/query-state'
 
 describe('document table query state helpers', () => {
   const baseQuery = {

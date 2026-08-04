@@ -6,7 +6,7 @@ vi.mock('@lib/editHistory', () => ({
   createEditHistoryEntry: vi.fn(),
 }))
 
-import { getAllDocuments, getDocuments } from '@lib/queries'
+import { getAllDocuments, getDocuments, getReadyForLibraryDocuments } from '@lib/queries'
 import { resetTestDatabase, shouldSkipDashboardIntegrationSuite } from '../support/test-db'
 import { withRollbackTransaction } from '../support/transaction'
 
@@ -565,6 +565,113 @@ describeDbIntegration('documents queries (integration)', () => {
         const resultIds = new Set(result.data.map((document) => document.id))
         expect(resultIds.has(matchingDoc.id)).toBe(true)
         expect(resultIds.has(nonMatchingDoc.id)).toBe(false)
+      })
+    }, 15000)
+  })
+
+  describe('getReadyForLibraryDocuments', () => {
+    it('filters ready candidates before returning the table result', async () => {
+      await withRollbackTransaction(async (tx) => {
+        const requiredMetadataNames = ['dc_title', 'dc_type', 'dc_subject', 'dc_rights']
+        const existingMetadata = await tx.metadata.findMany({
+          where: { name: { in: requiredMetadataNames } },
+          select: { id: true, name: true },
+        })
+        const existingMetadataNames = new Set(existingMetadata.map(({ name }) => name))
+        await Promise.all(
+          requiredMetadataNames
+            .filter((name) => !existingMetadataNames.has(name))
+            .map((name) =>
+              tx.metadata.create({
+                data: {
+                  id: `rfmd-${makeIds().token}`,
+                  name,
+                  notes: `Integration fixture definition for ${name}`,
+                },
+              }),
+            ),
+        )
+        const requiredMetadata = await tx.metadata.findMany({
+          where: { name: { in: requiredMetadataNames } },
+          select: { id: true, name: true },
+        })
+        const openAccessLevel = await tx.access_levels.findFirst({
+          where: { level_name: 'open access' },
+          select: { id: true },
+        })
+
+        expect(requiredMetadata).toHaveLength(4)
+        expect(openAccessLevel).toBeDefined()
+        if (!openAccessLevel) return
+
+        const matchingDocument = await createTestDocument(tx, { name: 'READY_FILTER_MATCH' })
+        const nonMatchingDocument = await createTestDocument(tx, { name: 'READY_FILTER_MISS' })
+        const matchingAuthor = await createTestAuthor(tx, 'Ready Filter Author')
+        const otherAuthor = await createTestAuthor(tx, 'Different Ready Author')
+
+        await Promise.all([
+          linkAuthorToDocument(tx, matchingDocument.id, matchingAuthor.id),
+          linkAuthorToDocument(tx, nonMatchingDocument.id, otherAuthor.id),
+          tx.document_quality.create({
+            data: {
+              id: `rfq-${matchingDocument.id}`.slice(0, 36),
+              document_id: matchingDocument.id,
+              validation_status: 'APPROVED',
+            },
+          }),
+          tx.document_quality.create({
+            data: {
+              id: `rfq-${nonMatchingDocument.id}`.slice(0, 36),
+              document_id: nonMatchingDocument.id,
+              validation_status: 'APPROVED',
+            },
+          }),
+          tx.document_access.create({
+            data: {
+              id: `rfa-${matchingDocument.id}`.slice(0, 36),
+              document_id: matchingDocument.id,
+              access_level_id: openAccessLevel.id,
+            },
+          }),
+          tx.document_access.create({
+            data: {
+              id: `rfa-${nonMatchingDocument.id}`.slice(0, 36),
+              document_id: nonMatchingDocument.id,
+              access_level_id: openAccessLevel.id,
+            },
+          }),
+        ])
+
+        await tx.document_to_metadata.createMany({
+          data: requiredMetadata.flatMap(({ id: metadataId }) => [
+            {
+              id: `rfm-${matchingDocument.id}-${metadataId}`.slice(0, 36),
+              document_id: matchingDocument.id,
+              metadata_id: metadataId,
+              value: 'ready',
+              value_type: 'string',
+            },
+            {
+              id: `rfm-${nonMatchingDocument.id}-${metadataId}`.slice(0, 36),
+              document_id: nonMatchingDocument.id,
+              metadata_id: metadataId,
+              value: 'ready',
+              value_type: 'string',
+            },
+          ]),
+        })
+
+        const result = await getReadyForLibraryDocuments(
+          {
+            page: 1,
+            pageSize: 1,
+            author: 'Ready Filter Author',
+          },
+          tx,
+        )
+
+        expect(result.total).toBe(1)
+        expect(result.items.map((item) => item.id)).toEqual([matchingDocument.id])
       })
     }, 15000)
   })

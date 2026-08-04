@@ -40,7 +40,6 @@ export interface PipelineSelectionDraft {
     metadataExtraction: boolean
     metadataValidation: boolean
     rightsDeterminator: boolean
-    fedoraIngester: boolean
   }
 }
 
@@ -258,7 +257,6 @@ export function expandPresetToDraft(profileId: ProfileId): PipelineSelectionDraf
       metadataExtraction: false,
       metadataValidation: false,
       rightsDeterminator: false,
-      fedoraIngester: false,
     },
   }
 }
@@ -410,17 +408,6 @@ export function draftToPipelineConfig(draft: PipelineSelectionDraft): PipelineCo
     })
   }
 
-  if (draft.steps.fedoraIngester) {
-    plan.push({
-      id: 'step-fedora-ingester',
-      stepId: 'fedora-ingester',
-      service: 'fedora-ingester',
-      label: 'Fedora Ingester',
-      order: 10,
-      enabled: true,
-    })
-  }
-
   return {
     profileId: draft.profileId,
     mode: draft.mode,
@@ -463,6 +450,5 @@ export function getEnabledSteps(draft: PipelineSelectionDraft): string[] {
   if (draft.steps.metadataExtraction) steps.push('Metadata Extraction')
   if (draft.steps.metadataValidation) steps.push('Metadata Validation')
   if (draft.steps.rightsDeterminator) steps.push('Rights Determinator')
-  if (draft.steps.fedoraIngester) steps.push('Fedora Ingester')
   return steps
 }

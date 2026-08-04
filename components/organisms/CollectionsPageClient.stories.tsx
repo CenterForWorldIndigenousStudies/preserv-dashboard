@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 
 import { COLLECTIONS_PATH } from '@constants/paths'
 import { CollectionsPageClient } from '@organisms/CollectionsPageClient'
+import type { FilterOptions } from '@lib/search'
 import type { CollectionWithMeta } from 'types/collections'
 
 const sampleCollections: CollectionWithMeta[] = [
@@ -25,6 +26,12 @@ const sampleCollections: CollectionWithMeta[] = [
     document_count: 0,
   },
 ]
+
+const filterOptions: FilterOptions = {
+  collections: sampleCollections.map(({ collection_name }) => collection_name),
+  accessLevels: ['open access', 'restricted', 'internal', 'confidential'],
+  statuses: ['APPROVED', 'NEEDS_REVIEW', 'VALIDATED'],
+}
 
 const meta = {
   title: 'Organisms/CollectionsPageClient',
@@ -54,11 +61,13 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   args: {
     collections: sampleCollections,
+    filterOptions,
   },
 }
 
 export const Empty: Story = {
   args: {
     collections: [],
+    filterOptions,
   },
 }

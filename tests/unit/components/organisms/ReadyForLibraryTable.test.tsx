@@ -2,10 +2,15 @@ import type { ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
 import { DOCUMENTS_PATH, READY_FOR_LIBRARY_PATH } from '@constants/paths'
+import type { FilterOptions } from '@lib/search'
 
 const { mockReplace, mockSearchParams } = vi.hoisted(() => ({
   mockReplace: vi.fn(),
   mockSearchParams: new URLSearchParams('page=2&pageSize=50&search=Sample&orderBy=name&sortDirection=desc'),
+}))
+
+const mocks = vi.hoisted(() => ({
+  documentTableProps: undefined as Record<string, unknown> | undefined,
 }))
 
 vi.mock('next/navigation', () => ({
@@ -18,8 +23,14 @@ vi.mock('@actions/ready-for-library', () => ({
   getReadyForLibraryAction: vi.fn(),
 }))
 
-vi.mock('@organisms/document-table/DocumentDataTable', () => ({
-  DocumentDataTable: ({ definition }: { definition: { columns: Array<{ Cell?: (args: unknown) => unknown }> } }) => {
+vi.mock('@organisms/DocumentTable/DocumentTable', () => ({
+  DocumentTable: ({
+    config,
+  }: {
+    config: { definition: { columns: Array<{ Cell?: (args: unknown) => unknown }> } }
+  }) => {
+    mocks.documentTableProps = { config }
+    const { definition } = config
     const cell = definition.columns[0]?.Cell
 
     if (!cell) {
@@ -40,6 +51,12 @@ vi.mock('@organisms/document-table/DocumentDataTable', () => ({
 }))
 
 import { ReadyForLibraryTable } from '@organisms/ReadyForLibraryTable'
+
+const filterOptions: FilterOptions = {
+  collections: [],
+  accessLevels: [],
+  statuses: [],
+}
 
 describe('ReadyForLibraryTable', () => {
   it('links document detail back to the current ready-for-library state', () => {
@@ -64,11 +81,13 @@ describe('ReadyForLibraryTable', () => {
           sortDirection: 'desc',
           filters: {},
         }}
+        filterOptions={filterOptions}
       />,
     )
 
     expect(markup).toContain(
       `${DOCUMENTS_PATH}/doc-1?from=%2Fready-for-library%3Fpage%3D2%26pageSize%3D50%26search%3DSample%26orderBy%3Dname%26sortDirection%3Ddesc`,
     )
+    expect(mocks.documentTableProps?.config).toBeDefined()
   })
 })

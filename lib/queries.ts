@@ -919,7 +919,7 @@ export async function getCollectionDocuments(collectionId: string): Promise<Docu
   return result.documents
 }
 
-interface CollectionDocumentQueryParams {
+export interface CollectionDocumentQueryParams extends AdvancedSearchFilters {
   search?: string
   sortField?: 'name' | 'id_legacy' | 'filesize' | 'created_at'
   sortDirection?: 'asc' | 'desc'
@@ -960,15 +960,81 @@ function normalizeCollectionDocumentSortField(sortField?: string): CollectionDoc
     : 'name'
 }
 
-function buildCollectionDocumentRowsSql(params: {
+interface CollectionDocumentSqlParams {
   collectionId: string
   search?: string
+  author?: string
+  tagIds?: string[]
+  statuses?: StatusOption[]
+  documentType?: DocumentTypeOption
+  batch?: string
+  createdFrom?: string
+  createdTo?: string
+  accessLevel?: AccessLevelOption
   sortField?: string
   sortDirection?: 'asc' | 'desc'
   page?: number
   pageSize?: number
   mode: 'in' | 'out'
-}): Prisma.Sql {
+}
+
+function buildCollectionDocumentAdvancedFilterSql(params: CollectionDocumentSqlParams): Prisma.Sql {
+  const filterConditions: Prisma.Sql[] = []
+
+  if (params.author?.trim()) {
+    filterConditions.push(buildOverviewAuthorSearchConditionSql(params.author))
+  }
+
+  if (params.tagIds) {
+    filterConditions.push(buildOverviewTagConditionSql(params.tagIds))
+  }
+
+  if (params.statuses?.length) {
+    filterConditions.push(buildOverviewStatusConditionSql(params.statuses))
+  }
+
+  if (params.documentType === 'unique' || params.documentType === 'duplicate') {
+    const duplicateCondition = Prisma.sql`
+      EXISTS (
+        SELECT 1 FROM document_to_tags duplicate_dtt
+        INNER JOIN tags duplicate_tag ON duplicate_tag.id = duplicate_dtt.tag_id
+        WHERE duplicate_dtt.document_id = d.id
+          AND duplicate_tag.name = 'duplicate_document'
+      )
+    `
+    filterConditions.push(
+      params.documentType === 'duplicate' ? duplicateCondition : Prisma.sql`NOT ${duplicateCondition}`,
+    )
+  }
+
+  if (params.batch?.trim()) {
+    filterConditions.push(buildOverviewBatchConditionSql(params.batch))
+  }
+
+  if (params.createdFrom) {
+    filterConditions.push(Prisma.sql`d.created_at >= ${new Date(`${params.createdFrom}T00:00:00.000Z`)}`)
+  }
+
+  if (params.createdTo) {
+    filterConditions.push(Prisma.sql`d.created_at <= ${new Date(`${params.createdTo}T23:59:59.999Z`)}`)
+  }
+
+  if (params.accessLevel) {
+    filterConditions.push(Prisma.sql`
+      EXISTS (
+        SELECT 1
+        FROM document_access filtered_da
+        INNER JOIN access_levels filtered_al ON filtered_al.id = filtered_da.access_level_id
+        WHERE filtered_da.document_id = d.id
+          AND LOWER(filtered_al.level_name) = ${params.accessLevel.toLowerCase()}
+      )
+    `)
+  }
+
+  return filterConditions.length ? Prisma.sql`AND ${Prisma.join(filterConditions, ' AND ')}` : Prisma.empty
+}
+
+function buildCollectionDocumentRowsSql(params: CollectionDocumentSqlParams): Prisma.Sql {
   const page = normalizeCollectionDocumentPage(params.page)
   const pageSize = normalizeCollectionDocumentPageSize(params.pageSize)
   const offset = (page - 1) * pageSize
@@ -990,6 +1056,7 @@ function buildCollectionDocumentRowsSql(params: {
         )
       `
     : Prisma.empty
+  const advancedFilterCondition = buildCollectionDocumentAdvancedFilterSql(params)
 
   if (params.mode === 'in') {
     return Prisma.sql`
@@ -1018,8 +1085,10 @@ function buildCollectionDocumentRowsSql(params: {
           INNER JOIN metadata m ON m.id = dtm.metadata_id
           WHERE m.name = 'source_id'
         ) AS source_meta ON source_meta.document_id = d.id
+        LEFT JOIN document_quality dq ON dq.document_id = d.id
         WHERE c.id = ${params.collectionId}
         ${searchCondition}
+        ${advancedFilterCondition}
       )
       SELECT f.*, totals.total
       FROM filtered f
@@ -1045,8 +1114,10 @@ function buildCollectionDocumentRowsSql(params: {
       FROM documents d
       LEFT JOIN document_to_tags dtt ON dtt.document_id = d.id
         AND dtt.tag_id = (SELECT tag_id FROM collections WHERE id = ${params.collectionId})
+      LEFT JOIN document_quality dq ON dq.document_id = d.id
       WHERE dtt.document_id IS NULL
       ${searchCondition}
+      ${advancedFilterCondition}
     )
     SELECT f.*, totals.total
     FROM filtered f
@@ -1056,15 +1127,7 @@ function buildCollectionDocumentRowsSql(params: {
   `
 }
 
-async function getCollectionDocumentsPage(params: {
-  collectionId: string
-  search?: string
-  sortField?: string
-  sortDirection?: 'asc' | 'desc'
-  page?: number
-  pageSize?: number
-  mode: 'in' | 'out'
-}): Promise<CollectionDocumentQueryResult> {
+async function getCollectionDocumentsPage(params: CollectionDocumentSqlParams): Promise<CollectionDocumentQueryResult> {
   const rows = await db.$queryRaw<Array<CollectionDocumentRow & { total: bigint | number | string }>>(
     buildCollectionDocumentRowsSql(params),
   )
@@ -1080,7 +1143,19 @@ export async function getDocumentsForCollection(
   collectionId: string,
   params?: CollectionDocumentQueryParams,
 ): Promise<CollectionDocumentQueryResult> {
-  return getCollectionDocumentsPage({ collectionId, mode: 'in', ...params })
+  return getCollectionDocumentsPage({
+    collectionId,
+    mode: 'in',
+    ...params,
+    author: normalizeTextFilter(params?.author),
+    tagIds: await resolveOverviewTagIds(normalizeTextFilter(params?.tag), db),
+    statuses: normalizeStatuses(params?.statuses),
+    documentType: normalizeDocumentType(params?.documentType),
+    batch: normalizeTextFilter(params?.batch),
+    createdFrom: normalizeDateFilter(params?.createdFrom),
+    createdTo: normalizeDateFilter(params?.createdTo),
+    accessLevel: normalizeAccessLevel(params?.accessLevel),
+  })
 }
 
 export async function getDocumentsNotInCollection(
@@ -1253,6 +1328,7 @@ async function getOverviewDocumentsPage(
     createdTo?: string
     collection?: string
     accessLevel?: AccessLevelOption
+    documentIds?: string[]
     requireValidationStatus?: boolean
     cursor?: DocumentsCursor | null
     cursorDirection?: 'next' | 'prev'
@@ -1286,6 +1362,7 @@ async function getOverviewDocumentsPage(
     sortField,
     statuses: params.statuses,
     tagIds: params.tagIds,
+    documentIds: params.documentIds,
   })
   const orderBySql = buildOverviewDocumentsOrderBySql({
     cursorDirection,
@@ -1471,6 +1548,7 @@ function buildOverviewDocumentsWhereSql(params: {
   createdTo?: string
   collection?: string
   accessLevel?: AccessLevelOption
+  documentIds?: string[]
   requireValidationStatus?: boolean
   cursor?: DocumentsCursor | null
   cursorDirection: 'next' | 'prev'
@@ -1521,6 +1599,12 @@ function buildOverviewDocumentsWhereSql(params: {
 
   if (params.accessLevel) {
     conditions.push(Prisma.sql`LOWER(al.level_name) = ${params.accessLevel}`)
+  }
+
+  if (params.documentIds) {
+    conditions.push(
+      params.documentIds.length > 0 ? Prisma.sql`d.id IN (${Prisma.join(params.documentIds)})` : Prisma.sql`1 = 0`,
+    )
   }
 
   if (params.requireValidationStatus) {
@@ -2400,13 +2484,59 @@ export async function getReviewQueueDocuments(
 // Returns documents with validation_status = 'APPROVED', has access_level via document_access,
 // and required Dublin Core metadata fields present.
 // ---------------------------------------------------------------------------
-export async function getReadyForLibraryDocuments(): Promise<{
+interface ReadyForLibraryQualityRow {
+  document_id: string
+  validation_status: string | null
+  validation_timestamp: bigint | number | string | null
+}
+
+export function buildReadyForLibraryItems(
+  qualityDocs: readonly ReadyForLibraryQualityRow[],
+  docAccessMap: ReadonlyMap<string, string | undefined>,
+  docDcFields: ReadonlyMap<string, ReadonlySet<string>>,
+  requiredDcFields: readonly string[],
+): ReadyForLibraryItem[] {
+  const items: ReadyForLibraryItem[] = []
+
+  for (const qd of qualityDocs) {
+    const accessLevel = docAccessMap.get(qd.document_id)
+    if (!accessLevel) continue
+
+    const dcFieldsPresent = docDcFields.get(qd.document_id)
+    const metadata_complete =
+      dcFieldsPresent !== undefined && requiredDcFields.every((field) => dcFieldsPresent.has(field))
+
+    items.push({
+      id: qd.document_id,
+      name: null,
+      validation_status: qd.validation_status,
+      validation_timestamp:
+        qd.validation_timestamp !== null && qd.validation_timestamp !== undefined
+          ? Number(qd.validation_timestamp)
+          : null,
+      metadata_complete,
+      access_level: accessLevel,
+    })
+  }
+
+  return items
+}
+
+export async function getReadyForLibraryDocuments(
+  params: DocumentsQueryParams = {},
+  client: QueryDbClient = db,
+): Promise<{
   items: ReadyForLibraryItem[]
   total: number
 }> {
   const requiredDcFields = ['dc_title', 'dc_type', 'dc_subject', 'dc_rights']
+  const normalizedStatuses = normalizeStatuses(params.statuses)
 
-  const dcMetadata = await db.metadata.findMany({
+  if (normalizedStatuses && !normalizedStatuses.includes('APPROVED')) {
+    return { items: [], total: 0 }
+  }
+
+  const dcMetadata = await client.metadata.findMany({
     where: { name: { in: requiredDcFields } },
     select: { id: true, name: true },
   })
@@ -2414,7 +2544,7 @@ export async function getReadyForLibraryDocuments(): Promise<{
   const dcMetaMap = new Map(dcMetadata.map((m) => [m.id, m.name]))
   const dcMetaIds = new Set(dcMetadata.map((m) => m.id))
 
-  const qualityDocs = await db.document_quality.findMany({
+  const qualityDocs = await client.document_quality.findMany({
     where: {
       validation_status: 'APPROVED',
     },
@@ -2428,7 +2558,7 @@ export async function getReadyForLibraryDocuments(): Promise<{
   const approvedDocIds = [...new Set(qualityDocs.map((d) => d.document_id))]
 
   // Get documents that have at least one access_level set via document_access
-  const accessRows = await db.document_access.findMany({
+  const accessRows = await client.document_access.findMany({
     where: { document_id: { in: approvedDocIds } },
     select: { document_id: true, access_level_id: true, access_levels: { select: { level_name: true } } },
   })
@@ -2441,7 +2571,11 @@ export async function getReadyForLibraryDocuments(): Promise<{
 
   const approvedWithAccess = approvedDocIds.filter((id) => docAccessMap.has(id))
 
-  const metadataRows = await db.document_to_metadata.findMany({
+  if (approvedWithAccess.length === 0) {
+    return { items: [], total: 0 }
+  }
+
+  const metadataRows = await client.document_to_metadata.findMany({
     where: {
       document_id: { in: approvedWithAccess },
       metadata_id: { in: [...dcMetaIds] },
@@ -2460,26 +2594,10 @@ export async function getReadyForLibraryDocuments(): Promise<{
     docDcFields.get(row.document_id)!.add(metaName)
   }
 
-  const items: ReadyForLibraryItem[] = []
-  for (const qd of qualityDocs) {
-    if (!docAccessMap.has(qd.document_id)) continue
-    const dcFieldsPresent = docDcFields.get(qd.document_id)
-    const metadata_complete = dcFieldsPresent !== undefined && requiredDcFields.every((f) => dcFieldsPresent.has(f))
-    items.push({
-      id: qd.document_id,
-      name: null, // name loaded separately below if needed
-      validation_status: qd.validation_status ?? null,
-      validation_timestamp:
-        qd.validation_timestamp !== null && qd.validation_timestamp !== undefined
-          ? Number(qd.validation_timestamp)
-          : null,
-      metadata_complete,
-      access_level: docAccessMap.get(qd.document_id) ?? null,
-    })
-  }
+  const items = buildReadyForLibraryItems(qualityDocs, docAccessMap, docDcFields, requiredDcFields)
 
   // Hydrate names from documents table
-  const docRows = await db.documents.findMany({
+  const docRows = await client.documents.findMany({
     where: { id: { in: approvedWithAccess } },
     select: { id: true, name: true },
   })
@@ -2489,7 +2607,52 @@ export async function getReadyForLibraryDocuments(): Promise<{
     item.name = nameMap.get(item.id) ?? null
   }
 
-  return { items, total: items.length }
+  const tagIds = await resolveOverviewTagIds(normalizeTextFilter(params.tag), client)
+  const filteredResult = await getOverviewDocumentsPage(
+    {
+      page: 1,
+      pageSize: approvedWithAccess.length,
+      search: normalizeTextFilter(params.author),
+      tagIds,
+      statuses: normalizedStatuses ?? ['APPROVED'],
+      documentType: normalizeDocumentType(params.documentType),
+      batch: normalizeTextFilter(params.batch),
+      createdFrom: normalizeDateFilter(params.createdFrom),
+      createdTo: normalizeDateFilter(params.createdTo),
+      collection: normalizeTextFilter(params.collection),
+      accessLevel: normalizeAccessLevel(params.accessLevel),
+      documentIds: approvedWithAccess,
+    },
+    client,
+  )
+  const filteredDocumentIds = new Set(filteredResult.data.map((document) => document.id))
+  const filteredItems = items.filter((item) => filteredDocumentIds.has(item.id))
+
+  return { items: filteredItems, total: filteredItems.length }
+}
+
+/**
+ * Resolve the batch-scoped handoff targets for the current dashboard-visible
+ * Ready for Library set. The downstream translator accepts batches, not
+ * individual documents, so this function returns deduplicated batch IDs.
+ */
+export async function getReadyForLibraryBatchIds(documentIds?: readonly string[]): Promise<string[]> {
+  const eligibleDocumentIds = documentIds
+    ? [...new Set(documentIds.map((documentId) => documentId.trim()).filter(Boolean))]
+    : (await getReadyForLibraryDocuments()).items.map((item) => item.id)
+
+  if (eligibleDocumentIds.length === 0) {
+    return []
+  }
+
+  const rows = await db.document_to_batches.findMany({
+    where: {
+      document_id: { in: eligibleDocumentIds },
+    },
+    select: { batch_id: true },
+  })
+
+  return [...new Set(rows.map((row) => row.batch_id))]
 }
 
 function parseBatchProcessingDetails(rawDetails: string | null): Record<string, string | number | boolean | null> {

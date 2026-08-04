@@ -8,6 +8,9 @@ import type { ProcessBatchStatus, ProcessStageStatus } from 'types/pipelineContr
 const processPipelineDraft: PipelineSelectionDraft = {
   profileId: 'custom',
   mode: 'custom',
+  metadataExtraction: {
+    mode: 'direct',
+  },
   steps: {
     ingester: true,
     normalizePass1: {
@@ -31,7 +34,6 @@ const processPipelineDraft: PipelineSelectionDraft = {
     metadataExtraction: true,
     metadataValidation: true,
     rightsDeterminator: true,
-    fedoraIngester: false,
   },
 }
 

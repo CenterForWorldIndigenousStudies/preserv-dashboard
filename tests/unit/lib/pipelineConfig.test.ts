@@ -32,7 +32,6 @@ function buildDraft(): PipelineSelectionDraft {
       metadataExtraction: true,
       metadataValidation: false,
       rightsDeterminator: false,
-      fedoraIngester: false,
     },
   }
 }
@@ -48,6 +47,7 @@ describe('pipelineConfig', () => {
     expect(ocrStep?.dependsOn).toEqual(['step-normalize-pass-1-rotate'])
     expect(contentDedupStep?.dependsOn).toEqual(['step-ocr-processor'])
     expect(metadataExtractionStep?.dependsOn).toEqual(['step-content-dedup'])
+    expect(config.executionPlan.some((step) => step.service === 'fedora-ingester')).toBe(false)
   })
 
   it('persists metadata extraction mode in pipeline config', () => {

@@ -9,27 +9,20 @@ import {
   getDocumentsForCollection,
   getDocumentsNotInCollection,
   removeDocumentsFromCollection,
+  type CollectionDocumentQueryParams,
 } from '@lib/queries'
 import type { PaginatedDocumentsResult } from 'types/pagination'
 
-interface CollectionDocumentsParams {
-  search?: string
-  sortField?: 'name' | 'id_legacy' | 'filesize' | 'created_at'
-  sortDirection?: 'asc' | 'desc'
-  page?: number
-  pageSize?: number
-}
-
 export async function getDocumentsForCollectionAction(
   collectionId: string,
-  params?: CollectionDocumentsParams,
+  params?: CollectionDocumentQueryParams,
 ): Promise<PaginatedDocumentsResult> {
   return getDocumentsForCollection(collectionId, params)
 }
 
 export async function getDocumentsNotInCollectionAction(
   collectionId: string,
-  params?: CollectionDocumentsParams,
+  params?: CollectionDocumentQueryParams,
 ): Promise<PaginatedDocumentsResult> {
   return getDocumentsNotInCollection(collectionId, params)
 }

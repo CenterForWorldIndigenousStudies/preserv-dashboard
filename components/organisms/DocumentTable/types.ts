@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
-import type { MRT_ColumnDef, MRT_RowData, MRT_RowSelectionState } from 'material-react-table'
+import type { MRT_ColumnDef, MRT_RowData, MRT_RowSelectionState, MRT_Updater } from 'material-react-table'
+
+import type { AdvancedSearchFilters, FilterOptions } from '@lib/search'
 
 export interface DocumentTableCursor {
   id: string
@@ -55,6 +57,42 @@ export interface DocumentTableDefinition<TData extends MRT_RowData, TFilters> {
   renderRowActions?: (row: TData) => ReactNode
   rowActionsHeader?: string
   rowActionsColumnSize?: number
+}
+
+export interface DocumentTableAdvancedSearchConfig {
+  filters: AdvancedSearchFilters
+  filterOptions: FilterOptions
+  onApply: (filters: AdvancedSearchFilters) => void
+}
+
+export interface DocumentTableRowActionContext<TData> {
+  row: TData
+}
+
+export interface DocumentTableRowActionConfig<TData> {
+  id: string
+  render: (context: DocumentTableRowActionContext<TData>) => ReactNode | undefined
+}
+
+export interface DocumentTableConfig<TData extends MRT_RowData & { id: string }, TFilters> {
+  definition: Omit<DocumentTableDefinition<TData, TFilters>, 'renderRowActions'>
+  rowActions?: readonly DocumentTableRowActionConfig<TData>[]
+  rowActionsHeader?: string
+  rowActionsColumnSize?: number
+  emptyMessage?: string
+  searchPlaceholder?: string
+  styleVariant?: 'default' | 'reviewQueueDense'
+  advancedSearch?: DocumentTableAdvancedSearchConfig
+  leadingToolbarSlot?: ReactNode
+  trailingToolbarSlot?: ReactNode
+  rowSelection?: MRT_RowSelectionState
+  onRowSelectionChange?: (updater: MRT_Updater<MRT_RowSelectionState>) => void
+  enableRowSelection?: boolean
+  enableSorting?: boolean
+  getRowId?: (row: TData) => string
+  excludedRowIds?: readonly string[]
+  showToolbar?: boolean
+  showPager?: boolean
 }
 
 export interface DocumentTableController<TFilters> {

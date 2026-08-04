@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { expect, within } from 'storybook/test'
 
 import { COLLECTIONS_PATH } from '@constants/paths'
+import type { FilterOptions } from '@lib/search'
 import type { CollectionWithMeta } from 'types/collections'
 import type { Document } from 'types/documents'
 import { CollectionsAccordion } from './CollectionsAccordion'
@@ -88,6 +89,12 @@ const sampleCollections: CollectionWithDocuments[] = [
   },
 ]
 
+const filterOptions: FilterOptions = {
+  collections: sampleCollections.map(({ collection_name }) => collection_name),
+  accessLevels: ['open access', 'restricted', 'internal', 'confidential'],
+  statuses: ['APPROVED', 'NEEDS_REVIEW', 'VALIDATED'],
+}
+
 interface CollectionWithDocuments extends CollectionWithMeta {
   documents: Document[]
 }
@@ -97,6 +104,7 @@ const meta = {
   tags: ['autodocs'],
   args: {
     collections: sampleCollections,
+    filterOptions,
   },
   parameters: {
     nextjs: {
@@ -126,6 +134,7 @@ export const Default: Story = {
 export const Empty: Story = {
   args: {
     collections: [],
+    filterOptions,
   },
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).getByText('No collections found.')).toBeVisible()
@@ -135,17 +144,20 @@ export const Empty: Story = {
 export const SingleCollection: Story = {
   args: {
     collections: [sampleCollections[0]],
+    filterOptions,
   },
 }
 
 export const MixedDocumentCounts: Story = {
   args: {
     collections: sampleCollections,
+    filterOptions,
   },
 }
 
 export const DeletableCollections: Story = {
   args: {
     collections: sampleCollections,
+    filterOptions,
   },
 }

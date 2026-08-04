@@ -1,29 +1,33 @@
 'use client'
 
-import { useEffect, useMemo, useState, type ReactElement } from 'react'
+import { useEffect, useState, type ReactElement } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Box, Chip, Paper, Stack, Typography } from '@mui/material'
 import { alpha, type Theme } from '@mui/material/styles'
-import type { MRT_ColumnDef } from 'material-react-table'
 
-import { deleteCollectionAction, getDocumentsForCollectionAction } from '@actions/collections'
+import { deleteCollectionAction } from '@actions/collections'
 import { Button } from '@atoms/Button'
 import { IconX } from '@atoms/icons/IconX'
-import { DateAtom } from '@atoms/Date'
-import { getDocumentDetailPath } from '@constants/paths'
-import { PAGE_LABELS } from '@constants/pageLabels'
-import { DocumentNameBlock } from '@molecules/DocumentNameBlock'
 import { AccordionPanel } from '@molecules/AccordionPanel'
 import { CollectionDocumentManager } from '@organisms/CollectionDocumentManager'
-import { DocumentDataTable } from '@organisms/document-table/DocumentDataTable'
-import type { DocumentTableQuery } from '@organisms/document-table/types'
-import { useDocumentTableController } from '@organisms/document-table/useDocumentTableController'
+import { CollectionDocumentsTable } from '@organisms/CollectionDocumentsTable'
+import type { DocumentTableQuery } from '@organisms/DocumentTable/types'
+import {
+  normalizeAccessLevel,
+  normalizeDateFilter,
+  normalizeDocumentType,
+  normalizeTextFilter,
+  parseStatusesParam,
+  serializeStatusesParam,
+  type AdvancedSearchFilters,
+  type FilterOptions,
+} from '@lib/search'
 import { TagDeleteFlowDialog } from '@organisms/TagDeleteFlowDialog'
 import type { CollectionWithMeta } from 'types/collections'
-import type { Document } from 'types/documents'
 
 interface CollectionsAccordionProps {
   collections: CollectionWithMeta[]
+  filterOptions: FilterOptions
 }
 
 interface CollectionManagerState {
@@ -36,7 +40,21 @@ const COLLECTION_EXPANDED_PARAM = 'expanded'
 
 function buildCollectionQueryParamKey(
   collectionId: string,
-  key: 'page' | 'pageSize' | 'search' | 'orderBy' | 'sortDirection',
+  key:
+    | 'page'
+    | 'pageSize'
+    | 'search'
+    | 'author'
+    | 'tag'
+    | 'statuses'
+    | 'documentType'
+    | 'batch'
+    | 'createdFrom'
+    | 'createdTo'
+    | 'collection'
+    | 'accessLevel'
+    | 'orderBy'
+    | 'sortDirection',
 ) {
   return `collection-${collectionId}-${key}`
 }
@@ -59,19 +77,52 @@ function parseExpandedCollections(searchParams: URLSearchParams): Set<string> {
 function parseCollectionTableInitialQuery(
   searchParams: URLSearchParams,
   collectionId: string,
-): DocumentTableQuery<Record<string, never>> {
+  collectionName: string,
+): DocumentTableQuery<AdvancedSearchFilters> {
   const page = Number(searchParams.get(buildCollectionQueryParamKey(collectionId, 'page')))
   const pageSize = Number(searchParams.get(buildCollectionQueryParamKey(collectionId, 'pageSize')))
   const sortDirection = searchParams.get(buildCollectionQueryParamKey(collectionId, 'sortDirection'))
-  const search = searchParams.get(buildCollectionQueryParamKey(collectionId, 'search'))?.trim()
+  const search = normalizeTextFilter(
+    searchParams.get(buildCollectionQueryParamKey(collectionId, 'search')) ?? undefined,
+  )
+  const author = normalizeTextFilter(
+    searchParams.get(buildCollectionQueryParamKey(collectionId, 'author')) ?? undefined,
+  )
+  const tag = normalizeTextFilter(searchParams.get(buildCollectionQueryParamKey(collectionId, 'tag')) ?? undefined)
+  const batch = normalizeTextFilter(searchParams.get(buildCollectionQueryParamKey(collectionId, 'batch')) ?? undefined)
+  const createdFrom = normalizeDateFilter(
+    searchParams.get(buildCollectionQueryParamKey(collectionId, 'createdFrom')) ?? undefined,
+  )
+  const createdTo = normalizeDateFilter(
+    searchParams.get(buildCollectionQueryParamKey(collectionId, 'createdTo')) ?? undefined,
+  )
+  const accessLevel = normalizeAccessLevel(
+    searchParams.get(buildCollectionQueryParamKey(collectionId, 'accessLevel')) ?? undefined,
+  )
+  const documentType = normalizeDocumentType(
+    searchParams.get(buildCollectionQueryParamKey(collectionId, 'documentType')) ?? undefined,
+  )
+  const statuses = parseStatusesParam(
+    searchParams.get(buildCollectionQueryParamKey(collectionId, 'statuses')) ?? undefined,
+  )
 
   return {
     page: Number.isFinite(page) && page > 0 ? page : 1,
     pageSize: Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 25,
-    search: search || undefined,
+    search,
     orderBy: searchParams.get(buildCollectionQueryParamKey(collectionId, 'orderBy')) ?? undefined,
     sortDirection: sortDirection === 'asc' ? 'asc' : sortDirection === 'desc' ? 'desc' : undefined,
-    filters: {},
+    filters: {
+      author,
+      tag,
+      statuses,
+      documentType,
+      batch,
+      createdFrom,
+      createdTo,
+      collection: collectionName,
+      accessLevel,
+    },
   }
 }
 
@@ -79,7 +130,7 @@ function serializeCollectionsState(
   pathname: string,
   currentSearchParams: URLSearchParams,
   expandedCollections: Set<string>,
-  collectionQueries: Record<string, DocumentTableQuery<Record<string, never>>>,
+  collectionQueries: Record<string, DocumentTableQuery<AdvancedSearchFilters>>,
 ): string {
   const nextParams = new URLSearchParams(currentSearchParams.toString())
 
@@ -107,6 +158,22 @@ function serializeCollectionsState(
     if (query.search) {
       nextParams.set(buildCollectionQueryParamKey(collectionId, 'search'), query.search)
     }
+    const filterParams: Array<[keyof AdvancedSearchFilters, string | undefined]> = [
+      ['author', query.filters.author],
+      ['tag', query.filters.tag],
+      ['statuses', serializeStatusesParam(query.filters.statuses)],
+      ['documentType', query.filters.documentType === 'all' ? undefined : query.filters.documentType],
+      ['batch', query.filters.batch],
+      ['createdFrom', query.filters.createdFrom],
+      ['createdTo', query.filters.createdTo],
+      ['collection', query.filters.collection],
+      ['accessLevel', query.filters.accessLevel],
+    ]
+    for (const [key, value] of filterParams) {
+      if (value) {
+        nextParams.set(buildCollectionQueryParamKey(collectionId, key), value)
+      }
+    }
     if (query.orderBy) {
       nextParams.set(buildCollectionQueryParamKey(collectionId, 'orderBy'), query.orderBy)
     }
@@ -119,126 +186,7 @@ function serializeCollectionsState(
   return nextSearch ? `${pathname}?${nextSearch}` : pathname
 }
 
-function buildCollectionDocumentHref(documentId: string, returnHref: string): string {
-  return getDocumentDetailPath(documentId, returnHref, PAGE_LABELS.collections)
-}
-
-function buildCollectionDocumentsPageInfo(page: number, pageSize: number, total: number) {
-  const hasNextPage = page * pageSize < total
-
-  return {
-    pageSize,
-    hasNextPage,
-    hasPreviousPage: page > 1,
-    startCursor: page > 1 ? { id: `page-${page - 1}`, value: String(page - 1) } : null,
-    endCursor: hasNextPage ? { id: `page-${page + 1}`, value: String(page + 1) } : null,
-  }
-}
-
-function CollectionDocumentsTable({
-  collectionId,
-  documentCount,
-  initialQuery,
-  originHref,
-  onQueryChange,
-}: {
-  collectionId: string
-  documentCount: number
-  initialQuery: DocumentTableQuery<Record<string, never>>
-  originHref: string
-  onQueryChange: (query: DocumentTableQuery<Record<string, never>>) => void
-}): ReactElement {
-  const controller = useDocumentTableController<Record<string, never>>({ initialQuery })
-
-  useEffect(() => {
-    onQueryChange(controller.query)
-  }, [controller.currentQueryKey, controller.query, onQueryChange])
-
-  const columns = useMemo<MRT_ColumnDef<Document>[]>(
-    () => [
-      {
-        accessorKey: 'name',
-        header: 'Document',
-        size: 420,
-        Cell: ({
-          row: {
-            original: { id, id_legacy, name, source_id },
-          },
-        }) => {
-          return (
-            <DocumentNameBlock
-              name={name}
-              id={id}
-              legacyId={id_legacy}
-              sourceId={source_id}
-              href={buildCollectionDocumentHref(id, originHref)}
-            />
-          )
-        },
-      },
-      {
-        accessorKey: 'created_at',
-        header: 'Created',
-        size: 160,
-        Cell: ({ renderedCellValue }) => <DateAtom value={renderedCellValue as Document['created_at']} />,
-      },
-      {
-        accessorKey: 'updated_at',
-        header: 'Updated',
-        size: 160,
-        Cell: ({ renderedCellValue }) => <DateAtom value={renderedCellValue as Document['updated_at']} />,
-      },
-    ],
-    [originHref],
-  )
-
-  return (
-    <DocumentDataTable<Document, Record<string, never>>
-      definition={{
-        tableId: `collection-documents-${collectionId}`,
-        columns,
-        fetcher: async (query) => {
-          const result = await getDocumentsForCollectionAction(collectionId, {
-            page: query.page,
-            pageSize: query.pageSize,
-            search: query.search,
-            sortField: query.orderBy as 'name' | 'id_legacy' | 'filesize' | 'created_at' | undefined,
-            sortDirection: query.sortDirection,
-          })
-
-          return {
-            data: result.documents,
-            totalCount: result.total,
-            pageInfo: buildCollectionDocumentsPageInfo(query.page, query.pageSize, result.total),
-          }
-        },
-      }}
-      controller={controller}
-      initialData={
-        documentCount === 0
-          ? {
-              data: [],
-              totalCount: 0,
-              pageInfo: {
-                pageSize: 25,
-                hasNextPage: false,
-                hasPreviousPage: false,
-                startCursor: null,
-                endCursor: null,
-              },
-            }
-          : undefined
-      }
-      initialQuery={{
-        ...initialQuery,
-      }}
-      emptyMessage="No documents associated with this collection."
-      searchPlaceholder="Search collection documents"
-    />
-  )
-}
-
-export function CollectionsAccordion({ collections }: CollectionsAccordionProps): ReactElement {
+export function CollectionsAccordion({ collections, filterOptions }: CollectionsAccordionProps): ReactElement {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -246,7 +194,7 @@ export function CollectionsAccordion({ collections }: CollectionsAccordionProps)
   const [expandedCollections, setExpandedCollections] = useState<Set<string>>(() =>
     parseExpandedCollections(searchParams),
   )
-  const [collectionQueries, setCollectionQueries] = useState<Record<string, DocumentTableQuery<Record<string, never>>>>(
+  const [collectionQueries, setCollectionQueries] = useState<Record<string, DocumentTableQuery<AdvancedSearchFilters>>>(
     {},
   )
   const [collectionToDelete, setCollectionToDelete] = useState<CollectionWithMeta | null>(null)
@@ -278,7 +226,7 @@ export function CollectionsAccordion({ collections }: CollectionsAccordionProps)
     })
   }
 
-  const handleCollectionQueryChange = (collectionId: string, query: DocumentTableQuery<Record<string, never>>) => {
+  const handleCollectionQueryChange = (collectionId: string, query: DocumentTableQuery<AdvancedSearchFilters>) => {
     setCollectionQueries((prev) => {
       const currentQuery = prev[collectionId]
 
@@ -326,7 +274,8 @@ export function CollectionsAccordion({ collections }: CollectionsAccordionProps)
         {collections.map((collection) => {
           const isExpanded = expandedCollections.has(collection.id)
           const queryForCollection =
-            collectionQueries[collection.id] ?? parseCollectionTableInitialQuery(searchParams, collection.id)
+            collectionQueries[collection.id] ??
+            parseCollectionTableInitialQuery(searchParams, collection.id, collection.collection_name)
           const originHref = serializeCollectionsState(
             pathname,
             new URLSearchParams(searchParams.toString()),
@@ -422,7 +371,9 @@ export function CollectionsAccordion({ collections }: CollectionsAccordionProps)
               ) : (
                 <CollectionDocumentsTable
                   collectionId={collection.id}
+                  collectionName={collection.collection_name}
                   documentCount={collection.document_count}
+                  filterOptions={filterOptions}
                   initialQuery={queryForCollection}
                   originHref={originHref}
                   onQueryChange={(query) => {

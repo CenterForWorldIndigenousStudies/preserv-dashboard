@@ -2,7 +2,7 @@ import type { ReactElement } from 'react'
 import { Stack, Typography } from '@mui/material'
 
 import { Button } from '@atoms/Button'
-import type { DocumentTablePageInfo } from '@organisms/document-table/types'
+import type { DocumentTablePageInfo } from '@organisms/DocumentTable/types'
 
 interface DocumentTableCursorPagerProps {
   page: number

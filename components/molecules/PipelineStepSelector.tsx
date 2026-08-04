@@ -189,8 +189,7 @@ export function PipelineStepSelector({ draft, mode, onDraftChange }: PipelineSte
         | 'contentDedup'
         | 'metadataExtraction'
         | 'metadataValidation'
-        | 'rightsDeterminator'
-        | 'fedoraIngester',
+        | 'rightsDeterminator',
       value: boolean,
     ) => {
       onDraftChange({
@@ -352,14 +351,6 @@ export function PipelineStepSelector({ draft, mode, onDraftChange }: PipelineSte
             />
           )}
 
-          {draft.steps.fedoraIngester !== undefined && (
-            <StepRow
-              label="Fedora Ingester"
-              description="Ingest into Fedora digital repository (future)"
-              checked={draft.steps.fedoraIngester}
-              onChange={(value) => handleSimpleStepToggle('fedoraIngester', value)}
-            />
-          )}
         </Stack>
       </Stack>
     </Paper>
