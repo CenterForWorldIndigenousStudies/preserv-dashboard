@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 
 import {
+  getPipelineConfigForBatch,
   getExecutionStepRuntimeStatus,
   getNextEligibleExecutionStep,
   getOrchestratedExecutionPlan,
@@ -180,6 +181,12 @@ function buildBatchStatus(overrides: Partial<ProcessBatchStatus> = {}): ProcessB
 }
 
 describe('pipelineExecution process-documents behavior', () => {
+  test('uses direct metadata extraction for legacy ingest-only batches', () => {
+    const batch = buildBatchStatus({ pipelineConfig: null })
+
+    expect(getPipelineConfigForBatch(batch).metadataExtraction).toEqual({ mode: 'direct' })
+  })
+
   test('keeps an active rollback batch live until rollback reaches a terminal state', () => {
     const batch = buildBatchStatus({ rollbackStatus: 'reverting' })
 

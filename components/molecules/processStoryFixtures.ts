@@ -47,6 +47,7 @@ const processPipelineRequestedStages = pipelineConfigToRequestedStages(processPi
 export function createProcessStage(overrides: Partial<ProcessStageStatus> = {}): ProcessStageStatus {
   return {
     status: 'pending',
+    mode: null,
     requestId: 'request-1',
     requestedByApp: 'preserv-dashboard',
     initiatedAt: null,
@@ -86,6 +87,8 @@ export function createProcessStage(overrides: Partial<ProcessStageStatus> = {}):
     sourceFolderIds: [],
     collectionName: null,
     collectionNotes: null,
+    openaiBatchWave1: null,
+    openaiBatchWave2: null,
     ...overrides,
   }
 }

@@ -197,7 +197,7 @@ export function ExclusionReviewTreeRow({
               width: 28,
             }}
           >
-            <Typography fontWeight={700} variant="caption">
+            <Typography sx={{ fontWeight: 700 }} variant="caption">
               i
             </Typography>
           </IconButton>
@@ -220,7 +220,7 @@ export function ExclusionReviewTreeRow({
               width: 28,
             }}
           >
-            <Typography fontWeight={700} variant="caption">
+            <Typography sx={{ fontWeight: 700 }} variant="caption">
               e
             </Typography>
           </IconButton>

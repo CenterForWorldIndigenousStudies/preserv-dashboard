@@ -31,6 +31,9 @@ const ORCHESTRATED_SERVICES = new Set<string>([
 const INGEST_ONLY_PIPELINE_CONFIG: PipelineConfig = {
   profileId: 'custom',
   mode: 'custom',
+  metadataExtraction: {
+    mode: 'direct',
+  },
   executionPlan: [
     {
       id: 'step-ingester',
