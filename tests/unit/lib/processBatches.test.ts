@@ -429,11 +429,45 @@ describe('processBatches', () => {
 
   it('records metadata extractor completion on batch processing details', async () => {
     mockFindUnique.mockResolvedValue(
-      buildBatchRow({
-        pipeline: {
-          requested_stages: ['metadata-extraction'],
-        },
-      }),
+      {
+        ...buildBatchRow({
+          pipeline: {
+            requested_stages: ['metadata-extraction'],
+            config: {
+              profileId: 'custom',
+              mode: 'custom',
+              executionPlan: [
+                {
+                  id: 'step-ingester',
+                  stepId: 'ingester',
+                  service: 'ingester',
+                  label: 'Ingest',
+                  order: 0,
+                  enabled: true,
+                },
+                {
+                  id: 'step-metadata-extraction',
+                  stepId: 'metadata-extraction',
+                  service: 'metadata-extraction',
+                  label: 'Metadata Extraction',
+                  order: 1,
+                  enabled: true,
+                  dependsOn: ['step-ingester'],
+                },
+              ],
+            },
+          },
+          data_ingester: {
+            status: 'completed',
+            completed_at: '2026-05-29T04:39:55.000Z',
+          },
+        }),
+        started_at: new Date('2026-05-29T04:39:50.000Z'),
+        lifecycle_status: 'running',
+        publication_status: 'not_started',
+        publication_target: 'fedora',
+        batch_rollbacks: null,
+      },
     )
     mockUpdate.mockResolvedValue(undefined)
 
@@ -446,7 +480,7 @@ describe('processBatches', () => {
       failedCount: 1,
     })
 
-    expect(getUpdatedProcessingDetails()).toEqual({
+    expect(getUpdatedProcessingDetails()).toMatchObject({
       pipeline: {
         requested_stages: ['metadata-extraction'],
       },
@@ -464,6 +498,14 @@ describe('processBatches', () => {
         current_pass: 1,
         max_passes: 1,
         completed_passes: [1],
+      },
+    })
+    expect(mockUpdate).toHaveBeenCalledTimes(1)
+    expect(mockUpdate.mock.calls[0]?.[0]).toMatchObject({
+      where: { id: 'batch-4' },
+      data: {
+        lifecycle_status: 'completed',
+        completed_at: new Date('2026-05-29T04:40:05.000Z'),
       },
     })
   })

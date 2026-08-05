@@ -1,4 +1,5 @@
 import { db } from '@lib/db'
+import { isPipelineBatchTerminal } from '@lib/pipelineExecution'
 import { normalizeProcessBatchDetails, parseProcessingDetails, resolveStageDetailKey } from '@lib/pipelineNormalization'
 import { parsePipelineConfig, pipelineConfigToRequestedStages, type PipelineConfig } from '@lib/pipelineConfig'
 import type {
@@ -61,9 +62,16 @@ async function hasManualEditAfterStart(startedAt: Date | null): Promise<boolean>
 }
 
 async function toProcessBatchStatus(batch: SelectedBatchFields): Promise<ProcessBatchStatus> {
+  const manualEditAfterStart = await hasManualEditAfterStart(batch.started_at)
+  return buildProcessBatchStatus(batch, manualEditAfterStart)
+}
+
+function buildProcessBatchStatus(
+  batch: SelectedBatchFields,
+  manualEditAfterStart: boolean,
+): ProcessBatchStatus {
   const details = normalizeProcessBatchDetails(parseProcessingDetails(batch.processing_details))
   const rollback = batch.batch_rollbacks
-  const manualEditAfterStart = await hasManualEditAfterStart(batch.started_at)
 
   return {
     batchId: batch.id,
@@ -277,13 +285,46 @@ interface RightsDeterminatorCompletionArgs {
   failedCount: number
 }
 
+function buildCompletionUpdateData(
+  batch: SelectedBatchFields,
+  nextDetails: RawProcessBatchDetails,
+  completedAt: string,
+): {
+  processing_details: string
+  lifecycle_status?: string
+  completed_at?: Date
+} {
+  const serializedDetails = JSON.stringify(nextDetails)
+  const nextBatch = buildProcessBatchStatus(
+    {
+      ...batch,
+      processing_details: serializedDetails,
+    },
+    false,
+  )
+  const updateData: {
+    processing_details: string
+    lifecycle_status?: string
+    completed_at?: Date
+  } = {
+    processing_details: serializedDetails,
+  }
+
+  if (batch.lifecycle_status !== 'completed' && isPipelineBatchTerminal(nextBatch)) {
+    updateData.lifecycle_status = 'completed'
+    updateData.completed_at = new Date(completedAt)
+  }
+
+  return updateData
+}
+
 export async function recordMetadataExtractorCompletion(
   batchId: string,
   { requestId, initiatedAt, completedAt, processedCount, extractedCount, failedCount }: MetadataExtractorCompletionArgs,
 ): Promise<void> {
   const batch = await db.batches.findUnique({
     where: { id: batchId },
-    select: { id: true, processing_details: true },
+    select: processBatchSelect,
   })
 
   if (!batch) {
@@ -317,7 +358,7 @@ export async function recordMetadataExtractorCompletion(
   await db.batches.update({
     where: { id: batchId },
     data: {
-      processing_details: JSON.stringify(nextDetails),
+      ...buildCompletionUpdateData(batch, nextDetails, completedAt),
     },
   })
 }
@@ -336,7 +377,7 @@ export async function recordMetadataValidatorCompletion(
 ): Promise<void> {
   const batch = await db.batches.findUnique({
     where: { id: batchId },
-    select: { id: true, processing_details: true },
+    select: processBatchSelect,
   })
 
   if (!batch) {
@@ -371,7 +412,7 @@ export async function recordMetadataValidatorCompletion(
   await db.batches.update({
     where: { id: batchId },
     data: {
-      processing_details: JSON.stringify(nextDetails),
+      ...buildCompletionUpdateData(batch, nextDetails, completedAt),
     },
   })
 }
@@ -390,7 +431,7 @@ export async function recordRightsDeterminatorCompletion(
 ): Promise<void> {
   const batch = await db.batches.findUnique({
     where: { id: batchId },
-    select: { id: true, processing_details: true },
+    select: processBatchSelect,
   })
 
   if (!batch) {
@@ -425,7 +466,7 @@ export async function recordRightsDeterminatorCompletion(
   await db.batches.update({
     where: { id: batchId },
     data: {
-      processing_details: JSON.stringify(nextDetails),
+      ...buildCompletionUpdateData(batch, nextDetails, completedAt),
     },
   })
 }
