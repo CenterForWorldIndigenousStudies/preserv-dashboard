@@ -128,7 +128,7 @@ export function PipelineTimelineCard({ batch }: PipelineTimelineCardProps): Reac
             py: 0.5,
             borderRadius: 1,
             bgcolor: 'secondary.main',
-            color: 'ink.main',
+            color: 'text.primary',
             fontWeight: 500,
           }}
         >

@@ -29,7 +29,7 @@ export function ReadyForLibraryHandoff(): ReactElement {
     <Card component="section" sx={{ border: '1px solid', borderColor: 'rgba(53, 88, 52, 0.15)' }}>
       <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
         <Stack spacing={1.5}>
-          <Typography variant="h6" sx={{ color: 'ink.main' }}>
+          <Typography variant="h6" sx={{ color: 'text.primary' }}>
             Queue the library handoff
           </Typography>
           <Typography variant="body2" color="text.secondary">

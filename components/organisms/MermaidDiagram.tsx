@@ -55,7 +55,7 @@ export function MermaidDiagram({ source, className = '' }: MermaidDiagramProps):
       <Box
         className={className || undefined}
         sx={(theme: Theme) => {
-          const mossColor = theme.palette.moss?.main ?? theme.palette.primary.main
+          const primaryColor = theme.palette.primary.main
 
           return {
             position: 'relative',
@@ -64,7 +64,7 @@ export function MermaidDiagram({ source, className = '' }: MermaidDiagramProps):
             maxWidth: '100%',
             overflow: 'hidden',
             border: 1,
-            borderColor: alpha(mossColor, 0.2),
+            borderColor: alpha(primaryColor, 0.2),
             borderRadius: 1.5,
             backgroundColor: 'background.paper',
           }

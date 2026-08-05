@@ -123,9 +123,9 @@ export function CreateTagDialog({
                     sx={(theme) => ({
                       display: 'block',
                       border: '1px solid',
-                      borderColor: alpha(theme.palette.moss.main, 0.1),
+                      borderColor: alpha(theme.palette.primary.main, 0.1),
                       borderRadius: 3,
-                      bgcolor: alpha(theme.palette.sand.main, 0.4),
+                      bgcolor: alpha(theme.palette.background.default, 0.4),
                       px: 1.5,
                       py: 1,
                     })}

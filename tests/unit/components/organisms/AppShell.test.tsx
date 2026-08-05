@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import ThemeProvider from '@components/ThemeProvider'
-import { AppShell } from '@organisms/AppShell'
+import { AppShell, getAppShellLayoutStyles } from '@organisms/AppShell'
 import { DASHBOARD_PATH } from '@constants/paths'
 
 const { mockSignOut, mockUsePathname, mockUseSession } = vi.hoisted(() => ({
@@ -25,6 +25,12 @@ describe('AppShell', () => {
     mockSignOut.mockReset()
     mockUsePathname.mockReset()
     mockUseSession.mockReset()
+  })
+
+  it('uses the canvas surface for the outer shell', () => {
+    expect(getAppShellLayoutStyles(false).shell).toMatchObject({
+      bgcolor: 'surface.canvas',
+    })
   })
 
   it('renders the shared shell header and preserves child content', () => {

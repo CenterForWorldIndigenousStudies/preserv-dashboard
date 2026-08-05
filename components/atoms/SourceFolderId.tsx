@@ -35,7 +35,7 @@ export function SourceFolderId({ value, maxTruncationLength = 0, sx }: SourceFol
       title={title}
       underline="hover"
       sx={(theme: Theme) => ({
-        color: theme.palette.moss?.main ?? theme.palette.primary.main,
+        color: theme.palette.primary.main,
         ...theme.unstable_sx(sx ?? {}),
       })}
     >

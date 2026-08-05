@@ -16,12 +16,12 @@ export function ProcessBatchMonitor({ batches, onRollbackRequested }: ProcessBat
         sx={{
           borderRadius: 2,
           border: '1px dashed',
-          borderColor: 'rgba(53, 88, 52, 0.2)',
-          backgroundColor: 'rgba(244, 241, 240, 0.35)',
+          borderColor: 'divider',
+          backgroundColor: 'background.default',
           p: 3,
         }}
       >
-        <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: 'ink.main' }}>
+        <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: 'text.primary' }}>
           No recent batches are available yet.
         </Typography>
         <Typography sx={{ mt: 1, fontSize: '0.875rem', lineHeight: 1.6, color: 'text.secondary' }}>
@@ -35,11 +35,7 @@ export function ProcessBatchMonitor({ batches, onRollbackRequested }: ProcessBat
   return (
     <Stack spacing={3}>
       {batches.map((batch) => (
-        <ProcessBatchStatusCard
-          key={batch.batchId}
-          batch={batch}
-          onRollbackRequested={onRollbackRequested}
-        />
+        <ProcessBatchStatusCard key={batch.batchId} batch={batch} onRollbackRequested={onRollbackRequested} />
       ))}
     </Stack>
   )

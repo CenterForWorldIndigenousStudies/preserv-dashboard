@@ -66,7 +66,7 @@ export function NormalizePassCard({
           alignItems: 'center',
           gap: 2,
           p: 2,
-          bgcolor: state.enabled ? 'rgba(53, 88, 52, 0.04)' : 'transparent',
+          bgcolor: state.enabled ? 'action.selected' : 'transparent',
         }}
       >
         <Checkbox

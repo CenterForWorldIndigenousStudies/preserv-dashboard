@@ -62,15 +62,15 @@ function BatchDetailPanel({ rows }: { rows: BatchSummary[] }): React.ReactElemen
   return (
     <Box
       sx={(theme: Theme) => {
-        const mossColor = theme.palette.moss?.main ?? theme.palette.primary.main
-        const sandColor = theme.palette.sand?.main ?? theme.palette.secondary.main
+        const primaryColor = theme.palette.primary.main
+        const panelColor = theme.palette.background.default
 
         return {
           mx: 0,
           mb: 2,
           border: 1,
-          borderColor: alpha(mossColor, 0.15),
-          backgroundColor: sandColor,
+          borderColor: alpha(primaryColor, 0.15),
+          backgroundColor: panelColor,
           p: { xs: 2, sm: 3 },
         }
       }}
@@ -81,7 +81,7 @@ function BatchDetailPanel({ rows }: { rows: BatchSummary[] }): React.ReactElemen
             sx={{
               fontSize: '0.75rem',
               fontWeight: 700,
-              color: '#355834',
+              color: 'primary.main',
               textTransform: 'uppercase',
               letterSpacing: '0.14em',
               mb: 1,
@@ -92,7 +92,11 @@ function BatchDetailPanel({ rows }: { rows: BatchSummary[] }): React.ReactElemen
           <Typography sx={{ color: 'text.secondary', fontSize: '0.875rem', mb: 2 }}>
             Inspect the current repository-backed details for this batch from the monitoring workspace.
           </Typography>
-          <Stack divider={<Divider flexItem sx={{ borderColor: 'rgba(53,88,52,0.08)' }} />}>
+          <Stack
+            divider={
+              <Divider flexItem sx={(theme: Theme) => ({ borderColor: alpha(theme.palette.primary.main, 0.08) })} />
+            }
+          >
             <KeyValueRow label="ID" value={batchId} />
             <KeyValueRow label="Name" value={batchName} />
             <KeyValueRow label="Started At" value={<DateAtom value={startedAt} />} />
@@ -104,7 +108,7 @@ function BatchDetailPanel({ rows }: { rows: BatchSummary[] }): React.ReactElemen
             sx={{
               fontSize: '0.75rem',
               fontWeight: 700,
-              color: '#355834',
+              color: 'primary.main',
               textTransform: 'uppercase',
               letterSpacing: '0.14em',
               mb: 1,
@@ -135,7 +139,7 @@ function BatchDetailPanel({ rows }: { rows: BatchSummary[] }): React.ReactElemen
                       sx={{
                         fontSize: '0.8rem',
                         fontWeight: 600,
-                        color: '#355834',
+                        color: 'primary.main',
                         textTransform: 'uppercase',
                         letterSpacing: '0.08em',
                       }}
@@ -192,7 +196,7 @@ export function BatchSummaryTable({ data }: BatchSummaryTableProps) {
         Cell: ({ row }) => (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 0.5, flexWrap: 'wrap' }}>
             <Box>
-              <Typography sx={{ fontWeight: 700, color: '#231f20' }}>{row.original.batch_name ?? '-'}</Typography>
+              <Typography sx={{ fontWeight: 700, color: 'text.primary' }}>{row.original.batch_name ?? '-'}</Typography>
               <Typography sx={{ color: 'text.secondary', fontSize: '0.8rem', mt: 0.25 }}>
                 Batch ID: {row.original.batch_id}
               </Typography>
@@ -201,8 +205,8 @@ export function BatchSummaryTable({ data }: BatchSummaryTableProps) {
               label={`${row.original.propertyCount} ${row.original.propertyCount === 1 ? 'property' : 'properties'}`}
               size="small"
               sx={{
-                backgroundColor: 'rgba(53,88,52,0.12)',
-                color: '#355834',
+                backgroundColor: (theme: Theme) => alpha(theme.palette.primary.main, 0.12),
+                color: 'primary.main',
                 fontWeight: 600,
               }}
             />
@@ -245,13 +249,11 @@ export function BatchSummaryTable({ data }: BatchSummaryTableProps) {
     },
     muiTableHeadCellProps: {
       sx: (theme: Theme) => {
-        const mossColor = theme.palette.moss?.main ?? theme.palette.primary.main
-        const sandColor = theme.palette.sand?.main ?? theme.palette.secondary.main
-        const borderColor = alpha(mossColor, 0.15)
+        const borderColor = alpha(theme.palette.primary.main, 0.15)
 
         return {
-          backgroundColor: sandColor,
-          color: '#231f20',
+          backgroundColor: theme.palette.background.default,
+          color: theme.palette.text.primary,
           fontWeight: 600,
           fontSize: '0.75rem',
           textTransform: 'uppercase',
@@ -273,12 +275,11 @@ export function BatchSummaryTable({ data }: BatchSummaryTableProps) {
     },
     muiTableBodyCellProps: ({ row }) => ({
       sx: (theme: Theme) => {
-        const mossColor = theme.palette.moss?.main ?? theme.palette.primary.main
-        const borderColor = alpha(mossColor, 0.15)
+        const borderColor = alpha(theme.palette.primary.main, 0.15)
         const isExpanded = row.getIsExpanded()
 
         return {
-          color: theme.palette.ink?.main ?? theme.palette.text.primary,
+          color: theme.palette.text.primary,
           fontSize: '0.875rem',
           fontWeight: row.getCanExpand() ? 600 : 400,
           backgroundColor: 'background.paper',
@@ -302,17 +303,14 @@ export function BatchSummaryTable({ data }: BatchSummaryTableProps) {
     }),
     muiTableBodyRowProps: () => ({
       sx: (theme: Theme) => {
-        const mossColor = theme.palette.moss?.main ?? theme.palette.primary.main
-
         return {
-          '&:hover > td': { backgroundColor: alpha(mossColor, 0.04) },
+          '&:hover > td': { backgroundColor: alpha(theme.palette.primary.main, 0.04) },
         }
       },
     }),
     muiDetailPanelProps: {
       sx: (theme: Theme) => {
-        const mossColor = theme.palette.moss?.main ?? theme.palette.primary.main
-        const borderColor = alpha(mossColor, 0.15)
+        const borderColor = alpha(theme.palette.primary.main, 0.15)
 
         return {
           backgroundColor: 'background.paper',
@@ -334,8 +332,10 @@ export function BatchSummaryTable({ data }: BatchSummaryTableProps) {
     muiSearchTextFieldProps: {
       placeholder: 'Search batches...',
       sx: {
-        '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(53,88,52,0.25)' },
-        '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#355834' },
+        '& .MuiOutlinedInput-notchedOutline': {
+          borderColor: (theme: Theme) => alpha(theme.palette.primary.main, 0.25),
+        },
+        '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'primary.main' },
       },
     },
     localization: {

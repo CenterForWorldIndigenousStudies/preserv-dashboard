@@ -5,10 +5,7 @@ import { Box, Drawer, Stack, type SxProps, type Theme } from '@mui/material'
 
 import { AppVersion } from '@atoms/AppVersion'
 import { SidebarHeader } from '@atoms/SidebarHeader'
-import {
-  DASHBOARD_NAVIGATION_SECTIONS,
-  type DashboardNavigationSection,
-} from '@constants/navigation'
+import { DASHBOARD_NAVIGATION_SECTIONS, type DashboardNavigationSection } from '@constants/navigation'
 import {
   BATCHES_PATH,
   COLLECTIONS_PATH,
@@ -82,7 +79,7 @@ export function getSidebarLayoutStyles(variant: SidebarVariant): SidebarLayoutSt
           top: 0,
         },
     panel: {
-      bgcolor: 'sand.main',
+      bgcolor: 'surface.panel',
       borderColor: 'divider',
       borderRight: isMobile ? undefined : '1px solid',
       display: 'flex',
@@ -114,11 +111,7 @@ export default function Sidebar({ variant, isOpen, onClose }: SidebarProps) {
         <SidebarHeader
           action={
             isMobile ? (
-              <SidebarVisibilityControl
-                intent="close"
-                surface="sidebarHeader"
-                onClick={onClose ?? (() => {})}
-              />
+              <SidebarVisibilityControl intent="close" surface="sidebarHeader" onClick={onClose ?? (() => {})} />
             ) : undefined
           }
           title="Preservation Pipeline"

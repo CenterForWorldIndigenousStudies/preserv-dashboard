@@ -27,7 +27,7 @@ export function StatCard({ title, value, href }: StatCardProps): ReactElement {
     display: 'block',
     height: '100%',
     border: 1,
-    borderColor: alpha(theme.palette.moss?.main ?? theme.palette.primary.main, 0.15),
+    borderColor: alpha(theme.palette.primary.main, 0.15),
     backgroundColor: 'background.paper',
     boxShadow: 2,
     textDecoration: 'none',
@@ -43,5 +43,9 @@ export function StatCard({ title, value, href }: StatCardProps): ReactElement {
     return <Card sx={cardSx}>{cardContent}</Card>
   }
 
-  return <Card component={NextLink} href={href} sx={cardSx}>{cardContent}</Card>
+  return (
+    <Card component={NextLink} href={href} sx={cardSx}>
+      {cardContent}
+    </Card>
+  )
 }

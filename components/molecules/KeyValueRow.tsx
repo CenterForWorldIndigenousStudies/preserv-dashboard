@@ -92,22 +92,22 @@ export function KeyValueRow({
 
   return (
     <Box
-      sx={{
+      sx={(theme) => ({
         display: 'grid',
         gridTemplateColumns: columns ?? 'minmax(12rem, 16rem) 1fr',
         gap: 1.5,
         py: 1,
         pl: level * 2,
-        borderLeft: level > 0 ? '2px solid rgba(53,88,52,0.12)' : 'none',
-      }}
+        borderLeft: level > 0 ? `2px solid ${theme.palette.divider}` : 'none',
+      })}
     >
-      <Typography variant={labelVariant} sx={{ fontWeight: 500, color: '#231f20', fontSize: '0.875rem' }}>
+      <Typography variant={labelVariant} sx={{ fontWeight: 500, color: 'text.primary', fontSize: '0.875rem' }}>
         {label}
       </Typography>
       <Typography
         sx={{
           fontSize: '0.875rem',
-          color: '#231f20',
+          color: 'text.primary',
           fontFamily: useMonospace ? 'monospace' : 'inherit',
           wordBreak: 'break-word',
           ...valueSx,

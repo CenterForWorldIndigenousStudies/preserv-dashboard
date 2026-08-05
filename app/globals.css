@@ -1,16 +1,16 @@
+@import '../styles/_variables.css';
+
 :root {
   color-scheme: light;
 }
 
 html {
-  background:
-    radial-gradient(circle at top left, rgba(148, 217, 248, 0.65), transparent 34%),
-    linear-gradient(180deg, #f4f1f0 0%, #fcfaf6 48%, #edf3f0 100%);
+  background: var(--cwis-surface-page-gradient);
 }
 
 body {
   min-height: 100vh;
-  color: #231f20;
+  color: var(--cwis-text-primary);
 }
 
 a {
@@ -29,10 +29,10 @@ pre {
 }
 
 .panel-review-queue {
-  border: 1px solid rgba(53, 88, 52, 0.14);
+  border: 1px solid var(--cwis-border-default);
   border-radius: 1rem;
-  background: #ffffff;
-  box-shadow: 0 20px 40px rgba(35, 31, 32, 0.06);
+  background: var(--cwis-surface-panel);
+  box-shadow: var(--cwis-shadow-review-panel);
 }
 
 .panel-review-queue-filters {
@@ -40,11 +40,11 @@ pre {
 }
 
 .panel-review-queue-filters .MuiOutlinedInput-notchedOutline {
-  border-color: rgba(53, 88, 52, 0.25);
+  border-color: var(--cwis-border-strong);
 }
 
 .panel-review-queue-filters .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
-  border-color: #355834;
+  border-color: var(--cwis-border-focus);
 }
 
 .form-review-queue {
@@ -53,16 +53,16 @@ pre {
 
 .txt-review-summary {
   margin-top: 0.75rem;
-  color: rgba(35, 31, 32, 0.72);
+  color: var(--cwis-text-secondary);
 }
 
 .lnk-review-queue {
-  color: #355834;
+  color: var(--cwis-action-primary);
   font-weight: 600;
 }
 
 .lnk-review-queue:hover {
-  color: #231f20;
+  color: var(--cwis-text-primary);
 }
 
 .row-review-reasons {
@@ -72,7 +72,7 @@ pre {
 }
 
 .txt-muted {
-  color: rgba(35, 31, 32, 0.52);
+  color: var(--cwis-text-muted);
 }
 
 .tbl-review-queue {
@@ -80,9 +80,9 @@ pre {
 }
 
 .tbl-review-queue .MuiTableHead-root .MuiTableCell-root {
-  border-bottom: 2px solid #355834;
-  background: #f4f1f0;
-  color: #231f20;
+  border-bottom: 2px solid var(--cwis-action-primary);
+  background: var(--cwis-surface-page);
+  color: var(--cwis-text-primary);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.1em;
@@ -90,14 +90,14 @@ pre {
 }
 
 .tbl-review-queue .MuiTableBody-root .MuiTableCell-root {
-  color: #231f20;
+  color: var(--cwis-text-primary);
   font-size: 0.875rem;
 }
 
 .tbl-review-queue .MuiTableBody-root .MuiTableRow-root:nth-of-type(even) {
-  background: rgba(244, 241, 240, 0.3);
+  background: var(--cwis-surface-subtle);
 }
 
 .tbl-review-queue .MuiTableBody-root .MuiTableRow-root:hover {
-  background: rgba(53, 88, 52, 0.06);
+  background: color-mix(in srgb, var(--cwis-action-primary) 6%, transparent);
 }

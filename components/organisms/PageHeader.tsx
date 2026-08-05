@@ -14,16 +14,16 @@ export function PageHeader({ eyebrow, title, description }: PageHeaderProps): Re
       component="header"
       elevation={0}
       sx={{
-        backgroundColor: 'ink.main',
+        backgroundColor: 'var(--cwis-surface-inverse)',
         borderRadius: 2,
         boxShadow: 3,
-        color: 'sand.main',
+        color: 'var(--cwis-text-inverse)',
         px: { xs: 3, md: 4 },
         py: { xs: 4, md: 5 },
       }}
     >
       <Stack spacing={2}>
-        <Typography component="p" variant="overline" sx={{ color: 'sky.main', letterSpacing: '0.3em' }}>
+        <Typography component="p" variant="overline" sx={{ color: 'info.main', letterSpacing: '0.3em' }}>
           {eyebrow}
         </Typography>
         <Typography
@@ -37,7 +37,7 @@ export function PageHeader({ eyebrow, title, description }: PageHeaderProps): Re
         >
           {title}
         </Typography>
-        <Typography variant="body2" sx={{ color: 'sky.main', maxWidth: '42rem', lineHeight: 1.5 }}>
+        <Typography variant="body2" sx={{ color: 'info.main', maxWidth: '42rem', lineHeight: 1.5 }}>
           {description}
         </Typography>
       </Stack>

@@ -7,13 +7,7 @@ export function formatLinkableText(text: string): DisplayAndString {
   if (/^https?:\/\//i.test(trimmed)) {
     return {
       display: (
-        <Link
-          href={trimmed}
-          target="_blank"
-          rel="noopener noreferrer"
-          underline="hover"
-          sx={{ color: 'moss.main' }}
-        >
+        <Link href={trimmed} target="_blank" rel="noopener noreferrer" underline="hover" sx={{ color: 'primary.main' }}>
           {trimmed}
         </Link>
       ),

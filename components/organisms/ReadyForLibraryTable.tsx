@@ -130,7 +130,10 @@ export function ReadyForLibraryTable({
           const value = row.original.name
           if (!value) return '—'
           return (
-            <Link href={buildDocumentDetailHref(row.original.id, preservedOverviewHref)} style={{ color: '#355834' }}>
+            <Link
+              href={buildDocumentDetailHref(row.original.id, preservedOverviewHref)}
+              style={{ color: 'var(--cwis-action-primary)' }}
+            >
               {value}
             </Link>
           )

@@ -10,7 +10,7 @@ export interface SidebarHeaderProps {
 }
 
 export function SidebarHeader({ action, className, title }: SidebarHeaderProps): ReactElement {
-  const componentClass = (`header-sidebar ${className}`).trim()
+  const componentClass = `header-sidebar ${className}`.trim()
   return (
     <Box
       className={componentClass}
@@ -24,7 +24,7 @@ export function SidebarHeader({ action, className, title }: SidebarHeaderProps):
       <Typography
         variant="body2"
         sx={{
-          color: 'ink.main',
+          color: 'text.primary',
           fontWeight: 600,
           letterSpacing: '0.08em',
           textTransform: 'uppercase',

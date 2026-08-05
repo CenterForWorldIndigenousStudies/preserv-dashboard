@@ -16,7 +16,7 @@ interface AccordionPanelProps extends Omit<AccordionProps, 'children'> {
 
 const accordionPanelSx = (theme: Theme) => ({
   border: 1,
-  borderColor: alpha(theme.palette.moss?.main ?? theme.palette.primary.main, 0.15),
+  borderColor: theme.palette.divider,
   borderRadius: 2,
   boxShadow: 3,
   overflow: 'hidden',
@@ -36,7 +36,7 @@ const accordionSummarySx = {
 }
 
 const accordionDetailsSx = (theme: Theme) => ({
-  backgroundColor: alpha(theme.palette.sand?.main ?? theme.palette.secondary.main, 0.25),
+  backgroundColor: alpha(theme.palette.background.default, 0.25),
   px: 3,
   py: 2,
 })

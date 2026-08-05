@@ -53,7 +53,7 @@ export function ErrorContent() {
               alignItems: 'center',
               bgcolor: 'rgba(233, 105, 84, 0.08)',
               borderRadius: '50%',
-              color: 'clay.main',
+              color: 'error.main',
               display: 'flex',
               height: 64,
               justifyContent: 'center',
@@ -63,7 +63,7 @@ export function ErrorContent() {
             <AlertTriangle aria-hidden="true" size={32} strokeWidth={1.5} />
           </Box>
           <Stack spacing={1}>
-            <Typography component="h1" variant="h4" sx={{ color: 'ink.main' }}>
+            <Typography component="h1" variant="h4" sx={{ color: 'text.primary' }}>
               Sign In Error
             </Typography>
             <Typography variant="body2" color="text.secondary">

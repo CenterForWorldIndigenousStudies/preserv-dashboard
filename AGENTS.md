@@ -23,7 +23,8 @@ Use the focused docs instead of growing this file:
 - environment variables: [../../documentation/dashboard/ENV_VARS.md](../../documentation/dashboard/ENV_VARS.md)
 - deployment: [../../documentation/dashboard/DEPLOYMENT.md](../../documentation/dashboard/DEPLOYMENT.md)
 - component architecture: [../../documentation/dashboard/COMPONENT_ARCHITECTURE.md](../../documentation/dashboard/COMPONENT_ARCHITECTURE.md)
-- semantic styling rules: [../../documentation/dashboard/styles/SEMANTIC_CLASSES.md](../../documentation/dashboard/styles/SEMANTIC_CLASSES.md)
+- dashboard styling guide: [../../documentation/dashboard/STYLING_GUIDE.md](../../documentation/dashboard/STYLING_GUIDE.md)
+- structural class naming: [../../documentation/dashboard/styles/SEMANTIC_CLASSES.md](../../documentation/dashboard/styles/SEMANTIC_CLASSES.md)
 - pipeline architecture: [../../documentation/dashboard/PIPELINE_TRIGGER_CALLBACK_ARCHITECTURE.md](../../documentation/dashboard/PIPELINE_TRIGGER_CALLBACK_ARCHITECTURE.md)
 - current pipeline initiation integration: [../../documentation/dashboard/PIPELINE_INITIATION_INTEGRATION.md](../../documentation/dashboard/PIPELINE_INITIATION_INTEGRATION.md)
 - database connection guidance: [../../documentation/dashboard/db/CONNECTING_TO_DB.md](../../documentation/dashboard/db/CONNECTING_TO_DB.md)
@@ -60,7 +61,7 @@ Important pipeline integration areas:
 - keep components in the correct Atomic Design layer
 - prefer existing atoms and molecules before creating new UI primitives
 - use MUI components and theme-driven styling
-- use semantic class names for structural and layout styling
+- use semantic theme roles for visual styling and semantic class names for custom structural and layout styling
 - do not introduce ad hoc presentational class names or new styling patterns
 - do not use `Tailwind`
 - treat the shared preservation database schema as the external source of truth

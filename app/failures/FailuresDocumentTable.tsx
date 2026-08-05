@@ -27,7 +27,7 @@ export function FailuresDocumentTable({ failures }: FailuresDocumentTableProps):
             component={Link}
             href={getDocumentDetailPath(row.original.id, FAILED_PATH, PAGE_LABELS.processingFailures)}
             underline="hover"
-            sx={{ color: 'moss.main', fontWeight: 500, '&:hover': { color: 'ink.main' } }}
+            sx={{ color: 'primary.main', fontWeight: 500, '&:hover': { color: 'text.primary' } }}
           >
             {row.original.id}
           </MuiLink>

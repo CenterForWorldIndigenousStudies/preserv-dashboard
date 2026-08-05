@@ -53,7 +53,7 @@ export function PipelineSelectionSummary({ draft }: PipelineSelectionSummaryProp
               size="small"
               sx={{
                 bgcolor: 'secondary.main',
-                color: 'ink.main',
+                color: 'text.primary',
                 fontWeight: 500,
               }}
             />

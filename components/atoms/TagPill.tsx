@@ -21,7 +21,7 @@ export function TagPill({ tag, onRemove, className = '' }: TagPillProps): ReactE
       component="span"
       className={className || undefined}
       sx={(theme: Theme) => {
-        const mossColor = theme.palette.moss?.main ?? theme.palette.primary.main
+        const actionColor = theme.palette.primary.main
 
         return {
           display: 'inline-flex',
@@ -30,8 +30,8 @@ export function TagPill({ tag, onRemove, className = '' }: TagPillProps): ReactE
           borderRadius: '9999px',
           px: 1.5,
           py: 0.5,
-          backgroundColor: alpha(mossColor, 0.1),
-          color: mossColor,
+          backgroundColor: alpha(actionColor, 0.1),
+          color: actionColor,
         }
       }}
     >
@@ -45,14 +45,14 @@ export function TagPill({ tag, onRemove, className = '' }: TagPillProps): ReactE
         }}
         aria-label={`Remove ${tag}`}
         sx={(theme: Theme) => {
-          const mossColor = theme.palette.moss?.main ?? theme.palette.primary.main
+          const actionColor = theme.palette.primary.main
 
           return {
             ml: 0.5,
             p: 0.25,
             color: 'inherit',
             '&:hover': {
-              backgroundColor: alpha(mossColor, 0.2),
+              backgroundColor: alpha(actionColor, 0.2),
             },
           }
         }}

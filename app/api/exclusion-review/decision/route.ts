@@ -24,18 +24,18 @@ export async function POST(request: NextRequest) {
   const email = normalizeEmail(session?.user?.email)
 
   if (!email) {
-    return NextResponse.json(
-      { error: 'Authentication required.' },
-      { status: 401 },
-    )
+    return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })
   }
 
-  const { allowedEditorEmails } = getExclusionReviewConfig()
+  let allowedEditorEmails: string[]
+  try {
+    allowedEditorEmails = getExclusionReviewConfig().allowedEditorEmails
+  } catch (error) {
+    return buildExclusionReviewRouteErrorResponse(error, 'Unable to load exclusion review configuration.')
+  }
+
   if (!allowedEditorEmails.includes(email)) {
-    return NextResponse.json(
-      { error: 'You do not have permission to edit exclusion review.' },
-      { status: 403 },
-    )
+    return NextResponse.json({ error: 'You do not have permission to edit exclusion review.' }, { status: 403 })
   }
 
   const body = (await request.json()) as {
@@ -49,10 +49,7 @@ export async function POST(request: NextRequest) {
 
   const decision = normalizeDecision(body.decision)
   if (decision === undefined) {
-    return NextResponse.json(
-      { error: 'decision must be include, exclude, or null.' },
-      { status: 400 },
-    )
+    return NextResponse.json({ error: 'decision must be include, exclude, or null.' }, { status: 400 })
   }
 
   try {
@@ -64,9 +61,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result)
   } catch (error) {
-    return buildExclusionReviewRouteErrorResponse(
-      error,
-      'Unable to save review decision.',
-    )
+    return buildExclusionReviewRouteErrorResponse(error, 'Unable to save review decision.')
   }
 }

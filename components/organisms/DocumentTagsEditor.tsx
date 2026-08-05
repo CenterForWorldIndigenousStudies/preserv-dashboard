@@ -170,15 +170,15 @@ export function DocumentTagsEditor({ documentId, initialTags }: DocumentTagsEdit
               component="span"
               key={tag.id}
               sx={(theme: Theme) => {
-                const mossColor = theme.palette.moss?.main ?? theme.palette.primary.main
+                const primaryColor = theme.palette.primary.main
 
                 return {
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 0.5,
                   borderRadius: '9999px',
-                  backgroundColor: alpha(mossColor, 0.1),
-                  color: mossColor,
+                  backgroundColor: alpha(primaryColor, 0.1),
+                  color: primaryColor,
                   px: 1.5,
                   py: 0.75,
                 }
@@ -211,13 +211,13 @@ export function DocumentTagsEditor({ documentId, initialTags }: DocumentTagsEdit
         <Paper
           elevation={0}
           sx={(theme: Theme) => {
-            const mossColor = theme.palette.moss?.main ?? theme.palette.primary.main
-            const sandColor = theme.palette.sand?.main ?? theme.palette.secondary.main
+            const primaryColor = theme.palette.primary.main
+            const panelColor = theme.palette.background.default
 
             return {
               border: 1,
-              borderColor: alpha(mossColor, 0.1),
-              backgroundColor: alpha(sandColor, 0.3),
+              borderColor: alpha(primaryColor, 0.1),
+              backgroundColor: alpha(panelColor, 0.3),
               p: 2,
             }
           }}

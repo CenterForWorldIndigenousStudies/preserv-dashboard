@@ -20,7 +20,7 @@ interface AppShellLayoutStyles {
 export function getAppShellLayoutStyles(sidebarCollapsed: boolean): AppShellLayoutStyles {
   return {
     shell: {
-      bgcolor: 'sand.main',
+      bgcolor: 'surface.canvas',
       display: 'flex',
       height: '100dvh',
       overflow: 'hidden',

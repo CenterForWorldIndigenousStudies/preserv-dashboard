@@ -129,7 +129,7 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
           <Typography
             variant="overline"
             sx={(theme) => ({
-              color: alpha(theme.palette.ink.main, 0.72),
+              color: alpha(theme.palette.text.primary, 0.72),
             })}
           >
             {activeFilterCount} active
@@ -144,11 +144,11 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
         maxWidth="md"
         sx={{
           '& .MuiBackdrop-root': {
-            backgroundColor: (theme) => alpha(theme.palette.ink.main, 0.3),
+            backgroundColor: (theme) => alpha(theme.palette.text.primary, 0.3),
           },
           '& .MuiDialog-paper': {
             borderRadius: '1.5rem',
-            border: (theme) => `1px solid ${alpha(theme.palette.moss.main, 0.15)}`,
+            border: (theme) => `1px solid ${alpha(theme.palette.primary.main, 0.15)}`,
             boxShadow: '0 24px 80px rgba(35, 31, 32, 0.18)',
           },
         }}
@@ -170,7 +170,7 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
                 variant="body2"
                 sx={(theme) => ({
                   mt: 0.75,
-                  color: alpha(theme.palette.ink.main, 0.72),
+                  color: alpha(theme.palette.text.primary, 0.72),
                 })}
               >
                 All filters are optional and combine with AND logic.
@@ -180,10 +180,10 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
               onClick={closeModal}
               aria-label="Close advanced search"
               sx={(theme) => ({
-                color: alpha(theme.palette.ink.main, 0.56),
+                color: alpha(theme.palette.text.primary, 0.56),
                 '&:hover': {
-                  backgroundColor: theme.palette.sand.main,
-                  color: theme.palette.ink.main,
+                  backgroundColor: theme.palette.background.default,
+                  color: theme.palette.text.primary,
                 },
               })}
             >
@@ -300,11 +300,11 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
                     label={formatFilterLabel(status)}
                     sx={(theme: Theme) => ({
                       borderRadius: '999px',
-                      border: `1px solid ${isSelected ? theme.palette.moss.main : alpha(theme.palette.ink.main, 0.08)}`,
-                      backgroundColor: isSelected ? theme.palette.moss.main : theme.palette.sand.main,
-                      color: isSelected ? theme.palette.moss.contrastText : theme.palette.ink.main,
+                      border: `1px solid ${isSelected ? theme.palette.primary.main : alpha(theme.palette.text.primary, 0.08)}`,
+                      backgroundColor: isSelected ? theme.palette.primary.main : theme.palette.background.default,
+                      color: isSelected ? theme.palette.primary.contrastText : theme.palette.text.primary,
                       '&:hover': {
-                        backgroundColor: isSelected ? theme.palette.moss.main : theme.palette.sky.main,
+                        backgroundColor: isSelected ? theme.palette.primary.main : theme.palette.action.hover,
                       },
                       '& .MuiChip-label': {
                         fontSize: '0.875rem',
@@ -320,11 +320,11 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
           <FormControl>
             <FormLabel
               sx={(theme) => ({
-                color: theme.palette.ink.main,
+                color: theme.palette.text.primary,
                 fontSize: theme.typography.subtitle2.fontSize,
                 fontWeight: theme.typography.fontWeightMedium,
                 '&.Mui-focused': {
-                  color: theme.palette.ink.main,
+                  color: theme.palette.text.primary,
                 },
               })}
             >

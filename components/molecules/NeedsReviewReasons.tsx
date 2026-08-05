@@ -12,7 +12,7 @@ function ReasonGroup({ serviceLabel, reasons }: NeedsReviewReasonGroup): React.R
       <Typography
         variant="caption"
         sx={{
-          color: '#355834',
+          color: 'primary.main',
           fontWeight: 700,
           letterSpacing: '0.08em',
           textTransform: 'uppercase',
@@ -28,7 +28,7 @@ function ReasonGroup({ serviceLabel, reasons }: NeedsReviewReasonGroup): React.R
               display: 'list-item',
               py: 0.25,
               px: 0,
-              color: '#231f20',
+              color: 'text.primary',
             }}
           >
             <Typography variant="body2" sx={{ color: 'inherit' }}>
@@ -52,9 +52,9 @@ export function NeedsReviewReasons({
       <Paper
         variant="outlined"
         sx={{
-          borderColor: 'rgba(53,88,52,0.18)',
+          borderColor: 'divider',
           borderRadius: 2,
-          backgroundColor: '#faf8f7',
+          backgroundColor: 'background.default',
           px: 2,
           py: 1.5,
         }}
@@ -70,9 +70,9 @@ export function NeedsReviewReasons({
     <Paper
       variant="outlined"
       sx={{
-        borderColor: 'rgba(53,88,52,0.18)',
+        borderColor: 'divider',
         borderRadius: 2,
-        backgroundColor: '#faf8f7',
+        backgroundColor: 'background.default',
         px: 2,
         py: 1.5,
       }}
@@ -83,7 +83,8 @@ export function NeedsReviewReasons({
             key={`${group.serviceKey}-${index}`}
             sx={{
               pt: index === 0 ? 0 : 1.5,
-              borderTop: index === 0 ? 'none' : '1px solid rgba(53,88,52,0.12)',
+              borderTop: index === 0 ? 'none' : '1px solid',
+              borderColor: 'divider',
             }}
           >
             <ReasonGroup {...group} />

@@ -32,7 +32,7 @@ function SummaryCard({ totalBatches, totalDocuments }: { totalBatches: number; t
             >
               {label}
             </Typography>
-            <Typography component="p" variant="h3" sx={{ color: 'ink.main', mt: 1 }}>
+            <Typography component="p" variant="h3" sx={{ color: 'text.primary', mt: 1 }}>
               {value}
             </Typography>
           </CardContent>
@@ -74,18 +74,20 @@ export default function BatchSummaryPage(): ReactElement {
         title="Monitor batch health and investigate batch history."
         description="Use this workspace for routine monitoring, in-flight inspection, and historical batch details from the current operational data. Start and configure new runs in Process."
       />
-      <Card component="section" sx={{ p: 3, borderRadius: 2, border: 1, borderColor: 'rgba(53, 88, 52, 0.15)', boxShadow: 2 }}>
+      <Card
+        component="section"
+        sx={{ p: 3, borderRadius: 2, border: 1, borderColor: 'rgba(53, 88, 52, 0.15)', boxShadow: 2 }}
+      >
         <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
-          <Typography
-            variant="overline"
-            sx={{ color: 'rgb(53, 88, 52)', fontWeight: 600, letterSpacing: '0.18em' }}
-          >
+          <Typography variant="overline" sx={{ color: 'rgb(53, 88, 52)', fontWeight: 600, letterSpacing: '0.18em' }}>
             Monitoring Workspace
           </Typography>
-          <Typography component="h2" variant="h6" sx={{ mt: 1.5, fontWeight: 600, color: 'ink.main' }}>
+          <Typography component="h2" variant="h6" sx={{ mt: 1.5, fontWeight: 600, color: 'text.primary' }}>
             Batches owns monitoring and investigation.
           </Typography>
-          <Typography sx={{ mt: 1.5, maxWidth: '48rem', fontSize: '0.875rem', lineHeight: 1.6, color: 'text.secondary' }}>
+          <Typography
+            sx={{ mt: 1.5, maxWidth: '48rem', fontSize: '0.875rem', lineHeight: 1.6, color: 'text.secondary' }}
+          >
             Review in-flight and historical batches here, then expand a batch to inspect the currently available
             operational details. Return to Process when you need to configure or launch another run.
           </Typography>
@@ -104,7 +106,7 @@ export default function BatchSummaryPage(): ReactElement {
                 color: 'rgb(53, 88, 52)',
                 '&:hover': {
                   borderColor: 'rgb(53, 88, 52)',
-                  color: 'ink.main',
+                  color: 'text.primary',
                 },
               }}
             >

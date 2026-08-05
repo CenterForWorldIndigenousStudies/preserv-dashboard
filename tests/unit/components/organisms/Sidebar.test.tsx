@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import ThemeProvider from '@components/ThemeProvider'
-import Sidebar from '@organisms/Sidebar'
+import Sidebar, { getSidebarLayoutStyles } from '@organisms/Sidebar'
 import { DASHBOARD_PATH } from '@constants/paths'
 
 const { mockSignOut, mockUsePathname, mockUseSession } = vi.hoisted(() => ({
@@ -35,6 +35,15 @@ describe('Sidebar', () => {
     mockSignOut.mockReset()
     mockUsePathname.mockReset()
     mockUseSession.mockReset()
+  })
+
+  it('uses the white panel surface for desktop and mobile panels', () => {
+    expect(getSidebarLayoutStyles('desktop').panel).toMatchObject({
+      bgcolor: 'surface.panel',
+    })
+    expect(getSidebarLayoutStyles('mobile').panel).toMatchObject({
+      bgcolor: 'surface.panel',
+    })
   })
 
   it('renders the approved visible routes after the tags and reports routes are introduced', () => {

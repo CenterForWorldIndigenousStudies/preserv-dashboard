@@ -17,7 +17,7 @@ export function TableStat({ label, value, sx }: TableStatProps): ReactElement {
         alignItems: 'center',
         gap: 1,
         borderRadius: '9999px',
-        backgroundColor: theme.palette.sand?.main ?? theme.palette.background.default,
+        backgroundColor: theme.palette.background.default,
         px: 1.5,
         py: 0.5,
         ...theme.unstable_sx(sx ?? {}),

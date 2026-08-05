@@ -111,11 +111,11 @@ export function TagDeleteFlowDialog({
     >
       <DialogTitle>{currentStep === 1 ? title : 'Are you sure?'}</DialogTitle>
       <DialogContent sx={{ display: 'grid', gap: 2, pt: 1.5 }}>
-        {error ? <Typography sx={{ color: '#b71c1c', fontSize: '0.9rem' }}>{error}</Typography> : null}
+        {error ? <Typography sx={{ color: 'error.main', fontSize: '0.9rem' }}>{error}</Typography> : null}
         {currentStep === 1 ? (
           <>
-            <Typography sx={{ color: 'rgba(35,31,32,0.8)', fontSize: '0.95rem' }}>{primaryMessage}</Typography>
-            <Typography sx={{ color: 'rgba(35,31,32,0.7)', fontSize: '0.9rem' }}>{usageLabel}</Typography>
+            <Typography sx={{ color: 'text.secondary', fontSize: '0.95rem' }}>{primaryMessage}</Typography>
+            <Typography sx={{ color: 'text.secondary', fontSize: '0.9rem' }}>{usageLabel}</Typography>
             {checkboxLabel ? (
               <FormControlLabel
                 control={
@@ -130,7 +130,7 @@ export function TagDeleteFlowDialog({
             ) : null}
           </>
         ) : (
-          <Typography sx={{ color: 'rgba(35,31,32,0.8)', fontSize: '0.95rem' }}>{secondConfirmMessage}</Typography>
+          <Typography sx={{ color: 'text.secondary', fontSize: '0.95rem' }}>{secondConfirmMessage}</Typography>
         )}
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 3 }}>

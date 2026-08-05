@@ -33,6 +33,7 @@ next-env.d.ts
 /static/fonts/**/*
 **/*.css
 !app/globals.css
+!styles/_variables.css
 !public/styles/*.*
 /storybook-static/
 npm-debug.log*

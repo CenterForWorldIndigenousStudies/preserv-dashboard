@@ -9,7 +9,7 @@ export function formatJsonDisplay(jsonString: string): DisplayAndString {
       <pre
         style={{
           fontSize: '0.75rem',
-          backgroundColor: '#f4f1f0',
+          backgroundColor: 'var(--cwis-surface-page)',
           padding: '0.75rem',
           borderRadius: '0.5rem',
           overflowX: 'auto',

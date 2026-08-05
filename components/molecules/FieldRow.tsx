@@ -19,7 +19,7 @@ export function FieldRow({ label, children, className = '', sx }: FieldRowProps)
       className={className || undefined}
       sx={(theme: Theme) => ({
         borderRadius: 3,
-        backgroundColor: alpha(theme.palette.sand?.main ?? theme.palette.background.default, 0.45),
+        backgroundColor: alpha(theme.palette.background.default, 0.45),
         p: 2,
         ...theme.unstable_sx(sx ?? {}),
       })}

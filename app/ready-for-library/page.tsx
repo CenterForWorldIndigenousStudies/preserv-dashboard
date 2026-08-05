@@ -40,10 +40,10 @@ function AuthorCountCard({ authorName, count }: { authorName: string; count: num
         >
           Featured author
         </Typography>
-        <Typography variant="h6" sx={{ color: 'ink.main', mt: 1 }}>
+        <Typography variant="h6" sx={{ color: 'text.primary', mt: 1 }}>
           {authorName}
         </Typography>
-        <Typography component="p" variant="h3" sx={{ color: 'ink.main', mt: 1.5 }}>
+        <Typography component="p" variant="h3" sx={{ color: 'text.primary', mt: 1.5 }}>
           {count}
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>

@@ -28,7 +28,8 @@ const ENGLISH_MONTHS = [
 
 function formatDisplay(dt: DateTime): string {
   const canonical = dt.toUTC()
-  const hasTime = canonical.hour !== 0 || canonical.minute !== 0 || canonical.second !== 0 || canonical.millisecond !== 0
+  const hasTime =
+    canonical.hour !== 0 || canonical.minute !== 0 || canonical.second !== 0 || canonical.millisecond !== 0
   const hasDay = canonical.day !== 1 || hasTime // day 1 with no time = partial
   const hasMonth = canonical.month !== 1 || hasDay
 
@@ -90,15 +91,15 @@ export function DateAtom({ value, className = '', sx }: DateProps): ReactNode {
       title={showRaw ? display : `Raw: ${raw}`}
       onClick={() => setShowRaw((prev) => !prev)}
       sx={(theme: Theme) => {
-        const inkColor = theme.palette.ink?.main ?? theme.palette.text.primary
+        const textColor = theme.palette.text.primary
 
         return {
           cursor: 'pointer',
           borderBottom: '1px dotted',
-          borderColor: alpha(inkColor, 0.3),
+          borderColor: alpha(textColor, 0.3),
           transition: theme.transitions.create('border-color'),
           '&:hover': {
-            borderColor: alpha(inkColor, 0.7),
+            borderColor: alpha(textColor, 0.7),
           },
           ...theme.unstable_sx(sx ?? {}),
         }

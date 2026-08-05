@@ -125,7 +125,7 @@ export function ReviewQueueTabbedWorkspace({
               sx={{
                 border: 'none',
                 borderRadius: '999px',
-                bgcolor: isActive ? 'ink.main' : 'transparent',
+                bgcolor: isActive ? 'text.primary' : 'transparent',
                 color: isActive ? 'common.white' : 'text.primary',
                 cursor: 'pointer',
                 font: 'inherit',

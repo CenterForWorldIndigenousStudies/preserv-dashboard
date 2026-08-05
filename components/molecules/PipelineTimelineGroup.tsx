@@ -62,7 +62,7 @@ export function PipelineTimelineGroup({ step, isLast }: PipelineTimelineGroupPro
                     ? 'text.secondary'
                     : step.status === 'failed'
                       ? 'error.main'
-                      : 'ink.main',
+                      : 'text.primary',
               }}
             >
               {step.label}
@@ -84,7 +84,7 @@ export function PipelineTimelineGroup({ step, isLast }: PipelineTimelineGroupPro
                       variant="caption"
                       sx={{
                         fontWeight: 500,
-                        color: subStep.status === 'completed' ? 'text.secondary' : 'ink.main',
+                        color: subStep.status === 'completed' ? 'text.secondary' : 'text.primary',
                         mr: 1,
                       }}
                     >

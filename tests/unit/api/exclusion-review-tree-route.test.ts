@@ -71,9 +71,7 @@ describe('exclusion review tree routes', () => {
       },
     })
 
-    const response = await getTree(
-      new NextRequest('http://localhost/api/exclusion-review/tree'),
-    )
+    const response = await getTree(new NextRequest('http://localhost/api/exclusion-review/tree'))
     const payload = (await response.json()) as {
       isEditor?: boolean
       tree?: { root: { driveId: string } }
@@ -100,15 +98,32 @@ describe('exclusion review tree routes', () => {
       },
     })
 
-    const response = await getTree(
-      new NextRequest('http://localhost/api/exclusion-review/tree'),
-    )
+    const response = await getTree(new NextRequest('http://localhost/api/exclusion-review/tree'))
     const payload = (await response.json()) as { error?: string }
 
     expect(response.status).toBe(503)
     expect(payload.error).toBe(
       'Exclusion review setup is incomplete in this environment. Run the dashboard database migrations and reload this page.',
     )
+  })
+
+  it('returns a setup error when the root folder is not configured', async () => {
+    mockGetDashboardSession.mockResolvedValue({
+      user: { email: 'editor@example.org' },
+    })
+    mockGetExclusionReviewConfig.mockImplementation(() => {
+      const error = new Error('EXCLUSION_REVIEW_ROOT_FOLDER_ID is required for the Exclusion Review workspace.')
+      Object.assign(error, {
+        code: 'EXCLUSION_REVIEW_CONFIGURATION_ERROR',
+      })
+      throw error
+    })
+
+    const response = await getTree(new NextRequest('http://localhost/api/exclusion-review/tree'))
+    const payload = (await response.json()) as { error?: string }
+
+    expect(response.status).toBe(503)
+    expect(payload.error).toBe('EXCLUSION_REVIEW_ROOT_FOLDER_ID is required for the Exclusion Review workspace.')
   })
 
   it('returns a branch page for the requested parent', async () => {
@@ -124,9 +139,7 @@ describe('exclusion review tree routes', () => {
     })
 
     const response = await getChildren(
-      new NextRequest(
-        'http://localhost/api/exclusion-review/tree/children?parentId=folder-1&pageToken=page-1',
-      ),
+      new NextRequest('http://localhost/api/exclusion-review/tree/children?parentId=folder-1&pageToken=page-1'),
     )
     const payload = (await response.json()) as {
       page?: { parentDriveId: string; hasMore: boolean }
@@ -140,9 +153,6 @@ describe('exclusion review tree routes', () => {
       hasMore: true,
       branchSyncStatus: 'pending',
     })
-    expect(mockLoadExclusionReviewChildren).toHaveBeenCalledWith(
-      'folder-1',
-      'page-1',
-    )
+    expect(mockLoadExclusionReviewChildren).toHaveBeenCalledWith('folder-1', 'page-1')
   })
 })

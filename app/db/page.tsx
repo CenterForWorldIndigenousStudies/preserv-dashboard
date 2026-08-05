@@ -24,9 +24,9 @@ export default function DbPage(): ReactElement {
         <Box
           component="pre"
           sx={{
-            bgcolor: 'sand.main',
+            bgcolor: 'background.default',
             borderRadius: 2,
-            color: 'ink.main',
+            color: 'text.primary',
             m: 0,
             overflowX: 'auto',
             p: 2,
@@ -59,7 +59,7 @@ export default function DbPage(): ReactElement {
             sx={{
               bgcolor: 'rgba(233, 105, 84, 0.1)',
               borderRadius: 1,
-              color: 'ink.main',
+              color: 'text.primary',
               display: 'block',
               fontFamily: 'monospace',
               fontSize: '0.75rem',
@@ -77,9 +77,9 @@ export default function DbPage(): ReactElement {
         <Box
           component="code"
           sx={{
-            bgcolor: 'sand.main',
+            bgcolor: 'background.default',
             borderRadius: 1,
-            color: 'ink.main',
+            color: 'text.primary',
             fontFamily: 'monospace',
             fontSize: '0.75rem',
             fontWeight: 500,
@@ -93,7 +93,7 @@ export default function DbPage(): ReactElement {
     },
     h1({ children }: { children?: React.ReactNode }) {
       return (
-        <Typography component="h2" variant="h4" sx={{ color: 'ink.main', mb: 2, mt: 0 }}>
+        <Typography component="h2" variant="h4" sx={{ color: 'text.primary', mb: 2, mt: 0 }}>
           {children}
         </Typography>
       )
@@ -125,9 +125,9 @@ export default function DbPage(): ReactElement {
           <Box
             component="code"
             sx={{
-              bgcolor: 'sand.main',
+              bgcolor: 'background.default',
               borderRadius: 1,
-              color: 'ink.main',
+              color: 'text.primary',
               fontFamily: 'monospace',
               fontSize: '0.75rem',
               fontWeight: 500,
@@ -150,10 +150,10 @@ export default function DbPage(): ReactElement {
           borderColor: 'rgba(53, 88, 52, 0.15)',
           boxShadow: 2,
           p: { xs: 3, md: 4 },
-          '& h2, & h3, & h4, & h5, & h6': { color: 'ink.main' },
+          '& h2, & h3, & h4, & h5, & h6': { color: 'text.primary' },
           '& p': { color: 'text.primary', lineHeight: 1.6 },
-          '& a': { color: 'moss.main' },
-          '& strong': { color: 'ink.main' },
+          '& a': { color: 'primary.main' },
+          '& strong': { color: 'text.primary' },
           '& ul': { listStyleType: 'disc', pl: 3 },
           '& ol': { listStyleType: 'decimal', pl: 3 },
           '& li': { color: 'text.primary', mb: 0.75 },

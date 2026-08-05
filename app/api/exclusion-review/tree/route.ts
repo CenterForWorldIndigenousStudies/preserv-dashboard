@@ -15,14 +15,11 @@ export async function GET() {
   const email = normalizeEmail(session?.user?.email)
 
   if (!email) {
-    return NextResponse.json(
-      { error: 'Authentication required.' },
-      { status: 401 },
-    )
+    return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })
   }
 
-  const { allowedEditorEmails } = getExclusionReviewConfig()
   try {
+    const { allowedEditorEmails } = getExclusionReviewConfig()
     const tree = await loadExclusionReviewRootTree()
 
     return NextResponse.json({
@@ -30,9 +27,6 @@ export async function GET() {
       isEditor: allowedEditorEmails.includes(email),
     })
   } catch (error) {
-    return buildExclusionReviewRouteErrorResponse(
-      error,
-      'Unable to load exclusion review.',
-    )
+    return buildExclusionReviewRouteErrorResponse(error, 'Unable to load exclusion review.')
   }
 }

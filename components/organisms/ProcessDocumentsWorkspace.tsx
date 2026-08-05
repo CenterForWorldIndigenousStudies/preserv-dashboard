@@ -294,7 +294,10 @@ export function ProcessDocumentsWorkspace({ initialBatches }: ProcessDocumentsWo
         onToggleFolderExpansion={toggleFolderExpansion}
       />
 
-      <Card component="section" sx={{ p: 3, borderRadius: 2, border: 1, borderColor: 'rgba(53, 88, 52, 0.15)', boxShadow: 2 }}>
+      <Card
+        component="section"
+        sx={(theme) => ({ p: 3, borderRadius: 2, border: 1, borderColor: theme.palette.divider, boxShadow: 2 })}
+      >
         <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
           <Box
             sx={{
@@ -306,18 +309,15 @@ export function ProcessDocumentsWorkspace({ initialBatches }: ProcessDocumentsWo
             }}
           >
             <Box sx={{ maxWidth: '42rem' }}>
-              <Typography
-                variant="overline"
-                sx={{ color: 'rgb(53, 88, 52)', fontWeight: 600, letterSpacing: '0.18em' }}
-              >
+              <Typography variant="overline" sx={{ color: 'primary.main', fontWeight: 600, letterSpacing: '0.18em' }}>
                 Recent Launch Activity
               </Typography>
-              <Typography component="h2" variant="h6" sx={{ mt: 1.5, fontWeight: 600, color: 'ink.main' }}>
+              <Typography component="h2" variant="h6" sx={{ mt: 1.5, fontWeight: 600, color: 'text.primary' }}>
                 Keep early batch feedback nearby, then hand off to Batches.
               </Typography>
               <Typography sx={{ mt: 1.5, fontSize: '0.875rem', lineHeight: 1.6, color: 'text.secondary' }}>
-                These recent status cards help confirm that a launch was accepted and show the first operational signals.
-                Use Batches as the primary workspace for routine monitoring and deeper investigation.
+                These recent status cards help confirm that a launch was accepted and show the first operational
+                signals. Use Batches as the primary workspace for routine monitoring and deeper investigation.
               </Typography>
             </Box>
             <Button
@@ -332,11 +332,11 @@ export function ProcessDocumentsWorkspace({ initialBatches }: ProcessDocumentsWo
                 fontWeight: 500,
                 textTransform: 'none',
                 whiteSpace: 'nowrap',
-                borderColor: 'rgba(53, 88, 52, 0.25)',
-                color: 'rgb(53, 88, 52)',
+                borderColor: 'primary.main',
+                color: 'primary.main',
                 '&:hover': {
-                  borderColor: 'rgb(53, 88, 52)',
-                  color: 'ink.main',
+                  borderColor: 'primary.dark',
+                  color: 'text.primary',
                 },
               }}
             >

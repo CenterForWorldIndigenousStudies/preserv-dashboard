@@ -3,11 +3,11 @@ import { Chip } from '@mui/material'
 import { alpha, type SxProps, type Theme } from '@mui/material/styles'
 
 export const variantMap = {
-  danger: 'clay',
-  warning: 'clay',
-  info: 'sky',
-  success: 'moss',
-  neutral: 'sand',
+  danger: 'error',
+  warning: 'warning',
+  info: 'info',
+  success: 'success',
+  neutral: 'secondary',
 } as const
 
 export type BadgeVariant = keyof typeof variantMap
@@ -27,7 +27,7 @@ interface BadgeProps {
  */
 export function Badge({ variant = 'info', outlined = false, children, className = '', sx }: BadgeProps): ReactNode {
   const paletteKey = variantMap[variant]
-  const textPaletteKey = variant === 'success' ? paletteKey : 'ink'
+  const textPaletteKey = variant === 'success' ? paletteKey : 'text'
   const backgroundOpacity = variant === 'danger' || variant === 'warning' ? 0.15 : variant === 'success' ? 0.1 : 1
 
   return (
@@ -38,7 +38,7 @@ export function Badge({ variant = 'info', outlined = false, children, className 
       size="small"
       sx={(theme: Theme) => {
         const backgroundPalette = theme.palette[paletteKey] ?? theme.palette.primary
-        const textColor = theme.palette[textPaletteKey]?.main ?? theme.palette.text.primary
+        const textColor = textPaletteKey === 'text' ? theme.palette.text.primary : theme.palette[paletteKey].main
 
         return {
           border: outlined ? `1px solid ${backgroundPalette.main}` : undefined,

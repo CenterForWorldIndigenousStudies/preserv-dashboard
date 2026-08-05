@@ -40,8 +40,6 @@ export function FileSize({ value, className = '', sx }: FileSizeProps): ReactNod
       className={className || undefined}
       onClick={() => setShowRaw((prev) => !prev)}
       sx={(theme: Theme) => {
-        const sandColor = theme.palette.sand?.main ?? theme.palette.background.default
-
         return {
           cursor: 'pointer',
           borderRadius: 1,
@@ -49,7 +47,7 @@ export function FileSize({ value, className = '', sx }: FileSizeProps): ReactNod
           py: 0.5,
           transition: theme.transitions.create('background-color'),
           '&:hover': {
-            backgroundColor: alpha(sandColor, 0.8),
+            backgroundColor: alpha(theme.palette.background.default, 0.8),
           },
           ...theme.unstable_sx(sx ?? {}),
         }

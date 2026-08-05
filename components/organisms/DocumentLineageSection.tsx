@@ -48,15 +48,15 @@ const lineageCardSx = {
 }
 
 const metadataValuePanelSx = {
-  backgroundColor: 'rgba(244, 241, 240, 0.45)',
+  backgroundColor: 'background.default',
   borderRadius: 1.5,
   p: 2,
 }
 
 const tableHeaderCellSx = {
-  backgroundColor: 'sand.main',
+  backgroundColor: 'background.default',
   borderBottom: '2px solid',
-  borderBottomColor: 'moss.main',
+  borderBottomColor: 'primary.main',
   color: 'text.primary',
   fontSize: '0.75rem',
   fontWeight: 600,
@@ -184,7 +184,12 @@ export function DocumentLineageSection({ detail }: { detail: DocumentDetail }): 
                   <Typography component="dt" variant="overline" color="text.secondary">
                     Canonical document ID
                   </Typography>
-                  <Typography component="dd" variant="body2" color="text.primary" sx={{ m: 0, mt: 1, overflowWrap: 'anywhere' }}>
+                  <Typography
+                    component="dd"
+                    variant="body2"
+                    color="text.primary"
+                    sx={{ m: 0, mt: 1, overflowWrap: 'anywhere' }}
+                  >
                     {detail.version_family.canonical_document_id}
                   </Typography>
                 </Box>

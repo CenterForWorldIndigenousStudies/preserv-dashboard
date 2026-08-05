@@ -37,7 +37,7 @@ export function ConfirmationDialog({
     >
       <DialogTitle>{title}</DialogTitle>
       <DialogContent sx={{ pt: 1.5 }}>
-        <Typography sx={{ color: 'rgba(35,31,32,0.8)', fontSize: '0.95rem' }}>{message}</Typography>
+        <Typography sx={{ color: 'text.secondary', fontSize: '0.95rem' }}>{message}</Typography>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 3 }}>
         <Button variant="ghost" onClick={onCancel}>

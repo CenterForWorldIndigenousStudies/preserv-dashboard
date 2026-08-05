@@ -5,10 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Box, Stack, Typography } from '@mui/material'
 
 import { Button } from '@atoms/Button'
-import {
-  METADATA_EXTRACTOR_OPENAI_BATCH_STATUS_PATH,
-  METADATA_EXTRACTOR_RUN_WAVE_TWO_PATH,
-} from '@constants/paths'
+import { METADATA_EXTRACTOR_OPENAI_BATCH_STATUS_PATH, METADATA_EXTRACTOR_RUN_WAVE_TWO_PATH } from '@constants/paths'
 
 interface MetadataExtractorOpenAIBatchActionsProps {
   batchId: string
@@ -92,8 +89,8 @@ export function MetadataExtractorOpenAIBatchActions({
       ) : null}
 
       {error ? (
-        <Box sx={{ borderRadius: 2, px: 1.5, py: 1, bgcolor: 'rgba(156, 74, 63, 0.08)' }}>
-          <Typography variant="body2" sx={{ color: '#9c4a3f' }}>
+        <Box sx={{ borderRadius: 2, px: 1.5, py: 1, bgcolor: 'error.light' }}>
+          <Typography variant="body2" sx={{ color: 'error.main' }}>
             {error}
           </Typography>
         </Box>

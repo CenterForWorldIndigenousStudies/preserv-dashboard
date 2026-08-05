@@ -44,7 +44,7 @@ export function SourceId({ value, maxTruncationLength = 0, sx }: SourceIdProps):
       title={title}
       underline="hover"
       sx={(theme: Theme) => ({
-        color: theme.palette.moss?.main ?? theme.palette.primary.main,
+        color: theme.palette.primary.main,
         ...theme.unstable_sx(sx ?? {}),
       })}
     >

@@ -34,7 +34,7 @@ function StepRow({ label, description, checked, disabled = false, onChange }: St
       sx={{
         p: 2,
         borderRadius: 3,
-        bgcolor: checked ? 'rgba(53, 88, 52, 0.04)' : 'background.default',
+        bgcolor: checked ? 'action.selected' : 'background.default',
         border: '1px solid',
         borderColor: checked ? 'primary.main' : 'transparent',
         opacity: disabled && !checked ? 0.6 : 1,
@@ -184,12 +184,7 @@ export function PipelineStepSelector({ draft, mode, onDraftChange }: PipelineSte
 
   const handleSimpleStepToggle = useCallback(
     (
-      stepKey:
-        | 'ocrProcessor'
-        | 'contentDedup'
-        | 'metadataExtraction'
-        | 'metadataValidation'
-        | 'rightsDeterminator',
+      stepKey: 'ocrProcessor' | 'contentDedup' | 'metadataExtraction' | 'metadataValidation' | 'rightsDeterminator',
       value: boolean,
     ) => {
       onDraftChange({
@@ -350,7 +345,6 @@ export function PipelineStepSelector({ draft, mode, onDraftChange }: PipelineSte
               onChange={(value) => handleSimpleStepToggle('rightsDeterminator', value)}
             />
           )}
-
         </Stack>
       </Stack>
     </Paper>

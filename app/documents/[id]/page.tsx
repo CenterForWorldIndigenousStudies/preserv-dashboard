@@ -155,8 +155,8 @@ const detailValueSx = {
 const tableHeadCellSx = {
   bgcolor: '#f4f1eb',
   borderBottom: '2px solid',
-  borderBottomColor: 'moss.main',
-  color: 'ink.main',
+  borderBottomColor: 'primary.main',
+  color: 'text.primary',
   fontSize: '0.75rem',
   fontWeight: 600,
   letterSpacing: '0.1em',

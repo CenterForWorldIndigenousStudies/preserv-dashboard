@@ -299,11 +299,11 @@ export function CollectionsAccordion({ collections, filterOptions }: Collections
                   <Chip
                     label={`${collection.document_count} document${collection.document_count === 1 ? '' : 's'}`}
                     sx={(theme: Theme) => {
-                      const mossColor = theme.palette.moss?.main ?? theme.palette.primary.main
+                      const primaryColor = theme.palette.primary.main
 
                       return {
-                        backgroundColor: alpha(mossColor, 0.1),
-                        color: mossColor,
+                        backgroundColor: alpha(primaryColor, 0.1),
+                        color: primaryColor,
                         fontWeight: 600,
                       }
                     }}

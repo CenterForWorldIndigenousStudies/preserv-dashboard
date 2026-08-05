@@ -16,13 +16,10 @@ describe('getExclusionReviewConfig', () => {
 
   it('parses the configured root, allowlist, and child page size', async () => {
     process.env.EXCLUSION_REVIEW_ROOT_FOLDER_ID = 'root-folder-1'
-    process.env.EXCLUSION_REVIEW_ALLOWED_EMAILS =
-      'Editor1@example.org, editor2@example.org'
+    process.env.EXCLUSION_REVIEW_ALLOWED_EMAILS = 'Editor1@example.org, editor2@example.org'
     process.env.EXCLUSION_REVIEW_CHILDREN_PAGE_SIZE = '350'
 
-    const { getExclusionReviewConfig } = await import(
-      '@lib/exclusionReviewConfig'
-    )
+    const { getExclusionReviewConfig } = await import('@lib/exclusionReviewConfig')
 
     expect(getExclusionReviewConfig()).toEqual({
       rootFolderId: 'root-folder-1',
@@ -31,18 +28,14 @@ describe('getExclusionReviewConfig', () => {
     })
   })
 
-  it('falls back to defaults when env values are absent or invalid', async () => {
+  it('requires a configured root folder while defaulting optional settings', async () => {
     process.env.EXCLUSION_REVIEW_ALLOWED_EMAILS = '["Reviewer@example.org", " reviewer2@example.org "]'
     process.env.EXCLUSION_REVIEW_CHILDREN_PAGE_SIZE = 'invalid'
 
-    const { getExclusionReviewConfig } = await import(
-      '@lib/exclusionReviewConfig'
-    )
+    const { getExclusionReviewConfig } = await import('@lib/exclusionReviewConfig')
 
-    expect(getExclusionReviewConfig()).toEqual({
-      rootFolderId: 'root-folder-default',
-      allowedEditorEmails: ['reviewer@example.org', 'reviewer2@example.org'],
-      childPageSize: 200,
-    })
+    expect(() => getExclusionReviewConfig()).toThrow(
+      'EXCLUSION_REVIEW_ROOT_FOLDER_ID is required for the Exclusion Review workspace.',
+    )
   })
 })

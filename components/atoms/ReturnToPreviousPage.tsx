@@ -18,7 +18,7 @@ export function ReturnToPreviousPage({
       component={NextLink}
       href={href}
       underline="hover"
-      sx={{ alignSelf: 'flex-start', color: 'moss.main', fontSize: '0.875rem', fontWeight: 500 }}
+      sx={{ alignSelf: 'flex-start', color: 'primary.main', fontSize: '0.875rem', fontWeight: 500 }}
     >
       {`← ${label}`}
     </Link>

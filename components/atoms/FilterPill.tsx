@@ -23,10 +23,6 @@ export function FilterPill({ label, isActive, href, className = '', sx }: Filter
       className={className || undefined}
       underline="none"
       sx={(theme: Theme) => {
-        const mossColor = theme.palette.moss?.main ?? theme.palette.primary.main
-        const sandColor = theme.palette.sand?.main ?? theme.palette.background.default
-        const skyColor = theme.palette.sky?.main ?? theme.palette.action.hover
-
         return {
           display: 'inline-flex',
           alignItems: 'center',
@@ -34,11 +30,11 @@ export function FilterPill({ label, isActive, href, className = '', sx }: Filter
           px: 2,
           py: 1,
           fontSize: '0.875rem',
-          backgroundColor: isActive ? mossColor : sandColor,
-          color: isActive ? theme.palette.moss?.contrastText ?? '#ffffff' : theme.palette.text.primary,
+          backgroundColor: isActive ? theme.palette.primary.main : theme.palette.background.default,
+          color: isActive ? theme.palette.primary.contrastText : theme.palette.text.primary,
           transition: theme.transitions.create(['background-color', 'color']),
           '&:hover': {
-            backgroundColor: isActive ? mossColor : skyColor,
+            backgroundColor: isActive ? theme.palette.primary.main : theme.palette.action.hover,
           },
           ...theme.unstable_sx(sx ?? {}),
         }

@@ -27,22 +27,19 @@ function getDesktopRailSx(): SxProps<Theme> {
     height: 38,
     width: 22,
     borderRadius: '0 10px 10px 0',
-    backgroundColor: 'moss.main',
+    backgroundColor: 'primary.main',
     boxShadow: 1,
-    color: 'moss.contrastText',
+    color: 'primary.contrastText',
     px: 0.5,
     py: 1,
     '&:hover': {
-      backgroundColor: 'moss.main',
+      backgroundColor: 'primary.main',
       opacity: 0.85,
     },
   }
 }
 
-function getControlConfig(
-  intent: SidebarVisibilityIntent,
-  surface: SidebarVisibilitySurface,
-): ControlConfig {
+function getControlConfig(intent: SidebarVisibilityIntent, surface: SidebarVisibilitySurface): ControlConfig {
   if (intent === 'open' && surface === 'mobileBar') {
     return {
       ariaLabel: 'Open navigation menu',
@@ -50,10 +47,10 @@ function getControlConfig(
       size: 'medium',
       sx: {
         borderRadius: 2,
-        backgroundColor: 'sand.main',
-        color: 'ink.main',
+        backgroundColor: 'background.default',
+        color: 'text.primary',
         '&:hover': {
-          backgroundColor: 'sky.main',
+          backgroundColor: 'action.hover',
         },
       },
       title: 'Open navigation menu',
@@ -66,9 +63,9 @@ function getControlConfig(
       icon: <X size={20} />,
       size: 'small',
       sx: {
-        color: 'ink.main',
+        color: 'text.primary',
         '&:hover': {
-          backgroundColor: 'sky.main',
+          backgroundColor: 'action.hover',
         },
       },
       title: 'Close navigation menu',
@@ -80,7 +77,7 @@ function getControlConfig(
       ariaLabel: 'Show sidebar',
       icon: <PanelLeft size={14} />,
       size: 'small',
-      sx: {...getDesktopRailSx()},
+      sx: { ...getDesktopRailSx() },
       title: 'Show sidebar',
     }
   }
@@ -98,11 +95,7 @@ function getControlConfig(
   throw new Error(`Unsupported sidebar visibility control combination: ${surface}-${intent}`)
 }
 
-export function SidebarVisibilityControl({
-  intent,
-  surface,
-  onClick,
-}: SidebarVisibilityControlProps): ReactElement {
+export function SidebarVisibilityControl({ intent, surface, onClick }: SidebarVisibilityControlProps): ReactElement {
   const config = getControlConfig(intent, surface)
 
   return (

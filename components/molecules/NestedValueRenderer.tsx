@@ -101,12 +101,12 @@ export function NestedValueRenderer({
             <Box key={`${level}-${index}`} sx={{ pl: level * 2, py: 0.5 }}>
               <Typography
                 variant={sectionVariant}
-                sx={{
+                sx={(theme) => ({
                   fontWeight: 600,
-                  color: '#355834',
+                  color: theme.palette.primary.main,
                   textTransform: 'uppercase',
                   letterSpacing: '0.08em',
-                }}
+                })}
               >
                 [{index}]
               </Typography>
@@ -136,12 +136,12 @@ export function NestedValueRenderer({
             <Box key={`${level}-${nestedKey}`} sx={{ pl: level * 2, py: 0.5 }}>
               <Typography
                 variant={sectionVariant}
-                sx={{
+                sx={(theme) => ({
                   fontWeight: 600,
-                  color: '#355834',
+                  color: theme.palette.primary.main,
                   textTransform: 'uppercase',
                   letterSpacing: '0.08em',
-                }}
+                })}
               >
                 {nestedKey}
               </Typography>

@@ -2,24 +2,25 @@
 
 import { useMemo } from 'react'
 import { MaterialReactTable, useMaterialReactTable, type MRT_ColumnDef } from 'material-react-table'
+import { alpha, type Theme } from '@mui/material/styles'
 import { DateAtom } from '@atoms/Date'
 import type { AuditEntry } from 'types/documents'
 
-const mrtTableHeadCellSx = {
-  backgroundColor: '#f4f1f0',
-  color: '#231f20',
+const mrtTableHeadCellSx = (theme: Theme) => ({
+  backgroundColor: theme.palette.background.default,
+  color: theme.palette.text.primary,
   fontWeight: 600,
   fontSize: '0.75rem',
   textTransform: 'uppercase',
   letterSpacing: '0.1em',
-  borderBottom: '2px solid #355834',
-}
+  borderBottom: `2px solid ${theme.palette.primary.main}`,
+})
 
-const mrtTableBodyCellSx = {
-  color: '#231f20',
+const mrtTableBodyCellSx = (theme: Theme) => ({
+  color: theme.palette.text.primary,
   fontSize: '0.875rem',
-  borderBottom: '1px solid rgba(53,88,52,0.10)',
-}
+  borderBottom: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+})
 
 export function AuditHistoryTable({ audits }: { audits: AuditEntry[] }) {
   const columns = useMemo<MRT_ColumnDef<AuditEntry>[]>(
@@ -69,7 +70,11 @@ export function AuditHistoryTable({ audits }: { audits: AuditEntry[] }) {
       sx: mrtTableBodyCellSx,
     },
     muiTableContainerProps: {
-      sx: { borderRadius: '0.75rem', border: '1px solid rgba(53,88,52,0.125)' },
+      sx: (theme: Theme) => ({
+        borderRadius: '0.75rem',
+        border: 1,
+        borderColor: alpha(theme.palette.primary.main, 0.125),
+      }),
     },
     localization: {
       noRecordsToDisplay: 'No audit entries found.',

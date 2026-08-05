@@ -209,57 +209,55 @@ export function DocumentVersionsButton({
     state: { sorting },
     muiTableHeadCellProps: {
       sx: (theme: Theme) => ({
-        backgroundColor: theme.palette.sand?.main ?? theme.palette.secondary.main,
-        color: theme.palette.ink?.main ?? theme.palette.text.primary,
+        backgroundColor: theme.palette.background.default,
+        color: theme.palette.text.primary,
         fontWeight: 600,
         fontSize: '0.75rem',
         textTransform: 'uppercase',
         letterSpacing: '0.1em',
         borderBottom: '2px solid',
-        borderBottomColor: theme.palette.moss?.main ?? theme.palette.primary.main,
+        borderBottomColor: theme.palette.primary.main,
       }),
     },
     muiTableBodyCellProps: {
       sx: (theme: Theme) => ({
-        color: theme.palette.ink?.main ?? theme.palette.text.primary,
+        color: theme.palette.text.primary,
         fontSize: '0.875rem',
       }),
     },
     muiTableBodyRowProps: ({ row }) => ({
       sx: (theme: Theme) => {
-        const clayColor = theme.palette.clay?.main ?? theme.palette.error.main
-        const mossColor = theme.palette.moss?.main ?? theme.palette.primary.main
-        const sandColor = theme.palette.sand?.main ?? theme.palette.secondary.main
+        const errorColor = theme.palette.error.main
+        const primaryColor = theme.palette.primary.main
+        const panelColor = theme.palette.background.default
 
         return row.original.is_canonical
           ? {
-              backgroundColor: alpha(mossColor, 0.12),
+              backgroundColor: alpha(primaryColor, 0.12),
               '& td': {
                 borderTop: '1px solid',
                 borderBottom: '1px solid',
-                borderColor: alpha(mossColor, 0.18),
+                borderColor: alpha(primaryColor, 0.18),
               },
-              '&:hover td': { backgroundColor: alpha(mossColor, 0.18) },
+              '&:hover td': { backgroundColor: alpha(primaryColor, 0.18) },
             }
           : row.original.is_duplicate
             ? {
-                backgroundColor: alpha(clayColor, 0.12),
-                '&:hover td': { backgroundColor: alpha(clayColor, 0.18) },
+                backgroundColor: alpha(errorColor, 0.12),
+                '&:hover td': { backgroundColor: alpha(errorColor, 0.18) },
               }
             : {
-                '&:nth-of-type(even) td': { backgroundColor: alpha(sandColor, 0.3) },
-                '&:hover td': { backgroundColor: alpha(mossColor, 0.06) },
+                '&:nth-of-type(even) td': { backgroundColor: alpha(panelColor, 0.3) },
+                '&:hover td': { backgroundColor: alpha(primaryColor, 0.06) },
               }
       },
     }),
     muiTableContainerProps: {
       sx: (theme: Theme) => {
-        const mossColor = theme.palette.moss?.main ?? theme.palette.primary.main
-
         return {
           borderRadius: 1.5,
           border: 1,
-          borderColor: alpha(mossColor, 0.125),
+          borderColor: alpha(theme.palette.primary.main, 0.125),
         }
       },
     },

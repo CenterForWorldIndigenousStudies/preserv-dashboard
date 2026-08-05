@@ -80,7 +80,7 @@ export function PipelineProfileSelector({
                         py: 0.25,
                         borderRadius: 1,
                         bgcolor: 'secondary.main',
-                        color: 'ink.main',
+                        color: 'text.primary',
                       }}
                     >
                       Most Flexible
@@ -155,7 +155,7 @@ export function PipelineProfileSelector({
               p: 1.5,
               borderRadius: 2,
               bgcolor: 'secondary.main',
-              color: 'ink.main',
+              color: 'text.primary',
               fontWeight: 500,
             }}
           >

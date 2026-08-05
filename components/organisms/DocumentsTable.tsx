@@ -131,16 +131,16 @@ function ReviewQueueChecklistPanel({
   return (
     <Box
       sx={(theme: Theme) => {
-        const mossColor = theme.palette.moss?.main ?? theme.palette.primary.main
-        const sandColor = theme.palette.sand?.main ?? theme.palette.secondary.main
+        const primaryColor = theme.palette.primary.main
+        const panelColor = theme.palette.background.default
 
         return {
           mx: 2,
           mb: 2,
           border: 1,
-          borderColor: alpha(mossColor, 0.12),
+          borderColor: alpha(primaryColor, 0.12),
           borderRadius: 1.5,
-          backgroundColor: alpha(sandColor, 0.65),
+          backgroundColor: alpha(panelColor, 0.65),
           p: { xs: 2, sm: 2.5 },
         }
       }}
