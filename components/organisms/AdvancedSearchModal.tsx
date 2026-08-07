@@ -20,6 +20,7 @@ import Typography from '@mui/material/Typography'
 import { alpha, type Theme } from '@mui/material/styles'
 import { Button } from '@atoms/Button'
 import { IconX } from '@atoms/icons/IconX'
+import { ACCESS_LEVEL_LABELS } from '@constants/accessLevels'
 import {
   DOCUMENT_TYPE_OPTIONS,
   type AccessLevelOption,
@@ -270,7 +271,7 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
               <MenuItem value="">All access levels</MenuItem>
               {filterOptions.accessLevels.map((accessLevel) => (
                 <MenuItem key={accessLevel} value={accessLevel}>
-                  {formatFilterLabel(accessLevel)}
+                  {ACCESS_LEVEL_LABELS[accessLevel]}
                 </MenuItem>
               ))}
             </TextField>

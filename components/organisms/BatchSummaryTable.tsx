@@ -1,12 +1,13 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Box, Chip, Divider, Stack, Typography } from '@mui/material'
+import { Alert, Box, Chip, Divider, Stack, Typography } from '@mui/material'
 import { alpha, type Theme } from '@mui/material/styles'
 import {
   MaterialReactTable,
   useMaterialReactTable,
   type MRT_ColumnDef,
+  type MRT_ExpandedState,
   type MRT_SortingState,
 } from 'material-react-table'
 
@@ -18,12 +19,22 @@ import type { BatchSummary } from 'types/batches'
 
 interface BatchSummaryTableProps {
   data: BatchSummary[]
+  initialExpandedBatchId?: string
+  requestedBatchFound?: boolean
 }
 
 interface BatchSummaryGroup {
   batch_id: string
   batch_name: string | null
   propertyCount: number
+}
+
+export function getInitialExpandedBatchState(batchIds: readonly string[], requestedBatchId?: string): MRT_ExpandedState {
+  if (!requestedBatchId || !batchIds.includes(requestedBatchId)) {
+    return {}
+  }
+
+  return { [requestedBatchId]: true }
 }
 
 // ---------------------------------------------------------------------------
@@ -165,7 +176,7 @@ function BatchDetailPanel({ rows }: { rows: BatchSummary[] }): React.ReactElemen
 // BatchSummaryTable
 // ---------------------------------------------------------------------------
 
-export function BatchSummaryTable({ data }: BatchSummaryTableProps) {
+export function BatchSummaryTable({ data, initialExpandedBatchId, requestedBatchFound = true }: BatchSummaryTableProps) {
   const [sorting, setSorting] = useState<MRT_SortingState>([])
   const [globalFilter, setGlobalFilter] = useState('')
 
@@ -186,6 +197,12 @@ export function BatchSummaryTable({ data }: BatchSummaryTableProps) {
       propertyCount: rows.length,
     }))
   }, [groupedBatches])
+
+  const initialExpandedState = useMemo(
+    () => getInitialExpandedBatchState(tableData.map((row) => row.batch_id), initialExpandedBatchId),
+    [initialExpandedBatchId, tableData],
+  )
+  const [expanded, setExpanded] = useState<MRT_ExpandedState>(initialExpandedState)
 
   const columns = useMemo<MRT_ColumnDef<BatchSummaryGroup>[]>(
     () => [
@@ -210,6 +227,9 @@ export function BatchSummaryTable({ data }: BatchSummaryTableProps) {
                 fontWeight: 600,
               }}
             />
+            {row.original.batch_id === initialExpandedBatchId ? (
+              <Chip label="Requested batch" size="small" color="primary" variant="outlined" />
+            ) : null}
           </Box>
         ),
       },
@@ -231,10 +251,12 @@ export function BatchSummaryTable({ data }: BatchSummaryTableProps) {
     columns,
     data: tableData,
     enableExpanding: true,
+    onExpandedChange: setExpanded,
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
     renderDetailPanel: ({ row }) => <BatchDetailPanel rows={groupedBatches.get(row.original.batch_id) ?? []} />,
-    state: { sorting, globalFilter },
+    state: { sorting, globalFilter, expanded },
+    initialState: { expanded: initialExpandedState },
     muiTablePaperProps: {
       sx: {
         backgroundColor: 'transparent',
@@ -301,10 +323,14 @@ export function BatchSummaryTable({ data }: BatchSummaryTableProps) {
         }
       },
     }),
-    muiTableBodyRowProps: () => ({
+    muiTableBodyRowProps: ({ row }) => ({
+      'data-requested-batch': row.original.batch_id === initialExpandedBatchId ? 'true' : undefined,
       sx: (theme: Theme) => {
         return {
           '&:hover > td': { backgroundColor: alpha(theme.palette.primary.main, 0.04) },
+          ...(row.original.batch_id === initialExpandedBatchId
+            ? { '& > td:first-of-type': { borderLeft: `3px solid ${theme.palette.primary.main}` } }
+            : {}),
         }
       },
     }),
@@ -347,6 +373,9 @@ export function BatchSummaryTable({ data }: BatchSummaryTableProps) {
 
   return (
     <Stack spacing={2}>
+      {requestedBatchFound === false && initialExpandedBatchId ? (
+        <Alert severity="warning">Batch “{initialExpandedBatchId}” was not found.</Alert>
+      ) : null}
       <Box>
         <Typography sx={{ color: 'text.primary', fontWeight: 600 }}>Primary batch drill-in starts here.</Typography>
         <Typography sx={{ color: 'text.secondary', fontSize: '0.9rem', mt: 0.75 }}>

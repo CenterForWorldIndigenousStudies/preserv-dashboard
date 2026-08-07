@@ -20,7 +20,7 @@ const sampleItems: ReadyForLibraryItem[] = [
     validation_status: 'APPROVED',
     validation_timestamp: '2026-04-28T10:00:00Z',
     metadata_complete: true,
-    access_level: 'open access',
+    access_level: 'public',
   },
   {
     id: UUIDS.doc2,
@@ -44,7 +44,7 @@ const sampleItems: ReadyForLibraryItem[] = [
     validation_status: 'APPROVED',
     validation_timestamp: '2026-04-25T14:00:00Z',
     metadata_complete: true,
-    access_level: 'open access',
+    access_level: 'public',
   },
 ]
 
@@ -56,7 +56,7 @@ const initialQuery: DocumentTableQuery<AdvancedSearchFilters> = {
 
 const filterOptions: FilterOptions = {
   collections: ['Collection A', 'Collection B'],
-  accessLevels: ['open access', 'restricted', 'internal', 'confidential'],
+  accessLevels: ['public', 'restricted', 'internal', 'admin', 'confidential'],
   statuses: ['APPROVED', 'VALIDATED'],
 }
 

@@ -8,6 +8,7 @@ const {
   mockDocumentToBatchesFindMany,
   mockDocumentToAuthorsFindMany,
   mockDocumentToTagsFindMany,
+  mockDocumentAccessFindMany,
   mockVersionGroupsFindUnique,
 } = vi.hoisted(() => ({
   mockDocumentFindUnique: vi.fn(),
@@ -17,6 +18,7 @@ const {
   mockDocumentToBatchesFindMany: vi.fn(),
   mockDocumentToAuthorsFindMany: vi.fn(),
   mockDocumentToTagsFindMany: vi.fn(),
+  mockDocumentAccessFindMany: vi.fn(),
   mockVersionGroupsFindUnique: vi.fn(),
 }))
 
@@ -29,6 +31,7 @@ vi.mock('@lib/db', () => ({
     document_to_batches: { findMany: mockDocumentToBatchesFindMany },
     document_to_authors: { findMany: mockDocumentToAuthorsFindMany },
     document_to_tags: { findMany: mockDocumentToTagsFindMany },
+    document_access: { findMany: mockDocumentAccessFindMany },
     version_groups: { findUnique: mockVersionGroupsFindUnique },
   },
 }))
@@ -60,11 +63,16 @@ describe('getDocumentDetail version family mapping', () => {
     mockDocumentToMetadataFindMany.mockResolvedValue([])
     mockDocumentToBatchesFindMany.mockResolvedValue([])
     mockDocumentToAuthorsFindMany.mockResolvedValue([])
+    mockDocumentAccessFindMany.mockResolvedValue([])
     mockVersionGroupsFindUnique.mockResolvedValue(null)
   }
 
   it('deduplicates the canonical family row and forces canonical to display first as non-duplicate', async () => {
     mockBaseDocument()
+    mockDocumentAccessFindMany.mockResolvedValue([
+      { access_levels: { level_name: 'restricted' } },
+      { access_levels: { level_name: 'internal' } },
+    ])
     mockDocumentVersionsFindMany
       .mockResolvedValueOnce([
         {
@@ -139,6 +147,7 @@ describe('getDocumentDetail version family mapping', () => {
     const result = await getDocumentDetail('canonical-1')
 
     expect(result).not.toBeNull()
+    expect(result?.access_levels).toEqual(['internal', 'restricted'])
     expect(result?.versions).toEqual([
       {
         id: 'dv-canonical',

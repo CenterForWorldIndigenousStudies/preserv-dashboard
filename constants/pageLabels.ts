@@ -6,6 +6,7 @@ export const PAGE_LABELS = {
   exclusionReview: 'Exclusion Review',
   reviewQueue: 'Review Queue',
   readyForLibrary: 'Ready for Library',
+  library: 'Library',
   collections: 'Collections',
   tags: 'Tags',
   reports: 'Reports',

@@ -91,7 +91,7 @@ const sampleCollections: CollectionWithDocuments[] = [
 
 const filterOptions: FilterOptions = {
   collections: sampleCollections.map(({ collection_name }) => collection_name),
-  accessLevels: ['open access', 'restricted', 'internal', 'confidential'],
+  accessLevels: ['public', 'restricted', 'internal', 'admin', 'confidential'],
   statuses: ['APPROVED', 'NEEDS_REVIEW', 'VALIDATED'],
 }
 

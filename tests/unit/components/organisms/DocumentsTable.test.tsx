@@ -48,7 +48,7 @@ import { DocumentsTable } from '@organisms/DocumentsTable'
 
 const filterOptions: FilterOptions = {
   collections: ['Collection A'],
-  accessLevels: ['open access', 'restricted', 'internal', 'confidential'],
+  accessLevels: ['public', 'restricted', 'internal', 'admin', 'confidential'],
   statuses: ['APPROVED', 'NEEDS_REVIEW'],
 }
 

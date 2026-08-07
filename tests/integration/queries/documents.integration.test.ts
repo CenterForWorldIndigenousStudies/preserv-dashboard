@@ -596,7 +596,7 @@ describeDbIntegration('documents queries (integration)', () => {
           select: { id: true, name: true },
         })
         const openAccessLevel = await tx.access_levels.findFirst({
-          where: { level_name: 'open access' },
+          where: { level_name: 'public' },
           select: { id: true },
         })
 
@@ -606,8 +606,8 @@ describeDbIntegration('documents queries (integration)', () => {
 
         const matchingDocument = await createTestDocument(tx, { name: 'READY_FILTER_MATCH' })
         const nonMatchingDocument = await createTestDocument(tx, { name: 'READY_FILTER_MISS' })
-        const matchingAuthor = await createTestAuthor(tx, 'Ready Filter Author')
-        const otherAuthor = await createTestAuthor(tx, 'Different Ready Author')
+        const matchingAuthor = await createTestAuthor(tx, 'Matching Author')
+        const otherAuthor = await createTestAuthor(tx, 'Different Author')
 
         await Promise.all([
           linkAuthorToDocument(tx, matchingDocument.id, matchingAuthor.id),
@@ -648,14 +648,14 @@ describeDbIntegration('documents queries (integration)', () => {
               id: `rfm-${matchingDocument.id}-${metadataId}`.slice(0, 36),
               document_id: matchingDocument.id,
               metadata_id: metadataId,
-              value: 'ready',
+              value: JSON.stringify('ready'),
               value_type: 'string',
             },
             {
               id: `rfm-${nonMatchingDocument.id}-${metadataId}`.slice(0, 36),
               document_id: nonMatchingDocument.id,
               metadata_id: metadataId,
-              value: 'ready',
+              value: JSON.stringify('ready'),
               value_type: 'string',
             },
           ]),
@@ -665,7 +665,7 @@ describeDbIntegration('documents queries (integration)', () => {
           {
             page: 1,
             pageSize: 1,
-            author: 'Ready Filter Author',
+            author: 'Matching',
           },
           tx,
         )

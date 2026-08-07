@@ -109,6 +109,7 @@ const documentFieldLabels: Array<{ key: string; label: string }> = [
   { key: 'id', label: 'Document ID' },
   { key: 'name', label: 'Name' },
   { key: 'idLegacy', label: 'Legacy ID' },
+  { key: 'accessLevels', label: 'Access Status' },
   { key: 'filesize', label: 'File Size' },
   { key: 'hashBinary', label: 'Hash (Binary)' },
   { key: 'hashContent', label: 'Hash (Content)' },
@@ -216,12 +217,13 @@ export default async function DocumentDetailPage({
       id: document.id,
       name: document.name ?? '—',
       idLegacy: document.id_legacy ?? '—',
+      accessLevels: detail.access_levels,
       filesize: document.filesize,
       hashBinary: document.hash_binary ?? '—',
       hashContent: document.hash_content ?? '—',
       created_at: document.created_at,
       updated_at: document.updated_at,
-    } as Record<string, string | bigint | number | null | undefined>
+    } as Record<string, string | bigint | number | string[] | null | undefined>
 
     return (
       <Stack spacing={4} sx={{ width: '100%' }}>
@@ -243,7 +245,9 @@ export default async function DocumentDetailPage({
                   {field.label}
                 </Typography>
                 <DetailValue>
-                  {field.key === 'filesize' ? (
+                  {field.key === 'accessLevels' ? (
+                    (documentFieldValues[field.key] as string[]).join(', ') || '—'
+                  ) : field.key === 'filesize' ? (
                     <FileSize value={documentFieldValues.filesize as bigint | number | null | undefined} />
                   ) : field.key === 'created_at' || field.key === 'updated_at' ? (
                     <DateAtom value={documentFieldValues[field.key] as string | Date | null | undefined} />

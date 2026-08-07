@@ -49,7 +49,7 @@ describe('ReadyForLibraryPage', () => {
       createdFrom: '2026-01-01',
       createdTo: '2026-12-31',
       collection: 'Collection A',
-      accessLevel: 'open access',
+      accessLevel: 'public',
     })
 
     expect(query).toMatchObject({
@@ -63,7 +63,7 @@ describe('ReadyForLibraryPage', () => {
         createdFrom: '2026-01-01',
         createdTo: '2026-12-31',
         collection: 'Collection A',
-        accessLevel: 'open access',
+        accessLevel: 'public',
       },
     })
   })
@@ -77,7 +77,7 @@ describe('ReadyForLibraryPage', () => {
           validation_status: 'APPROVED',
           validation_timestamp: 1720000000000,
           metadata_complete: false,
-          access_level: 'open access',
+          access_level: 'public',
         },
       ],
       total: 1,

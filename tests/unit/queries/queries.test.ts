@@ -136,7 +136,7 @@ describe('getReadyForLibraryDocuments advanced filters', () => {
       {
         document_id: 'doc-ready',
         access_level_id: 'access-open',
-        access_levels: { level_name: 'open access' },
+        access_levels: { level_name: 'public' },
       },
     ])
     mockDocumentMetadataFindMany.mockResolvedValue([
@@ -160,7 +160,7 @@ describe('getReadyForLibraryDocuments advanced filters', () => {
       createdFrom: '2026-04-01',
       createdTo: '2026-04-30',
       collection: 'Collection A',
-      accessLevel: 'open access',
+      accessLevel: 'public',
     })
 
     const sql = queryText(0)
@@ -190,7 +190,7 @@ describe('buildReadyForLibraryItems', () => {
         { document_id: 'doc-without-access', validation_status: 'APPROVED', validation_timestamp: null },
       ],
       new Map([
-        ['doc-ready', 'open access'],
+        ['doc-ready', 'public'],
         ['doc-without-access', undefined],
       ]),
       new Map([['doc-ready', new Set(['dc_title', 'dc_type', 'dc_subject', 'dc_rights'])]]),
@@ -204,7 +204,7 @@ describe('buildReadyForLibraryItems', () => {
         validation_status: 'APPROVED',
         validation_timestamp: 123,
         metadata_complete: true,
-        access_level: 'open access',
+        access_level: 'public',
       },
     ])
   })

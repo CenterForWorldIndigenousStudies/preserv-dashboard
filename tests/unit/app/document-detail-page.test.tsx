@@ -52,6 +52,7 @@ describe('DocumentDetailPage', () => {
         is_duplicate: false,
       },
       quality: null,
+      access_levels: ['internal', 'restricted'],
       versions: [],
       version_family: {
         version_group_id: 'vg-1',
@@ -77,6 +78,8 @@ describe('DocumentDetailPage', () => {
     )
 
     expect(markup).toContain('Return to Ready for Library')
+    expect(markup).toContain('Access Status')
+    expect(markup).toContain('internal, restricted')
     expect(mockDocumentVersionsButton).toHaveBeenCalledWith(
       expect.objectContaining({
         returnHref: `${DOCUMENTS_PATH}/doc-1?from=%2Fready-for-library%3Fpage%3D2%26pageSize%3D50%26search%3DSample&fromLabel=Ready+for+Library`,

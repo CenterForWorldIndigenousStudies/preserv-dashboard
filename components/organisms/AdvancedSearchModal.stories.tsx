@@ -1,4 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { ACCESS_LEVEL_OPTIONS } from '@constants/accessLevels'
+import { VALIDATION_STATUS_OPTIONS } from '@constants/validationStatuses'
 import type { AdvancedSearchFilters, FilterOptions } from '@lib/search'
 
 import { AdvancedSearchModal } from './AdvancedSearchModal'
@@ -16,8 +18,8 @@ const defaultFilters: AdvancedSearchFilters = {
 
 const defaultFilterOptions: FilterOptions = {
   collections: ['Nicaragua Conflict Documentation', 'First Nations Canada', 'Indigenous Health Conference'],
-  accessLevels: ['open access', 'restricted', 'internal', 'confidential'],
-  statuses: ['APPROVED', 'NEEDS_REVIEW', 'REJECTED', 'VALIDATED'],
+  accessLevels: [...ACCESS_LEVEL_OPTIONS],
+  statuses: [...VALIDATION_STATUS_OPTIONS],
 }
 
 const meta: Meta<typeof AdvancedSearchModal> = {
@@ -55,7 +57,7 @@ export const NoCollections: Story = {
     filters: defaultFilters,
     filterOptions: {
       collections: [],
-      accessLevels: ['open access', 'restricted'],
+      accessLevels: [...ACCESS_LEVEL_OPTIONS],
       statuses: ['APPROVED', 'NEEDS_REVIEW'],
     },
   },

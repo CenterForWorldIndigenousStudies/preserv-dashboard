@@ -5,6 +5,8 @@ export const SIGNIN_PATH = `${AUTH_PATH}/signin` as const
 export const AUTH_ERROR_PATH = `${AUTH_PATH}/error` as const
 
 export const BATCHES_PATH = '/batches' as const
+export const getBatchDeepLinkPath = (batchId: string): string =>
+  `${BATCHES_PATH}?batchId=${encodeURIComponent(batchId)}`
 
 export const COLLECTIONS_PATH = `/collections` as const
 
@@ -61,6 +63,8 @@ export const METADATA_EXTRACTOR_RUN_WAVE_TWO_PATH =
 export const PROCESS_DOCUMENTS_PATH = `/process-documents` as const
 
 export const READY_FOR_LIBRARY_PATH = '/ready-for-library' as const
+
+export const LIBRARY_PATH = '/library' as const
 
 export const REVIEW_QUEUE_PATH = '/review-queue' as const
 

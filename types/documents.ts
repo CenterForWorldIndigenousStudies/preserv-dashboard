@@ -108,6 +108,7 @@ export interface ReviewItem {
 export interface DocumentDetail {
   document: Document
   quality: DocumentQuality | null
+  access_levels: string[]
   versions: DocumentVersion[]
   version_family: VersionFamily | null
   metadata: DocumentMetadataField[]
@@ -129,6 +130,39 @@ export interface ReadyForLibraryItem {
   validation_timestamp: string | number | null
   metadata_complete: boolean
   access_level: string | null
+}
+
+export interface LibraryCollection {
+  id: string
+  name: string
+}
+
+export interface LibraryBatch {
+  id: string
+  name: string | null
+  createdAt: string | null
+}
+
+export interface LibraryDocumentItem {
+  id: string
+  legacyId: string | null
+  sourceId: string | null
+  name: string | null
+  fedoraUrl: string | null
+  uploadedAt: string | null
+  collections: LibraryCollection[]
+  batch: LibraryBatch | null
+}
+
+export interface LibraryDocumentsPageResult {
+  items: LibraryDocumentItem[]
+  total: number
+  page: number
+  pageSize: number
+  hasNextPage: boolean
+  hasPreviousPage: boolean
+  startCursor: { id: string; value: string } | null
+  endCursor: { id: string; value: string } | null
 }
 
 export interface DocumentQueryParams {

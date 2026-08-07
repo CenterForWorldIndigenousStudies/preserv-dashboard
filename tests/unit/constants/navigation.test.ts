@@ -13,6 +13,8 @@ import {
   DB_SCHEMA_PATH,
   DOCUMENTS_PATH,
   EXCLUSION_REVIEW_PATH,
+  getBatchDeepLinkPath,
+  LIBRARY_PATH,
   PROCESS_DOCUMENTS_PATH,
   READY_FOR_LIBRARY_PATH,
   REPORTS_PAGE_PATH,
@@ -31,6 +33,7 @@ describe('dashboard navigation constants', () => {
       { href: EXCLUSION_REVIEW_PATH, iconKey: 'exclusionReview', label: 'Exclusion Review' },
       { href: REVIEW_QUEUE_PATH, iconKey: 'reviewQueue', label: 'Review Queue' },
       { href: READY_FOR_LIBRARY_PATH, iconKey: 'readyForLibrary', label: 'Ready for Library' },
+      { href: LIBRARY_PATH, iconKey: 'library', label: 'Library' },
       { href: COLLECTIONS_PATH, iconKey: 'collections', label: 'Collections' },
       { href: TAGS_PAGE_PATH, iconKey: 'tags', label: 'Tags' },
       { href: REPORTS_PAGE_PATH, iconKey: 'reports', label: 'Reports' },
@@ -66,5 +69,9 @@ describe('dashboard navigation constants', () => {
     expect(shellHrefs).toContain(TAGS_PAGE_PATH)
     expect(shellHrefs).toContain(REPORTS_PAGE_PATH)
     expect(shellHrefs).not.toContain(TAGS_PATH)
+  })
+
+  it('builds a URL-safe batch deep link', () => {
+    expect(getBatchDeepLinkPath('batch/with spaces')).toBe('/batches?batchId=batch%2Fwith%20spaces')
   })
 })

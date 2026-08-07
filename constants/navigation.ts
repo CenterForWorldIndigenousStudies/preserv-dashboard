@@ -6,6 +6,7 @@ import {
   DB_SCHEMA_PATH,
   DOCUMENTS_PATH,
   EXCLUSION_REVIEW_PATH,
+  LIBRARY_PATH,
   PROCESS_DOCUMENTS_PATH,
   READY_FOR_LIBRARY_PATH,
   REPORTS_PAGE_PATH,
@@ -24,6 +25,7 @@ export type DashboardNavigationIconKey =
   | 'exclusionReview'
   | 'reviewQueue'
   | 'readyForLibrary'
+  | 'library'
   | 'collections'
   | 'tags'
   | 'reports'
@@ -50,6 +52,7 @@ export const PRIMARY_DASHBOARD_NAVIGATION_ITEMS: readonly DashboardNavigationIte
   { href: EXCLUSION_REVIEW_PATH, iconKey: 'exclusionReview', label: PAGE_LABELS.exclusionReview },
   { href: REVIEW_QUEUE_PATH, iconKey: 'reviewQueue', label: PAGE_LABELS.reviewQueue },
   { href: READY_FOR_LIBRARY_PATH, iconKey: 'readyForLibrary', label: PAGE_LABELS.readyForLibrary },
+  { href: LIBRARY_PATH, iconKey: 'library', label: PAGE_LABELS.library },
   { href: COLLECTIONS_PATH, iconKey: 'collections', label: PAGE_LABELS.collections },
   { href: TAGS_PAGE_PATH, iconKey: 'tags', label: PAGE_LABELS.tags },
   { href: REPORTS_PAGE_PATH, iconKey: 'reports', label: PAGE_LABELS.reports },

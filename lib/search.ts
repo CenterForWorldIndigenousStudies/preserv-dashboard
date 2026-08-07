@@ -1,20 +1,17 @@
-export const STATUS_OPTIONS = [
-  'APPROVED',
-  'FORMAT_ERRORS',
-  'GENERAL_ERRORS',
-  'METADATA_ISSUES',
-  'NEEDS_REVIEW',
-  'REJECTED',
-  'VALIDATED',
-] as const
+import { ACCESS_LEVEL_OPTIONS, type AccessLevelOption } from '@constants/accessLevels'
+import { VALIDATION_STATUS_OPTIONS } from '@constants/validationStatuses'
+
+export const STATUS_OPTIONS = VALIDATION_STATUS_OPTIONS
+
+export { VALIDATION_STATUS_OPTIONS } from '@constants/validationStatuses'
 
 export const DOCUMENT_TYPE_OPTIONS = ['all', 'unique', 'duplicate'] as const
 
-export const ACCESS_LEVEL_OPTIONS = ['open access', 'restricted', 'internal', 'confidential'] as const
+export { ACCESS_LEVEL_LABELS, ACCESS_LEVEL_OPTIONS } from '@constants/accessLevels'
 
 export type StatusOption = string
 export type DocumentTypeOption = (typeof DOCUMENT_TYPE_OPTIONS)[number]
-export type AccessLevelOption = (typeof ACCESS_LEVEL_OPTIONS)[number]
+export type { AccessLevelOption } from '@constants/accessLevels'
 
 export interface AdvancedSearchFilters {
   author?: string

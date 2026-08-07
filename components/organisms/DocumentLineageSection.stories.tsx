@@ -19,6 +19,7 @@ const detailWithLineage: DocumentDetail = {
     is_duplicate: true,
   },
   quality: null,
+  access_levels: ['restricted'],
   versions: [],
   version_family: {
     version_group_id: 'vg-1',
@@ -93,6 +94,7 @@ const sparseDetail: DocumentDetail = {
     is_duplicate: false,
   },
   quality: null,
+  access_levels: [],
   versions: [],
   version_family: null,
   metadata: [],

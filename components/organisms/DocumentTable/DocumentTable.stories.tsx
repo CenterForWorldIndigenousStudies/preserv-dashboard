@@ -23,7 +23,7 @@ const columns: MRT_ColumnDef<StoryDocument>[] = [
 
 const filterOptions: FilterOptions = {
   collections: ['Collection A'],
-  accessLevels: ['open access', 'restricted', 'internal', 'confidential'],
+  accessLevels: ['public', 'restricted', 'internal', 'admin', 'confidential'],
   statuses: ['APPROVED', 'NEEDS_REVIEW'],
 }
 
@@ -140,7 +140,7 @@ export const FullAdvancedSearch: Story = {
           createdFrom: '2026-01-01',
           createdTo: '2026-12-31',
           collection: 'Collection A',
-          accessLevel: 'open access',
+          accessLevel: 'public',
         },
         filterOptions,
         onApply: () => undefined,

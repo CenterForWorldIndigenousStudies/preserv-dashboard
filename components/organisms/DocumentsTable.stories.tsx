@@ -1,5 +1,6 @@
 import Box from '@mui/material/Box'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { VALIDATION_STATUS_OPTIONS } from '@constants/validationStatuses'
 import { DocumentsTable } from '@organisms/DocumentsTable'
 import type { FilterOptions } from '@lib/search'
 import type { Document } from 'types/documents'
@@ -41,8 +42,8 @@ const mockDocuments: Document[] = [
 
 const filterOptions: FilterOptions = {
   collections: ['Plateau', 'Southwest', 'Pacific Northwest'],
-  accessLevels: ['open access', 'restricted', 'internal', 'confidential'],
-  statuses: ['APPROVED', 'NEEDS_REVIEW', 'REJECTED', 'VALIDATED'],
+  accessLevels: ['public', 'restricted', 'internal', 'admin', 'confidential'],
+  statuses: [...VALIDATION_STATUS_OPTIONS],
 }
 
 function buildPageResult(data: Document[]): DocumentsPageResult {

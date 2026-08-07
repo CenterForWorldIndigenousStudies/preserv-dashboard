@@ -35,6 +35,7 @@ const navigationIconMap: Record<DashboardNavigationIconKey, typeof House> = {
   exclusionReview: FolderTree,
   reviewQueue: ClipboardList,
   readyForLibrary: BookOpen,
+  library: BookOpen,
   collections: BookOpen,
   tags: BookOpen,
   reports: Database,

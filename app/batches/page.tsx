@@ -1,4 +1,4 @@
-import { Suspense, type ReactElement } from 'react'
+import type { ReactElement } from 'react'
 import { PROCESS_DOCUMENTS_PATH } from '@constants/paths'
 import { PAGE_LABELS } from '@constants/pageLabels'
 import { Box, Button, Card, CardContent, Stack, Typography } from '@mui/material'
@@ -6,6 +6,7 @@ import { BatchSummaryTable } from '@organisms/BatchSummaryTable'
 import { NoDataState } from '@organisms/NoDataState'
 import { PageHeader } from '@organisms/PageHeader'
 import { getBatchSummary } from '@lib/queries'
+import type { BatchSummary } from 'types/batches'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,9 +43,7 @@ function SummaryCard({ totalBatches, totalDocuments }: { totalBatches: number; t
   )
 }
 
-async function BatchSummaryContent() {
-  const rows = await getBatchSummary()
-
+function BatchSummaryContent({ rows, batchId }: { rows: BatchSummary[]; batchId?: string }) {
   if (rows.length === 0) {
     return <NoDataState message="No batch data is available yet." />
   }
@@ -57,16 +56,33 @@ async function BatchSummaryContent() {
 
     return sum + row.property_value
   }, 0)
+  const batchIds = new Set(rows.map((row) => row.batch_id))
 
   return (
     <>
       <SummaryCard totalBatches={totalBatches} totalDocuments={totalDocuments} />
-      <BatchSummaryTable data={rows} />
+      <BatchSummaryTable
+        data={rows}
+        initialExpandedBatchId={batchId}
+        requestedBatchFound={batchId ? batchIds.has(batchId) : true}
+      />
     </>
   )
 }
 
-export default function BatchSummaryPage(): ReactElement {
+interface BatchSummaryPageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}
+
+function firstSearchParam(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value
+}
+
+export default async function BatchSummaryPage({ searchParams }: BatchSummaryPageProps): Promise<ReactElement> {
+  const resolvedSearchParams = await searchParams
+  const requestedBatchId = firstSearchParam(resolvedSearchParams.batchId)?.trim() || undefined
+  const rows = await getBatchSummary()
+
   return (
     <Stack spacing={4} sx={{ width: '100%' }}>
       <PageHeader
@@ -116,9 +132,7 @@ export default function BatchSummaryPage(): ReactElement {
         </CardContent>
       </Card>
 
-      <Suspense fallback={null}>
-        <BatchSummaryContent />
-      </Suspense>
+      <BatchSummaryContent batchId={requestedBatchId} rows={rows} />
     </Stack>
   )
 }

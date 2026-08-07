@@ -37,6 +37,10 @@ import type {
   DocumentQuality,
   DocumentQueryParams,
   FailureItem,
+  LibraryBatch,
+  LibraryCollection,
+  LibraryDocumentItem,
+  LibraryDocumentsPageResult,
   ReadyForLibraryItem,
   ReviewItem,
   VersionFamily,
@@ -82,6 +86,97 @@ interface OverviewDocumentRow {
   updated_at: Date | string | null
   is_duplicate: boolean | number | bigint | string | null
   sort_value: string | number | bigint | Date | null
+}
+
+export interface LibraryBatchAssociation {
+  batchId: string
+  batchName: string | null
+  addedAt: Date | string | number | bigint | null
+  batchCreatedAt: Date | string | number | bigint | null
+}
+
+interface LibraryDocumentBoundaryRow {
+  id: string
+  legacyId: string | null
+  sourceId: string | null
+  name: string | null
+  fedoraUrl: string | null
+  uploadedAt: Date | string | number | bigint | null
+  collections: LibraryCollection[]
+  batch: (Omit<LibraryBatch, 'createdAt'> & { createdAt: Date | string | number | bigint | null }) | null
+}
+
+interface LibraryDocumentRow extends OverviewDocumentRow {
+  fedora_url: unknown
+  fedora_url_type: unknown
+  uploaded_at: Date | string | number | bigint | null
+}
+
+function compareLibraryTimestamp(
+  left: Date | string | number | bigint | null,
+  right: Date | string | number | bigint | null,
+): number {
+  if (left === null || left === undefined) return -1
+  if (right === null || right === undefined) return 1
+
+  const leftDateValue = typeof left === 'bigint' ? Number(left) : left
+  const rightDateValue = typeof right === 'bigint' ? Number(right) : right
+  return new Date(leftDateValue).getTime() - new Date(rightDateValue).getTime()
+}
+
+export function selectLatestLibraryBatch(
+  associations: readonly LibraryBatchAssociation[],
+): LibraryBatchAssociation | null {
+  return associations.reduce<LibraryBatchAssociation | null>((latest, candidate) => {
+    if (!latest) return candidate
+
+    const addedAtComparison = compareLibraryTimestamp(candidate.addedAt, latest.addedAt)
+    if (addedAtComparison !== 0) return addedAtComparison > 0 ? candidate : latest
+
+    const createdAtComparison = compareLibraryTimestamp(candidate.batchCreatedAt, latest.batchCreatedAt)
+    if (createdAtComparison !== 0) return createdAtComparison > 0 ? candidate : latest
+
+    return candidate.batchId.localeCompare(latest.batchId) > 0 ? candidate : latest
+  }, null)
+}
+
+function normalizeLibraryDateTime(value: Date | string | number | bigint | null): string | null {
+  if (value === null || value === undefined) return null
+
+  const dateValue = typeof value === 'bigint' ? Number(value) : value
+  const date = new Date(dateValue)
+  return Number.isNaN(date.getTime()) ? null : date.toISOString()
+}
+
+export function normalizeRawLibraryMetadataValue(value: unknown): string | null {
+  if (value === null || value === undefined) return null
+  if (typeof value === 'string') return value
+  if (value instanceof Uint8Array) return new TextDecoder().decode(value)
+  if (typeof value === 'object') return JSON.stringify(value)
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') return value.toString()
+  return null
+}
+
+export function normalizeLibraryDocument(row: LibraryDocumentBoundaryRow): LibraryDocumentItem {
+  return {
+    id: String(row.id),
+    legacyId: row.legacyId ?? null,
+    sourceId: row.sourceId ?? null,
+    name: row.name ?? null,
+    fedoraUrl: row.fedoraUrl ?? null,
+    uploadedAt: normalizeLibraryDateTime(row.uploadedAt),
+    collections: row.collections.map((collection) => ({
+      id: String(collection.id),
+      name: String(collection.name),
+    })),
+    batch: row.batch
+      ? {
+          id: String(row.batch.id),
+          name: row.batch.name ?? null,
+          createdAt: normalizeLibraryDateTime(row.batch.createdAt),
+        }
+      : null,
+  }
 }
 
 const OVERVIEW_SORT_EXPRESSIONS: Record<(typeof DOCUMENTS_ORDERABLE_FIELDS)[number], string> = {
@@ -179,6 +274,295 @@ export async function getAllDocuments(
     },
     client,
   )
+}
+
+const libraryDocumentsBaseFromSql = Prisma.sql`
+  FROM documents d
+  LEFT JOIN (
+    SELECT dtm.document_id, dtm.value
+    FROM document_to_metadata dtm
+    INNER JOIN metadata m ON m.id = dtm.metadata_id
+    WHERE m.name = 'source_id'
+  ) AS source_meta ON source_meta.document_id = d.id
+  LEFT JOIN (
+    SELECT DISTINCT dtt.document_id
+    FROM document_to_tags dtt
+    INNER JOIN tags t ON t.id = dtt.tag_id
+    WHERE t.name = 'duplicate_document'
+  ) AS dup ON dup.document_id = d.id
+  INNER JOIN document_quality dq ON dq.document_id = d.id
+  INNER JOIN state_history latest_state ON latest_state.id = dq.current_status
+  LEFT JOIN (
+    SELECT dtm.document_id, dtm.value, dtm.value_type
+    FROM document_to_metadata dtm
+    INNER JOIN metadata m ON m.id = dtm.metadata_id
+    WHERE m.name = 'fedora_url'
+  ) AS fedora_meta ON fedora_meta.document_id = d.id
+  LEFT JOIN (
+    SELECT da.document_id, MIN(al.level_name) AS level_name
+    FROM document_access da
+    INNER JOIN access_levels al ON al.id = da.access_level_id
+    GROUP BY da.document_id
+  ) AS al ON al.document_id = d.id
+`
+
+interface LibraryQueryContext {
+  page: number
+  pageSize: number
+  usesDefaultSort: boolean
+  sortField: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
+  sortDirection: 'asc' | 'desc'
+  cursorDirection: 'next' | 'prev'
+  cursor: DocumentsCursor | null
+  filterParams: {
+    accessLevel?: AccessLevelOption
+    batch?: string
+    collection?: string
+    createdFrom?: string
+    createdTo?: string
+    defaultSecondarySortExpression?: Prisma.Sql
+    documentType?: DocumentTypeOption
+    searchTerm?: string
+    sortDirection: 'asc' | 'desc'
+    sortExpression: Prisma.Sql
+    sortField: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
+    statuses?: StatusOption[]
+    tagIds?: string[]
+  }
+}
+
+async function buildLibraryQueryContext(
+  params: DocumentsQueryParams,
+  client: QueryDbClient,
+): Promise<LibraryQueryContext> {
+  const page = normalizePageNumber(params.page)
+  const pageSize = normalizeDocumentTablePageSize(params.pageSize)
+  const hasExplicitSort = isOverviewSortField(params.orderBy)
+  const usesDefaultSort = !hasExplicitSort
+  const sortField = normalizeOverviewSortField(params.orderBy)
+  const sortDirection: 'asc' | 'desc' = usesDefaultSort ? 'asc' : params.sortDirection === 'asc' ? 'asc' : 'desc'
+  const cursorDirection = params.cursorDirection === 'prev' ? 'prev' : 'next'
+  const searchTerm = normalizeTextFilter(params.search ?? params.author)
+  const sortExpression = Prisma.raw(OVERVIEW_SORT_EXPRESSIONS[sortField])
+  const defaultSecondarySortExpression = usesDefaultSort
+    ? Prisma.raw(OVERVIEW_SORT_EXPRESSIONS[DEFAULT_OVERVIEW_SECONDARY_SORT_FIELD])
+    : undefined
+  const tagIds = await resolveOverviewTagIds(normalizeTextFilter(params.tag), client)
+  const cursor = params.cursorValue && params.cursorId ? { value: params.cursorValue, id: params.cursorId } : null
+  const filterParams = {
+    accessLevel: normalizeAccessLevel(params.accessLevel),
+    batch: normalizeTextFilter(params.batch),
+    collection: normalizeTextFilter(params.collection),
+    createdFrom: normalizeDateFilter(params.createdFrom),
+    createdTo: normalizeDateFilter(params.createdTo),
+    defaultSecondarySortExpression,
+    documentType: normalizeDocumentType(params.documentType),
+    searchTerm,
+    sortDirection,
+    sortExpression,
+    sortField,
+    statuses: normalizeStatuses(params.statuses),
+    tagIds,
+  }
+
+  return {
+    page,
+    pageSize,
+    usesDefaultSort,
+    sortField,
+    sortDirection,
+    cursorDirection,
+    cursor,
+    filterParams,
+  }
+}
+
+function buildLibraryWhereSql(context: LibraryQueryContext, includeCursor: boolean): Prisma.Sql {
+  const additionalConditions: Prisma.Sql[] = [Prisma.sql`latest_state.new_state = 'ingested_fedora'`]
+  if (context.filterParams.batch) {
+    additionalConditions.push(buildLibraryBatchConditionSql(context.filterParams.batch))
+  }
+
+  return buildOverviewDocumentsWhereSql({
+    ...context.filterParams,
+    batch: undefined,
+    additionalConditions,
+    cursor: includeCursor ? context.cursor : null,
+    cursorDirection: context.cursorDirection,
+  })
+}
+
+async function getLibraryDocumentCount(context: LibraryQueryContext, client: QueryDbClient): Promise<number> {
+  const countWhereSql = buildLibraryWhereSql(context, false)
+  const countRows = await client.$queryRaw<Array<{ total: bigint | number }>>(Prisma.sql`
+    SELECT COUNT(DISTINCT d.id) AS total
+    ${libraryDocumentsBaseFromSql}
+    ${countWhereSql}
+  `)
+  const totalValue = countRows[0]?.total
+  return typeof totalValue === 'bigint' ? Number(totalValue) : Number(totalValue ?? 0)
+}
+
+async function getLibraryDocumentRows(
+  context: LibraryQueryContext,
+  client: QueryDbClient,
+): Promise<LibraryDocumentRow[]> {
+  const whereSql = buildLibraryWhereSql(context, true)
+  const orderBySql = buildOverviewDocumentsOrderBySql({
+    cursorDirection: context.cursorDirection,
+    defaultSecondarySortExpression: context.filterParams.defaultSecondarySortExpression,
+    sortDirection: context.sortDirection,
+    sortExpression: context.filterParams.sortExpression,
+  })
+  const rows = await client.$queryRaw<LibraryDocumentRow[]>(Prisma.sql`
+    SELECT
+      d.id,
+      d.filesize,
+      d.hash_binary,
+      d.hash_content,
+      d.id_legacy,
+      COALESCE(
+        JSON_UNQUOTE(JSON_EXTRACT(source_meta.value, '$.value')),
+        JSON_UNQUOTE(JSON_EXTRACT(source_meta.value, '$')),
+        source_meta.value
+      ) AS source_id,
+      d.name,
+      d.created_at,
+      d.updated_at,
+      dq.validation_status,
+      dq.validation_timestamp,
+      dq.validator_name,
+      CASE WHEN dup.document_id IS NULL THEN 0 ELSE 1 END AS is_duplicate,
+      latest_state.changed_at AS uploaded_at,
+      fedora_meta.value AS fedora_url,
+      fedora_meta.value_type AS fedora_url_type,
+      ${context.filterParams.sortExpression} AS sort_value
+    ${libraryDocumentsBaseFromSql}
+    ${whereSql}
+    ${orderBySql}
+    LIMIT ${context.pageSize + 1}
+  `)
+
+  return rows
+}
+
+async function hydrateLibraryItems(rows: LibraryDocumentRow[], client: QueryDbClient): Promise<LibraryDocumentItem[]> {
+  if (rows.length === 0) return []
+
+  const orderedRows = rows
+  const documentIds = orderedRows.map((row) => String(row.id))
+
+  const [batchRows, collectionRows] = await Promise.all([
+    client.document_to_batches.findMany({
+      where: { document_id: { in: documentIds } },
+      select: {
+        document_id: true,
+        batch_id: true,
+        added_at: true,
+        batches: { select: { id: true, name: true, created_at: true } },
+      },
+    }),
+    client.document_to_tags.findMany({
+      where: { document_id: { in: documentIds } },
+      select: {
+        document_id: true,
+        tags: { select: { id: true, name: true, collections: { select: { id: true } } } },
+      },
+    }),
+  ])
+
+  const batchAssociationsByDocument = new Map<string, LibraryBatchAssociation[]>()
+  for (const row of batchRows) {
+    const associations = batchAssociationsByDocument.get(row.document_id) ?? []
+    associations.push({
+      batchId: row.batch_id,
+      batchName: row.batches.name ?? null,
+      addedAt: row.added_at,
+      batchCreatedAt: row.batches.created_at,
+    })
+    batchAssociationsByDocument.set(row.document_id, associations)
+  }
+
+  const collectionsByDocument = new Map<string, LibraryCollection[]>()
+  for (const row of collectionRows) {
+    const collection = row.tags.collections
+    if (!collection) continue
+
+    const collections = collectionsByDocument.get(row.document_id) ?? []
+    collections.push({ id: collection.id, name: row.tags.name })
+    collectionsByDocument.set(row.document_id, collections)
+  }
+
+  return orderedRows.map((row) => {
+    const latestBatch = selectLatestLibraryBatch(batchAssociationsByDocument.get(String(row.id)) ?? [])
+    const collections = (collectionsByDocument.get(String(row.id)) ?? []).sort(
+      (left, right) => left.name.localeCompare(right.name) || left.id.localeCompare(right.id),
+    )
+
+    return normalizeLibraryDocument({
+      id: String(row.id),
+      legacyId: row.id_legacy ?? null,
+      sourceId:
+        parseMetadataValue(normalizeRawLibraryMetadataValue(row.source_id), null).plainText || null,
+      name: row.name ?? null,
+      fedoraUrl:
+        parseMetadataValue(
+          normalizeRawLibraryMetadataValue(row.fedora_url),
+          normalizeRawLibraryMetadataValue(row.fedora_url_type),
+        ).plainText || null,
+      uploadedAt: row.uploaded_at,
+      collections,
+      batch: latestBatch
+        ? {
+            id: latestBatch.batchId,
+            name: latestBatch.batchName,
+            createdAt: latestBatch.batchCreatedAt,
+          }
+        : null,
+    })
+  })
+}
+
+export async function getLibraryDocuments(
+  params: DocumentsQueryParams = {},
+  client: QueryDbClient = db,
+): Promise<LibraryDocumentsPageResult> {
+  const context = await buildLibraryQueryContext(params, client)
+  const total = await getLibraryDocumentCount(context, client)
+
+  if (total === 0) {
+    return {
+      items: [],
+      total: 0,
+      page: context.page,
+      pageSize: context.pageSize,
+      hasNextPage: false,
+      hasPreviousPage: context.page > 1,
+      startCursor: null,
+      endCursor: null,
+    }
+  }
+
+  const rows = await getLibraryDocumentRows(context, client)
+  const hasMore = rows.length > context.pageSize
+  const slicedRows = hasMore ? rows.slice(0, context.pageSize) : rows
+  const orderedRows = context.cursorDirection === 'prev' ? [...slicedRows].reverse() : slicedRows
+  const items = await hydrateLibraryItems(orderedRows, client)
+
+  const startCursor = buildDocumentsCursor(orderedRows[0], context.sortField, context.usesDefaultSort)
+  const endCursor = buildDocumentsCursor(orderedRows.at(-1), context.sortField, context.usesDefaultSort)
+
+  return {
+    items,
+    total,
+    page: context.page,
+    pageSize: context.pageSize,
+    hasNextPage:
+      context.cursorDirection === 'prev' ? Boolean(context.cursor) : hasMore,
+    hasPreviousPage: context.page > 1,
+    startCursor,
+    endCursor,
+  }
 }
 
 export async function getNeedsReviewDocuments(
@@ -1539,6 +1923,7 @@ async function getNeedsReviewDocumentsPage(
 }
 
 function buildOverviewDocumentsWhereSql(params: {
+  additionalConditions?: readonly Prisma.Sql[]
   searchTerm?: string
   tagIds?: string[]
   statuses?: StatusOption[]
@@ -1557,7 +1942,7 @@ function buildOverviewDocumentsWhereSql(params: {
   sortExpression: Prisma.Sql
   sortField: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
 }): Prisma.Sql {
-  const conditions: Prisma.Sql[] = []
+  const conditions: Prisma.Sql[] = [...(params.additionalConditions ?? [])]
 
   if (params.searchTerm) {
     conditions.push(buildOverviewAuthorSearchConditionSql(params.searchTerm))
@@ -1764,7 +2149,7 @@ function buildOverviewAuthorSearchConditionSql(searchTerm: string): Prisma.Sql {
 }
 
 function buildOverviewBatchConditionSql(batchTerm: string): Prisma.Sql {
-  const likeValue = `%${batchTerm.toLowerCase()}%`
+  const likeValue = `%${escapeLikePattern(batchTerm.toLowerCase())}%`
 
   return Prisma.sql`
     EXISTS (
@@ -1773,20 +2158,58 @@ function buildOverviewBatchConditionSql(batchTerm: string): Prisma.Sql {
       INNER JOIN batches b ON b.id = dtb.batch_id
       WHERE dtb.document_id = d.id
         AND (
-          LOWER(COALESCE(b.name, '')) LIKE ${likeValue}
-          OR LOWER(COALESCE(b.id_legacy, '')) LIKE ${likeValue}
-          OR LOWER(COALESCE(dtb.batch_origin, '')) LIKE ${likeValue}
+          LOWER(COALESCE(b.name, '')) LIKE ${likeValue} ESCAPE '\\\\'
+          OR LOWER(COALESCE(b.id_legacy, '')) LIKE ${likeValue} ESCAPE '\\\\'
+          OR LOWER(COALESCE(dtb.batch_origin, '')) LIKE ${likeValue} ESCAPE '\\\\'
           OR EXISTS (
             SELECT 1
             FROM batch_to_batches_metadata btbm
             INNER JOIN batch_metadata bm ON bm.id = btbm.batch_metadata_id
             WHERE btbm.batch_id = b.id
               AND LOWER(bm.name) = 'legacy_batch_origin'
-              AND LOWER(COALESCE(btbm.value, '')) LIKE ${likeValue}
+              AND LOWER(COALESCE(btbm.value, '')) LIKE ${likeValue} ESCAPE '\\\\'
           )
         )
     )
   `
+}
+
+function buildLibraryBatchConditionSql(batchTerm: string): Prisma.Sql {
+  const likeValue = `%${escapeLikePattern(batchTerm.toLowerCase())}%`
+
+  return Prisma.sql`
+    EXISTS (
+      SELECT 1
+      FROM document_to_batches filtered_dtb
+      INNER JOIN batches filtered_b ON filtered_b.id = filtered_dtb.batch_id
+      WHERE filtered_dtb.document_id = d.id
+        AND filtered_dtb.id = (
+          SELECT latest_dtb.id
+          FROM document_to_batches latest_dtb
+          INNER JOIN batches latest_b ON latest_b.id = latest_dtb.batch_id
+          WHERE latest_dtb.document_id = d.id
+          ORDER BY latest_dtb.added_at DESC, latest_b.created_at DESC, latest_dtb.batch_id DESC
+          LIMIT 1
+        )
+        AND (
+          LOWER(COALESCE(filtered_b.name, '')) LIKE ${likeValue} ESCAPE '\\\\'
+          OR LOWER(COALESCE(filtered_b.id_legacy, '')) LIKE ${likeValue} ESCAPE '\\\\'
+          OR LOWER(COALESCE(filtered_dtb.batch_origin, '')) LIKE ${likeValue} ESCAPE '\\\\'
+          OR EXISTS (
+            SELECT 1
+            FROM batch_to_batches_metadata filtered_btbm
+            INNER JOIN batch_metadata filtered_bm ON filtered_bm.id = filtered_btbm.batch_metadata_id
+            WHERE filtered_btbm.batch_id = filtered_b.id
+              AND LOWER(filtered_bm.name) = 'legacy_batch_origin'
+              AND LOWER(COALESCE(filtered_btbm.value, '')) LIKE ${likeValue} ESCAPE '\\\\'
+          )
+        )
+    )
+  `
+}
+
+function escapeLikePattern(value: string): string {
+  return value.replace(/[\\%_]/g, '\\$&')
 }
 
 function buildOverviewTagConditionSql(tagIds: string[]): Prisma.Sql {
@@ -2017,6 +2440,13 @@ function normalizeCollectionDocumentRow(row: CollectionDocumentRow): Document {
 // Returns a document with its document_quality and document_versions.
 // Metadata, audits, and reviews are empty stubs because those tables do not exist.
 // ---------------------------------------------------------------------------
+export function normalizeDocumentAccessLevels(levels: readonly (string | null | undefined)[]): string[] {
+  return levels
+    .filter((level): level is string => Boolean(level?.trim()))
+    .map((level) => level.trim())
+    .sort((left, right) => left.localeCompare(right))
+}
+
 export async function getDocumentDetail(documentId: string): Promise<DocumentDetail | null> {
   const document = await db.documents.findUnique({
     where: { id: documentId },
@@ -2026,32 +2456,33 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
     return null
   }
 
-  const [quality, versions, metadata, batches, authors, tags, canonicalGroup, variantMemberships] = await Promise.all([
-    db.document_quality.findUnique({
-      where: { document_id: documentId },
-    }),
-    db.document_versions.findMany({
-      where: { document_id: documentId },
-      orderBy: { created_at: 'desc' },
-    }),
-    db.document_to_metadata.findMany({
-      where: { document_id: documentId },
-      include: { metadata: true },
-      orderBy: { metadata: { name: 'asc' } },
-    }),
-    db.document_to_batches.findMany({
-      where: { document_id: documentId },
-      include: { batches: true },
-    }),
-    db.document_to_authors.findMany({
-      where: { document_id: documentId },
-    }),
-    db.document_to_tags.findMany({
-      where: { document_id: documentId },
-      include: { tags: true },
-    }),
-    db.version_groups.findUnique({
-      where: { canonical_document_id: documentId },
+  const [quality, versions, metadata, batches, authors, tags, canonicalGroup, variantMemberships, accessRows] =
+    await Promise.all([
+      db.document_quality.findUnique({
+        where: { document_id: documentId },
+      }),
+      db.document_versions.findMany({
+        where: { document_id: documentId },
+        orderBy: { created_at: 'desc' },
+      }),
+      db.document_to_metadata.findMany({
+        where: { document_id: documentId },
+        include: { metadata: true },
+        orderBy: { metadata: { name: 'asc' } },
+      }),
+      db.document_to_batches.findMany({
+        where: { document_id: documentId },
+        include: { batches: true },
+      }),
+      db.document_to_authors.findMany({
+        where: { document_id: documentId },
+      }),
+      db.document_to_tags.findMany({
+        where: { document_id: documentId },
+        include: { tags: true },
+      }),
+      db.version_groups.findUnique({
+        where: { canonical_document_id: documentId },
       include: {
         documents: {
           include: {
@@ -2112,8 +2543,14 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
         },
       },
       orderBy: { created_at: 'desc' },
-    }),
-  ])
+      }),
+      db.document_access.findMany({
+        where: { document_id: documentId },
+        select: { access_levels: { select: { level_name: true } } },
+      }),
+    ])
+
+  const access_levels = normalizeDocumentAccessLevels(accessRows.map((row) => row.access_levels.level_name))
 
   const mapQuality = (row: typeof quality): DocumentQuality | null => {
     if (!row) return null
@@ -2221,6 +2658,7 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
       is_duplicate: hasDuplicateTag,
     },
     quality: mapQuality(quality),
+    access_levels,
     versions: versions.map((v) => ({
       id: String(v.id),
       document_id: String(v.document_id),
