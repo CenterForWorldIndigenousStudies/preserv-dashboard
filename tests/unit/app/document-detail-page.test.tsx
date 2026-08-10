@@ -1,10 +1,25 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-const { mockGetDocumentDetail, mockDocumentVersionsButton } = vi.hoisted(() => ({
-  mockGetDocumentDetail: vi.fn(),
-  mockDocumentVersionsButton: vi.fn(() => null),
-}))
+const { mockGetDocumentDetail, mockDocumentVersionsButton, mockDetailPageSection, mockDetailFieldGrid } = vi.hoisted(
+  () => ({
+    mockGetDocumentDetail: vi.fn(),
+    mockDocumentVersionsButton: vi.fn(() => null),
+    mockDetailPageSection: vi.fn(({ children }: { children: React.ReactNode }) => <section>{children}</section>),
+    mockDetailFieldGrid: vi.fn(
+      ({ fields }: { fields: Array<{ key: string; label: string; value: React.ReactNode }> }) => (
+        <dl>
+          {fields.map((field) => (
+            <div key={field.key}>
+              <dt>{field.label}</dt>
+              <dd>{field.value}</dd>
+            </div>
+          ))}
+        </dl>
+      ),
+    ),
+  }),
+)
 
 vi.mock('@lib/queries/queries', () => ({
   getDocumentDetail: mockGetDocumentDetail,
@@ -12,6 +27,14 @@ vi.mock('@lib/queries/queries', () => ({
 
 vi.mock('@organisms/DocumentVersionsButton', () => ({
   DocumentVersionsButton: mockDocumentVersionsButton,
+}))
+
+vi.mock('@organisms/DetailPageSection', () => ({
+  DetailPageSection: mockDetailPageSection,
+}))
+
+vi.mock('@molecules/DetailFieldGrid', () => ({
+  DetailFieldGrid: mockDetailFieldGrid,
 }))
 
 vi.mock('@organisms/AuditHistoryTable', () => ({
@@ -80,6 +103,8 @@ describe('DocumentDetailPage', () => {
     expect(markup).toContain('Return to Ready for Library')
     expect(markup).toContain('Access Status')
     expect(markup).toContain('internal, restricted')
+    expect(mockDetailPageSection).toHaveBeenCalledWith(expect.objectContaining({ title: 'Document Fields' }), undefined)
+    expect(mockDetailFieldGrid).toHaveBeenCalledTimes(1)
     expect(mockDocumentVersionsButton).toHaveBeenCalledWith(
       expect.objectContaining({
         returnHref: `${DOCUMENTS_PATH}/doc-1?from=%2Fready-for-library%3Fpage%3D2%26pageSize%3D50%26search%3DSample&fromLabel=Ready+for+Library`,

@@ -1,24 +1,24 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
-import { DocumentNameBlock } from './DocumentNameBlock'
+import { Badge } from '@atoms/Badges/Badge'
 import { DOCUMENTS_PATH } from '@constants/paths'
+import { EntityNameBlock } from './EntityNameBlock'
 
 const meta = {
-  title: 'Molecules/DocumentNameBlock',
-  component: DocumentNameBlock,
+  title: 'Molecules/EntityNameBlock',
+  component: EntityNameBlock,
   tags: ['autodocs'],
   args: {
     name: 'Annual Report 2023',
     id: 'abc12345-6789-def0-1234-567890abcdef',
-    isCanonical: false,
     legacyId: 'AR-2023-001',
     sourceId: '1ABC123XYZ',
   },
   argTypes: {
     name: { control: 'text' },
     id: { control: 'text' },
-    isCanonical: { control: 'boolean' },
     legacyId: { control: 'text' },
     sourceId: { control: 'text' },
+    fallbackName: { control: 'text' },
     href: { control: 'text' },
     maxTruncationLength: { control: 'number' },
   },
@@ -27,7 +27,7 @@ const meta = {
       default: 'sand',
     },
   },
-} satisfies Meta<typeof DocumentNameBlock>
+} satisfies Meta<typeof EntityNameBlock>
 
 export default meta
 type Story = StoryObj<typeof meta>
@@ -43,14 +43,18 @@ export const Default: Story = {
   },
 }
 
-export const IsCanonical: Story = {
+export const WithStatusContent: Story = {
   args: {
-    isCanonical: true,
+    badges: (
+      <Badge variant={'success'} outlined>
+        {'Canonical'}
+      </Badge>
+    ),
   },
   parameters: {
     docs: {
       description: {
-        story: 'When isCanonical is true, a green "Canonical" Badge appears next to the document name.',
+        story: 'Optional status content can be displayed beside the entity name.',
       },
     },
   },
@@ -103,6 +107,23 @@ export const Untitled: Story = {
     docs: {
       description: {
         story: 'When name is null, renders "Untitled document" in text.primary (not moss green).',
+      },
+    },
+  },
+}
+
+export const UntitledBatch: Story = {
+  args: {
+    name: null,
+    id: '12345678-90ab-cdef-1234-567890abcdef',
+    fallbackName: 'Untitled batch',
+    legacyId: 'BATCH-001',
+    sourceId: null,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: 'The fallback name can be customized for another named entity such as a batch.',
       },
     },
   },

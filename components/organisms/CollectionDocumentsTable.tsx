@@ -7,7 +7,7 @@ import { getDocumentsForCollectionAction } from '@actions/collections'
 import { DateAtom } from '@atoms/Date'
 import { getDocumentDetailPath } from '@constants/paths'
 import { PAGE_LABELS } from '@constants/pageLabels'
-import { DocumentNameBlock } from '@molecules/DocumentNameBlock'
+import { EntityNameBlock } from '@molecules/EntityNameBlock'
 import { DocumentTable } from '@organisms/DocumentTable/DocumentTable'
 import type { DocumentTableConfig, DocumentTableQuery } from '@organisms/DocumentTable/types'
 import { useDocumentTableController } from '@organisms/DocumentTable/useDocumentTableController'
@@ -66,7 +66,7 @@ export function CollectionDocumentsTable({
             original: { id, id_legacy, name, source_id },
           },
         }) => (
-          <DocumentNameBlock
+          <EntityNameBlock
             name={name}
             id={id}
             legacyId={id_legacy}

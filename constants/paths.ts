@@ -5,8 +5,19 @@ export const SIGNIN_PATH = `${AUTH_PATH}/signin` as const
 export const AUTH_ERROR_PATH = `${AUTH_PATH}/error` as const
 
 export const BATCHES_PATH = '/batches' as const
-export const getBatchDeepLinkPath = (batchId: string): string =>
-  `${BATCHES_PATH}?batchId=${encodeURIComponent(batchId)}`
+export const getBatchDetailPath = (batchId: string, returnHref?: string, returnLabel?: string): string => {
+  const searchParams = new URLSearchParams()
+
+  if (returnHref) {
+    searchParams.set('from', returnHref)
+  }
+  if (returnLabel) {
+    searchParams.set('fromLabel', returnLabel)
+  }
+
+  const search = searchParams.toString()
+  return `${BATCHES_PATH}/${encodeURIComponent(batchId)}${search ? `?${search}` : ''}`
+}
 
 export const COLLECTIONS_PATH = `/collections` as const
 
@@ -57,8 +68,7 @@ export const PROCESS_FOLDERS_PATH = `${PROCESS_PATH}/folders` as const
 export const PROCESS_START_PATH = `${PROCESS_PATH}/start` as const
 export const METADATA_EXTRACTOR_OPENAI_BATCH_STATUS_PATH =
   `${PROCESS_PATH}/metadata-extractor/openai-batch-status` as const
-export const METADATA_EXTRACTOR_RUN_WAVE_TWO_PATH =
-  `${PROCESS_PATH}/metadata-extractor/run-wave-two` as const
+export const METADATA_EXTRACTOR_RUN_WAVE_TWO_PATH = `${PROCESS_PATH}/metadata-extractor/run-wave-two` as const
 
 export const PROCESS_DOCUMENTS_PATH = `/process-documents` as const
 

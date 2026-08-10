@@ -12,7 +12,7 @@ import {
   DB_SCHEMA_PATH,
   DOCUMENTS_PATH,
   EXCLUSION_REVIEW_PATH,
-  getBatchDeepLinkPath,
+  getBatchDetailPath,
   LIBRARY_PATH,
   PROCESS_DOCUMENTS_PATH,
   READY_FOR_LIBRARY_PATH,
@@ -70,7 +70,13 @@ describe('dashboard navigation constants', () => {
     expect(shellHrefs).not.toContain(TAGS_PATH)
   })
 
-  it('builds a URL-safe batch deep link', () => {
-    expect(getBatchDeepLinkPath('batch/with spaces')).toBe('/batches?batchId=batch%2Fwith%20spaces')
+  it('builds a URL-safe canonical batch detail path', () => {
+    expect(getBatchDetailPath('batch/with spaces')).toBe('/batches/batch%2Fwith%20spaces')
+  })
+
+  it('preserves a validated return context in a batch detail path', () => {
+    expect(getBatchDetailPath('batch-1', '/library?page=2', 'Library')).toBe(
+      '/batches/batch-1?from=%2Flibrary%3Fpage%3D2&fromLabel=Library',
+    )
   })
 })

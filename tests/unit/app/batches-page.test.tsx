@@ -1,85 +1,91 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-const { mockGetBatchSummary, mocks } = vi.hoisted(() => ({
-  mockGetBatchSummary: vi.fn(),
-  mocks: { batchSummaryTableProps: undefined as Record<string, unknown> | undefined },
+const { mockGetBatchOverviewMetrics, mockGetBatches, mockParseBatchQueryParams, mocks } = vi.hoisted(() => ({
+  mockGetBatchOverviewMetrics: vi.fn(),
+  mockGetBatches: vi.fn(),
+  mockParseBatchQueryParams: vi.fn(),
+  mocks: { batchesTableProps: undefined as Record<string, unknown> | undefined },
 }))
 
-vi.mock('@lib/queries/queries', () => ({
-  getBatchSummary: mockGetBatchSummary,
+vi.mock('@lib/queries/batchQueries', () => ({
+  getBatchOverviewMetrics: mockGetBatchOverviewMetrics,
+  getBatches: mockGetBatches,
+  parseBatchQueryParams: mockParseBatchQueryParams,
 }))
 
-vi.mock('@organisms/BatchSummaryTable', () => ({
-  BatchSummaryTable: (props: Record<string, unknown>) => {
-    mocks.batchSummaryTableProps = props
-    return <div>Batch summary table stub</div>
+vi.mock('@organisms/BatchesTable', () => ({
+  BatchesTable: (props: Record<string, unknown>) => {
+    mocks.batchesTableProps = props
+    return <div>Batch table stub</div>
   },
 }))
 
-import BatchSummaryPage from '@root/app/batches/page'
+import BatchesPage from '@root/app/batches/page'
 import { PROCESS_DOCUMENTS_PATH } from '@constants/paths'
 
-describe('BatchSummaryPage', () => {
+const initialQuery = {
+  page: 2,
+  pageSize: 50,
+  search: 'batch',
+  orderBy: 'name',
+  sortDirection: 'asc' as const,
+  filters: {},
+}
+
+const initialData = {
+  data: [
+    {
+      id: 'batch-1',
+      name: 'Batch One',
+      startedAt: '2026-07-09T00:00:00.000Z',
+      documentCount: 5,
+      totalCost: '$12.50',
+      processingTime: 42,
+    },
+  ],
+  totalCount: 1,
+  pageInfo: {
+    pageSize: 50,
+    hasNextPage: false,
+    hasPreviousPage: true,
+    startCursor: null,
+    endCursor: null,
+  },
+}
+
+describe('BatchesPage', () => {
   afterEach(() => {
     vi.clearAllMocks()
-    mocks.batchSummaryTableProps = undefined
+    mocks.batchesTableProps = undefined
   })
 
   it('frames Batches as monitoring and links back to Process', async () => {
-    mockGetBatchSummary.mockResolvedValue([
-      {
-        batch_id: 'batch-1',
-        batch_name: 'Batch One',
-        started_at: '2026-07-09T00:00:00.000Z',
-        property_key: 'total_documents',
-        property_value: 5,
-      },
-    ])
+    mockParseBatchQueryParams.mockReturnValue(initialQuery)
+    mockGetBatches.mockResolvedValue(initialData)
+    mockGetBatchOverviewMetrics.mockResolvedValue({ totalBatches: 1, totalDocuments: 5 })
 
-    const markup = renderToStaticMarkup(await BatchSummaryPage({ searchParams: Promise.resolve({}) }))
+    const markup = renderToStaticMarkup(await BatchesPage({ searchParams: Promise.resolve({ search: 'batch' }) }))
 
     expect(markup).toContain('Monitor batch health and investigate batch history')
     expect(markup).toContain('Batches owns monitoring and investigation.')
     expect(markup).toContain('Back to Process')
     expect(markup).toContain(PROCESS_DOCUMENTS_PATH)
+    expect(markup).toContain('Total Batches')
+    expect(markup).toContain('Total Documents')
   })
 
-  it('passes a requested batch ID through for focused expansion', async () => {
-    mockGetBatchSummary.mockResolvedValue([
-      {
-        batch_id: 'batch-1',
-        batch_name: 'Batch One',
-        started_at: '2026-07-09T00:00:00.000Z',
-        property_key: 'total_documents',
-        property_value: 5,
-      },
-    ])
+  it('loads the parsed list query and passes the result to BatchesTable', async () => {
+    const rawParams = { page: '2', pageSize: '50', search: 'batch', batchId: 'ignored' }
+    mockParseBatchQueryParams.mockReturnValue(initialQuery)
+    mockGetBatches.mockResolvedValue(initialData)
+    mockGetBatchOverviewMetrics.mockResolvedValue({ totalBatches: 1, totalDocuments: 5 })
 
-    renderToStaticMarkup(await BatchSummaryPage({ searchParams: Promise.resolve({ batchId: 'batch-1' }) }))
+    renderToStaticMarkup(await BatchesPage({ searchParams: Promise.resolve(rawParams) }))
 
-    expect(mocks.batchSummaryTableProps).toMatchObject({
-      initialExpandedBatchId: 'batch-1',
-      requestedBatchFound: true,
-    })
-  })
-
-  it('reports an unknown requested batch without changing the default table behavior', async () => {
-    mockGetBatchSummary.mockResolvedValue([
-      {
-        batch_id: 'batch-1',
-        batch_name: 'Batch One',
-        started_at: '2026-07-09T00:00:00.000Z',
-        property_key: 'total_documents',
-        property_value: 5,
-      },
-    ])
-
-    renderToStaticMarkup(await BatchSummaryPage({ searchParams: Promise.resolve({ batchId: 'missing-batch' }) }))
-
-    expect(mocks.batchSummaryTableProps).toMatchObject({
-      initialExpandedBatchId: 'missing-batch',
-      requestedBatchFound: false,
-    })
+    expect(mockParseBatchQueryParams).toHaveBeenCalledWith(rawParams)
+    expect(mockGetBatches).toHaveBeenCalledWith(initialQuery)
+    expect(mockGetBatchOverviewMetrics).toHaveBeenCalledOnce()
+    expect(mocks.batchesTableProps).toEqual({ initialData, initialQuery })
   })
 })

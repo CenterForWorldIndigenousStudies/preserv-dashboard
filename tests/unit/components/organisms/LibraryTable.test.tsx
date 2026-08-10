@@ -117,7 +117,7 @@ describe('LibraryTable', () => {
     expect(renderCell(0)).toContain('source-1')
     expect(renderCell(1)).toContain('https://fedora.example/doc-1')
     expect(renderCell(3)).toContain(`${COLLECTIONS_PATH}?expanded=collection-1`)
-    expect(renderCell(4)).toContain('/batches?batchId=batch-1')
+    expect(renderCell(4)).toContain('/batches/batch-1?from=%2Flibrary%3Fpage%3D2%26pageSize%3D50&amp;fromLabel=Library')
 
     const result = (await config.definition.fetcher({ page: 1, pageSize: 25, filters: {} })) as {
       data: unknown[]

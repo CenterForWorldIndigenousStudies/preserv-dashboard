@@ -21,6 +21,8 @@ import { AuditHistoryTable } from '@organisms/AuditHistoryTable'
 import { DocumentLineageSection } from '@organisms/DocumentLineageSection'
 import { DocumentTagsEditor } from '@organisms/DocumentTagsEditor'
 import { DocumentVersionsButton } from '@organisms/DocumentVersionsButton'
+import { DetailPageSection } from '@organisms/DetailPageSection'
+import { DetailFieldGrid } from '@molecules/DetailFieldGrid'
 import { NoDataState } from '@organisms/NoDataState'
 import { PageHeader } from '@organisms/PageHeader'
 import { ReviewHistoryTable } from '@organisms/ReviewHistoryTable'
@@ -238,31 +240,24 @@ export default async function DocumentDetailPage({
           }
         />
 
-        <Paper component={'section'} elevation={0} sx={panelSx}>
-          <Typography component={'h2'} variant={'h5'} color={'text.primary'}>
-            {'Document Fields'}
-          </Typography>
-          <Box component={'dl'} sx={detailGridSx}>
-            {documentFieldLabels.map((field) => (
-              <Box key={field.key} component={'div'} sx={insetSx}>
-                <Typography component={'dt'} variant={'caption'} sx={detailLabelSx}>
-                  {field.label}
-                </Typography>
-                <DetailValue>
-                  {field.key === 'accessLevels' ? (
-                    (documentFieldValues[field.key] as string[]).join(', ') || '—'
-                  ) : field.key === 'filesize' ? (
-                    <FileSize value={documentFieldValues.filesize as bigint | number | null | undefined} />
-                  ) : field.key === 'created_at' || field.key === 'updated_at' ? (
-                    <DateAtom value={documentFieldValues[field.key] as string | Date | null | undefined} />
-                  ) : (
-                    documentFieldValues[field.key] || '—'
-                  )}
-                </DetailValue>
-              </Box>
-            ))}
-          </Box>
-        </Paper>
+        <DetailPageSection title={'Document Fields'}>
+          <DetailFieldGrid
+            fields={documentFieldLabels.map((field) => ({
+              key: field.key,
+              label: field.label,
+              value:
+                field.key === 'accessLevels' ? (
+                  (documentFieldValues[field.key] as string[]).join(', ') || '—'
+                ) : field.key === 'filesize' ? (
+                  <FileSize value={documentFieldValues.filesize as bigint | number | null | undefined} />
+                ) : field.key === 'created_at' || field.key === 'updated_at' ? (
+                  <DateAtom value={documentFieldValues[field.key] as string | Date | null | undefined} />
+                ) : (
+                  documentFieldValues[field.key] || '—'
+                ),
+            }))}
+          />
+        </DetailPageSection>
 
         <Stack component={'section'} spacing={4}>
           <Paper component={'section'} elevation={0} sx={panelSx}>

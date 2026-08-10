@@ -7,9 +7,9 @@ import type { MRT_ColumnDef } from 'material-react-table'
 
 import { getLibraryDocumentsAction } from '@actions/library'
 import { DateAtom } from '@atoms/Date'
-import { getBatchDeepLinkPath, getDocumentDetailPath, COLLECTIONS_PATH } from '@constants/paths'
+import { getBatchDetailPath, getDocumentDetailPath, COLLECTIONS_PATH } from '@constants/paths'
 import { PAGE_LABELS } from '@constants/pageLabels'
-import { DocumentNameBlock } from '@molecules/DocumentNameBlock'
+import { EntityNameBlock } from '@molecules/EntityNameBlock'
 import { DocumentTable } from '@organisms/DocumentTable/DocumentTable'
 import type { DocumentTableConfig, DocumentTableFetchResult, DocumentTableQuery } from '@organisms/DocumentTable/types'
 import { useDocumentTableController } from '@organisms/DocumentTable/useDocumentTableController'
@@ -106,7 +106,7 @@ export function LibraryTable({ filterOptions, initialQuery, initialData }: Libra
         header: 'Document',
         size: 360,
         Cell: ({ row }) => (
-          <DocumentNameBlock
+          <EntityNameBlock
             name={row.original.name}
             id={row.original.id}
             legacyId={row.original.legacyId}
@@ -162,7 +162,7 @@ export function LibraryTable({ filterOptions, initialQuery, initialData }: Libra
         enableSorting: false,
         Cell: ({ row }) =>
           row.original.batch ? (
-            <Link href={getBatchDeepLinkPath(row.original.batch.id)}>
+            <Link href={getBatchDetailPath(row.original.batch.id, returnHref, PAGE_LABELS.library)}>
               {row.original.batch.name ?? row.original.batch.id}
             </Link>
           ) : (

@@ -1,0 +1,1 @@
+export { EntityNameBlock } from './EntityNameBlock'

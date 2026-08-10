@@ -28,7 +28,6 @@ import {
   normalizeTagName,
   scoreTags,
 } from '@lib/tagUtils'
-import type { BatchSummary } from 'types/batches'
 import type { CollectionWithMeta } from 'types/collections'
 import type {
   AuditEntry,
@@ -2713,7 +2712,7 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
 }
 
 // ---------------------------------------------------------------------------
-// getBatchSummary
+// getFailures
 // Returns an empty array.  The documents table has no `state` column, so
 // there is no reliable way to determine which documents have failed.
 // ---------------------------------------------------------------------------
@@ -3091,104 +3090,4 @@ export async function getReadyForLibraryBatchIds(documentIds?: readonly string[]
   })
 
   return [...new Set(rows.map((row) => row.batch_id))]
-}
-
-function parseBatchProcessingDetails(rawDetails: string | null): Record<string, string | number | boolean | null> {
-  if (!rawDetails?.trim()) {
-    return {}
-  }
-
-  try {
-    const parsed: unknown = JSON.parse(rawDetails)
-
-    if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object') {
-      return {}
-    }
-
-    const normalizedEntries = Object.entries(parsed).map(([key, value]) => {
-      if (value === null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-        return [key, value] as const
-      }
-
-      return [key, JSON.stringify(value)] as const
-    })
-
-    return Object.fromEntries(normalizedEntries)
-  } catch {
-    return {}
-  }
-}
-
-// ---------------------------------------------------------------------------
-// getBatchSummary
-// Returns processing details flattened into property rows per batch.
-// ---------------------------------------------------------------------------
-export async function getBatchSummary(): Promise<BatchSummary[]> {
-  const rows = await db.batches.findMany({
-    select: {
-      id: true,
-      name: true,
-      processing_details: true,
-      started_at: true,
-      document_to_batches: {
-        select: {
-          cost: true,
-          processing_time_seconds: true,
-        },
-      },
-    },
-  })
-
-  const result: BatchSummary[] = []
-
-  for (const { document_to_batches, id, name, processing_details, started_at } of rows) {
-    const details = parseBatchProcessingDetails(processing_details)
-
-    for (const [property_key, property_value] of Object.entries(details)) {
-      result.push({
-        batch_id: id,
-        batch_name: name ?? null,
-        started_at,
-        property_key,
-        property_value,
-      })
-    }
-
-    const totalCost = document_to_batches.reduce((sum, dtb) => sum + Number(dtb.cost ?? 0), 0.0)
-
-    const totalProcessingTime = getTotalProcessingTime({ document_to_batches, processing_details: details })
-
-    result.push({
-      batch_id: id,
-      batch_name: name ?? null,
-      started_at,
-      property_key: 'Total Cost',
-      property_value: `$${totalCost.toFixed(2)}`,
-    })
-
-    result.push({
-      batch_id: id,
-      batch_name: name ?? null,
-      started_at,
-      property_key: 'Processing Time (seconds)',
-      property_value: totalProcessingTime || 'Unknown',
-    })
-  }
-
-  return result
-}
-
-function getTotalProcessingTime({
-  document_to_batches,
-  processing_details,
-}: {
-  document_to_batches: {
-    cost: Prisma.Decimal | null
-    processing_time_seconds: number | null
-  }[]
-  processing_details: Record<string, string | number | boolean | null>
-}) {
-  const speed = parseBatchProcessingDetails(processing_details.batch_statistics as string).speed
-  if (speed) return speed
-  return document_to_batches.reduce((sum, dtb) => sum + (dtb.processing_time_seconds ?? 0), 0)
 }

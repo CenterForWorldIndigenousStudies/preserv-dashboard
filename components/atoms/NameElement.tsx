@@ -4,12 +4,12 @@ import Link from 'next/link'
 
 interface NameElementProps {
   name?: string | null
+  fallbackName?: string
   href?: string
 }
 
-export function NameElement({ name, href }: NameElementProps): ReactElement {
-  const DEFAULT_NAME = 'Untitled document'
-  const resolvedName = name?.trim() || DEFAULT_NAME
+export function NameElement({ name, fallbackName = 'Untitled document', href }: NameElementProps): ReactElement {
+  const resolvedName = name?.trim() || fallbackName
   const style = { fontWeight: 500, lineHeight: 1.4 }
   return href ? (
     <Link href={href} passHref>

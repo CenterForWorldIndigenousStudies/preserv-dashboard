@@ -10,7 +10,7 @@ import type { MRT_ColumnDef, MRT_RowSelectionState, MRT_SortingState } from 'mat
 import { DateAtom } from '@atoms/Date'
 import { FileSize } from '@atoms/FileSize'
 import { DOCUMENTS_PATH } from '@constants/paths'
-import { DocumentNameBlock } from '@molecules/DocumentNameBlock'
+import { EntityNameBlock } from '@molecules/EntityNameBlock'
 import { DocumentDataTable } from '@organisms/DocumentTable/DocumentDataTable'
 import type { DocumentTableController, DocumentTableFetchResult } from '@organisms/DocumentTable/types'
 import type { Document } from 'types/documents'
@@ -215,7 +215,7 @@ export function SelectionTable(props: SelectionTableProps): ReactElement {
           },
         }) => {
           return (
-            <DocumentNameBlock
+            <EntityNameBlock
               name={name}
               id={id}
               legacyId={id_legacy}

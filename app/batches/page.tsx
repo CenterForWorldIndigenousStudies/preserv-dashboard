@@ -1,12 +1,11 @@
 import type { ReactElement } from 'react'
+import { Box, Button, Card, CardContent, Stack, Typography } from '@mui/material'
+
 import { PROCESS_DOCUMENTS_PATH } from '@constants/paths'
 import { PAGE_LABELS } from '@constants/pageLabels'
-import { Box, Button, Card, CardContent, Stack, Typography } from '@mui/material'
-import { BatchSummaryTable } from '@organisms/BatchSummaryTable'
-import { NoDataState } from '@organisms/NoDataState'
+import { BatchesTable } from '@organisms/BatchesTable'
 import { PageHeader } from '@organisms/PageHeader'
-import { getBatchSummary } from '@lib/queries/queries'
-import type { BatchSummary } from 'types/batches'
+import { getBatchOverviewMetrics, getBatches, parseBatchQueryParams } from '@lib/queries/batchQueries'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,45 +42,14 @@ function SummaryCard({ totalBatches, totalDocuments }: { totalBatches: number; t
   )
 }
 
-function BatchSummaryContent({ rows, batchId }: { rows: BatchSummary[]; batchId?: string }) {
-  if (rows.length === 0) {
-    return <NoDataState message={'No batch data is available yet.'} />
-  }
-
-  const totalBatches = new Set(rows.map((row) => row.batch_id)).size
-  const totalDocuments = rows.reduce((sum, row) => {
-    if (row.property_key !== 'total_documents' || typeof row.property_value !== 'number') {
-      return sum
-    }
-
-    return sum + row.property_value
-  }, 0)
-  const batchIds = new Set(rows.map((row) => row.batch_id))
-
-  return (
-    <>
-      <SummaryCard totalBatches={totalBatches} totalDocuments={totalDocuments} />
-      <BatchSummaryTable
-        data={rows}
-        initialExpandedBatchId={batchId}
-        requestedBatchFound={batchId ? batchIds.has(batchId) : true}
-      />
-    </>
-  )
-}
-
-interface BatchSummaryPageProps {
+interface BatchesPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-function firstSearchParam(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value
-}
-
-export default async function BatchSummaryPage({ searchParams }: BatchSummaryPageProps): Promise<ReactElement> {
+export default async function BatchesPage({ searchParams }: BatchesPageProps): Promise<ReactElement> {
   const resolvedSearchParams = await searchParams
-  const requestedBatchId = firstSearchParam(resolvedSearchParams.batchId)?.trim() || undefined
-  const rows = await getBatchSummary()
+  const initialQuery = parseBatchQueryParams(resolvedSearchParams)
+  const [initialData, overview] = await Promise.all([getBatches(initialQuery), getBatchOverviewMetrics()])
 
   return (
     <Stack spacing={4} sx={{ width: '100%' }}>
@@ -107,7 +75,7 @@ export default async function BatchSummaryPage({ searchParams }: BatchSummaryPag
             sx={{ mt: 1.5, maxWidth: '48rem', fontSize: '0.875rem', lineHeight: 1.6, color: 'text.secondary' }}
           >
             {
-              'Review in-flight and historical batches here, then expand a batch to inspect the currently available operational details. Return to Process when you need to configure or launch another run.'
+              'Review in-flight and historical batches here, then open a batch to inspect the currently available operational details. Return to Process when you need to configure or launch another run.'
             }
           </Typography>
           <Box sx={{ mt: 2 }}>
@@ -135,7 +103,8 @@ export default async function BatchSummaryPage({ searchParams }: BatchSummaryPag
         </CardContent>
       </Card>
 
-      <BatchSummaryContent batchId={requestedBatchId} rows={rows} />
+      <SummaryCard totalBatches={overview.totalBatches} totalDocuments={overview.totalDocuments} />
+      <BatchesTable initialData={initialData} initialQuery={initialQuery} />
     </Stack>
   )
 }

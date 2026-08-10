@@ -17,10 +17,11 @@ import {
 import { DateAtom } from '@atoms/Date'
 import { FileSize } from '@atoms/FileSize'
 import { Button } from '@atoms/Button'
+import { Badge } from '@atoms/Badges/Badge'
 import { IconX } from '@atoms/icons/IconX'
 import { getDocumentDetailPath } from '@constants/paths'
 import { PAGE_LABELS } from '@constants/pageLabels'
-import { DocumentNameBlock } from '@molecules/DocumentNameBlock'
+import { EntityNameBlock } from '@molecules/EntityNameBlock'
 import type { VersionFamily, VersionFamilyDocument } from 'types/documents'
 
 interface DocumentVersionsButtonProps {
@@ -127,13 +128,25 @@ export function DocumentVersionsButton({
         }) => {
           // Get the source ID from the metadata if it exists, otherwise default to undefined to avoid displaying "null" in the UI
           return (
-            <DocumentNameBlock
+            <EntityNameBlock
               name={name}
               id={id}
-              isCandidate={is_preservation_candidate}
-              isCanonical={is_canonical}
               legacyId={id_legacy}
               sourceId={source_id}
+              badges={
+                <>
+                  {is_preservation_candidate ? (
+                    <Badge variant={'warning'} outlined>
+                      {'Candidate'}
+                    </Badge>
+                  ) : null}
+                  {is_canonical ? (
+                    <Badge variant={'success'} outlined>
+                      {'Canonical'}
+                    </Badge>
+                  ) : null}
+                </>
+              }
               href={buildVersionDocumentHref(id, returnHref, returnDocumentName)}
             />
           )

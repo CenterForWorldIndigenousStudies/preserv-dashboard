@@ -1,7 +1,39 @@
-export interface BatchSummary {
-  batch_id: string
-  batch_name: string | null
-  started_at: string | Date | null
-  property_key: string
-  property_value: string | number | boolean | null
+import type { DocumentTablePageInfo, DocumentTableQuery } from '@organisms/DocumentTable/types'
+
+export type BatchQueryFilters = Record<string, never>
+
+export type BatchTableQuery = DocumentTableQuery<BatchQueryFilters>
+
+export interface BatchListItem {
+  id: string
+  idLegacy: string | null
+  name: string | null
+  startedAt: string | Date | null
+  documentCount: number
+  totalCost: string
+  processingTime: number | string | null
+}
+
+export interface BatchListPageResult {
+  data: BatchListItem[]
+  totalCount: number
+  pageInfo: DocumentTablePageInfo
+}
+
+export interface BatchOverviewMetrics {
+  totalBatches: number
+  totalDocuments: number
+}
+
+export interface BatchProperty {
+  key: string
+  value: unknown
+}
+
+export interface BatchDetail {
+  id: string
+  name: string | null
+  startedBy: string | null
+  startedAt: string | Date | null
+  properties: BatchProperty[]
 }

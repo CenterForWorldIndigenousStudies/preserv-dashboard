@@ -28,7 +28,7 @@ import { truncateString } from '@lib/strings'
 import type { Document } from 'types/documents'
 import type { DocumentsPageResult } from 'types/pagination'
 import type { ReviewQueueDecision } from 'types/reviewQueue'
-import { DocumentNameBlock } from '@molecules/DocumentNameBlock'
+import { EntityNameBlock } from '@molecules/EntityNameBlock'
 import { DocumentTable } from '@organisms/DocumentTable/DocumentTable'
 import type { DocumentTableConfig } from '@organisms/DocumentTable/types'
 
@@ -253,7 +253,7 @@ function buildReviewQueueColumns(params: {
         },
       }) => {
         return (
-          <DocumentNameBlock
+          <EntityNameBlock
             name={name}
             id={id}
             legacyId={id_legacy}
@@ -359,7 +359,7 @@ function buildOverviewColumns(preservedOverviewHref: string): MRT_ColumnDef<Docu
         },
       }) => {
         return (
-          <DocumentNameBlock
+          <EntityNameBlock
             name={name}
             id={id}
             legacyId={id_legacy}
