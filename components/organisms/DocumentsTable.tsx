@@ -23,7 +23,7 @@ import { getDocumentDetailPath } from '@constants/paths'
 import { PAGE_LABELS } from '@constants/pageLabels'
 import { useOverviewTableState } from '@hooks/useOverviewTableState'
 import { type AdvancedSearchFilters, type FilterOptions, type StatusOption } from '@lib/search'
-import type { DocumentsQueryParams } from '@lib/queries'
+import type { DocumentsQueryParams } from '@lib/queries/queries'
 import { truncateString } from '@lib/strings'
 import type { Document } from 'types/documents'
 import type { DocumentsPageResult } from 'types/pagination'
@@ -147,18 +147,18 @@ function ReviewQueueChecklistPanel({
     >
       <Stack spacing={2}>
         <Box>
-          <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+          <Stack direction={'row'} spacing={1.5} sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
             <Box>
-              <Typography variant="overline" color="primary">
-                Validation Checklist
+              <Typography variant={'overline'} color={'primary'}>
+                {'Validation Checklist'}
               </Typography>
-              <Typography variant="body2" color="text.primary" sx={{ mt: 0.75 }}>
+              <Typography variant={'body2'} color={'text.primary'} sx={{ mt: 0.75 }}>
                 {`${completedCount} of ${REVIEW_QUEUE_CHECKLIST_ITEMS.length} review steps marked complete`}
               </Typography>
             </Box>
             <Button
-              variant="ghost"
-              size="sm"
+              variant={'ghost'}
+              size={'sm'}
               onClick={() => {
                 onToggleExpanded(documentId)
               }}
@@ -167,14 +167,14 @@ function ReviewQueueChecklistPanel({
             </Button>
           </Stack>
         </Box>
-        <Collapse in={expanded} timeout="auto" unmountOnExit>
+        <Collapse in={expanded} timeout={'auto'} unmountOnExit>
           <Stack spacing={2}>
             <Divider flexItem />
             <Stack spacing={0.5}>
               {REVIEW_QUEUE_CHECKLIST_ITEMS.map(({ key, label }) => (
                 <FormControlLabel
                   key={key}
-                  control={<Checkbox checked={checklistState[key]} onChange={() => onToggle(key)} size="small" />}
+                  control={<Checkbox checked={checklistState[key]} onChange={() => onToggle(key)} size={'small'} />}
                   label={label}
                   sx={{
                     m: 0,
@@ -227,9 +227,9 @@ function buildReviewQueueCommentTooltipContent(
 
   return (
     <Stack spacing={0.5}>
-      {validationComment ? <Typography variant="body2">{`Comment: ${validationComment}`}</Typography> : null}
+      {validationComment ? <Typography variant={'body2'}>{`Comment: ${validationComment}`}</Typography> : null}
       {validationCommentAdditional ? (
-        <Typography variant="body2">{`Additional information: ${validationCommentAdditional}`}</Typography>
+        <Typography variant={'body2'}>{`Additional information: ${validationCommentAdditional}`}</Typography>
       ) : null}
     </Stack>
   )
@@ -275,8 +275,8 @@ function buildReviewQueueColumns(params: {
       }) => {
         if (!validation_status) {
           return (
-            <Typography variant="body2" color="text.secondary">
-              -
+            <Typography variant={'body2'} color={'text.secondary'}>
+              {'-'}
             </Typography>
           )
         }
@@ -298,9 +298,9 @@ function buildReviewQueueColumns(params: {
           validation_comment_additional,
         })
         const reviewContextBadge = hasHumanReviewContext ? (
-          <Badge variant="neutral">Human reviewed</Badge>
+          <Badge variant={'neutral'}>{'Human reviewed'}</Badge>
         ) : commentTooltipContent ? (
-          <Badge variant="neutral">Comments</Badge>
+          <Badge variant={'neutral'}>{'Comments'}</Badge>
         ) : null
 
         return (
@@ -308,14 +308,14 @@ function buildReviewQueueColumns(params: {
             {reviewContextBadge ? (
               commentTooltipContent ? (
                 <Tooltip title={commentTooltipContent} enterDelay={400}>
-                  <Box component="span">{reviewContextBadge}</Box>
+                  <Box component={'span'}>{reviewContextBadge}</Box>
                 </Tooltip>
               ) : (
                 reviewContextBadge
               )
             ) : null}
             <Typography
-              variant="body2"
+              variant={'body2'}
               color={validatorName || hasHumanReviewContext ? 'text.primary' : 'text.secondary'}
             >
               {validatorName || (hasHumanReviewContext ? 'Reviewer not recorded' : '-')}
@@ -386,7 +386,7 @@ function buildOverviewColumns(preservedOverviewHref: string): MRT_ColumnDef<Docu
         }
 
         return (
-          <Typography component="span" variant="caption" sx={{ fontFamily: 'monospace' }} title={value}>
+          <Typography component={'span'} variant={'caption'} sx={{ fontFamily: 'monospace' }} title={value}>
             {truncateString(value, 12)}
           </Typography>
         )
@@ -403,7 +403,7 @@ function buildOverviewColumns(preservedOverviewHref: string): MRT_ColumnDef<Docu
         }
 
         return (
-          <Typography component="span" variant="caption" sx={{ fontFamily: 'monospace' }} title={value}>
+          <Typography component={'span'} variant={'caption'} sx={{ fontFamily: 'monospace' }} title={value}>
             {truncateString(value, 12)}
           </Typography>
         )
@@ -494,8 +494,8 @@ function getReviewQueueBatchApproveButton(
 
   return (
     <Button
-      variant="secondary"
-      size="sm"
+      variant={'secondary'}
+      size={'sm'}
       loading={batchApprovePending}
       disabled={batchApprovePending || selectedCount === 0}
       onClick={onApprove}
@@ -808,28 +808,28 @@ export function DocumentsTable({
               const isPending = isApprovePending || isRejectPending || batchApprovePending
 
               return (
-                <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                <Stack direction={'row'} spacing={1} sx={{ alignItems: 'center' }}>
                   <Button
-                    variant="secondary"
-                    size="sm"
+                    variant={'secondary'}
+                    size={'sm'}
                     loading={isApprovePending}
                     disabled={isPending}
                     onClick={() => {
                       void handleReviewDecision(row.id, 'APPROVED')
                     }}
                   >
-                    Approve
+                    {'Approve'}
                   </Button>
                   <Button
-                    variant="ghost"
-                    size="sm"
+                    variant={'ghost'}
+                    size={'sm'}
                     loading={isRejectPending}
                     disabled={isPending}
                     onClick={() => {
                       void handleReviewDecision(row.id, 'REJECTED')
                     }}
                   >
-                    Reject
+                    {'Reject'}
                   </Button>
                 </Stack>
               )
@@ -919,7 +919,7 @@ export function DocumentsTable({
       >
         <Alert
           severity={toastState.severity}
-          variant="filled"
+          variant={'filled'}
           onClose={() => {
             setToastState((current) => ({ ...current, open: false }))
           }}

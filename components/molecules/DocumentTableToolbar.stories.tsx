@@ -30,7 +30,7 @@ export const WithResultsAndSlots: Story = {
   args: {
     searchValue: 'language',
     totalCount: 42,
-    leadingSlot: <Button variant="secondary">Advanced Search</Button>,
-    trailingSlot: <Button variant="ghost">Export</Button>,
+    leadingSlot: <Button variant={'secondary'}>{'Advanced Search'}</Button>,
+    trailingSlot: <Button variant={'ghost'}>{'Export'}</Button>,
   },
 }

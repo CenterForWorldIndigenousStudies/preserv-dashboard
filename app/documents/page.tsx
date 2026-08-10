@@ -10,7 +10,7 @@ import {
   normalizeTextFilter,
   parseStatusesParam,
 } from '@lib/search'
-import { getAllDocuments, getDocumentFilterOptions, type DocumentsQueryParams } from '@lib/queries'
+import { getAllDocuments, getDocumentFilterOptions, type DocumentsQueryParams } from '@lib/queries/queries'
 import { PAGE_LABELS } from '@constants/pageLabels'
 
 export const dynamic = 'force-dynamic'
@@ -75,8 +75,10 @@ export default function DocumentsPage({ searchParams }: DocumentsPageProps) {
     <Stack spacing={4} sx={{ width: '100%' }}>
       <PageHeader
         eyebrow={PAGE_LABELS.documents}
-        title={PAGE_LABELS.documents}
-        description="Use this canonical browse and discovery workspace to search, filter, and open documents across the preservation system."
+        title={'All documents in the preservation system.'}
+        description={
+          'Use this canonical browse and discovery workspace to search, filter, and open documents across the preservation system.'
+        }
       />
 
       <Suspense fallback={null}>

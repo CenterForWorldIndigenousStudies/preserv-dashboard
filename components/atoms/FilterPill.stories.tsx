@@ -39,11 +39,11 @@ export const AllFilters: Story = {
     className: { control: false },
   },
   render: () => (
-    <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap' }}>
-      <FilterPill label="All" isActive={true} href={DOCUMENTS_PATH} />
-      <FilterPill label="Completed" isActive={false} href={`${DOCUMENTS_PATH}?state=completed`} />
-      <FilterPill label="Failed" isActive={false} href={`${DOCUMENTS_PATH}?state=failed`} />
-      <FilterPill label="Under Review" isActive={false} href={`${DOCUMENTS_PATH}?state=under_review`} />
+    <Stack direction={'row'} spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap' }}>
+      <FilterPill label={'All'} isActive={true} href={DOCUMENTS_PATH} />
+      <FilterPill label={'Completed'} isActive={false} href={`${DOCUMENTS_PATH}?state=completed`} />
+      <FilterPill label={'Failed'} isActive={false} href={`${DOCUMENTS_PATH}?state=failed`} />
+      <FilterPill label={'Under Review'} isActive={false} href={`${DOCUMENTS_PATH}?state=under_review`} />
     </Stack>
   ),
 }

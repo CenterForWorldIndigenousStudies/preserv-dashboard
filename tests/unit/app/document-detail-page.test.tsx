@@ -6,7 +6,7 @@ const { mockGetDocumentDetail, mockDocumentVersionsButton } = vi.hoisted(() => (
   mockDocumentVersionsButton: vi.fn(() => null),
 }))
 
-vi.mock('@lib/queries', () => ({
+vi.mock('@lib/queries/queries', () => ({
   getDocumentDetail: mockGetDocumentDetail,
 }))
 

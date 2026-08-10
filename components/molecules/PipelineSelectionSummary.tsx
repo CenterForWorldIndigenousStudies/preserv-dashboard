@@ -25,8 +25,8 @@ export function PipelineSelectionSummary({ draft }: PipelineSelectionSummaryProp
           p: 2,
         }}
       >
-        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          No additional steps selected beyond Ingest. Use the step list in this dialog to build your pipeline.
+        <Typography variant={'body2'} sx={{ color: 'text.secondary' }}>
+          {'No additional steps selected beyond Ingest. Use the step list in this dialog to build your pipeline.'}
         </Typography>
       </Paper>
     )
@@ -44,13 +44,13 @@ export function PipelineSelectionSummary({ draft }: PipelineSelectionSummaryProp
     >
       <Stack spacing={2}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-            Pipeline Summary
+          <Typography variant={'body2'} sx={{ fontWeight: 600 }}>
+            {'Pipeline Summary'}
           </Typography>
           {profile && profile.id !== 'custom' && (
             <Chip
               label={profile.label}
-              size="small"
+              size={'small'}
               sx={{
                 bgcolor: 'secondary.main',
                 color: 'text.primary',
@@ -65,7 +65,7 @@ export function PipelineSelectionSummary({ draft }: PipelineSelectionSummaryProp
             <Chip
               key={`${step}-${index}`}
               label={step}
-              size="small"
+              size={'small'}
               variant={step === 'Ingest' ? 'outlined' : 'filled'}
               sx={{
                 bgcolor: step === 'Ingest' ? 'transparent' : 'primary.main',
@@ -77,10 +77,11 @@ export function PipelineSelectionSummary({ draft }: PipelineSelectionSummaryProp
         </Box>
 
         {draft.mode === 'preset' && draft.profileId !== 'custom' && (
-          <Alert severity="info" sx={{ borderRadius: 2 }}>
-            <Typography variant="body2">
-              This preset starts with the steps shown above, and you can fine tune them here before converting to
-              custom.
+          <Alert severity={'info'} sx={{ borderRadius: 2 }}>
+            <Typography variant={'body2'}>
+              {
+                'This preset starts with the steps shown above, and you can fine tune them here before converting to custom.'
+              }
             </Typography>
           </Alert>
         )}

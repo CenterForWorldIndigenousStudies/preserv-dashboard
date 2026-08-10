@@ -106,7 +106,7 @@ export function TagDeleteFlowDialog({
       open={open}
       onClose={handleClose}
       fullWidth
-      maxWidth="sm"
+      maxWidth={'sm'}
       sx={{ '& .MuiDialog-paper': { borderRadius: '1rem' } }}
     >
       <DialogTitle>{currentStep === 1 ? title : 'Are you sure?'}</DialogTitle>
@@ -134,16 +134,16 @@ export function TagDeleteFlowDialog({
         )}
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button variant="ghost" onClick={handleClose} disabled={isSubmitting}>
-          Cancel
+        <Button variant={'ghost'} onClick={handleClose} disabled={isSubmitting}>
+          {'Cancel'}
         </Button>
         {currentStep === 1 ? (
-          <Button variant="secondary" onClick={() => void handlePrimaryConfirm()} loading={isSubmitting}>
-            Yes
+          <Button variant={'secondary'} onClick={() => void handlePrimaryConfirm()} loading={isSubmitting}>
+            {'Yes'}
           </Button>
         ) : (
-          <Button variant="secondary" onClick={() => void handleSecondaryConfirm()} loading={isSubmitting}>
-            Yes, delete
+          <Button variant={'secondary'} onClick={() => void handleSecondaryConfirm()} loading={isSubmitting}>
+            {'Yes, delete'}
           </Button>
         )}
       </DialogActions>

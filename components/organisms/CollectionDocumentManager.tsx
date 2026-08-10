@@ -120,7 +120,7 @@ export function CollectionDocumentManager({
         open={open}
         onClose={handleClose}
         fullWidth
-        maxWidth="xl"
+        maxWidth={'xl'}
         sx={{ '& .MuiDialog-paper': { borderRadius: '1rem', height: '90vh', maxHeight: '90vh' } }}
       >
         <DialogTitle>{buildDialogTitle(activeAction, collectionName)}</DialogTitle>
@@ -128,17 +128,17 @@ export function CollectionDocumentManager({
           dividers
           sx={{ px: 3, py: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0, flex: 1 }}
         >
-          {error ? <Alert severity="error">{error}</Alert> : null}
+          {error ? <Alert severity={'error'}>{error}</Alert> : null}
           {isLoading ? (
-            <Box aria-live="polite" sx={{ display: 'flex', justifyContent: 'center' }}>
-              <Button loading variant="secondary">
-                Loading documents
+            <Box aria-live={'polite'} sx={{ display: 'flex', justifyContent: 'center' }}>
+              <Button loading variant={'secondary'}>
+                {'Loading documents'}
               </Button>
             </Box>
           ) : activeAction === 'add' ? (
             <SelectionTable
-              title="Available Documents"
-              searchLabel="Search available documents"
+              title={'Available Documents'}
+              searchLabel={'Search available documents'}
               documents={outOfCollection}
               total={outTotal}
               page={outPage}
@@ -153,12 +153,12 @@ export function CollectionDocumentManager({
               onPageChange={setOutPage}
               isChecked={(id) => selectedOut.has(id)}
               onToggle={toggleOut}
-              emptyMessage="No other documents available."
+              emptyMessage={'No other documents available.'}
             />
           ) : (
             <SelectionTable
-              title="Documents in Collection"
-              searchLabel="Search documents in collection"
+              title={'Documents in Collection'}
+              searchLabel={'Search documents in collection'}
               documents={inCollection}
               total={inTotal}
               page={inPage}
@@ -173,16 +173,16 @@ export function CollectionDocumentManager({
               onPageChange={setInPage}
               isChecked={(id) => selectedIn.has(id)}
               onToggle={toggleIn}
-              emptyMessage="No documents associated with this collection."
+              emptyMessage={'No documents associated with this collection.'}
             />
           )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3, pt: 2 }}>
-          <Button variant="ghost" onClick={handleClose} disabled={isSubmitting}>
-            Cancel
+          <Button variant={'ghost'} onClick={handleClose} disabled={isSubmitting}>
+            {'Cancel'}
           </Button>
           <Button
-            variant="secondary"
+            variant={'secondary'}
             disabled={isLoading || isSubmitting || selectedCount === 0}
             onClick={() => {
               setPendingAction(activeAction)
@@ -198,7 +198,7 @@ export function CollectionDocumentManager({
         title={pendingAction ? buildDialogTitle(pendingAction, collectionName) : 'Confirm action'}
         message={buildConfirmationMessage(pendingAction ?? activeAction, collectionName, selectedCount)}
         confirmLabel={pendingAction === 'add' ? 'Yes, add' : 'Yes, remove'}
-        cancelLabel="No"
+        cancelLabel={'No'}
         onConfirm={() => {
           void handleConfirm()
         }}

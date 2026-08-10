@@ -2,7 +2,7 @@ import { BATCHES_PATH, READY_FOR_LIBRARY_PATH, REVIEW_QUEUE_PATH } from '@consta
 import { REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES } from '@constants/reviewQueue'
 import { hasTerminalPipelineFailure, isPipelineBatchTerminal } from '@lib/pipelineExecution'
 import { getProcessBatchStatuses } from '@lib/processBatches'
-import { getNeedsReviewDocumentsCount, getReadyForLibraryDocuments } from '@lib/queries'
+import { getNeedsReviewDocumentsCount, getReadyForLibraryDocuments } from '@lib/queries/queries'
 
 export interface DashboardKpiMetric {
   title: string

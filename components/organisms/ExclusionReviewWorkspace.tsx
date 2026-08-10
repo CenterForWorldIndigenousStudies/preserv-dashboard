@@ -1,23 +1,7 @@
 'use client'
 
-import {
-  useDeferredValue,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  startTransition,
-  type ReactElement,
-} from 'react'
-import {
-  Alert,
-  Box,
-  CircularProgress,
-  InputAdornment,
-  Stack,
-  TextField,
-  Typography,
-} from '@mui/material'
+import { useDeferredValue, useEffect, useMemo, useRef, useState, startTransition, type ReactElement } from 'react'
+import { Alert, Box, CircularProgress, InputAdornment, Stack, TextField, Typography } from '@mui/material'
 
 import { ExclusionReviewTree, type ExclusionReviewBranchState } from '@organisms/ExclusionReviewTree'
 import { fetchWithTimeout } from '@lib/fetchWithTimeout'
@@ -51,22 +35,14 @@ export interface ExclusionReviewWorkspaceProps {
   isEditor?: boolean
 }
 
-export function SearchStatusAdornment({
-  isSearching,
-}: {
-  isSearching: boolean
-}): ReactElement | null {
+export function SearchStatusAdornment({ isSearching }: { isSearching: boolean }): ReactElement | null {
   if (!isSearching) {
     return null
   }
 
   return (
-    <InputAdornment position="end">
-      <CircularProgress
-        aria-label="Searching exclusion review"
-        size={16}
-        thickness={5}
-      />
+    <InputAdornment position={'end'}>
+      <CircularProgress aria-label={'Searching exclusion review'} size={16} thickness={5} />
     </InputAdornment>
   )
 }
@@ -177,9 +153,7 @@ export function mergeSearchPathNodes(
     if (item.parentDriveId) {
       const previousBranch = nextBranches[item.parentDriveId]
       nextBranches[item.parentDriveId] = {
-        childIds: previousBranch
-          ? mergeUniqueIds(previousBranch.childIds, [item.driveId])
-          : [item.driveId],
+        childIds: previousBranch ? mergeUniqueIds(previousBranch.childIds, [item.driveId]) : [item.driveId],
         hasMore: previousBranch?.hasMore ?? false,
         loaded: previousBranch?.loaded ?? false,
         loading: previousBranch?.loading ?? false,
@@ -209,23 +183,14 @@ export function ExclusionReviewWorkspace({
   initialTree = null,
   isEditor = false,
 }: ExclusionReviewWorkspaceProps): ReactElement {
-  const initialState = useMemo(
-    () => (initialTree ? hydrateTree(initialTree) : null),
-    [initialTree],
-  )
-  const [nodes, setNodes] = useState<Record<string, ExclusionReviewTreeNode>>(
-    initialState?.nodes ?? {},
-  )
-  const [branches, setBranches] = useState<Record<string, ExclusionReviewBranchState>>(
-    initialState?.branches ?? {},
-  )
+  const initialState = useMemo(() => (initialTree ? hydrateTree(initialTree) : null), [initialTree])
+  const [nodes, setNodes] = useState<Record<string, ExclusionReviewTreeNode>>(initialState?.nodes ?? {})
+  const [branches, setBranches] = useState<Record<string, ExclusionReviewBranchState>>(initialState?.branches ?? {})
   const [rootId, setRootId] = useState<string | null>(initialState?.rootId ?? null)
   const [editorState, setEditorState] = useState(isEditor)
   const [errorMessage, setErrorMessage] = useState<string | null>(initialError)
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
-  const [expandedIds, setExpandedIds] = useState<string[]>(
-    initialState?.rootId ? [initialState.rootId] : [],
-  )
+  const [expandedIds, setExpandedIds] = useState<string[]>(initialState?.rootId ? [initialState.rootId] : [])
   const [loadingInitialTree, setLoadingInitialTree] = useState(!initialTree)
   const [searchValue, setSearchValue] = useState('')
   const [isSearching, setIsSearching] = useState(false)
@@ -255,19 +220,12 @@ export function ExclusionReviewWorkspace({
       try {
         const response = await fetchWithTimeout('/api/exclusion-review/tree', undefined, {
           timeoutMs: EXCLUSION_REVIEW_REQUEST_TIMEOUT_MS,
-          timeoutMessage:
-            'Loading exclusion review took too long. Please reload and try again.',
+          timeoutMessage: 'Loading exclusion review took too long. Please reload and try again.',
         })
-        const payload = (await response.json()) as
-          | ExclusionReviewTreeResponse
-          | { error?: string }
+        const payload = (await response.json()) as ExclusionReviewTreeResponse | { error?: string }
 
         if (!response.ok) {
-          throw new Error(
-            'error' in payload && payload.error
-              ? payload.error
-              : 'Unable to load exclusion review.',
-          )
+          throw new Error('error' in payload && payload.error ? payload.error : 'Unable to load exclusion review.')
         }
 
         if (cancelled || !('tree' in payload)) {
@@ -287,11 +245,7 @@ export function ExclusionReviewWorkspace({
         })
       } catch (error) {
         if (!cancelled) {
-          setErrorMessage(
-            error instanceof Error
-              ? error.message
-              : 'Unable to load exclusion review.',
-          )
+          setErrorMessage(error instanceof Error ? error.message : 'Unable to load exclusion review.')
         }
       } finally {
         if (!cancelled) {
@@ -307,10 +261,7 @@ export function ExclusionReviewWorkspace({
     }
   }, [initialTree])
 
-  const loadChildren = async (
-    driveId: string,
-    nextPageToken: string | null = null,
-  ): Promise<void> => {
+  const loadChildren = async (driveId: string, nextPageToken: string | null = null): Promise<void> => {
     setBranches((current) => ({
       ...current,
       [driveId]: {
@@ -328,36 +279,21 @@ export function ExclusionReviewWorkspace({
         query.set('pageToken', nextPageToken)
       }
 
-      const response = await fetchWithTimeout(
-        `/api/exclusion-review/tree/children?${query.toString()}`,
-        undefined,
-        {
-          timeoutMs: EXCLUSION_REVIEW_REQUEST_TIMEOUT_MS,
-          timeoutMessage:
-            'Loading this folder took too long. Please try expanding it again.',
-        },
-      )
-      const payload = (await response.json()) as
-        | ExclusionReviewBranchResponse
-        | { error?: string }
+      const response = await fetchWithTimeout(`/api/exclusion-review/tree/children?${query.toString()}`, undefined, {
+        timeoutMs: EXCLUSION_REVIEW_REQUEST_TIMEOUT_MS,
+        timeoutMessage: 'Loading this folder took too long. Please try expanding it again.',
+      })
+      const payload = (await response.json()) as ExclusionReviewBranchResponse | { error?: string }
 
       if (!response.ok) {
-        throw new Error(
-          'error' in payload && payload.error
-            ? payload.error
-            : 'Unable to load branch children.',
-        )
+        throw new Error('error' in payload && payload.error ? payload.error : 'Unable to load branch children.')
       }
 
       if (!('page' in payload)) {
         return
       }
 
-      const merged = mergeBranchPage(
-        nodesRef.current,
-        branchesRef.current,
-        payload.page,
-      )
+      const merged = mergeBranchPage(nodesRef.current, branchesRef.current, payload.page)
       nodesRef.current = merged.nodes
       branchesRef.current = merged.branches
       startTransition(() => {
@@ -366,9 +302,7 @@ export function ExclusionReviewWorkspace({
         setErrorMessage(null)
       })
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : 'Unable to load branch children.',
-      )
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to load branch children.')
       setBranches((current) => {
         const nextBranches = {
           ...current,
@@ -411,26 +345,17 @@ export function ExclusionReviewWorkspace({
 
       try {
         const response = await fetchWithTimeout(
-          `/api/exclusion-review/search?q=${encodeURIComponent(
-            deferredSearchValue.trim(),
-          )}`,
+          `/api/exclusion-review/search?q=${encodeURIComponent(deferredSearchValue.trim())}`,
           undefined,
           {
             timeoutMs: EXCLUSION_REVIEW_REQUEST_TIMEOUT_MS,
-            timeoutMessage:
-              'Searching exclusion review took too long. Please try again.',
+            timeoutMessage: 'Searching exclusion review took too long. Please try again.',
           },
         )
-        const payload = (await response.json()) as
-          | ExclusionReviewSearchResponse
-          | { error?: string }
+        const payload = (await response.json()) as ExclusionReviewSearchResponse | { error?: string }
 
         if (!response.ok) {
-          throw new Error(
-            'error' in payload && payload.error
-              ? payload.error
-              : 'Unable to search exclusion review.',
-          )
+          throw new Error('error' in payload && payload.error ? payload.error : 'Unable to search exclusion review.')
         }
 
         if (!('result' in payload) || cancelled) {
@@ -443,15 +368,8 @@ export function ExclusionReviewWorkspace({
           match.path.forEach((ancestorDriveId) => nextVisibleIds.add(ancestorDriveId))
         }
 
-        const mergedPaths = mergeSearchPathNodes(
-          nodesRef.current,
-          branchesRef.current,
-          payload.result.pathNodes,
-        )
-        const mergedNodes = mergeUpdatedNodes(
-          mergedPaths.nodes,
-          payload.result.matches,
-        )
+        const mergedPaths = mergeSearchPathNodes(nodesRef.current, branchesRef.current, payload.result.pathNodes)
+        const mergedNodes = mergeUpdatedNodes(mergedPaths.nodes, payload.result.matches)
         nodesRef.current = mergedNodes
         branchesRef.current = mergedPaths.branches
 
@@ -475,11 +393,7 @@ export function ExclusionReviewWorkspace({
         /* eslint-enable no-await-in-loop */
       } catch (error) {
         if (!cancelled) {
-          setErrorMessage(
-            error instanceof Error
-              ? error.message
-              : 'Unable to search exclusion review.',
-          )
+          setErrorMessage(error instanceof Error ? error.message : 'Unable to search exclusion review.')
         }
       } finally {
         if (!cancelled) {
@@ -517,10 +431,7 @@ export function ExclusionReviewWorkspace({
     await loadChildren(driveId, nextPageToken)
   }
 
-  const handleDecisionChange = async (
-    driveId: string,
-    decision: ExclusionReviewDecision,
-  ): Promise<void> => {
+  const handleDecisionChange = async (driveId: string, decision: ExclusionReviewDecision): Promise<void> => {
     try {
       const response = await fetchWithTimeout(
         '/api/exclusion-review/decision',
@@ -531,20 +442,13 @@ export function ExclusionReviewWorkspace({
         },
         {
           timeoutMs: EXCLUSION_REVIEW_REQUEST_TIMEOUT_MS,
-          timeoutMessage:
-            'Saving this review decision took too long. Please try again.',
+          timeoutMessage: 'Saving this review decision took too long. Please try again.',
         },
       )
-      const payload = (await response.json()) as
-        | ExclusionReviewMutationResult
-        | { error?: string }
+      const payload = (await response.json()) as ExclusionReviewMutationResult | { error?: string }
 
       if (!response.ok) {
-        throw new Error(
-          'error' in payload && payload.error
-            ? payload.error
-            : 'Unable to save review decision.',
-        )
+        throw new Error('error' in payload && payload.error ? payload.error : 'Unable to save review decision.')
       }
 
       if (!('updatedNodes' in payload)) {
@@ -553,19 +457,11 @@ export function ExclusionReviewWorkspace({
 
       startTransition(() => {
         setNodes((current) => mergeUpdatedNodes(current, payload.updatedNodes))
-        setStatusMessage(
-          decision === null
-            ? 'Review cleared.'
-            : `Marked ${decision}.`,
-        )
+        setStatusMessage(decision === null ? 'Review cleared.' : `Marked ${decision}.`)
         setErrorMessage(null)
       })
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : 'Unable to save review decision.',
-      )
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to save review decision.')
     }
   }
 
@@ -588,26 +484,18 @@ export function ExclusionReviewWorkspace({
         | { error?: string }
 
       if (!response.ok) {
-        throw new Error(
-          'error' in payload && payload.error
-            ? payload.error
-            : 'Unable to sync branch.',
-        )
+        throw new Error('error' in payload && payload.error ? payload.error : 'Unable to sync branch.')
       }
 
       startTransition(() => {
         if ('result' in payload && payload.result?.updatedNodes) {
-          setNodes((current) =>
-            mergeUpdatedNodes(current, payload.result?.updatedNodes ?? []),
-          )
+          setNodes((current) => mergeUpdatedNodes(current, payload.result?.updatedNodes ?? []))
         }
         setStatusMessage('Branch sync requested.')
         setErrorMessage(null)
       })
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : 'Unable to sync branch.',
-      )
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to sync branch.')
     }
   }
 
@@ -615,29 +503,27 @@ export function ExclusionReviewWorkspace({
 
   return (
     <Stack spacing={2} sx={{ width: '100%' }}>
-      <Typography color="text.secondary" variant="body2">
-        {rootNode
-          ? `Configured root: ${rootNode.name}`
-          : 'Loading configured root...'}
+      <Typography color={'text.secondary'} variant={'body2'}>
+        {rootNode ? `Configured root: ${rootNode.name}` : 'Loading configured root...'}
       </Typography>
-      <Typography color="text.secondary" variant="body2">
+      <Typography color={'text.secondary'} variant={'body2'}>
         {editorState
           ? 'You can include or exclude items in this workspace.'
           : 'Read-only view. Only allowlisted reviewers can edit.'}
       </Typography>
       <TextField
-        label="Search this configured root"
+        label={'Search this configured root'}
         slotProps={{
           input: {
             endAdornment: <SearchStatusAdornment isSearching={isSearching} />,
           },
         }}
         onChange={(event) => setSearchValue(event.target.value)}
-        type="search"
+        type={'search'}
         value={searchValue}
       />
-      {errorMessage ? <Alert severity="warning">{errorMessage}</Alert> : null}
-      {statusMessage ? <Alert severity="success">{statusMessage}</Alert> : null}
+      {errorMessage ? <Alert severity={'warning'}>{errorMessage}</Alert> : null}
+      {statusMessage ? <Alert severity={'success'}>{statusMessage}</Alert> : null}
       <Box
         sx={{
           border: '1px solid rgba(0, 0, 0, 0.12)',
@@ -658,9 +544,7 @@ export function ExclusionReviewWorkspace({
             }}
           >
             <CircularProgress size={28} />
-            <Typography color="text.secondary">
-              Loading exclusion review explorer...
-            </Typography>
+            <Typography color={'text.secondary'}>{'Loading exclusion review explorer...'}</Typography>
           </Stack>
         ) : (
           <ExclusionReviewTree

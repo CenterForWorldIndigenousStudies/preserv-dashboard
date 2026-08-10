@@ -6,7 +6,7 @@ const { mockDeleteTag, mockDeleteTagAndDocumentAssociations } = vi.hoisted(() =>
   mockDeleteTagAndDocumentAssociations: vi.fn(),
 }))
 
-vi.mock('@lib/queries', () => ({
+vi.mock('@lib/queries/queries', () => ({
   deleteTag: mockDeleteTag,
   deleteTagAndDocumentAssociations: mockDeleteTagAndDocumentAssociations,
 }))

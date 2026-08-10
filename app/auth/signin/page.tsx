@@ -21,7 +21,7 @@ function SignInFallback() {
       }}
     >
       <Paper elevation={0} sx={{ boxShadow: 2, p: 4, textAlign: 'center' }}>
-        <Typography color="text.secondary">Loading...</Typography>
+        <Typography color={'text.secondary'}>{'Loading...'}</Typography>
       </Paper>
     </Box>
   )

@@ -20,7 +20,7 @@ export function FileSize({ value, className = '', sx }: FileSizeProps): ReactNod
 
   if (value === null || value === undefined) {
     return (
-      <Typography component="span" variant="body2" className={className || undefined} sx={sx}>
+      <Typography component={'span'} variant={'body2'} className={className || undefined} sx={sx}>
         -
       </Typography>
     )
@@ -34,8 +34,8 @@ export function FileSize({ value, className = '', sx }: FileSizeProps): ReactNod
 
   return (
     <Typography
-      component="span"
-      variant="body2"
+      component={'span'}
+      variant={'body2'}
       title={tooltip}
       className={className || undefined}
       onClick={() => setShowRaw((prev) => !prev)}

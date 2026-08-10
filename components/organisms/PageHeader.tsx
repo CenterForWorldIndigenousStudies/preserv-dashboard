@@ -11,7 +11,7 @@ interface PageHeaderProps {
 export function PageHeader({ eyebrow, title, description }: PageHeaderProps): ReactElement {
   return (
     <Paper
-      component="header"
+      component={'header'}
       elevation={0}
       sx={{
         backgroundColor: 'var(--cwis-surface-inverse)',
@@ -23,12 +23,12 @@ export function PageHeader({ eyebrow, title, description }: PageHeaderProps): Re
       }}
     >
       <Stack spacing={2}>
-        <Typography component="p" variant="overline" sx={{ color: 'info.main', letterSpacing: '0.3em' }}>
+        <Typography component={'p'} variant={'overline'} sx={{ color: 'info.main', letterSpacing: '0.3em' }}>
           {eyebrow}
         </Typography>
         <Typography
-          component="h1"
-          variant="h3"
+          component={'h1'}
+          variant={'h3'}
           sx={{
             color: 'common.white',
             fontSize: { xs: '1.875rem', md: '2.25rem' },
@@ -37,7 +37,7 @@ export function PageHeader({ eyebrow, title, description }: PageHeaderProps): Re
         >
           {title}
         </Typography>
-        <Typography variant="body2" sx={{ color: 'info.main', maxWidth: '42rem', lineHeight: 1.5 }}>
+        <Typography variant={'body2'} sx={{ color: 'info.main', maxWidth: '42rem', lineHeight: 1.5 }}>
           {description}
         </Typography>
       </Stack>

@@ -15,15 +15,15 @@ export function ProcessBatchSummaryHeader({
   return (
     <Box>
       <Typography
-        variant="caption"
+        variant={'caption'}
         sx={{ color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.16em' }}
       >
         Batch
       </Typography>
-      <Typography component="h2" variant="h5" sx={{ mt: 1 }}>
+      <Typography component={'h2'} variant={'h5'} sx={{ mt: 1 }}>
         {batchName || batchId}
       </Typography>
-      <Typography variant="body2" sx={{ mt: 0.5, color: 'text.secondary' }}>
+      <Typography variant={'body2'} sx={{ mt: 0.5, color: 'text.secondary' }}>
         {startedBy ?? 'Unknown starter'}
       </Typography>
     </Box>

@@ -13,6 +13,7 @@ import { PAGE_LABELS } from '@constants/pageLabels'
 import { ActionCard } from '@molecules/ActionCard'
 import { MetricCard } from '@molecules/MetricCard'
 import { PageHeader } from '@organisms/PageHeader'
+import { PRESERVATION_PIPELINE_TITLE } from '@constants/branding'
 
 export const dynamic = 'force-dynamic'
 
@@ -76,17 +77,19 @@ export default async function DashboardPage(): Promise<ReactElement> {
     <Stack spacing={8} sx={{ width: '100%' }}>
       <PageHeader
         eyebrow={PAGE_LABELS.dashboard}
-        title="Operational dashboard."
-        description="Start here for a live snapshot of review backlog, ingest-ready work, and current batch activity across the preservation dashboard."
+        title={PRESERVATION_PIPELINE_TITLE}
+        description={
+          'Start here for a live snapshot of review backlog, ingest-ready work, and current batch activity across the preservation dashboard.'
+        }
       />
 
-      <Stack component="section" spacing={2}>
+      <Stack component={'section'} spacing={2}>
         <Box>
-          <Typography variant="h5" component="h2" sx={{ color: 'text.primary' }}>
-            Operational Snapshot
+          <Typography variant={'h5'} component={'h2'} sx={{ color: 'text.primary' }}>
+            {'Operational Snapshot'}
           </Typography>
-          <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
-            These cards now reflect the current live review queue, library-ready backlog, and active batch workload.
+          <Typography variant={'body2'} sx={{ mt: 1, color: 'text.secondary' }}>
+            {'These cards now reflect the current live review queue, library-ready backlog, and active batch workload.'}
           </Typography>
         </Box>
 
@@ -113,37 +116,39 @@ export default async function DashboardPage(): Promise<ReactElement> {
         </Box>
       </Stack>
 
-      <Card component="section">
+      <Card component={'section'}>
         <CardContent>
-          <Typography component="h2" variant="h5" sx={{ color: 'text.primary' }}>
+          <Typography component={'h2'} variant={'h5'} sx={{ color: 'text.primary' }}>
             Priority Alerts
           </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1.5 }}>
-            Placeholder only. Priority alerts will appear here once alert rules and live dashboard metrics are
-            implemented.
+          <Typography variant={'body2'} sx={{ color: 'text.secondary', mt: 1.5 }}>
+            {
+              'Placeholder only. Priority alerts will appear here once alert rules and live dashboard metrics are implemented.'
+            }
           </Typography>
         </CardContent>
       </Card>
 
-      <Card component="section">
+      <Card component={'section'}>
         <CardContent>
-          <Typography component="h2" variant="h5" sx={{ color: 'text.primary' }}>
-            System Status
+          <Typography component={'h2'} variant={'h5'} sx={{ color: 'text.primary' }}>
+            {'System Status'}
           </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1.5 }}>
-            Placeholder only. System status messaging will be connected to live pipeline health in a later PR.
+          <Typography variant={'body2'} sx={{ color: 'text.secondary', mt: 1.5 }}>
+            {'Placeholder only. System status messaging will be connected to live pipeline health in a later PR.'}
           </Typography>
         </CardContent>
       </Card>
 
-      <Stack component="section" spacing={2}>
+      <Stack component={'section'} spacing={2}>
         <Box>
-          <Typography component="h2" variant="h5" sx={{ color: 'text.primary' }}>
-            Queue Snapshots
+          <Typography component={'h2'} variant={'h5'} sx={{ color: 'text.primary' }}>
+            {'Queue Snapshots'}
           </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1 }}>
-            Open the live review and library-ready queues from here. Where dashboard data is not yet
-            reliable, the card explains the current limit.
+          <Typography variant={'body2'} sx={{ color: 'text.secondary', mt: 1 }}>
+            {
+              'Open the live review and library-ready queues from here. Where dashboard data is not yet reliable, the card explains the current limit.'
+            }
           </Typography>
         </Box>
 
@@ -163,20 +168,20 @@ export default async function DashboardPage(): Promise<ReactElement> {
               key={snapshot.href}
               href={snapshot.href}
               description={snapshot.description}
-              eyebrow="Queue Snapshot"
+              eyebrow={'Queue Snapshot'}
               title={snapshot.title}
             />
           ))}
         </Box>
       </Stack>
 
-      <Stack component="section" spacing={2}>
+      <Stack component={'section'} spacing={2}>
         <Box>
-          <Typography component="h2" variant="h5" sx={{ color: 'text.primary' }}>
-            Quick Actions
+          <Typography component={'h2'} variant={'h5'} sx={{ color: 'text.primary' }}>
+            {'Quick Actions'}
           </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1 }}>
-            Use these links to move from triage into processing, collections, and batch review.
+          <Typography variant={'body2'} sx={{ color: 'text.secondary', mt: 1 }}>
+            {'Use these links to move from triage into processing, collections, and batch review.'}
           </Typography>
         </Box>
 
@@ -195,7 +200,7 @@ export default async function DashboardPage(): Promise<ReactElement> {
               key={action.href}
               href={action.href}
               description={action.description}
-              eyebrow="Quick Action"
+              eyebrow={'Quick Action'}
               title={action.title}
             />
           ))}

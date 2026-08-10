@@ -260,9 +260,9 @@ export function CollectionsAccordion({ collections, filterOptions }: Collections
 
   if (collections.length === 0) {
     return (
-      <Paper component="section" sx={{ border: 1, borderColor: 'divider', p: 4 }}>
-        <Typography variant="body2" color="text.secondary">
-          No collections found.
+      <Paper component={'section'} sx={{ border: 1, borderColor: 'divider', p: 4 }}>
+        <Typography variant={'body2'} color={'text.secondary'}>
+          {'No collections found.'}
         </Typography>
       </Paper>
     )
@@ -293,7 +293,7 @@ export function CollectionsAccordion({ collections, filterOptions }: Collections
               onChange={handleAccordionChange(collection.id)}
               summary={
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Typography component="span" variant="h6" color="text.primary">
+                  <Typography component={'span'} variant={'h6'} color={'text.primary'}>
                     {collection.collection_name}
                   </Typography>
                   <Chip
@@ -312,14 +312,14 @@ export function CollectionsAccordion({ collections, filterOptions }: Collections
               }
             >
               {collection.notes ? (
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                <Typography variant={'body2'} color={'text.secondary'} sx={{ mb: 1.5 }}>
                   {collection.notes}
                 </Typography>
               ) : null}
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 2 }}>
                 <Button
-                  variant="secondary"
-                  size="sm"
+                  variant={'secondary'}
+                  size={'sm'}
                   onClick={(event) => {
                     event.preventDefault()
                     setManagerState({
@@ -329,12 +329,12 @@ export function CollectionsAccordion({ collections, filterOptions }: Collections
                     })
                   }}
                 >
-                  Add documents
+                  {'Add documents'}
                 </Button>
                 {collection.document_count > 0 ? (
                   <Button
-                    variant="secondary"
-                    size="sm"
+                    variant={'secondary'}
+                    size={'sm'}
                     onClick={(event) => {
                       event.preventDefault()
                       setManagerState({
@@ -344,12 +344,12 @@ export function CollectionsAccordion({ collections, filterOptions }: Collections
                       })
                     }}
                   >
-                    Remove documents
+                    {'Remove documents'}
                   </Button>
                 ) : null}
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant={'ghost'}
+                  size={'sm'}
                   startIcon={<IconX size={14} />}
                   onClick={(event) => {
                     event.preventDefault()
@@ -361,12 +361,12 @@ export function CollectionsAccordion({ collections, filterOptions }: Collections
                 </Button>
               </Box>
               {!isExpanded && collection.document_count === 0 ? (
-                <Typography variant="body2" color="text.secondary">
-                  No documents associated with this collection.
+                <Typography variant={'body2'} color={'text.secondary'}>
+                  {'No documents associated with this collection.'}
                 </Typography>
               ) : !isExpanded ? null : collection.document_count === 0 ? (
-                <Typography variant="body2" color="text.secondary">
-                  No documents associated with this collection.
+                <Typography variant={'body2'} color={'text.secondary'}>
+                  {'No documents associated with this collection.'}
                 </Typography>
               ) : (
                 <CollectionDocumentsTable
@@ -396,11 +396,11 @@ export function CollectionsAccordion({ collections, filterOptions }: Collections
       ) : null}
       <TagDeleteFlowDialog
         open={Boolean(collectionToDelete)}
-        title="Remove collection?"
-        subjectName="collection"
+        title={'Remove collection?'}
+        subjectName={'collection'}
         usageCount={collectionToDelete?.document_count ?? null}
         primaryMessage={`Remove "${collectionToDelete?.collection_name ?? 'this collection'}"?`}
-        checkboxLabel="Also delete tag and remove from all documents"
+        checkboxLabel={'Also delete tag and remove from all documents'}
         secondConfirmMessage={`This will remove the tag from ${collectionToDelete?.document_count ?? 0} ${(collectionToDelete?.document_count ?? 0) === 1 ? 'document' : 'documents'} and delete the tag. This cannot be undone.`}
         onConfirm={handleDeleteCollection}
         onClose={() => {

@@ -26,7 +26,7 @@ export function FailuresDocumentTable({ failures }: FailuresDocumentTableProps):
           <MuiLink
             component={Link}
             href={getDocumentDetailPath(row.original.id, FAILED_PATH, PAGE_LABELS.processingFailures)}
-            underline="hover"
+            underline={'hover'}
             sx={{ color: 'primary.main', fontWeight: 500, '&:hover': { color: 'text.primary' } }}
           >
             {row.original.id}
@@ -44,7 +44,7 @@ export function FailuresDocumentTable({ failures }: FailuresDocumentTableProps):
         header: 'Failure Reason',
         size: 360,
         Cell: ({ row }) => (
-          <Typography component="span" variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+          <Typography component={'span'} variant={'body2'} sx={{ whiteSpace: 'pre-wrap' }}>
             {row.original.failure_reason || 'Unknown'}
           </Typography>
         ),
@@ -87,7 +87,7 @@ export function FailuresDocumentTable({ failures }: FailuresDocumentTableProps):
         pageSize: failures.length,
         filters: {},
       }}
-      emptyMessage="There are no failure records to display yet."
+      emptyMessage={'There are no failure records to display yet.'}
       enableSorting={false}
       showToolbar={false}
       showPager={false}

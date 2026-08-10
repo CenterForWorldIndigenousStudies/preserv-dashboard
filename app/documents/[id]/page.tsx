@@ -25,7 +25,7 @@ import { NoDataState } from '@organisms/NoDataState'
 import { PageHeader } from '@organisms/PageHeader'
 import { ReviewHistoryTable } from '@organisms/ReviewHistoryTable'
 import { parseMetadataValue } from '@lib/metadata'
-import { getDocumentDetail } from '@lib/queries'
+import { getDocumentDetail } from '@lib/queries/queries'
 import {
   COLLECTIONS_PATH,
   DOCUMENTS_PATH,
@@ -177,7 +177,7 @@ const tableBodyCellSx = {
 
 function DetailValue({ children }: { children: React.ReactNode }): ReactElement {
   return (
-    <Box component="dd" sx={{ ...detailValueSx, m: 0 }}>
+    <Box component={'dd'} sx={{ ...detailValueSx, m: 0 }}>
       {children}
     </Box>
   )
@@ -202,11 +202,13 @@ export default async function DocumentDetailPage({
         <Stack spacing={4} sx={{ width: '100%' }}>
           <PageHeader
             eyebrow={PAGE_LABELS.documentDetail}
-            title="No Data"
-            description="Inspect the full document record, metadata payload, audit trail, review history, and duplicate relationships."
+            title={'No Data'}
+            description={
+              'Inspect the full document record, metadata payload, audit trail, review history, and duplicate relationships.'
+            }
           />
           <ReturnToPreviousPage href={returnHref} label={returnLabel} />
-          <NoDataState message="No document data is available for this record yet." />
+          <NoDataState message={'No document data is available for this record yet.'} />
         </Stack>
       )
     }
@@ -231,17 +233,19 @@ export default async function DocumentDetailPage({
         <PageHeader
           eyebrow={PAGE_LABELS.documentDetail}
           title={document.name || document.id}
-          description="Inspect the full document record, metadata payload, audit trail, review history, and duplicate relationships."
+          description={
+            'Inspect the full document record, metadata payload, audit trail, review history, and duplicate relationships.'
+          }
         />
 
-        <Paper component="section" elevation={0} sx={panelSx}>
-          <Typography component="h2" variant="h5" color="text.primary">
-            Document Fields
+        <Paper component={'section'} elevation={0} sx={panelSx}>
+          <Typography component={'h2'} variant={'h5'} color={'text.primary'}>
+            {'Document Fields'}
           </Typography>
-          <Box component="dl" sx={detailGridSx}>
+          <Box component={'dl'} sx={detailGridSx}>
             {documentFieldLabels.map((field) => (
-              <Box key={field.key} component="div" sx={insetSx}>
-                <Typography component="dt" variant="caption" sx={detailLabelSx}>
+              <Box key={field.key} component={'div'} sx={insetSx}>
+                <Typography component={'dt'} variant={'caption'} sx={detailLabelSx}>
                   {field.label}
                 </Typography>
                 <DetailValue>
@@ -260,19 +264,19 @@ export default async function DocumentDetailPage({
           </Box>
         </Paper>
 
-        <Stack component="section" spacing={4}>
-          <Paper component="section" elevation={0} sx={panelSx}>
+        <Stack component={'section'} spacing={4}>
+          <Paper component={'section'} elevation={0} sx={panelSx}>
             <Stack
               direction={{ xs: 'column', md: 'row' }}
               spacing={2}
               sx={{ alignItems: { xs: 'stretch', md: 'flex-start' }, justifyContent: 'space-between' }}
             >
               <Box>
-                <Typography component="h2" variant="h5" color="text.primary">
-                  Versions
+                <Typography component={'h2'} variant={'h5'} color={'text.primary'}>
+                  {'Versions'}
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                  Open the related document versions and duplicates for this record.
+                <Typography variant={'body2'} color={'text.secondary'} sx={{ mt: 1 }}>
+                  {'Open the related document versions and duplicates for this record.'}
                 </Typography>
               </Box>
               {version_family ? (
@@ -286,35 +290,35 @@ export default async function DocumentDetailPage({
             {versions.length > 0 ? (
               <Box sx={{ ...detailGridSx, mt: 3 }}>
                 {versions.map((version) => (
-                  <Box key={version.id} component="div" sx={insetSx}>
-                    <Stack component="dl" spacing={1.5} sx={{ m: 0 }}>
-                      <Box component="div">
-                        <Typography component="dt" variant="caption" sx={detailLabelSx}>
-                          Version Group
+                  <Box key={version.id} component={'div'} sx={insetSx}>
+                    <Stack component={'dl'} spacing={1.5} sx={{ m: 0 }}>
+                      <Box component={'div'}>
+                        <Typography component={'dt'} variant={'caption'} sx={detailLabelSx}>
+                          {'Version Group'}
                         </Typography>
                         <DetailValue>{version.version_group_id}</DetailValue>
                       </Box>
-                      <Box component="div">
-                        <Typography component="dt" variant="caption" sx={detailLabelSx}>
-                          Changes Summary
+                      <Box component={'div'}>
+                        <Typography component={'dt'} variant={'caption'} sx={detailLabelSx}>
+                          {'Changes Summary'}
                         </Typography>
                         <DetailValue>{version.changes_summary ?? '-'}</DetailValue>
                       </Box>
-                      <Box component="div">
-                        <Typography component="dt" variant="caption" sx={detailLabelSx}>
-                          Notes
+                      <Box component={'div'}>
+                        <Typography component={'dt'} variant={'caption'} sx={detailLabelSx}>
+                          {'Notes'}
                         </Typography>
                         <DetailValue>{version.notes ?? '-'}</DetailValue>
                       </Box>
-                      <Box component="div">
-                        <Typography component="dt" variant="caption" sx={detailLabelSx}>
-                          Similarity
+                      <Box component={'div'}>
+                        <Typography component={'dt'} variant={'caption'} sx={detailLabelSx}>
+                          {'Similarity'}
                         </Typography>
                         <DetailValue>{version.similarity_score !== null ? version.similarity_score : '-'}</DetailValue>
                       </Box>
-                      <Box component="div">
-                        <Typography component="dt" variant="caption" sx={detailLabelSx}>
-                          Analyzed At
+                      <Box component={'div'}>
+                        <Typography component={'dt'} variant={'caption'} sx={detailLabelSx}>
+                          {'Analyzed At'}
                         </Typography>
                         <DetailValue>
                           {version.analyzed_at !== null ? <DateAtom value={version.analyzed_at} /> : '-'}
@@ -326,38 +330,38 @@ export default async function DocumentDetailPage({
               </Box>
             ) : null}
             {version_family && versions.length === 0 ? (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                No version membership records are stored for this document.
+              <Typography variant={'body2'} color={'text.secondary'} sx={{ mt: 2 }}>
+                {'No version membership records are stored for this document.'}
               </Typography>
             ) : null}
             {!version_family && detail.document.is_duplicate ? (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                This document is tagged as a duplicate, but the current registry data did not include a version group or
-                duplicate family for it. The overview can flag it as duplicate, but the related duplicate set is not
-                available to display here yet.
+              <Typography variant={'body2'} color={'text.secondary'} sx={{ mt: 2 }}>
+                {
+                  'This document is tagged as a duplicate, but the current registry data did not include a version group or duplicate family for it. The overview can flag it as duplicate, but the related duplicate set is not available to display here yet.'
+                }
               </Typography>
             ) : null}
             {!version_family && !detail.document.is_duplicate ? (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                No related versions available.
+              <Typography variant={'body2'} color={'text.secondary'} sx={{ mt: 2 }}>
+                {'No related versions available.'}
               </Typography>
             ) : null}
           </Paper>
 
-          <Paper component="section" elevation={0} sx={panelSx}>
-            <Typography component="h2" variant="h5" color="text.primary">
-              Metadata
+          <Paper component={'section'} elevation={0} sx={panelSx}>
+            <Typography component={'h2'} variant={'h5'} color={'text.primary'}>
+              {'Metadata'}
             </Typography>
             {metadata.length > 0 ? (
               <TableContainer sx={{ mt: 3, overflowX: 'auto' }}>
-                <Table size="small" sx={{ minWidth: 560 }}>
+                <Table size={'small'} sx={{ minWidth: 560 }}>
                   <TableHead>
                     <TableRow>
-                      <TableCell scope="col" sx={tableHeadCellSx}>
-                        Field
+                      <TableCell scope={'col'} sx={tableHeadCellSx}>
+                        {'Field'}
                       </TableCell>
-                      <TableCell scope="col" sx={tableHeadCellSx}>
-                        Value
+                      <TableCell scope={'col'} sx={tableHeadCellSx}>
+                        {'Value'}
                       </TableCell>
                     </TableRow>
                   </TableHead>
@@ -395,46 +399,46 @@ export default async function DocumentDetailPage({
                 </Table>
               </TableContainer>
             ) : (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                No metadata available.
+              <Typography variant={'body2'} color={'text.secondary'} sx={{ mt: 2 }}>
+                {'No metadata available.'}
               </Typography>
             )}
           </Paper>
 
           <DocumentLineageSection detail={detail} />
 
-          <Paper component="section" elevation={0} sx={panelSx}>
-            <Typography component="h2" variant="h5" color="text.primary">
-              Tags
+          <Paper component={'section'} elevation={0} sx={panelSx}>
+            <Typography component={'h2'} variant={'h5'} color={'text.primary'}>
+              {'Tags'}
             </Typography>
             <Box sx={{ mt: 3 }}>
               <DocumentTagsEditor documentId={document.id} initialTags={detail.document_to_tags} />
             </Box>
           </Paper>
 
-          <Paper component="section" elevation={0} sx={panelSx}>
-            <Typography component="h2" variant="h5" color="text.primary">
-              Batches
+          <Paper component={'section'} elevation={0} sx={panelSx}>
+            <Typography component={'h2'} variant={'h5'} color={'text.primary'}>
+              {'Batches'}
             </Typography>
             {detail.document_to_batches.length > 0 ? (
               <TableContainer sx={{ mt: 3, overflowX: 'auto' }}>
-                <Table size="small" sx={{ minWidth: 760 }}>
+                <Table size={'small'} sx={{ minWidth: 760 }}>
                   <TableHead>
                     <TableRow>
-                      <TableCell scope="col" sx={tableHeadCellSx}>
-                        Batch ID
+                      <TableCell scope={'col'} sx={tableHeadCellSx}>
+                        {'Batch ID'}
                       </TableCell>
-                      <TableCell scope="col" sx={tableHeadCellSx}>
-                        Batch Origin
+                      <TableCell scope={'col'} sx={tableHeadCellSx}>
+                        {'Batch Origin'}
                       </TableCell>
-                      <TableCell scope="col" sx={tableHeadCellSx}>
-                        Processing Time
+                      <TableCell scope={'col'} sx={tableHeadCellSx}>
+                        {'Processing Time'}
                       </TableCell>
-                      <TableCell scope="col" sx={tableHeadCellSx}>
-                        OCR Low
+                      <TableCell scope={'col'} sx={tableHeadCellSx}>
+                        {'OCR Low'}
                       </TableCell>
-                      <TableCell scope="col" sx={tableHeadCellSx}>
-                        OCR Medium
+                      <TableCell scope={'col'} sx={tableHeadCellSx}>
+                        {'OCR Medium'}
                       </TableCell>
                     </TableRow>
                   </TableHead>
@@ -454,29 +458,29 @@ export default async function DocumentDetailPage({
                 </Table>
               </TableContainer>
             ) : (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                No batch links available.
+              <Typography variant={'body2'} color={'text.secondary'} sx={{ mt: 2 }}>
+                {'No batch links available.'}
               </Typography>
             )}
           </Paper>
         </Stack>
 
         <Box
-          component="section"
+          component={'section'}
           sx={{ display: 'grid', gap: 4, gridTemplateColumns: { xs: '1fr', xl: 'repeat(2, minmax(0, 1fr))' } }}
         >
-          <Paper component="section" elevation={0} sx={panelSx}>
-            <Typography component="h2" variant="h5" color="text.primary">
-              Audit History
+          <Paper component={'section'} elevation={0} sx={panelSx}>
+            <Typography component={'h2'} variant={'h5'} color={'text.primary'}>
+              {'Audit History'}
             </Typography>
             <Box sx={{ mt: 3 }}>
               <AuditHistoryTable audits={audits} />
             </Box>
           </Paper>
 
-          <Paper component="section" elevation={0} sx={panelSx}>
-            <Typography component="h2" variant="h5" color="text.primary">
-              Review History
+          <Paper component={'section'} elevation={0} sx={panelSx}>
+            <Typography component={'h2'} variant={'h5'} color={'text.primary'}>
+              {'Review History'}
             </Typography>
             <Box sx={{ mt: 3 }}>
               <ReviewHistoryTable reviews={reviews} />
@@ -490,10 +494,16 @@ export default async function DocumentDetailPage({
       <Stack spacing={4} sx={{ width: '100%' }}>
         <PageHeader
           eyebrow={PAGE_LABELS.documentDetail}
-          title="No Data"
-          description="Inspect the full document record, metadata payload, audit trail, review history, and duplicate relationships."
+          title={'No Data'}
+          description={
+            'Inspect the full document record, metadata payload, audit trail, review history, and duplicate relationships.'
+          }
         />
-        <NoDataState message="No data is available right now. The database may be empty, unavailable, or still being initialized." />
+        <NoDataState
+          message={
+            'No data is available right now. The database may be empty, unavailable, or still being initialized.'
+          }
+        />
       </Stack>
     )
   }

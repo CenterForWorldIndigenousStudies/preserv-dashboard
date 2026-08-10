@@ -45,58 +45,58 @@ export function ProcessBatchFormPanel({
       <Stack spacing={3}>
         <div>
           <Typography
-            variant="caption"
+            variant={'caption'}
             sx={{ color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.16em' }}
           >
-            Batch Details
+            {'Batch Details'}
           </Typography>
-          <Typography component="h2" variant="h5" sx={{ mt: 1 }}>
-            Create a new batch
+          <Typography component={'h2'} variant={'h5'} sx={{ mt: 1 }}>
+            {'Create a new batch'}
           </Typography>
-          <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
-            Choose source folders, add an optional collection, and start the document-processing pipeline.
+          <Typography variant={'body2'} sx={{ mt: 1, color: 'text.secondary' }}>
+            {'Choose source folders, add an optional collection, and start the document-processing pipeline.'}
           </Typography>
         </div>
 
         <TextField
-          label="Batch Name"
+          label={'Batch Name'}
           value={batchName}
           onChange={handleTextChange(onBatchNameChange)}
-          placeholder="May 2026 Refugee Mental Health Ingest"
+          placeholder={'May 2026 Refugee Mental Health Ingest'}
           required
           fullWidth
         />
 
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
           <TextField
-            label="Collection Name"
+            label={'Collection Name'}
             value={collectionName}
             onChange={handleTextChange(onCollectionNameChange)}
-            placeholder="Optional collection"
+            placeholder={'Optional collection'}
             fullWidth
           />
           <TextField
-            label="Collection Notes"
+            label={'Collection Notes'}
             value={collectionNotes}
             onChange={handleTextChange(onCollectionNotesChange)}
-            placeholder="Optional collection notes"
+            placeholder={'Optional collection notes'}
             fullWidth
           />
         </Stack>
 
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-          <Button type="button" onClick={onSubmit} disabled={!canSubmit} loading={isSubmitting}>
-            Ingest
+          <Button type={'button'} onClick={onSubmit} disabled={!canSubmit} loading={isSubmitting}>
+            {'Ingest'}
           </Button>
-          <Button type="button" variant="secondary" onClick={onRefresh} loading={isRefreshing}>
-            Refresh Status
+          <Button type={'button'} variant={'secondary'} onClick={onRefresh} loading={isRefreshing}>
+            {'Refresh Status'}
           </Button>
         </Stack>
 
-        {submitError ? <Alert severity="error">{submitError}</Alert> : null}
+        {submitError ? <Alert severity={'error'}>{submitError}</Alert> : null}
         {acceptedBatchName ? (
-          <Alert severity="success">
-            Batch <strong>{acceptedBatchName}</strong> was accepted. Live process updates will appear below.
+          <Alert severity={'success'}>
+            {`Batch <strong>${acceptedBatchName}</strong> was accepted. Live process updates will appear below.`}
           </Alert>
         ) : null}
       </Stack>

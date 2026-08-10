@@ -6,7 +6,7 @@ const { mockGetBatchSummary, mocks } = vi.hoisted(() => ({
   mocks: { batchSummaryTableProps: undefined as Record<string, unknown> | undefined },
 }))
 
-vi.mock('@lib/queries', () => ({
+vi.mock('@lib/queries/queries', () => ({
   getBatchSummary: mockGetBatchSummary,
 }))
 
@@ -18,6 +18,7 @@ vi.mock('@organisms/BatchSummaryTable', () => ({
 }))
 
 import BatchSummaryPage from '@root/app/batches/page'
+import { PROCESS_DOCUMENTS_PATH } from '@constants/paths'
 
 describe('BatchSummaryPage', () => {
   afterEach(() => {
@@ -38,10 +39,10 @@ describe('BatchSummaryPage', () => {
 
     const markup = renderToStaticMarkup(await BatchSummaryPage({ searchParams: Promise.resolve({}) }))
 
-    expect(markup).toContain('Monitor batch health and investigate batch history.')
+    expect(markup).toContain('Monitor batch health and investigate batch history')
     expect(markup).toContain('Batches owns monitoring and investigation.')
     expect(markup).toContain('Back to Process')
-    expect(markup).toContain('/process-documents')
+    expect(markup).toContain(PROCESS_DOCUMENTS_PATH)
   })
 
   it('passes a requested batch ID through for focused expansion', async () => {
@@ -55,9 +56,7 @@ describe('BatchSummaryPage', () => {
       },
     ])
 
-    renderToStaticMarkup(
-      await BatchSummaryPage({ searchParams: Promise.resolve({ batchId: 'batch-1' }) }),
-    )
+    renderToStaticMarkup(await BatchSummaryPage({ searchParams: Promise.resolve({ batchId: 'batch-1' }) }))
 
     expect(mocks.batchSummaryTableProps).toMatchObject({
       initialExpandedBatchId: 'batch-1',

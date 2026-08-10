@@ -10,7 +10,7 @@ export const PAGE_LABELS = {
   collections: 'Collections',
   tags: 'Tags',
   reports: 'Reports',
-  db: 'DB',
+  db: 'DataBase',
   componentLibrary: 'Component Library',
   processingFailures: 'Processing Failures',
   documentDetail: 'Document Detail',

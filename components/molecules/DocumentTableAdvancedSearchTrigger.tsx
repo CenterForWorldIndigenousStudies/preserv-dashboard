@@ -13,9 +13,9 @@ export function DocumentTableAdvancedSearchTrigger({
   children,
 }: DocumentTableAdvancedSearchTriggerProps): ReactElement {
   return (
-    <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+    <Stack direction={'row'} spacing={1} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
       {children}
-      {activeFilterCount > 0 ? <TableStat label="active filters" value={activeFilterCount} /> : null}
+      {activeFilterCount > 0 ? <TableStat label={'active filters'} value={activeFilterCount} /> : null}
     </Stack>
   )
 }

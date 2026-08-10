@@ -30,14 +30,14 @@ export function PipelineStepsModal({ open, draft, onClose, onDraftChange }: Pipe
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'))
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md" fullScreen={fullScreen} scroll="paper">
-      <DialogTitle component="div">
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth={'md'} fullScreen={fullScreen} scroll={'paper'}>
+      <DialogTitle component={'div'}>
         <Stack spacing={0.5}>
-          <Typography component="h2" variant="h5">
-            Pipeline Steps
+          <Typography component={'h2'} variant={'h5'}>
+            {'Pipeline Steps'}
           </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            Configure the steps for this processing run. Changes update the summary right away.
+          <Typography variant={'body2'} sx={{ color: 'text.secondary' }}>
+            {'Configure the steps for this processing run. Changes update the summary right away.'}
           </Typography>
         </Stack>
       </DialogTitle>
@@ -50,8 +50,8 @@ export function PipelineStepsModal({ open, draft, onClose, onDraftChange }: Pipe
         </Stack>
       </DialogContent>
       <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={onClose} variant="contained">
-          Done
+        <Button onClick={onClose} variant={'contained'}>
+          {'Done'}
         </Button>
       </DialogActions>
     </Dialog>

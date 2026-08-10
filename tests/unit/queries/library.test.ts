@@ -18,7 +18,7 @@ import {
   normalizeLibraryDocument,
   normalizeRawLibraryMetadataValue,
   selectLatestLibraryBatch,
-} from '@lib/queries'
+} from '@lib/queries/queries'
 
 function queryText(index = 0): string {
   const call = mockQueryRaw.mock.calls[index]?.[0] as { strings: string[] } | undefined

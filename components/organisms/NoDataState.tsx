@@ -10,7 +10,7 @@ interface NoDataStateProps {
 export function NoDataState({ title = 'No Data', message }: NoDataStateProps): ReactElement {
   return (
     <Paper
-      component="section"
+      component={'section'}
       elevation={0}
       sx={{
         border: 1,
@@ -21,13 +21,13 @@ export function NoDataState({ title = 'No Data', message }: NoDataStateProps): R
       }}
     >
       <Stack spacing={1.5} sx={{ maxWidth: '42rem', mx: 'auto', textAlign: 'center' }}>
-        <Typography variant="overline" sx={{ color: 'primary.main' }}>
+        <Typography variant={'overline'} sx={{ color: 'primary.main' }}>
           {title}
         </Typography>
-        <Typography component="h2" variant="h4" color="text.primary">
+        <Typography component={'h2'} variant={'h4'} color={'text.primary'}>
           {title}
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant={'body2'} color={'text.secondary'}>
           {message}
         </Typography>
       </Stack>

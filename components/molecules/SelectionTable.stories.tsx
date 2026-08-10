@@ -101,8 +101,8 @@ function InteractiveWrapper(args: {
           })
         }}
       />
-      <Typography variant="body2" color="text.primary">
-        Selected: {checked.size} document{checked.size !== 1 ? 's' : ''}
+      <Typography variant={'body2'} color={'text.primary'}>
+        {`Selected: ${checked.size} document${checked.size !== 1 ? 's' : ''}`}
       </Typography>
     </Stack>
   )
@@ -121,8 +121,8 @@ export const Default: Story = {
   render: () => (
     <InteractiveWrapper
       documents={sampleDocuments}
-      title="Documents in Collection"
-      searchLabel="Search documents in collection"
+      title={'Documents in Collection'}
+      searchLabel={'Search documents in collection'}
     />
   ),
 }
@@ -131,9 +131,9 @@ export const Empty: Story = {
   render: () => (
     <InteractiveWrapper
       documents={[]}
-      title="Documents in Collection"
-      searchLabel="Search documents in collection"
-      emptyMessage="No documents in this collection."
+      title={'Documents in Collection'}
+      searchLabel={'Search documents in collection'}
+      emptyMessage={'No documents in this collection.'}
     />
   ),
 }
@@ -142,8 +142,8 @@ export const PreSelected: Story = {
   render: () => (
     <InteractiveWrapper
       documents={sampleDocuments}
-      title="Documents in Collection"
-      searchLabel="Search documents in collection"
+      title={'Documents in Collection'}
+      searchLabel={'Search documents in collection'}
     />
   ),
 }
@@ -154,8 +154,8 @@ export const SortedBySizeDesc: Story = {
     return (
       <InteractiveWrapper
         documents={sortedDocs}
-        title="Documents by Size (Largest First)"
-        searchLabel="Filter by name or legacy ID"
+        title={'Documents by Size (Largest First)'}
+        searchLabel={'Filter by name or legacy ID'}
       />
     )
   },
@@ -167,9 +167,9 @@ export const FilteredSearch: Story = {
     return (
       <InteractiveWrapper
         documents={filtered}
-        title="Search: Nicaragua"
-        searchLabel="Search documents in collection"
-        emptyMessage="No documents match your search."
+        title={'Search: Nicaragua'}
+        searchLabel={'Search documents in collection'}
+        emptyMessage={'No documents match your search.'}
       />
     )
   },

@@ -27,7 +27,7 @@ export function LinkCardFrame({
       <CardContent sx={{ flexGrow: 1, pb: 2 }}>
         <Stack spacing={1.5}>
           {eyebrow ? (
-            <Typography variant="overline" sx={{ color: 'text.secondary' }}>
+            <Typography variant={'overline'} sx={{ color: 'text.secondary' }}>
               {eyebrow}
             </Typography>
           ) : null}
@@ -38,7 +38,7 @@ export function LinkCardFrame({
         </Stack>
       </CardContent>
       <CardActions sx={{ px: 2, pb: 2, pt: 0 }}>
-        <Button href={href} variant="secondary">
+        <Button href={href} variant={'secondary'}>
           {actionLabel}
         </Button>
       </CardActions>

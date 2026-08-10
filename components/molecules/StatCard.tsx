@@ -14,10 +14,10 @@ interface StatCardProps {
 export function StatCard({ title, value, href }: StatCardProps): ReactElement {
   const cardContent = (
     <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
-      <Typography variant="overline" color="text.secondary">
+      <Typography variant={'overline'} color={'text.secondary'}>
         {title}
       </Typography>
-      <Typography variant="h3" component="p" sx={{ mt: 1.5, color: 'text.primary' }}>
+      <Typography variant={'h3'} component={'p'} sx={{ mt: 1.5, color: 'text.primary' }}>
         {value.toLocaleString('en-US')}
       </Typography>
     </CardContent>

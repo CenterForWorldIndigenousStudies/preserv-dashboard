@@ -76,43 +76,42 @@ export function CreateTagDialog({
       open={open}
       onClose={isSubmitting ? undefined : onClose}
       fullWidth
-      maxWidth="sm"
+      maxWidth={'sm'}
       sx={{ '& .MuiDialog-paper': { borderRadius: '1rem' } }}
     >
       <DialogTitle>Create New Tag</DialogTitle>
       <DialogContent sx={{ display: 'grid', gap: 2.5, pt: 1.5 }}>
-        {error ? <Alert severity="error">{error}</Alert> : null}
+        {error ? <Alert severity={'error'}>{error}</Alert> : null}
         {normalizedName && similarTags.length > 0 ? (
-          <Alert severity="warning">
-            Found {similarTags.length} similar {similarTags.length === 1 ? 'tag' : 'tags'}. Are you sure you want to
-            create a new tag?
+          <Alert severity={'warning'}>
+            {`Found ${similarTags.length} similar ${similarTags.length === 1 ? 'tag' : 'tags'}. Are you sure you want to create a new tag?`}
           </Alert>
         ) : null}
         <TextField
           autoFocus
-          label="Tag name"
+          label={'Tag name'}
           value={name}
           onChange={(event) => setName(event.target.value)}
-          placeholder="Enter a tag name"
+          placeholder={'Enter a tag name'}
           fullWidth
         />
         <TextField
-          label="Notes"
+          label={'Notes'}
           value={notes}
           onChange={(event) => setNotes(event.target.value)}
-          placeholder="Optional notes about this tag"
+          placeholder={'Optional notes about this tag'}
           fullWidth
           multiline
           minRows={3}
         />
         {normalizedName ? (
           <Stack spacing={1.5}>
-            <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
-              Similar tags
+            <Typography variant={'body2'} sx={{ color: 'text.secondary', fontWeight: 500 }}>
+              {'Similar tags'}
             </Typography>
             {isLoading ? (
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                Checking for similar tags...
+              <Typography variant={'body2'} sx={{ color: 'text.secondary' }}>
+                {'Checking for similar tags...'}
               </Typography>
             ) : similarTags.length > 0 ? (
               <List disablePadding sx={{ display: 'grid', gap: 1 }}>
@@ -130,11 +129,11 @@ export function CreateTagDialog({
                       py: 1,
                     })}
                   >
-                    <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500 }}>
+                    <Typography variant={'body2'} sx={{ color: 'text.primary', fontWeight: 500 }}>
                       {tag.name}
                     </Typography>
                     {tag.notes ? (
-                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                      <Typography variant={'body2'} sx={{ color: 'text.secondary' }}>
                         {tag.notes}
                       </Typography>
                     ) : null}
@@ -142,19 +141,19 @@ export function CreateTagDialog({
                 ))}
               </List>
             ) : (
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                No similar tags found.
+              <Typography variant={'body2'} sx={{ color: 'text.secondary' }}>
+                {'No similar tags found.'}
               </Typography>
             )}
           </Stack>
         ) : null}
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>
-          Cancel
+        <Button variant={'ghost'} onClick={onClose} disabled={isSubmitting}>
+          {'Cancel'}
         </Button>
-        <Button variant="primary" onClick={() => void handleCreate()} loading={isSubmitting}>
-          Create New Tag
+        <Button variant={'primary'} onClick={() => void handleCreate()} loading={isSubmitting}>
+          {'Create New Tag'}
         </Button>
       </DialogActions>
     </Dialog>

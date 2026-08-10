@@ -11,7 +11,7 @@ import {
   getDocumentsForCollection,
   getDocumentsNotInCollection,
   getDocumentFilterOptions,
-} from '@lib/queries'
+} from '@lib/queries/queries'
 import { resetTestDatabase, shouldSkipDashboardIntegrationSuite } from '../support/test-db'
 import { withRollbackTransaction } from '../support/transaction'
 

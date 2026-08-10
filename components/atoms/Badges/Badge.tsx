@@ -32,10 +32,10 @@ export function Badge({ variant = 'info', outlined = false, children, className 
 
   return (
     <Chip
-      component="span"
+      component={'span'}
       className={className || undefined}
       label={children}
-      size="small"
+      size={'small'}
       sx={(theme: Theme) => {
         const backgroundPalette = theme.palette[paletteKey] ?? theme.palette.primary
         const textColor = textPaletteKey === 'text' ? theme.palette.text.primary : theme.palette[paletteKey].main

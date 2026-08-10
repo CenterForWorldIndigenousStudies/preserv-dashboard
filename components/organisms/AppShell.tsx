@@ -75,7 +75,7 @@ export function AppShell({ children }: AppShellProps): ReactElement {
   return (
     <Box sx={layoutStyles.shell}>
       <Box sx={layoutStyles.sidebarRail}>
-        <Sidebar variant="desktop" />
+        <Sidebar variant={'desktop'} />
       </Box>
 
       <Box sx={{ display: { xs: 'none', md: 'block' } }}>
@@ -90,19 +90,19 @@ export function AppShell({ children }: AppShellProps): ReactElement {
         >
           <SidebarVisibilityControl
             intent={sidebarCollapsed ? 'open' : 'close'}
-            surface="desktopRail"
+            surface={'desktopRail'}
             onClick={toggleCollapse}
           />
         </Box>
       </Box>
 
-      <Sidebar variant="mobile" isOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
+      <Sidebar variant={'mobile'} isOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
 
       <Box sx={layoutStyles.contentColumn}>
         <Box sx={{ display: { md: 'none' } }}>
-          <SidebarVisibilityControl intent="open" surface="mobileBar" onClick={() => setMobileOpen(true)} />
+          <SidebarVisibilityControl intent={'open'} surface={'mobileBar'} onClick={() => setMobileOpen(true)} />
         </Box>
-        <Box component="main" sx={layoutStyles.main}>
+        <Box component={'main'} sx={layoutStyles.main}>
           <Box sx={{ margin: '0 auto', maxWidth: '80rem', width: '100%' }}>{children}</Box>
         </Box>
       </Box>

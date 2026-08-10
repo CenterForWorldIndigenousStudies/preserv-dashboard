@@ -28,7 +28,7 @@ export function IdsRow({ id, legacyId, sourceId, maxTruncationLength = 12 }: Ids
 
   return (
     <Stack
-      direction="row"
+      direction={'row'}
       spacing={2}
       sx={{ alignItems: 'center', color: 'text.secondary', flexWrap: 'wrap', fontSize: '0.75rem' }}
     >

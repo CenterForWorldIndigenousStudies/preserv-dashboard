@@ -14,7 +14,7 @@ const {
   mockIsPipelineBatchTerminal: vi.fn(),
 }))
 
-vi.mock('@lib/queries', () => ({
+vi.mock('@lib/queries/queries', () => ({
   getNeedsReviewDocumentsCount: mockGetNeedsReviewDocumentsCount,
   getReadyForLibraryDocuments: mockGetReadyForLibraryDocuments,
 }))

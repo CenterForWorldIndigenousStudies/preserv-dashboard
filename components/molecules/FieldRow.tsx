@@ -15,7 +15,7 @@ interface FieldRowProps {
 export function FieldRow({ label, children, className = '', sx }: FieldRowProps): ReactNode {
   return (
     <Box
-      component="div"
+      component={'div'}
       className={className || undefined}
       sx={(theme: Theme) => ({
         borderRadius: 3,
@@ -25,8 +25,8 @@ export function FieldRow({ label, children, className = '', sx }: FieldRowProps)
       })}
     >
       <Typography
-        component="dt"
-        variant="caption"
+        component={'dt'}
+        variant={'caption'}
         sx={{
           color: 'text.secondary',
           letterSpacing: '0.15em',
@@ -35,7 +35,7 @@ export function FieldRow({ label, children, className = '', sx }: FieldRowProps)
       >
         {label}
       </Typography>
-      <Typography component="dd" variant="body2" sx={{ mt: 1, color: 'text.primary', wordBreak: 'break-word' }}>
+      <Typography component={'dd'} variant={'body2'} sx={{ mt: 1, color: 'text.primary', wordBreak: 'break-word' }}>
         {children}
       </Typography>
     </Box>

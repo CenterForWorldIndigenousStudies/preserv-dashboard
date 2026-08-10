@@ -102,7 +102,7 @@ export const ReviewQueueDense: Story = {
       rowActions: [
         {
           id: 'review',
-          render: ({ row }) => <button type="button">Review {row.id}</button>,
+          render: ({ row }) => <button type={'button'}>{`Review ${row.id}`}</button>,
         },
       ],
       enableRowSelection: true,

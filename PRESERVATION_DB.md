@@ -3,80 +3,80 @@
 ```mermaid
 erDiagram
     documents {
-        varchar id PK, UK
+        varchar id PK
         bigint filesize
         varchar hash_binary
         varchar hash_content
         varchar id_legacy
         varchar name
-        timestamp created_at
-        timestamp updated_at
+        datetime created_at
+        datetime updated_at
     }
 
     document_access {
-        varchar id PK, UK
+        varchar id PK
         varchar document_id FK
         varchar access_level_id FK
         varchar granted_by_name
         varchar granted_by_email
-        timestamp granted_at
+        datetime granted_at
     }
 
     access_levels {
-        varchar id PK, UK
+        varchar id PK
         varchar level_name UK
         text description
-        timestamp created_at
-        timestamp updated_at
+        datetime created_at
+        datetime updated_at
     }
 
     document_quality {
-        varchar id PK, UK
+        varchar id PK
         varchar document_id FK, UK
         text comment
         text comment_additional
-        varchar validation_status
+        enum validation_status
         bigint validation_timestamp
         varchar validator_name
         varchar validator_email
         bool reprocess
         varchar current_status FK
-        timestamp created_at
-        timestamp updated_at
+        datetime created_at
+        datetime updated_at
     }
 
     state_history {
-        varchar id PK, UK
+        varchar id PK
         varchar document_id FK
         varchar previous_state
         varchar new_state
-        timestamp changed_at
+        datetime changed_at
     }
 
     document_to_authors {
-        varchar id PK, UK
+        varchar id PK
         varchar document_id FK
         varchar author_id FK
         varchar contributor_type
         text notes
-        timestamp created_at
-        timestamp updated_at
+        datetime created_at
+        datetime updated_at
     }
 
     authors {
-        varchar id PK, UK
+        varchar id PK
         text name
         varchar name_hash UK
         text notes
-        timestamp created_at
-        timestamp updated_at
+        datetime created_at
+        datetime updated_at
     }
 
     document_to_batches {
-        varchar id PK, UK
+        varchar id PK
         varchar document_id FK
         varchar batch_id FK
-        timestamp added_at
+        datetime added_at
         text batch_origin
         decimal cost
         int processing_time_seconds
@@ -86,16 +86,16 @@ erDiagram
     }
 
     batches {
-        varchar id PK, UK
+        varchar id PK
         varchar id_legacy
         text name
         varchar name_hash UK
         json processing_details
-        timestamp created_at
-        timestamp updated_at
-        timestamp started_at
-        timestamp completed_at
-        timestamp last_processed
+        datetime created_at
+        datetime updated_at
+        datetime started_at
+        datetime completed_at
+        datetime last_processed
         varchar started_by
         varchar lifecycle_status
         varchar publication_status
@@ -103,16 +103,16 @@ erDiagram
     }
 
     pipeline_queue_items {
-        varchar id PK, UK
+        varchar id PK
         varchar stage
         varchar batch_id
         json payload
         varchar status
         int attempt_count
-        timestamp queued_at
-        timestamp claimed_at
-        timestamp completed_at
-        timestamp cancelled_at
+        datetime queued_at
+        datetime claimed_at
+        datetime completed_at
+        datetime cancelled_at
         text cancel_reason
         varchar error_type
         text error_message
@@ -120,7 +120,7 @@ erDiagram
     }
 
     batch_rollbacks {
-        varchar id PK, UK
+        varchar id PK
         varchar batch_id FK, UK
         text original_batch_name
         int reversion_number
@@ -128,22 +128,22 @@ erDiagram
         text reason
         varchar idempotency_key UK
         varchar status
-        timestamp requested_at
-        timestamp started_at
-        timestamp completed_at
-        timestamp resolved_at
+        datetime requested_at
+        datetime started_at
+        datetime completed_at
+        datetime resolved_at
         int restored_count
         int deleted_count
         int cancelled_count
         int conflict_count
         int failed_count
         text last_failure
-        timestamp created_at
-        timestamp updated_at
+        datetime created_at
+        datetime updated_at
     }
 
     batch_mutations {
-        varchar id PK, UK
+        varchar id PK
         varchar batch_id FK
         int execution_order
         varchar rollback_id FK
@@ -157,16 +157,16 @@ erDiagram
         varchar rollback_action
         varchar status
         int attempts
-        timestamp planned_at
-        timestamp applied_at
-        timestamp rolled_back_at
+        datetime planned_at
+        datetime applied_at
+        datetime rolled_back_at
         text last_error
-        timestamp created_at
-        timestamp updated_at
+        datetime created_at
+        datetime updated_at
     }
 
     batch_external_operations {
-        varchar id PK, UK
+        varchar id PK
         varchar batch_id FK
         varchar stage
         varchar provider
@@ -177,139 +177,139 @@ erDiagram
         json external_ids
         varchar status
         int attempts
-        timestamp planned_at
-        timestamp started_at
-        timestamp applied_at
-        timestamp completed_at
-        timestamp next_recovery_at
+        datetime planned_at
+        datetime started_at
+        datetime applied_at
+        datetime completed_at
+        datetime next_recovery_at
         text last_error
-        timestamp created_at
-        timestamp updated_at
+        datetime created_at
+        datetime updated_at
     }
 
     pipeline_worker_leases {
-        varchar id PK, UK
+        varchar id PK
         varchar active_batch_id FK
         varchar lease_token
-        timestamp acquired_at
-        timestamp heartbeat_at
-        timestamp released_at
+        datetime acquired_at
+        datetime heartbeat_at
+        datetime released_at
     }
 
     batch_to_batches_metadata {
-        varchar id PK, UK
+        varchar id PK
         varchar batch_id FK
         varchar batch_metadata_id FK
         json value
         varchar value_type
-        timestamp created_at
-        timestamp updated_at
+        datetime created_at
+        datetime updated_at
     }
 
     batch_metadata {
-        varchar id PK, UK
+        varchar id PK
         text name
         varchar name_hash UK
         text notes
-        timestamp created_at
-        timestamp updated_at
+        datetime created_at
+        datetime updated_at
     }
 
     document_to_metadata {
-        varchar id PK, UK
+        varchar id PK
         varchar document_id FK
         varchar metadata_id FK
         json value
         varchar value_type
-        timestamp created_at
-        timestamp updated_at
+        datetime created_at
+        datetime updated_at
     }
 
     metadata {
-        varchar id PK, UK
+        varchar id PK
         text name
         varchar name_hash UK
         text notes
-        timestamp created_at
-        timestamp updated_at
+        datetime created_at
+        datetime updated_at
     }
 
     document_to_publishers {
-        varchar id PK, UK
+        varchar id PK
         varchar document_id FK
         varchar publisher_id FK
         text notes
-        timestamp created_at
-        timestamp updated_at
+        datetime created_at
+        datetime updated_at
     }
 
     publishers {
-        varchar id PK, UK
+        varchar id PK
         text name
         varchar name_hash UK
         text notes
-        timestamp created_at
-        timestamp updated_at
+        datetime created_at
+        datetime updated_at
     }
 
     document_to_tags {
-        varchar id PK, UK
+        varchar id PK
         varchar document_id FK
         varchar tag_id FK
         text notes
-        timestamp created_at
+        datetime created_at
     }
 
     tags {
-        varchar id PK, UK
+        varchar id PK
         text name
         varchar name_hash UK
         text notes
-        timestamp created_at
-        timestamp updated_at
+        datetime created_at
+        datetime updated_at
     }
 
     collections {
-        varchar id PK, UK
+        varchar id PK
         varchar tag_id FK, UK
         text notes
-        timestamp created_at
-        timestamp updated_at
+        datetime created_at
+        datetime updated_at
     }
 
     document_versions {
-        varchar id PK, UK
+        varchar id PK
         varchar document_id FK
         varchar version_group_id FK
         text notes
         text changes_summary
         float similarity_score
         bigint analyzed_at
-        timestamp created_at
-        timestamp updated_at
+        datetime created_at
+        datetime updated_at
     }
 
     version_groups {
-        varchar id PK, UK
+        varchar id PK
         varchar canonical_document_id FK, UK
         text notes
-        timestamp created_at
-        timestamp updated_at
+        datetime created_at
+        datetime updated_at
     }
 
     edit_history {
-        varchar id PK, UK
+        varchar id PK
         varchar entity_id
         varchar entity_table
         json previous_value
         json new_value
         varchar editor_email
         varchar edit_summary
-        timestamp edited_at
+        datetime edited_at
     }
 
     drive_exclusion_review_items {
-        varchar id PK, UK
+        varchar id PK
         varchar root_drive_id
         varchar drive_id
         varchar parent_drive_id
@@ -321,16 +321,16 @@ erDiagram
         int depth
         varchar explicit_review_decision
         varchar explicit_reviewed_by_email
-        timestamp explicit_reviewed_at
+        datetime explicit_reviewed_at
         varchar effective_ancestor_drive_id
         varchar effective_ancestor_decision
-        timestamp effective_ancestor_reviewed_at
+        datetime effective_ancestor_reviewed_at
         varchar subtree_index_status
-        timestamp discovered_at
-        timestamp last_synced_at
+        datetime discovered_at
+        datetime last_synced_at
         text last_sync_error
-        timestamp created_at
-        timestamp updated_at
+        datetime created_at
+        datetime updated_at
     }
 
     documents ||--o{ document_access : "access"
@@ -376,54 +376,47 @@ erDiagram
 - `documents` is the anchor table. Most queries start there and join outward.
 - `batches` is the anchor table for processing runs and registry-derived batch context.
 - `pipeline_queue_items` is the durable queue control table for the combined pipeline server.
-- `drive_exclusion_review_items` is the indexed Google Drive tree backing the dashboard's
-  `Exclusion Review` workspace.
-- `document_to_*` tables and `batch_to_batches_metadata` are association tables. They connect a
-  core entity to a lookup table or to typed metadata values.
-- `metadata` and `batch_metadata` define field names. The actual values live in
-  `document_to_metadata` and `batch_to_batches_metadata`.
-- Several lookup tables use a generated `name_hash` column. This is primarily for deduplication and
-  indexing, not for human-facing querying.
-- JSON values are stored in MariaDB `JSON` columns. For analysis, expect to use JSON extraction
-  functions when reading structured values.
+- `drive_exclusion_review_items` is the indexed Google Drive tree backing the dashboard's `Exclusion Review` workspace.
+- `document_to_*` tables and `batch_to_batches_metadata` are association tables.
+  They connect a core entity to a lookup table or to typed metadata values.
+- `metadata` and `batch_metadata` define field names.
+  The actual values live in `document_to_metadata` and `batch_to_batches_metadata`.
+- Several lookup tables use a generated `name_hash` column.
+  This is primarily for deduplication and indexing, not for human-facing querying.
+- JSON values are stored in MariaDB `JSON` columns.
+  For analysis, expect to use JSON extraction functions when reading structured values.
 
 ## Query-Oriented Notes
 
 - Use `documents.id` and `batches.id` for joins.
-- Use `documents.id_legacy` and `batches.id_legacy` when you need to match back to source-system
-  identifiers.
-- `document_quality.validation_timestamp` and `document_versions.analyzed_at` are `BIGINT` unix
-  timestamps. Most other temporal columns are SQL `TIMESTAMP`.
-- `document_to_metadata.value` and `batch_to_batches_metadata.value` store typed payloads
-  in the shared wrapper shape `{"value": <typed_value>}`.
-- `document_to_metadata.value_type` and `batch_to_batches_metadata.value_type` describe the logical
-  type of that inner typed value.
-- `state_history` is an append-only event table. `document_quality.current_status` points to one row
-  in that history.
-- `state_history` prevents exact duplicate transitions with a composite unique constraint on
-  `(document_id, previous_state, new_state, changed_at)`.
+- Use `documents.id_legacy` and `batches.id_legacy` when you need to match back to source-system identifiers.
+- `document_quality.validation_timestamp` and `document_versions.analyzed_at` are `BIGINT` unix timestamps.
+  Most other temporal columns are SQL `DATETIME`.
+- `document_to_metadata.value` and `batch_to_batches_metadata.value` are MariaDB `JSON` columns.
+  The pipeline convention is to store typed payloads in the wrapper shape
+  `{"value": <typed_value>}`; the wrapper itself is not enforced by the database.
+- `document_to_metadata.value_type` and `batch_to_batches_metadata.value_type` describe the logical type of that inner typed value.
+- `state_history` is an append-only event table.
+  `document_quality.current_status` points to one row in that history.
+- `state_history` prevents exact duplicate transitions with a composite unique constraint on `(document_id, previous_state, new_state, changed_at)`.
 - `pipeline_queue_items.payload` stores the original accepted trigger payload used by the worker.
-- `pipeline_queue_items.callback_delivery` stores the callback delivery result recorded after worker
-  completion.
-- `batches.lifecycle_status` is the durable batch workflow state. The rollback-eligible states
-  are pre-publication states; `publication_locked`, `published`, and `unknown` are not rollback
-  eligible.
-- `batches.publication_status` records the provider boundary independently from the workflow
-  state. `publication_target` identifies the configured provider, currently `fedora`.
-- `batch_rollbacks` retains the requested rollback, operator information, progress counts,
-  failures, retries, and explicit resolutions. There is at most one rollback record per batch.
-- `batch_mutations` is the rollback journal. It records database before-images and generated
-  Google Drive artifacts; it does not authorize modifying pre-existing source files.
-- `batch_external_operations` is the durable intent ledger for external work. It is written
-  before a Drive request, carries an idempotency key and recovery metadata, and remains available
-  when a worker dies before the resulting Drive ID can be attached to `batch_mutations`.
-- `pipeline_worker_leases` is a singleton durable coordination row. Its active batch lease keeps
-  later batches queued while the current batch drains or rolls back, including after worker restart.
+- `pipeline_queue_items.callback_delivery` stores the callback delivery result recorded after worker completion.
+- `batches.lifecycle_status` is the durable batch workflow state.
+  The rollback-eligible states are pre-publication states; `publication_locked`, `published`, and `unknown` are not rollback eligible.
+- `batches.publication_status` records the provider boundary independently from the workflow state.
+  `publication_target` identifies the configured provider, currently `fedora`.
+- `batch_rollbacks` retains the requested rollback, operator information, progress counts, failures, retries, and explicit resolutions.
+  There is at most one rollback record per batch.
+- `batch_mutations` is the rollback journal.
+  It records database before-images and generated Google Drive artifacts; it does not authorize modifying pre-existing source files.
+- `batch_external_operations` is the durable intent ledger for external work.
+  It is written before a Drive request, carries an idempotency key and recovery metadata, and remains available when a worker dies before the resulting Drive ID can be attached to `batch_mutations`.
+- `pipeline_worker_leases` is a singleton durable coordination row.
+  Its active batch lease keeps later batches queued while the current batch drains or rolls back, including after worker restart.
 
 ## Index Highlights
 
-- `documents` is indexed on `created_at`, `updated_at`, `name`, `filesize`, `hash_binary`, and
-  `hash_content`.
+- `documents` is indexed on `created_at`, `updated_at`, `name`, `filesize`, `hash_binary`, and `hash_content`.
 - `state_history` is indexed on `document_id` and `(document_id, changed_at)`.
 - `state_history` is also unique on `(document_id, previous_state, new_state, changed_at)`.
 - `edit_history` is indexed on `(entity_table, entity_id)` and
@@ -435,22 +428,20 @@ erDiagram
 - `drive_exclusion_review_items` is indexed for root-scoped parent, item-type, effective-ancestor, and subtree-status access patterns.
 - `batch_rollbacks` is indexed on `batch_id` and `status`.
 - `batch_mutations` is indexed on batch execution order, rollback, and mutation status.
-  The durable `execution_order` is assigned within each batch so compensation does not depend on database timestamps, which may be truncated to whole seconds. It is unique within a batch.
+  The durable `execution_order` is assigned within each batch so compensation does not depend on database timestamps, which may be truncated to whole seconds.
+  It is unique within a batch.
 - `batch_external_operations` is indexed on batch/status and status/next recovery time so scheduled reconciliation does not poll the provider on every worker loop.
 - Association tables use composite unique constraints to prevent duplicate links.
 
 ## Meaningful Metadata
 
-The schema is intentionally generic: document metadata names live in `metadata`, and the actual
-values live in `document_to_metadata`. That means the dashboard should not treat every metadata key
-as equally important. Some keys are part of the shared pipeline contract and have stable meaning
-across services; others are legacy/import values preserved for provenance and troubleshooting.
+The schema is intentionally generic: document metadata names live in `metadata`, and the actual values live in `document_to_metadata`.
+That means the dashboard should not treat every metadata key as equally important.
+Some keys are part of the shared pipeline contract and have stable meaning across services; others are legacy/import values preserved for provenance and troubleshooting.
 
 ### Canonical Document Metadata
 
-These keys are the current shared source of truth defined in `preserv-db` and are the safest keys
-for dashboard features to depend on when showing document lineage and managed Google Drive
-artifacts.
+These keys are the current shared source of truth defined in `preserv-db` and are the safest keys for dashboard features to depend on when showing document lineage and managed Google Drive artifacts.
 
 | Metadata Name | Meaning | Typical Producer | Dashboard Use |
 | --- | --- | --- | --- |
@@ -474,9 +465,8 @@ Practical rule:
 
 ### Legacy And Import Metadata
 
-These keys are still meaningful, but they are not the current managed-artifact contract. They are
-mainly preserved from inventory or registry sources so the dashboard can show what the original
-spreadsheet or registry said.
+These keys are still meaningful, but they are not the current managed-artifact contract.
+They are mainly preserved from inventory or registry sources so the dashboard can show what the original spreadsheet or registry said.
 
 | Metadata Name | Meaning | Producer | Dashboard Use |
 | --- | --- | --- | --- |
@@ -487,13 +477,11 @@ spreadsheet or registry said.
 
 Practical rule:
 
-- if a value starts with `legacy_`, treat it as preserved historical context, not as the current
-  operational source of truth
+- if a value starts with `legacy_`, treat it as preserved historical context, not as the current operational source of truth
 
 ### Operational Processing Metadata
 
-These keys are not the primary lineage contract, but they are part of the active processing model
-and are useful for troubleshooting, audit, and operational displays.
+These keys are not the primary lineage contract, but they are part of the active processing model and are useful for troubleshooting, audit, and operational displays.
 
 | Metadata Name | Meaning | Typical Producer | Dashboard Use |
 | --- | --- | --- | --- |
@@ -502,8 +490,7 @@ and are useful for troubleshooting, audit, and operational displays.
 
 ### Related Non-Metadata Columns
 
-Some values that look similar to metadata are actually first-class columns and should be read from
-their tables directly instead of from `document_to_metadata`.
+Some values that look similar to metadata are actually first-class columns and should be read from their tables directly instead of from `document_to_metadata`.
 
 | Location | Meaning | Notes |
 | --- | --- | --- |
@@ -548,12 +535,10 @@ Primary document records.
 | `hash_content` | `VARCHAR(255)` | Content/text-level hash. Indexed. |
 | `id_legacy` | `VARCHAR(255)` | Unique source-system document identifier. |
 | `name` | `VARCHAR(255)` | Document name. |
-| `created_at` | `TIMESTAMP` | Row creation time. |
-| `updated_at` | `TIMESTAMP` | Row update time. |
+| `created_at` | `DATETIME` | Row creation time. |
+| `updated_at` | `DATETIME` | Row update time. |
 
-Common joins: `document_quality`, `state_history`, `document_access`, `document_to_metadata`,
-`document_to_tags`, `document_to_authors`, `document_to_publishers`, `document_to_batches`,
-`document_versions`.
+Common joins: `document_quality`, `state_history`, `document_access`, `document_to_metadata`, `document_to_tags`, `document_to_authors`, `document_to_publishers`, `document_to_batches`, `document_versions`.
 
 ### document_access
 
@@ -566,7 +551,7 @@ Access-level assignments for documents.
 | `access_level_id` | `VARCHAR(36)` | FK to `access_levels.id`. |
 | `granted_by_name` | `VARCHAR(255)` | Grantor/display name. |
 | `granted_by_email` | `VARCHAR(255)` | Grantor email. |
-| `granted_at` | `TIMESTAMP` | Assignment timestamp. |
+| `granted_at` | `DATETIME` | Assignment datetime. |
 
 Constraint notes: unique on `(document_id, access_level_id)`.
 
@@ -579,8 +564,8 @@ Lookup table for access vocabulary.
 | `id` | `VARCHAR(36)` | Primary key. |
 | `level_name` | `VARCHAR(255)` | Unique access level name. |
 | `description` | `TEXT` | Human-readable description. |
-| `created_at` | `TIMESTAMP` | Row creation time. |
-| `updated_at` | `TIMESTAMP` | Row update time. |
+| `created_at` | `DATETIME` | Row creation time. |
+| `updated_at` | `DATETIME` | Row update time. |
 
 Typical values include `public`, `restricted`, `internal`, `admin`, and `confidential`.
 
@@ -594,16 +579,17 @@ One quality/validation record per document.
 | `document_id` | `VARCHAR(36)` | FK to `documents.id`. Unique. |
 | `comment` | `TEXT` | Primary quality note. |
 | `comment_additional` | `TEXT` | Additional quality note. |
-| `validation_status` | `VARCHAR(255)` | Validation outcome/status. |
+| `validation_status` | `ENUM` | Normalized validation outcome. Allowed values: `VALIDATED`, `APPROVED`, `FORMAT_ERRORS`, `METADATA_ISSUES`, `NEEDS_REVIEW`, `GENERAL_ERRORS`, `REJECTED`. |
 | `validation_timestamp` | `BIGINT` | Unix timestamp. |
 | `validator_name` | `VARCHAR(255)` | Validator display name. |
 | `validator_email` | `VARCHAR(255)` | Validator email. |
-| `reprocess` | `BOOLEAN` | Whether the document should be reprocessed ot not. |
+| `reprocess` | `BOOLEAN` | Whether the document should be reprocessed or not. |
 | `current_status` | `VARCHAR(36)` | FK to `state_history.id`. |
-| `created_at` | `TIMESTAMP` | Row creation time. |
-| `updated_at` | `TIMESTAMP` | Row update time. |
+| `created_at` | `DATETIME` | Row creation time. |
+| `updated_at` | `DATETIME` | Row update time. |
 
 Query note: this is a one-to-one extension of `documents`.
+The normalized validation-status values are enforced by the database enum and are also used by the data-combiner and dashboard.
 
 ### state_history
 
@@ -615,11 +601,10 @@ Document state transitions over time.
 | `document_id` | `VARCHAR(36)` | FK to `documents.id`. |
 | `previous_state` | `VARCHAR(255)` | Prior state label. |
 | `new_state` | `VARCHAR(255)` | New state label. |
-| `changed_at` | `TIMESTAMP` | Transition time. |
+| `changed_at` | `DATETIME` | Transition time. |
 
-Query note: use this table for status history; `document_quality.current_status` points to one row
-here. The table also enforces a composite unique constraint on
-`(document_id, previous_state, new_state, changed_at)`.
+Query note: use this table for status history; `document_quality.current_status` points to one row here.
+The table also enforces a composite unique constraint on `(document_id, previous_state, new_state, changed_at)`.
 
 ### authors
 
@@ -631,8 +616,8 @@ Author lookup table.
 | `name` | `TEXT` | Author name. |
 | `name_hash` | `VARCHAR(64)` | Generated stored SHA-256 hash of normalized `name`. Unique. |
 | `notes` | `TEXT` | Internal notes. |
-| `created_at` | `TIMESTAMP` | Row creation time. |
-| `updated_at` | `TIMESTAMP` | Row update time. |
+| `created_at` | `DATETIME` | Row creation time. |
+| `updated_at` | `DATETIME` | Row update time. |
 
 ### document_to_authors
 
@@ -645,8 +630,8 @@ Document-to-author association table.
 | `author_id` | `VARCHAR(36)` | FK to `authors.id`. |
 | `contributor_type` | `VARCHAR(255)` | Role such as author, editor, translator. |
 | `notes` | `TEXT` | Attribution notes. |
-| `created_at` | `TIMESTAMP` | Row creation time. |
-| `updated_at` | `TIMESTAMP` | Row update time. |
+| `created_at` | `DATETIME` | Row creation time. |
+| `updated_at` | `DATETIME` | Row update time. |
 
 Constraint notes: unique on `(document_id, author_id)`.
 
@@ -660,8 +645,8 @@ Publisher lookup table.
 | `name` | `TEXT` | Publisher name. |
 | `name_hash` | `VARCHAR(64)` | Generated stored SHA-256 hash of normalized `name`. Unique. |
 | `notes` | `TEXT` | Internal notes. |
-| `created_at` | `TIMESTAMP` | Row creation time. |
-| `updated_at` | `TIMESTAMP` | Row update time. |
+| `created_at` | `DATETIME` | Row creation time. |
+| `updated_at` | `DATETIME` | Row update time. |
 
 ### document_to_publishers
 
@@ -673,8 +658,8 @@ Document-to-publisher association table.
 | `document_id` | `VARCHAR(36)` | FK to `documents.id`. |
 | `publisher_id` | `VARCHAR(36)` | FK to `publishers.id`. |
 | `notes` | `TEXT` | Attribution notes. |
-| `created_at` | `TIMESTAMP` | Row creation time. |
-| `updated_at` | `TIMESTAMP` | Row update time. |
+| `created_at` | `DATETIME` | Row creation time. |
+| `updated_at` | `DATETIME` | Row update time. |
 
 Constraint notes: unique on `(document_id, publisher_id)`.
 
@@ -688,8 +673,8 @@ Tag lookup table.
 | `name` | `TEXT` | Tag name. |
 | `name_hash` | `VARCHAR(64)` | Generated stored SHA-256 hash of normalized `name`. Unique. |
 | `notes` | `TEXT` | Scope or descriptive notes. |
-| `created_at` | `TIMESTAMP` | Row creation time. |
-| `updated_at` | `TIMESTAMP` | Row update time. |
+| `created_at` | `DATETIME` | Row creation time. |
+| `updated_at` | `DATETIME` | Row update time. |
 
 Query note: indexed on `name(191)` for name lookups.
 
@@ -702,8 +687,8 @@ Collection records keyed to a single tag.
 | `id` | `VARCHAR(36)` | Primary key. UUID string. |
 | `tag_id` | `VARCHAR(36)` | FK to `tags.id`. Unique. |
 | `notes` | `TEXT` | Optional collection note. |
-| `created_at` | `TIMESTAMP` | Row creation time. |
-| `updated_at` | `TIMESTAMP` | Row update time. |
+| `created_at` | `DATETIME` | Row creation time. |
+| `updated_at` | `DATETIME` | Row update time. |
 
 Constraint notes: unique on `tag_id`; deleting the referenced tag cascades to this row.
 
@@ -717,7 +702,7 @@ Document-to-tag association table.
 | `document_id` | `VARCHAR(36)` | FK to `documents.id`. |
 | `tag_id` | `VARCHAR(36)` | FK to `tags.id`. |
 | `notes` | `TEXT` | Assignment note. |
-| `created_at` | `TIMESTAMP` | Row creation time. |
+| `created_at` | `DATETIME` | Row creation time. |
 
 Constraint notes: unique on `(document_id, tag_id)`.
 
@@ -731,8 +716,8 @@ Lookup table for document metadata field names.
 | `name` | `TEXT` | Metadata field name. |
 | `name_hash` | `VARCHAR(64)` | Generated stored SHA-256 hash of normalized `name`. Unique. |
 | `notes` | `TEXT` | Field notes/description. |
-| `created_at` | `TIMESTAMP` | Row creation time. |
-| `updated_at` | `TIMESTAMP` | Row update time. |
+| `created_at` | `DATETIME` | Row creation time. |
+| `updated_at` | `DATETIME` | Row update time. |
 
 Query note: indexed on `name(191)` for direct metadata-name lookup.
 
@@ -747,13 +732,12 @@ Document metadata values.
 | `metadata_id` | `VARCHAR(36)` | FK to `metadata.id`. |
 | `value` | `JSON` | Typed metadata payload, stored as `{"value": <typed_value>}`. |
 | `value_type` | `VARCHAR(50)` | Logical type of the inner typed value in `value`. |
-| `created_at` | `TIMESTAMP` | Row creation time. |
-| `updated_at` | `TIMESTAMP` | Row update time. |
+| `created_at` | `DATETIME` | Row creation time. |
+| `updated_at` | `DATETIME` | Row update time. |
 
 Constraint notes: unique on `(document_id, metadata_id)`.
 
-Query note: this table is the main source for file path, URL, MIME type, rights, descriptive
-metadata, and many enrichment outputs that are not first-class columns on `documents`.
+Query note: this table is the main source for file path, URL, MIME type, rights, descriptive metadata, and many enrichment outputs that are not first-class columns on `documents`.
 
 ### batch_metadata
 
@@ -765,8 +749,8 @@ Lookup table for batch metadata field names.
 | `name` | `TEXT` | Batch metadata field name. |
 | `name_hash` | `VARCHAR(64)` | Generated stored SHA-256 hash of normalized `name`. Unique. |
 | `notes` | `TEXT` | Field notes/description. |
-| `created_at` | `TIMESTAMP` | Row creation time. |
-| `updated_at` | `TIMESTAMP` | Row update time. |
+| `created_at` | `DATETIME` | Row creation time. |
+| `updated_at` | `DATETIME` | Row update time. |
 
 ### batches
 
@@ -779,18 +763,17 @@ Core batch/process-run records.
 | `name` | `TEXT` | Optional batch label. |
 | `name_hash` | `VARCHAR(64)` | Generated stored SHA-256 hash of normalized `name`. Unique when present. |
 | `processing_details` | `JSON` | Core processing details on the batch row. Non-null with default `{}`. Rollback stores document-link cost at `rollback.document_cost_total` and its capture time at `rollback.document_cost_captured_at`. |
-| `created_at` | `TIMESTAMP` | Row creation time. |
-| `updated_at` | `TIMESTAMP` | Row update time. |
-| `started_at` | `TIMESTAMP` | Batch start time. |
-| `completed_at` | `TIMESTAMP` | Batch completion time. |
-| `last_processed` | `TIMESTAMP` | Last processing timestamp. |
+| `created_at` | `DATETIME` | Row creation time. |
+| `updated_at` | `DATETIME` | Row update time. |
+| `started_at` | `DATETIME` | Batch start time. |
+| `completed_at` | `DATETIME` | Batch completion time. |
+| `last_processed` | `DATETIME` | Last processing datetime. |
 | `started_by` | `VARCHAR(255)` | Initiator name/process label. |
 | `lifecycle_status` | `VARCHAR(32)` | Durable workflow state, including `running`, `reverting`, `reverted`, and `completed`. |
 | `publication_status` | `VARCHAR(32)` | Publication boundary state: `not_started`, `publication_locked`, `published`, or `unknown`. |
 | `publication_target` | `VARCHAR(64)` | Provider identifier for the publication endpoint; currently `fedora`. |
 
-Query note: batch-specific metrics and registry-derived attributes often live in
-`batch_to_batches_metadata`, not as top-level columns here.
+Query note: batch-specific metrics and registry-derived attributes often live in `batch_to_batches_metadata`, not as top-level columns here.
 
 ### pipeline_queue_items
 
@@ -804,24 +787,24 @@ Durable queue entries for the combined pipeline server.
 | `payload` | `JSON` | Original accepted trigger payload stored for worker execution and replay. |
 | `status` | `VARCHAR(32)` | Queue lifecycle status such as `queued`, `in_progress`, `retry_pending`, `completed`, or `failed`. Indexed. |
 | `attempt_count` | `INT` | Number of worker attempts made for this queue item. |
-| `queued_at` | `TIMESTAMP` | Time the queue item was created. |
-| `claimed_at` | `TIMESTAMP` | Time the worker claimed the queue item for execution. |
-| `completed_at` | `TIMESTAMP` | Time the queue item reached a terminal state. |
-| `cancelled_at` | `TIMESTAMP` | Time a queued item was cancelled during rollback. |
+| `queued_at` | `DATETIME` | Time the queue item was created. |
+| `claimed_at` | `DATETIME` | Time the worker claimed the queue item for execution. |
+| `completed_at` | `DATETIME` | Time the queue item reached a terminal state. |
+| `cancelled_at` | `DATETIME` | Time a queued item was cancelled during rollback. |
 | `cancel_reason` | `TEXT` | Operator or coordinator reason for cancellation. |
 | `error_type` | `VARCHAR(255)` | Exception type or failure category recorded on worker failure. |
 | `error_message` | `TEXT` | Failure detail recorded on worker failure. |
 | `callback_delivery` | `JSON` | Callback delivery result recorded after completion, including HTTP status and notification time when available. |
 
-Query note: this table intentionally has no foreign keys. It is a durable orchestration/control
-table for the combined pipeline worker rather than a lineage or metadata table.
+Query note: this table intentionally has no foreign keys.
+It is a durable orchestration/control table for the combined pipeline worker rather than a lineage or metadata table.
 
 ### batch_rollbacks
 
-Durable rollback operation records. The batch row, processing details, costs, rollback record,
-and mutation ledger remain historical; batch-created operational rows are purged after
-compensation succeeds. The retained batch is renamed with an
-`<original-name>-reverted-<reversion-number>` suffix.
+Durable rollback operation records.
+The batch row, processing details, costs, rollback record, and mutation ledger remain historical; batch-created operational rows are purged after
+compensation succeeds.
+The retained batch is renamed with an `<original-name>-reverted-<reversion-number>` suffix.
 
 | Column | Type | Notes |
 | --- | --- | --- |
@@ -833,15 +816,14 @@ compensation succeeds. The retained batch is renamed with an
 | `reason` | `TEXT` | Optional operator explanation. |
 | `idempotency_key` | `VARCHAR(255)` | Optional unique request key. |
 | `status` | `VARCHAR(32)` | Rollback operation state, including `requested`, `reverting`, `reverted`, and `failed`. |
-| `requested_at` / `started_at` / `completed_at` / `resolved_at` | `TIMESTAMP` | Rollback lifecycle timestamps. |
+| `requested_at` / `started_at` / `completed_at` / `resolved_at` | `DATETIME` | Rollback lifecycle timestamps. |
 | `restored_count` / `deleted_count` / `cancelled_count` / `conflict_count` / `failed_count` | `INT` | Counts for restored rows, purged rows/artifacts, cancelled queue items, conflicts, and failures. |
 | `last_failure` | `TEXT` | Latest failure or operator-resolution detail. |
 
 ### batch_mutations
 
-Mutation journal for reversible database changes and batch-owned Google Drive artifacts. Created
-documents and related operational rows are purged during rollback; pre-existing rows are restored
-from before-images only when their after-value fingerprints still match.
+Mutation journal for reversible database changes and batch-owned Google Drive artifacts.
+Created documents and related operational rows are purged during rollback; pre-existing rows are restored from before-images only when their after-value fingerprints still match.
 
 | Column | Type | Notes |
 | --- | --- | --- |
@@ -858,8 +840,8 @@ from before-images only when their after-value fingerprints still match.
 
 ### batch_external_operations
 
-Durable intents for external provider operations. An operation may remain unresolved after a
-process crash; recovery reconciles it by idempotency key before rollback is allowed to complete.
+Durable intents for external provider operations.
+An operation may remain unresolved after a process crash; recovery reconciles it by idempotency key before rollback is allowed to complete.
 
 | Column | Type | Notes |
 | --- | --- | --- |
@@ -872,7 +854,7 @@ process crash; recovery reconciles it by idempotency key before rollback is allo
 | `external_ids` | `JSON` | Provider IDs discovered or created by the operation. |
 | `status` | `VARCHAR(32)` | `planned`, `executing`, `applied`, `uncertain`, `failed`, or `compensated`. |
 | `attempts` / timestamps / `last_error` | — | Recovery and failure tracking. |
-| `next_recovery_at` | `TIMESTAMP` | Earliest time for the next provider reconciliation attempt; used for bounded backoff. |
+| `next_recovery_at` | `DATETIME` | Earliest time for the next provider reconciliation attempt; used for bounded backoff. |
 
 ### pipeline_worker_leases
 
@@ -883,7 +865,7 @@ Singleton durable lease that enforces one active batch across worker processes a
 | `id` | `VARCHAR(36)` | Singleton key, initialized as `pipeline-worker`. |
 | `active_batch_id` | `VARCHAR(36)` | Current batch holding the worker slot. |
 | `lease_token` | `VARCHAR(255)` | Token used for ownership and recovery checks. |
-| `acquired_at` / `heartbeat_at` / `released_at` | `TIMESTAMP` | Lease lifecycle and recovery timestamps. |
+| `acquired_at` / `heartbeat_at` / `released_at` | `DATETIME` | Lease lifecycle and recovery timestamps. |
 
 ### batch_to_batches_metadata
 
@@ -896,8 +878,8 @@ Batch metadata values.
 | `batch_metadata_id` | `VARCHAR(36)` | FK to `batch_metadata.id`. |
 | `value` | `JSON` | Typed metadata payload, stored as `{"value": <typed_value>}`. |
 | `value_type` | `VARCHAR(50)` | Logical type of the inner typed value in `value`. |
-| `created_at` | `TIMESTAMP` | Row creation time. |
-| `updated_at` | `TIMESTAMP` | Row update time. |
+| `created_at` | `DATETIME` | Row creation time. |
+| `updated_at` | `DATETIME` | Row update time. |
 
 Constraint notes: unique on `(batch_id, batch_metadata_id)`.
 
@@ -910,7 +892,7 @@ Document-to-batch association table with per-document batch metrics.
 | `id` | `VARCHAR(36)` | Primary key. |
 | `document_id` | `VARCHAR(36)` | FK to `documents.id`. |
 | `batch_id` | `VARCHAR(36)` | FK to `batches.id`. |
-| `added_at` | `TIMESTAMP` | Association creation time. |
+| `added_at` | `DATETIME` | Association creation time. |
 | `batch_origin` | `TEXT` | Source-side batch/origin value for this document. |
 | `cost` | `DECIMAL(12,2)` | Per-document cost within the batch. |
 | `processing_time_seconds` | `INT` | Per-document processing time. |
@@ -929,8 +911,8 @@ Version families, one row per canonical group.
 | `id` | `VARCHAR(36)` | Primary key. |
 | `canonical_document_id` | `VARCHAR(36)` | FK to `documents.id`. Unique. |
 | `notes` | `TEXT` | Group-level note. |
-| `created_at` | `TIMESTAMP` | Row creation time. |
-| `updated_at` | `TIMESTAMP` | Row update time. |
+| `created_at` | `DATETIME` | Row creation time. |
+| `updated_at` | `DATETIME` | Row update time. |
 
 Query note: this table defines the family; the member documents live in `document_versions`.
 
@@ -947,8 +929,8 @@ Document membership in a version family.
 | `changes_summary` | `TEXT` | Summary of changes relative to canonical. |
 | `similarity_score` | `FLOAT` | Similarity to the canonical document for content-dedup families. Typically `NULL` for the canonical member row. |
 | `analyzed_at` | `BIGINT` | Unix timestamp. |
-| `created_at` | `TIMESTAMP` | Row creation time. |
-| `updated_at` | `TIMESTAMP` | Row update time. |
+| `created_at` | `DATETIME` | Row creation time. |
+| `updated_at` | `DATETIME` | Row update time. |
 
 Constraint notes: unique on `(document_id, version_group_id)`.
 
@@ -965,7 +947,7 @@ Generic audit log for edited entities.
 | `new_value` | `JSON` | New value snapshot. |
 | `editor_email` | `VARCHAR(255)` | Editor identifier. |
 | `edit_summary` | `VARCHAR(255)` | Summary of the edit. |
-| `edited_at` | `TIMESTAMP` | Edit timestamp. |
+| `edited_at` | `DATETIME` | Edit datetime. |
 
 Query note: because this table is generic, analysts typically filter by `entity_table` first.
 
@@ -987,15 +969,15 @@ Dashboard-local index of one configured Google Drive root for the `Exclusion Rev
 | `depth` | `INT` | Depth from the configured root. |
 | `explicit_review_decision` | `VARCHAR(16)` | Direct reviewer decision on this exact item, if any. |
 | `explicit_reviewed_by_email` | `VARCHAR(255)` | Reviewer email for the direct decision. |
-| `explicit_reviewed_at` | `TIMESTAMP` | Timestamp for the direct decision. |
+| `explicit_reviewed_at` | `DATETIME` | Timestamp for the direct decision. |
 | `effective_ancestor_drive_id` | `VARCHAR(255)` | Nearest marked ancestor folder currently governing this row, if any. |
 | `effective_ancestor_decision` | `VARCHAR(16)` | Cached inherited include or exclude state from that ancestor. |
-| `effective_ancestor_reviewed_at` | `TIMESTAMP` | Timestamp of the governing ancestor decision. |
+| `effective_ancestor_reviewed_at` | `DATETIME` | Timestamp of the governing ancestor decision. |
 | `subtree_index_status` | `VARCHAR(16)` | Branch indexing state such as `pending`, `syncing`, `complete`, or `error`. |
-| `discovered_at` | `TIMESTAMP` | When the item first entered the local index. |
-| `last_synced_at` | `TIMESTAMP` | Last successful Drive reconciliation timestamp. |
+| `discovered_at` | `DATETIME` | When the item first entered the local index. |
+| `last_synced_at` | `DATETIME` | Last successful Drive reconciliation datetime. |
 | `last_sync_error` | `TEXT` | Last recorded branch sync error, if any. |
-| `created_at` | `TIMESTAMP` | Row creation time. |
-| `updated_at` | `TIMESTAMP` | Row update time. |
+| `created_at` | `DATETIME` | Row creation time. |
+| `updated_at` | `DATETIME` | Row update time. |
 
 Constraint notes: unique on `(root_drive_id, drive_id)`.

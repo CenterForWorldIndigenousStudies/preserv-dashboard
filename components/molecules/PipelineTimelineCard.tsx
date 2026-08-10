@@ -112,17 +112,17 @@ export function PipelineTimelineCard({ batch }: PipelineTimelineCardProps): Reac
     >
       <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
         <Box>
-          <Typography component="h3" variant="h6" sx={{ fontWeight: 700 }}>
+          <Typography component={'h3'} variant={'h6'} sx={{ fontWeight: 700 }}>
             Pipeline Timeline
           </Typography>
           {batch.createdAt && (
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-              Created {new Date(batch.createdAt).toLocaleString()}
+            <Typography variant={'caption'} sx={{ color: 'text.secondary' }}>
+              {`Created ${new Date(batch.createdAt).toLocaleString()}`}
             </Typography>
           )}
         </Box>
         <Typography
-          variant="caption"
+          variant={'caption'}
           sx={{
             px: 1.5,
             py: 0.5,
@@ -132,7 +132,7 @@ export function PipelineTimelineCard({ batch }: PipelineTimelineCardProps): Reac
             fontWeight: 500,
           }}
         >
-          {timelineSteps.length} steps
+          {`{timelineSteps.length} steps`}
         </Typography>
       </Box>
 

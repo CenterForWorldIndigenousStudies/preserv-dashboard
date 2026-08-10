@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { Box } from '@mui/material'
 import { expect, screen } from 'storybook/test'
+import { PRESERVATION_PIPELINE_TITLE } from '@constants/branding'
 import { COMPONENT_LIBRARY_PATH } from '@constants/paths'
 import Sidebar from '@organisms/Sidebar'
 
@@ -33,6 +34,9 @@ export const Desktop: Story = {
     variant: 'desktop',
     isOpen: true,
     onClose: () => {},
+  },
+  play: async () => {
+    await expect(screen.getByText(PRESERVATION_PIPELINE_TITLE)).toBeVisible()
   },
 }
 
@@ -74,8 +78,8 @@ export const MobileClosed: Story = {
             p: 3,
           }}
         >
-          <Box component="p" sx={{ color: 'text.secondary', m: 0 }}>
-            Mobile canvas with the navigation drawer closed.
+          <Box component={'p'} sx={{ color: 'text.secondary', m: 0 }}>
+            {'Mobile canvas with the navigation drawer closed.'}
           </Box>
           <StoryComponent />
         </Box>

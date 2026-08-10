@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { Box } from '@mui/material'
 import { expect, fn, userEvent, within } from 'storybook/test'
 
+import { SIDEBAR_CONTROL_LABELS } from '@constants/sidebar'
 import { SidebarVisibilityControl } from '@molecules/SidebarVisibilityControl'
 
 const meta = {
@@ -26,7 +27,7 @@ export const MobileOpen: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement)
 
-    await userEvent.click(canvas.getByRole('button', { name: /open navigation menu/i }))
+    await userEvent.click(canvas.getByRole('button', { name: SIDEBAR_CONTROL_LABELS.openNavigation }))
 
     await expect(args.onClick).toHaveBeenCalled()
   },

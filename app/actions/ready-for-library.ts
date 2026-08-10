@@ -4,7 +4,11 @@ import { revalidatePath } from 'next/cache'
 
 import { READY_FOR_LIBRARY_PATH } from '@constants/paths'
 import { getDashboardSession } from '@root/auth'
-import { getReadyForLibraryBatchIds, getReadyForLibraryDocuments, type DocumentsQueryParams } from '@lib/queries'
+import {
+  getReadyForLibraryBatchIds,
+  getReadyForLibraryDocuments,
+  type DocumentsQueryParams,
+} from '@lib/queries/queries'
 import { getProcessBatchStatus } from '@lib/processBatches'
 import { isPipelineBatchTerminal } from '@lib/pipelineExecution'
 import { triggerFedoraIngester } from '@lib/pipelineTriggers'

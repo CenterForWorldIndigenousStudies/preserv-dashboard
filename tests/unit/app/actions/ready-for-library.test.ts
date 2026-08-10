@@ -28,7 +28,7 @@ vi.mock('@root/auth', () => ({
   getDashboardSession: mockGetDashboardSession,
 }))
 
-vi.mock('@lib/queries', () => ({
+vi.mock('@lib/queries/queries', () => ({
   getReadyForLibraryBatchIds: mockGetReadyForLibraryBatchIds,
   getReadyForLibraryDocuments: mockGetReadyForLibraryDocuments,
 }))

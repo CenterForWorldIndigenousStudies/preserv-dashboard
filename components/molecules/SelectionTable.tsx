@@ -371,7 +371,7 @@ export function SelectionTable(props: SelectionTableProps): ReactElement {
       }}
     >
       <Box sx={{ borderBottom: 1, borderColor: 'divider', p: 2 }}>
-        <Typography component="h3" variant="h6" color="text.primary">
+        <Typography component={'h3'} variant={'h6'} color={'text.primary'}>
           {props.title}
         </Typography>
       </Box>

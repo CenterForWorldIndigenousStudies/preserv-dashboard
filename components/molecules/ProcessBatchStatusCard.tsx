@@ -133,8 +133,8 @@ function formatDateTime(value: string | null): string {
 
 function DetailRow({ label, value }: { label: string; value: string }): ReactElement {
   return (
-    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-      <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>
+    <Typography variant={'body2'} sx={{ color: 'text.secondary' }}>
+      <Box component={'span'} sx={{ color: 'text.primary', fontWeight: 600 }}>
         {label}:
       </Box>{' '}
       {value}
@@ -170,10 +170,10 @@ function StageCard({
           }}
         >
           <Box>
-            <Typography variant="overline" sx={{ color: 'text.secondary' }}>
+            <Typography variant={'overline'} sx={{ color: 'text.secondary' }}>
               {label}
             </Typography>
-            <Typography component="h3" variant="h6">
+            <Typography component={'h3'} variant={'h6'}>
               {label}
             </Typography>
           </Box>
@@ -208,7 +208,7 @@ function MetadataExtractorStageCard({
 
   return (
     <StageCard
-      label="Metadata Extractor"
+      label={'Metadata Extractor'}
       stage={stage}
       batchId={batch.batchId}
       showOpenAIBatchActions={showOpenAIBatchActions}
@@ -233,16 +233,16 @@ export function ProcessBatchStatusCard({ batch, onRollbackRequested }: ProcessBa
           startedBy={batch.startedBy}
         />
 
-        <DetailRow label="Created" value={formatDateTime(batch.createdAt)} />
+        <DetailRow label={'Created'} value={formatDateTime(batch.createdAt)} />
         <DetailRow
-          label="Requested Stages"
+          label={'Requested Stages'}
           value={batch.pipelineRequestedStages.length > 0 ? batch.pipelineRequestedStages.join(', ') : 'Ingest only'}
         />
-        <DetailRow label="Lifecycle" value={batch.lifecycleStatus ?? 'unknown'} />
-        <DetailRow label="Publication" value={batch.publicationStatus ?? 'unknown'} />
+        <DetailRow label={'Lifecycle'} value={batch.lifecycleStatus ?? 'unknown'} />
+        <DetailRow label={'Publication'} value={batch.publicationStatus ?? 'unknown'} />
         {batch.rollbackStatus ? (
           <DetailRow
-            label="Rollback"
+            label={'Rollback'}
             value={[
               batch.rollbackStatus,
               batch.rollbackCounts
@@ -253,7 +253,7 @@ export function ProcessBatchStatusCard({ batch, onRollbackRequested }: ProcessBa
               .join(' ')}
           />
         ) : null}
-        {batch.rollbackFailure ? <DetailRow label="Rollback failure" value={batch.rollbackFailure} /> : null}
+        {batch.rollbackFailure ? <DetailRow label={'Rollback failure'} value={batch.rollbackFailure} /> : null}
         <BatchRollbackControl
           batchId={batch.batchId}
           lifecycleStatus={batch.lifecycleStatus}
@@ -265,15 +265,15 @@ export function ProcessBatchStatusCard({ batch, onRollbackRequested }: ProcessBa
 
         <PipelineTimelineCard batch={batch} />
 
-        <StageCard label="Ingest" stage={batch.ingester} />
-        <StageCard label="Document Splitter" stage={batch.documentSplitter} />
-        <StageCard label="Page Rotator" stage={batch.pageRotator} />
-        <StageCard label="OCR Processor" stage={ocrProcessorStage} />
-        <StageCard label="Content Dedup" stage={batch.contentDedup} />
+        <StageCard label={'Ingest'} stage={batch.ingester} />
+        <StageCard label={'Document Splitter'} stage={batch.documentSplitter} />
+        <StageCard label={'Page Rotator'} stage={batch.pageRotator} />
+        <StageCard label={'OCR Processor'} stage={ocrProcessorStage} />
+        <StageCard label={'Content Dedup'} stage={batch.contentDedup} />
         <MetadataExtractorStageCard batch={batch} stage={metadataExtractorStage} />
-        <StageCard label="Metadata Validator" stage={metadataValidatorStage} />
-        <StageCard label="Rights Determinator" stage={rightsDeterminatorStage} />
-        <StageCard label="Fedora Ingester" stage={batch.fedoraIngester ?? null} />
+        <StageCard label={'Metadata Validator'} stage={metadataValidatorStage} />
+        <StageCard label={'Rights Determinator'} stage={rightsDeterminatorStage} />
+        <StageCard label={'Fedora Ingester'} stage={batch.fedoraIngester ?? null} />
       </Stack>
     </Paper>
   )

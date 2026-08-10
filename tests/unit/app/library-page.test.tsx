@@ -8,7 +8,7 @@ const { mockGetLibraryDocuments, mockGetDocumentFilterOptions, mockLibraryTable,
   mocks: { libraryTableProps: undefined as Record<string, unknown> | undefined },
 }))
 
-vi.mock('@lib/queries', () => ({
+vi.mock('@lib/queries/queries', () => ({
   getLibraryDocuments: mockGetLibraryDocuments,
   getDocumentFilterOptions: mockGetDocumentFilterOptions,
 }))
@@ -20,7 +20,8 @@ vi.mock('@organisms/LibraryTable', () => ({
   },
 }))
 
-import LibraryPage from '@root/app/library/page'
+import LibraryPage, { PAGE_DESCRIPTION } from '@root/app/library/page'
+import { PAGE_LABELS } from '@constants/pageLabels'
 
 describe('LibraryPage', () => {
   afterEach(() => {
@@ -47,9 +48,8 @@ describe('LibraryPage', () => {
       }),
     )
 
-    expect(markup).toContain('Library')
-    expect(markup).toContain('Documents that have successfully reached the library.')
-    expect(markup).toContain('The current document state is ingested_fedora.')
+    expect(markup).toContain(PAGE_LABELS.library)
+    expect(markup).toContain(PAGE_DESCRIPTION)
     expect(mockGetLibraryDocuments).toHaveBeenCalledWith({
       page: 2,
       pageSize: 25,

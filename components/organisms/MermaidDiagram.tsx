@@ -71,17 +71,17 @@ export function MermaidDiagram({ source, className = '' }: MermaidDiagramProps):
         }}
       >
         <Box sx={{ position: 'absolute', right: 1, top: 1, zIndex: 1 }}>
-          <Button type="button" onClick={() => setIsModalOpen(true)} variant="secondary" size="sm">
+          <Button type={'button'} onClick={() => setIsModalOpen(true)} variant={'secondary'} size={'sm'}>
             Enlarge
           </Button>
         </Box>
         {error ? (
-          <Typography color="error.main" variant="body2" sx={{ p: 2 }}>
-            Diagram error: {error}
+          <Typography color={'error.main'} variant={'body2'} sx={{ p: 2 }}>
+            [`Diagram error: ${error}`]
           </Typography>
         ) : svg ? (
           <Box
-            component="div"
+            component={'div'}
             dangerouslySetInnerHTML={{ __html: svg }}
             sx={{
               width: '100%',
@@ -94,8 +94,8 @@ export function MermaidDiagram({ source, className = '' }: MermaidDiagramProps):
           />
         ) : (
           <Stack sx={{ width: '100%', alignItems: 'center', justifyContent: 'center', p: 4 }}>
-            <Typography variant="body2" color="text.secondary">
-              Rendering diagram...
+            <Typography variant={'body2'} color={'text.secondary'}>
+              {'Rendering diagram...'}
             </Typography>
           </Stack>
         )}
@@ -106,7 +106,7 @@ export function MermaidDiagram({ source, className = '' }: MermaidDiagramProps):
         open={isModalOpen}
         onClose={closeModal}
         fullScreen
-        aria-labelledby="mermaid-diagram-dialog-title"
+        aria-labelledby={'mermaid-diagram-dialog-title'}
         sx={(theme: Theme) => ({
           '& .MuiDialog-paper': {
             backgroundColor: theme.palette.background.paper,
@@ -114,18 +114,18 @@ export function MermaidDiagram({ source, className = '' }: MermaidDiagramProps):
         })}
       >
         <DialogTitle
-          id="mermaid-diagram-dialog-title"
+          id={'mermaid-diagram-dialog-title'}
           sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pr: 1.5 }}
         >
-          Diagram preview
-          <IconButton onClick={closeModal} aria-label="Close diagram preview">
+          {'Diagram preview'}
+          <IconButton onClick={closeModal} aria-label={'Close diagram preview'}>
             <IconX size={20} />
           </IconButton>
         </DialogTitle>
         <DialogContent dividers sx={{ overflow: 'auto', p: 2 }}>
           {svg ? (
             <Box
-              component="div"
+              component={'div'}
               dangerouslySetInnerHTML={{ __html: svg }}
               sx={{
                 minWidth: '200vw',
@@ -138,8 +138,8 @@ export function MermaidDiagram({ source, className = '' }: MermaidDiagramProps):
             />
           ) : (
             <Stack sx={{ alignItems: 'center', justifyContent: 'center', p: 8 }}>
-              <Typography variant="body2" color="text.secondary">
-                Rendering diagram...
+              <Typography variant={'body2'} color={'text.secondary'}>
+                {'Rendering diagram...'}
               </Typography>
             </Stack>
           )}

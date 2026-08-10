@@ -15,10 +15,10 @@ export function IconX({ size = 20, className = '' }: IconProps): ReactNode {
       width={size}
       height={size}
       viewBox={viewBox}
-      fill="none"
-      stroke="currentColor"
+      fill={'none'}
+      stroke={'currentColor'}
       strokeWidth={strokeWidth}
-      strokeLinecap="round"
+      strokeLinecap={'round'}
       className={className}
       style={{ '--icon-scale': scale } as CSSProperties}
     >

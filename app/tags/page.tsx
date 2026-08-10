@@ -18,7 +18,8 @@ const TAG_WORKFLOWS: WorkflowAction[] = [
   {
     href: DOCUMENTS_PATH,
     title: 'Documents',
-    description: 'Browse documents, then open Document Detail to add, remove, or create tags in the current live workflow.',
+    description:
+      'Browse documents, then open Document Detail to add, remove, or create tags in the current live workflow.',
   },
   {
     href: REVIEW_QUEUE_PATH,
@@ -32,17 +33,19 @@ export default function TagsPage(): ReactElement {
     <Stack spacing={8}>
       <PageHeader
         eyebrow={PAGE_LABELS.tags}
-        title={PAGE_LABELS.tags}
-        description="Tags help organize, classify, and filter preservation documents across the dashboard. Current tag management happens in Document Detail, while this workspace provides a starting point for tag-focused navigation."
+        title={'Document tags across the preservation system.'}
+        description={
+          'Tags help organize, classify, and filter preservation documents across the dashboard. Current tag management happens in Document Detail, while this workspace provides a starting point for tag-focused navigation.'
+        }
       />
 
-      <Card component="section">
+      <Card component={'section'}>
         <CardContent>
-          <Typography component="h2" variant="h5" sx={{ color: 'text.primary' }}>
-            What you can do today
+          <Typography component={'h2'} variant={'h5'} sx={{ color: 'text.primary' }}>
+            {'What you can do today'}
           </Typography>
           <Box
-            component="ul"
+            component={'ul'}
             sx={{
               color: 'text.secondary',
               mb: 0,
@@ -53,21 +56,22 @@ export default function TagsPage(): ReactElement {
               },
             }}
           >
-            <li>Add and remove tags from a document in Document Detail.</li>
-            <li>Create a new tag while assigning it to a document.</li>
-            <li>Search and filter documents by tag from Documents and Review Queue advanced search.</li>
+            <li>{'Add and remove tags from a document in Document Detail.'}</li>
+            <li>{'Create a new tag while assigning it to a document.'}</li>
+            <li>{'Search and filter documents by tag from Documents and Review Queue advanced search.'}</li>
           </Box>
         </CardContent>
       </Card>
 
-      <Stack component="section" spacing={2}>
+      <Stack component={'section'} spacing={2}>
         <Box>
-          <Typography component="h2" variant="h5" sx={{ color: 'text.primary' }}>
-            Current live workflows
+          <Typography component={'h2'} variant={'h5'} sx={{ color: 'text.primary' }}>
+            {'Current live workflows'}
           </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1 }}>
-            Use Document Detail to manage tags on a specific document. Use advanced search to filter by tag name or
-            close match.
+          <Typography variant={'body2'} sx={{ color: 'text.secondary', mt: 1 }}>
+            {
+              'Use Document Detail to manage tags on a specific document. Use advanced search to filter by tag name or close match.'
+            }
           </Typography>
         </Box>
 
@@ -86,20 +90,20 @@ export default function TagsPage(): ReactElement {
               key={workflow.href}
               href={workflow.href}
               description={workflow.description}
-              eyebrow="Current Workflow"
+              eyebrow={'Current Workflow'}
               title={workflow.title}
             />
           ))}
         </Box>
       </Stack>
 
-      <Card component="section">
+      <Card component={'section'}>
         <CardContent>
-          <Typography component="h2" variant="h5" sx={{ color: 'text.primary' }}>
-            What this page does not do yet
+          <Typography component={'h2'} variant={'h5'} sx={{ color: 'text.primary' }}>
+            {'What this page is not'}
           </Typography>
           <Box
-            component="ul"
+            component={'ul'}
             sx={{
               color: 'text.secondary',
               mb: 0,
@@ -110,8 +114,8 @@ export default function TagsPage(): ReactElement {
               },
             }}
           >
-            <li>This page does not provide standalone tag editing, deletion, or a full tag table.</li>
-            <li>Existing tag operations remain document-scoped.</li>
+            <li>{'This page does not provide standalone tag editing, deletion, or a full tag table.'}</li>
+            <li>{'Existing tag operations remain document-scoped.'}</li>
           </Box>
         </CardContent>
       </Card>

@@ -5,6 +5,7 @@ import { Box, Drawer, Stack, type SxProps, type Theme } from '@mui/material'
 
 import { AppVersion } from '@atoms/AppVersion'
 import { SidebarHeader } from '@atoms/SidebarHeader'
+import { PRESERVATION_PIPELINE_TITLE } from '@constants/branding'
 import { DASHBOARD_NAVIGATION_SECTIONS, type DashboardNavigationSection } from '@constants/navigation'
 import {
   BATCHES_PATH,
@@ -28,7 +29,7 @@ import { SidebarVisibilityControl } from '@molecules/SidebarVisibilityControl'
 
 export type SidebarVariant = 'desktop' | 'mobile'
 
-const mobileDrawerLabel = 'Preservation Pipeline navigation'
+const mobileDrawerLabel = `${PRESERVATION_PIPELINE_TITLE} navigation`
 
 interface SidebarProps {
   variant: SidebarVariant
@@ -113,10 +114,11 @@ export default function Sidebar({ variant, isOpen, onClose }: SidebarProps) {
         <SidebarHeader
           action={
             isMobile ? (
-              <SidebarVisibilityControl intent="close" surface="sidebarHeader" onClick={onClose ?? (() => {})} />
+              <SidebarVisibilityControl intent={'close'} surface={'sidebarHeader'} onClick={onClose ?? (() => {})} />
             ) : undefined
           }
-          title="Preservation Pipeline"
+          title={PRESERVATION_PIPELINE_TITLE}
+          titleHref={DASHBOARD_PATH}
         />
       </Box>
 
@@ -145,7 +147,7 @@ export default function Sidebar({ variant, isOpen, onClose }: SidebarProps) {
   if (isMobile) {
     return (
       <Drawer
-        anchor="left"
+        anchor={'left'}
         ModalProps={{ keepMounted: true }}
         onClose={onClose}
         open={Boolean(isOpen)}

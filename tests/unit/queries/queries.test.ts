@@ -44,7 +44,7 @@ import {
   getDocuments,
   getNeedsReviewDocuments,
   getReadyForLibraryDocuments,
-} from '@lib/queries'
+} from '@lib/queries/queries'
 
 // ---------------------------------------------------------------------------
 // Shared call inspection helpers

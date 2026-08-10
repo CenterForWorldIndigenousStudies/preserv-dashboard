@@ -5,15 +5,12 @@ const { mockGetNeedsReviewDocuments } = vi.hoisted(() => ({
   mockGetNeedsReviewDocuments: vi.fn(),
 }))
 
-const {
-  mockGetNeedsReviewDocumentsCount,
-  mockGetReadyForLibraryDocuments,
-} = vi.hoisted(() => ({
+const { mockGetNeedsReviewDocumentsCount, mockGetReadyForLibraryDocuments } = vi.hoisted(() => ({
   mockGetNeedsReviewDocumentsCount: vi.fn(),
   mockGetReadyForLibraryDocuments: vi.fn(),
 }))
 
-vi.mock('@lib/queries', () => ({
+vi.mock('@lib/queries/queries', () => ({
   getNeedsReviewDocuments: mockGetNeedsReviewDocuments,
   getNeedsReviewDocumentsCount: mockGetNeedsReviewDocumentsCount,
   getReadyForLibraryDocuments: mockGetReadyForLibraryDocuments,

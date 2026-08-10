@@ -2,7 +2,7 @@ import type { Prisma } from '@lib/prisma/generated/client'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { db } from '@lib/db'
-import { getLibraryDocuments } from '@lib/queries'
+import { getLibraryDocuments } from '@lib/queries/queries'
 
 import { resetTestDatabase, shouldSkipDashboardIntegrationSuite } from '../support/test-db'
 import { withRollbackTransaction } from '../support/transaction'
@@ -265,10 +265,7 @@ describeDbIntegration('library documents query (integration)', () => {
         ],
       })
 
-      const result = await getLibraryDocuments(
-        { batch: 'Special_RCR_Writings_sept_25_2025', pageSize: 100 },
-        tx,
-      )
+      const result = await getLibraryDocuments({ batch: 'Special_RCR_Writings_sept_25_2025', pageSize: 100 }, tx)
 
       expect(result.items.map((item) => item.id)).toEqual([matchingDocument.id])
     })
@@ -321,10 +318,7 @@ describeDbIntegration('library documents query (integration)', () => {
         ],
       })
 
-      const result = await getLibraryDocuments(
-        { batch: 'Special_RCR_Writings_sept_25_2025', pageSize: 100 },
-        tx,
-      )
+      const result = await getLibraryDocuments({ batch: 'Special_RCR_Writings_sept_25_2025', pageSize: 100 }, tx)
 
       expect(result.items.map((item) => item.id)).not.toContain(document.id)
     })

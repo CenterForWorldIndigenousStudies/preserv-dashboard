@@ -48,7 +48,7 @@ export function DocumentTable<TData extends MRT_RowData & { id: string }, TFilte
     }
 
     return (
-      <Stack direction="row" spacing={1.5} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+      <Stack direction={'row'} spacing={1.5} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
         <AdvancedSearchModal
           filters={config.advancedSearch.filters}
           filterOptions={config.advancedSearch.filterOptions}

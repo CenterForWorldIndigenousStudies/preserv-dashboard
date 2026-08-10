@@ -87,7 +87,7 @@ export function NestedValueRenderer({
     const items = value as unknown[]
 
     if (items.length === 0) {
-      return <KeyValueRow label={`[${items.length}]`} value="(empty)" level={level} />
+      return <KeyValueRow label={`[${items.length}]`} value={'(empty)'} level={level} />
     }
 
     return (
@@ -122,7 +122,7 @@ export function NestedValueRenderer({
     const entries = Object.entries(value)
 
     if (entries.length === 0) {
-      return <KeyValueRow label="{}" value="(empty object)" level={level} />
+      return <KeyValueRow label={'{}'} value={'(empty object)'} level={level} />
     }
 
     return (

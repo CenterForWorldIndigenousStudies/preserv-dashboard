@@ -61,16 +61,16 @@ export function PipelineStageSelectorPanel({
       <Stack spacing={2}>
         <div>
           <Typography
-            variant="caption"
+            variant={'caption'}
             sx={{ color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.16em' }}
           >
-            Additional Pipeline Stages
+            {'Additional Pipeline Stages'}
           </Typography>
-          <Typography variant="h5" sx={{ mt: 1 }}>
-            Continue after ingest
+          <Typography variant={'h5'} sx={{ mt: 1 }}>
+            {'Continue after ingest'}
           </Typography>
-          <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
-            Ingest always runs first. Select downstream stages to continue automatically after a successful ingest.
+          <Typography variant={'body2'} sx={{ mt: 1, color: 'text.secondary' }}>
+            {'Ingest always runs first. Select downstream stages to continue automatically after a successful ingest.'}
           </Typography>
         </div>
 
@@ -82,15 +82,15 @@ export function PipelineStageSelectorPanel({
                   <Checkbox
                     checked={selectedStages.includes(stage.id)}
                     onChange={() => toggleStage(stage.id)}
-                    size="small"
+                    size={'small'}
                   />
                 }
                 label={
                   <Stack spacing={0.5}>
-                    <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                    <Typography variant={'body1'} sx={{ fontWeight: 600 }}>
                       {stage.label}
                     </Typography>
-                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                    <Typography variant={'body2'} sx={{ color: 'text.secondary' }}>
                       {stage.description}
                     </Typography>
                   </Stack>

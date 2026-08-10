@@ -28,7 +28,7 @@ export const DefaultIngestStatusBadge: Story = {
 
 export const AllStatuses: Story = {
   render: () => (
-    <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap' }}>
+    <Stack direction={'row'} spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap' }}>
       {Object.keys(statusVariantMap).map((status, index) => (
         <IngestStatusBadge key={`${status}-${index}`} status={status} />
       ))}

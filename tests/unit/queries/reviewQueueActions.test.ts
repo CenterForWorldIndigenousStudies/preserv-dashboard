@@ -14,7 +14,7 @@ vi.mock('@lib/editHistory', () => ({
   createEditHistoryEntry: vi.fn(),
 }))
 
-import { applyReviewQueueDecision } from '@lib/queries'
+import { applyReviewQueueDecision } from '@lib/queries/queries'
 
 interface MockTransactionClient {
   document_quality: {

@@ -81,21 +81,21 @@ export const AllCards: Story = {
       }}
     >
       <MetricCard
-        title="Needs Review"
+        title={'Needs Review'}
         value={342}
-        description="Documents in the current human review queue using the existing Review Queue defaults."
+        description={'Documents in the current human review queue using the existing Review Queue defaults.'}
         href={REVIEW_QUEUE_PATH}
       />
       <MetricCard
-        title="Ready for Library"
+        title={'Ready for Library'}
         value={87}
-        description="Approved documents that meet the current library-ready handoff rules."
+        description={'Approved documents that meet the current library-ready handoff rules.'}
         href={READY_FOR_LIBRARY_PATH}
       />
       <MetricCard
-        title="Active Batches"
+        title={'Active Batches'}
         value={6}
-        description="Recent processing batches currently classified as active in the Batches view."
+        description={'Recent processing batches currently classified as active in the Batches view.'}
         href={BATCHES_PATH}
       />
     </Box>

@@ -66,14 +66,14 @@ export const CardGrid: Story = {
       }}
     >
       <ActionCard
-        eyebrow="Quick Action"
-        title="Review Queue"
-        description="Go to the current review workflow."
+        eyebrow={'Quick Action'}
+        title={'Review Queue'}
+        description={'Go to the current review workflow.'}
         href={REVIEW_QUEUE_PATH}
       />
       <ActionCard
-        title="Documents"
-        description="Browse documents, then open Document Detail to manage tags in the current live workflow."
+        title={'Documents'}
+        description={'Browse documents, then open Document Detail to manage tags in the current live workflow.'}
         href={DOCUMENTS_PATH}
       />
     </Box>

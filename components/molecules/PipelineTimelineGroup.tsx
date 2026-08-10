@@ -54,7 +54,7 @@ export function PipelineTimelineGroup({ step, isLast }: PipelineTimelineGroupPro
         <Box sx={{ flex: 1, pb: isLast ? 0 : 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
             <Typography
-              variant="body2"
+              variant={'body2'}
               sx={{
                 fontWeight: step.status === 'completed' ? 500 : 600,
                 color:
@@ -67,13 +67,13 @@ export function PipelineTimelineGroup({ step, isLast }: PipelineTimelineGroupPro
             >
               {step.label}
             </Typography>
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            <Typography variant={'caption'} sx={{ color: 'text.secondary' }}>
               {formatStatusLabel(step.status)}
             </Typography>
           </Box>
 
           {step.subSteps && step.subSteps.length > 0 ? (
-            <Collapse in={step.status !== 'pending'} timeout="auto" unmountOnExit>
+            <Collapse in={step.status !== 'pending'} timeout={'auto'} unmountOnExit>
               <List dense disablePadding sx={{ pl: 2 }}>
                 {step.subSteps.map((subStep) => (
                   <ListItem key={subStep.label} disablePadding sx={{ py: 0.25 }}>
@@ -81,7 +81,7 @@ export function PipelineTimelineGroup({ step, isLast }: PipelineTimelineGroupPro
                       <StatusDot status={subStep.status} />
                     </ListItemIcon>
                     <Typography
-                      variant="caption"
+                      variant={'caption'}
                       sx={{
                         fontWeight: 500,
                         color: subStep.status === 'completed' ? 'text.secondary' : 'text.primary',
@@ -90,7 +90,7 @@ export function PipelineTimelineGroup({ step, isLast }: PipelineTimelineGroupPro
                     >
                       {subStep.label}
                     </Typography>
-                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                    <Typography variant={'caption'} sx={{ color: 'text.secondary' }}>
                       {formatStatusLabel(subStep.status)}
                     </Typography>
                   </ListItem>

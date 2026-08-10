@@ -5,6 +5,8 @@ import type { SxProps, Theme } from '@mui/material/styles'
 import { IconButton } from '@mui/material'
 import { Menu, PanelLeft, PanelLeftClose, X } from 'lucide-react'
 
+import { SIDEBAR_CONTROL_LABELS } from '@constants/sidebar'
+
 export type SidebarVisibilityIntent = 'open' | 'close'
 export type SidebarVisibilitySurface = 'mobileBar' | 'sidebarHeader' | 'desktopRail'
 
@@ -15,11 +17,10 @@ export interface SidebarVisibilityControlProps {
 }
 
 interface ControlConfig {
-  ariaLabel: string
   icon: ReactElement
+  label: string
   size: 'small' | 'medium'
   sx: SxProps<Theme>
-  title: string
 }
 
 function getDesktopRailSx(): SxProps<Theme> {
@@ -42,8 +43,8 @@ function getDesktopRailSx(): SxProps<Theme> {
 function getControlConfig(intent: SidebarVisibilityIntent, surface: SidebarVisibilitySurface): ControlConfig {
   if (intent === 'open' && surface === 'mobileBar') {
     return {
-      ariaLabel: 'Open navigation menu',
       icon: <Menu size={24} />,
+      label: SIDEBAR_CONTROL_LABELS.openNavigation,
       size: 'medium',
       sx: {
         borderRadius: 2,
@@ -53,42 +54,39 @@ function getControlConfig(intent: SidebarVisibilityIntent, surface: SidebarVisib
           backgroundColor: 'action.hover',
         },
       },
-      title: 'Open navigation menu',
     }
   }
 
   if (intent === 'close' && surface === 'sidebarHeader') {
     return {
-      ariaLabel: 'Close navigation menu',
       icon: <X size={20} />,
+      label: SIDEBAR_CONTROL_LABELS.closeNavigation,
       size: 'small',
       sx: {
         color: 'text.primary',
+        alignSelf: 'flex-end',
         '&:hover': {
           backgroundColor: 'action.hover',
         },
       },
-      title: 'Close navigation menu',
     }
   }
 
   if (intent === 'open' && surface === 'desktopRail') {
     return {
-      ariaLabel: 'Show sidebar',
       icon: <PanelLeft size={14} />,
+      label: SIDEBAR_CONTROL_LABELS.showSidebar,
       size: 'small',
       sx: { ...getDesktopRailSx() },
-      title: 'Show sidebar',
     }
   }
 
   if (intent === 'close' && surface === 'desktopRail') {
     return {
-      ariaLabel: 'Hide sidebar',
       icon: <PanelLeftClose size={14} />,
+      label: SIDEBAR_CONTROL_LABELS.hideSidebar,
       size: 'small',
       sx: getDesktopRailSx(),
-      title: 'Hide sidebar',
     }
   }
 
@@ -100,12 +98,12 @@ export function SidebarVisibilityControl({ intent, surface, onClick }: SidebarVi
 
   return (
     <IconButton
-      aria-label={config.ariaLabel}
+      aria-label={config.label}
       onClick={onClick}
       size={config.size}
       sx={config.sx}
-      title={config.title}
-      type="button"
+      title={config.label}
+      type={'button'}
     >
       {config.icon}
     </IconButton>

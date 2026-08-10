@@ -22,7 +22,7 @@ export function ActionCard({
 }: ActionCardProps): ReactElement {
   return (
     <LinkCardFrame actionLabel={label} eyebrow={eyebrow} href={href} title={title}>
-      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+      <Typography variant={'body2'} sx={{ color: 'text.secondary' }}>
         {description}
       </Typography>
     </LinkCardFrame>

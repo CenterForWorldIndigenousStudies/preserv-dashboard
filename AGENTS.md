@@ -39,7 +39,7 @@ Primary entry points:
 - authenticated API routes: `app/api/`
 - auth configuration: `auth.ts`
 - auth proxy boundary: `proxy.ts`
-- database helpers and query logic: `lib/db.ts`, `lib/queries.ts`, `lib/`
+- database helpers and query logic: `lib/db.ts`, `lib/queries/`, `lib/`
 
 Important UI areas:
 

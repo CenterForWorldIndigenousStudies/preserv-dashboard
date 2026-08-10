@@ -32,20 +32,20 @@ export function GoogleDriveFolderTree({
       <Stack spacing={2.5}>
         <div>
           <Typography
-            variant="caption"
+            variant={'caption'}
             sx={{ color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.16em' }}
           >
             Google Drive
           </Typography>
-          <Typography component="h2" variant="h5" sx={{ mt: 1 }}>
+          <Typography component={'h2'} variant={'h5'} sx={{ mt: 1 }}>
             {title}
           </Typography>
-          <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
+          <Typography variant={'body2'} sx={{ mt: 1, color: 'text.secondary' }}>
             {description}
           </Typography>
         </div>
 
-        {error ? <Alert severity="error">{error}</Alert> : null}
+        {error ? <Alert severity={'error'}>{error}</Alert> : null}
 
         <Stack spacing={1.5}>
           {rootFolders.map((folder) => {
@@ -65,23 +65,27 @@ export function GoogleDriveFolderTree({
                     }}
                   >
                     <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
+                      type={'button'}
+                      variant={'secondary'}
+                      size={'sm'}
                       onClick={() => onToggleFolderExpansion(folder.id)}
                     >
                       {isExpanded ? 'Hide' : 'Browse'}
                     </Button>
                     <FormControlLabel
                       control={
-                        <Checkbox checked={isSelected} onChange={() => onToggleFolderSelection(folder)} size="small" />
+                        <Checkbox
+                          checked={isSelected}
+                          onChange={() => onToggleFolderSelection(folder)}
+                          size={'small'}
+                        />
                       }
                       label={folder.name}
                       sx={{ m: 0, '& .MuiFormControlLabel-label': { fontWeight: 600 } }}
                     />
                   </Box>
 
-                  <Typography variant="caption" sx={{ color: 'text.secondary', wordBreak: 'break-all' }}>
+                  <Typography variant={'caption'} sx={{ color: 'text.secondary', wordBreak: 'break-all' }}>
                     {folder.id}
                   </Typography>
 
@@ -94,15 +98,18 @@ export function GoogleDriveFolderTree({
                               <Checkbox
                                 checked={!!selectedFolderIds[child.id]}
                                 onChange={() => onToggleFolderSelection(child)}
-                                size="small"
+                                size={'small'}
                               />
                             }
                             label={
                               <Box>
-                                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                <Typography variant={'body2'} sx={{ fontWeight: 600 }}>
                                   {child.name}
                                 </Typography>
-                                <Typography variant="caption" sx={{ wordBreak: 'break-all', color: 'text.secondary' }}>
+                                <Typography
+                                  variant={'caption'}
+                                  sx={{ wordBreak: 'break-all', color: 'text.secondary' }}
+                                >
                                   {child.id}
                                 </Typography>
                               </Box>

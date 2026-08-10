@@ -19,7 +19,7 @@ export function DocumentTablePageSizeSelect({
   return (
     <Select<number>
       value={value}
-      size="small"
+      size={'small'}
       inputProps={{ 'aria-label': 'Rows per page' }}
       onChange={(event: SelectChangeEvent<number>) => onChange(Number(event.target.value))}
       sx={(theme: Theme) => ({
@@ -36,7 +36,7 @@ export function DocumentTablePageSizeSelect({
     >
       {options.map((option) => (
         <MenuItem key={option} value={option}>
-          {option} rows
+          {`${option} rows`}
         </MenuItem>
       ))}
     </Select>

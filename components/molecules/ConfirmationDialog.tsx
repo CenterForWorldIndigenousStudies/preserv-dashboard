@@ -32,7 +32,7 @@ export function ConfirmationDialog({
       open={open}
       onClose={onCancel}
       fullWidth
-      maxWidth="xs"
+      maxWidth={'xs'}
       sx={{ '& .MuiDialog-paper': { borderRadius: '1rem' } }}
     >
       <DialogTitle>{title}</DialogTitle>
@@ -40,10 +40,10 @@ export function ConfirmationDialog({
         <Typography sx={{ color: 'text.secondary', fontSize: '0.95rem' }}>{message}</Typography>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button variant="ghost" onClick={onCancel}>
+        <Button variant={'ghost'} onClick={onCancel}>
           {cancelLabel}
         </Button>
-        <Button variant="secondary" onClick={onConfirm}>
+        <Button variant={'secondary'} onClick={onConfirm}>
           {confirmLabel}
         </Button>
       </DialogActions>

@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react'
 
 import { CollectionsPageClient } from '@organisms/CollectionsPageClient'
-import { getCollections, getDocumentFilterOptions } from '@lib/queries'
+import { getCollections, getDocumentFilterOptions } from '@lib/queries/queries'
 
 export const dynamic = 'force-dynamic'
 

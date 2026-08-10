@@ -10,7 +10,7 @@ const meta = {
   tags: ['autodocs'],
   args: {
     summary: 'Accordion summary',
-    children: <Typography variant="body2">Accordion details.</Typography>,
+    children: <Typography variant={'body2'}>{'Accordion details.'}</Typography>,
   },
   parameters: {
     backgrounds: { default: 'sand' },
@@ -33,15 +33,15 @@ export const Default: Story = {
       defaultExpanded
       summary={
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Typography variant="h6">Ingest Batch 2026-04-01</Typography>
-          <Typography variant="caption" color="text.secondary">
-            5 properties
+          <Typography variant={'h6'}>Ingest Batch 2026-04-01</Typography>
+          <Typography variant={'caption'} color={'text.secondary'}>
+            {'5 properties'}
           </Typography>
         </Box>
       }
     >
-      <Typography variant="body2" color="text.secondary">
-        Shared accordion framing for collections, batch details, and other expandable dashboard sections.
+      <Typography variant={'body2'} color={'text.secondary'}>
+        {'Shared accordion framing for collections, batch details, and other expandable dashboard sections.'}
       </Typography>
     </AccordionPanel>
   ),
@@ -49,8 +49,8 @@ export const Default: Story = {
 
 export const Collapsed: Story = {
   render: () => (
-    <AccordionPanel summary={<Typography variant="h6">Collapsed panel</Typography>}>
-      <Typography variant="body2">This content is hidden until the panel is expanded.</Typography>
+    <AccordionPanel summary={<Typography variant={'h6'}>Collapsed panel</Typography>}>
+      <Typography variant={'body2'}>{'This content is hidden until the panel is expanded.'}</Typography>
     </AccordionPanel>
   ),
 }

@@ -65,7 +65,7 @@ export function DateAtom({ value, className = '', sx }: DateProps): ReactNode {
 
   if (value === null || value === undefined) {
     return (
-      <Typography component="span" variant="body2" className={className || undefined} sx={sx}>
+      <Typography component={'span'} variant={'body2'} className={className || undefined} sx={sx}>
         -
       </Typography>
     )
@@ -74,7 +74,7 @@ export function DateAtom({ value, className = '', sx }: DateProps): ReactNode {
   const dt = parseValue(value)
   if (!dt || !dt.isValid) {
     return (
-      <Typography component="span" variant="body2" className={className || undefined} sx={sx}>
+      <Typography component={'span'} variant={'body2'} className={className || undefined} sx={sx}>
         -
       </Typography>
     )
@@ -85,8 +85,8 @@ export function DateAtom({ value, className = '', sx }: DateProps): ReactNode {
 
   return (
     <Typography
-      component="span"
-      variant="body2"
+      component={'span'}
+      variant={'body2'}
       className={className || undefined}
       title={showRaw ? display : `Raw: ${raw}`}
       onClick={() => setShowRaw((prev) => !prev)}

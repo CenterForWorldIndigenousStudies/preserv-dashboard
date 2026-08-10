@@ -95,17 +95,17 @@ export function AddCollectionDialog({ open, collections, onClose }: AddCollectio
       open={open}
       onClose={isSubmitting ? undefined : onClose}
       fullWidth
-      maxWidth="sm"
+      maxWidth={'sm'}
       sx={{ '& .MuiDialog-paper': { borderRadius: '1rem' } }}
     >
-      <DialogTitle>Add Collection</DialogTitle>
+      <DialogTitle>{'Add Collection'}</DialogTitle>
       <DialogContent sx={{ display: 'grid', gap: 2.5, pt: 1.5 }}>
-        {error ? <Alert severity="error">{error}</Alert> : null}
+        {error ? <Alert severity={'error'}>{error}</Alert> : null}
         <TagSearchCombobox
           open={open}
           disabled={isSubmitting}
-          label="Collection tag"
-          placeholder="Search for a tag or create a new one"
+          label={'Collection tag'}
+          placeholder={'Search for a tag or create a new one'}
           onSelectExisting={(tag) => {
             setSelectedTag(tag)
             setPendingCreateName('')
@@ -122,30 +122,25 @@ export function AddCollectionDialog({ open, collections, onClose }: AddCollectio
         />
 
         {selectedTag ? (
-          <Alert severity="info">Creating a collection for existing tag "{selectedTag.name}".</Alert>
+          <Alert severity={'info'}>{`Creating a collection for existing tag "${selectedTag.name}".`}</Alert>
         ) : null}
 
         {pendingCreateName ? (
-          <Alert severity="info">Creating a new tag and collection for "{pendingCreateName}".</Alert>
+          <Alert severity={'info'}>{`Creating a new tag and collection for "${pendingCreateName}".`}</Alert>
         ) : null}
 
         {selectedTag || pendingCreateName ? (
-          <Button
-            variant="ghost"
-            onClick={resetSelection}
-            disabled={isSubmitting}
-            sx={{ justifySelf: 'start' }}
-          >
-            Clear selection
+          <Button variant={'ghost'} onClick={resetSelection} disabled={isSubmitting} sx={{ justifySelf: 'start' }}>
+            {'Clear selection'}
           </Button>
         ) : null}
 
         {pendingCreateName ? (
           <TextField
-            label="Tag notes"
+            label={'Tag notes'}
             value={tagNotes}
             onChange={(event) => setTagNotes(event.target.value)}
-            placeholder="Optional notes for the new tag"
+            placeholder={'Optional notes for the new tag'}
             fullWidth
             multiline
             minRows={3}
@@ -153,21 +148,21 @@ export function AddCollectionDialog({ open, collections, onClose }: AddCollectio
         ) : null}
 
         <TextField
-          label="Collection notes"
+          label={'Collection notes'}
           value={collectionNotes}
           onChange={(event) => setCollectionNotes(event.target.value)}
-          placeholder="Optional notes for this collection"
+          placeholder={'Optional notes for this collection'}
           fullWidth
           multiline
           minRows={3}
         />
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>
-          Cancel
+        <Button variant={'ghost'} onClick={onClose} disabled={isSubmitting}>
+          {'Cancel'}
         </Button>
-        <Button variant="primary" onClick={() => void handleSubmit()} loading={isSubmitting}>
-          Add Collection
+        <Button variant={'primary'} onClick={() => void handleSubmit()} loading={isSubmitting}>
+          {'Add Collection'}
         </Button>
       </DialogActions>
     </Dialog>

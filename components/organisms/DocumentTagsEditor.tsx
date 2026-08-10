@@ -160,14 +160,14 @@ export function DocumentTagsEditor({ documentId, initialTags }: DocumentTagsEdit
 
   return (
     <Stack spacing={2}>
-      {error ? <Alert severity="error">{error}</Alert> : null}
-      {successMessage ? <Alert severity="success">{successMessage}</Alert> : null}
+      {error ? <Alert severity={'error'}>{error}</Alert> : null}
+      {successMessage ? <Alert severity={'success'}>{successMessage}</Alert> : null}
 
-      <Stack direction="row" spacing={1.5} useFlexGap sx={{ alignItems: 'flex-start', flexWrap: 'wrap' }}>
+      <Stack direction={'row'} spacing={1.5} useFlexGap sx={{ alignItems: 'flex-start', flexWrap: 'wrap' }}>
         {sortedTags.length > 0 ? (
           sortedTags.map((tag) => (
             <Box
-              component="span"
+              component={'span'}
               key={tag.id}
               sx={(theme: Theme) => {
                 const primaryColor = theme.palette.primary.main
@@ -185,12 +185,12 @@ export function DocumentTagsEditor({ documentId, initialTags }: DocumentTagsEdit
               }}
             >
               <Tooltip title={tag.tags.notes ?? ''} disableHoverListener={!tag.tags.notes}>
-                <Typography component="span" variant="body2" color="inherit">
+                <Typography component={'span'} variant={'body2'} color={'inherit'}>
                   {tag.tags.name ?? 'Untitled tag'}
                 </Typography>
               </Tooltip>
               <IconButton
-                size="small"
+                size={'small'}
                 aria-label={`Remove ${tag.tags.name ?? 'tag'}`}
                 onClick={() => {
                   void openRemoveDialog(tag)
@@ -201,8 +201,8 @@ export function DocumentTagsEditor({ documentId, initialTags }: DocumentTagsEdit
             </Box>
           ))
         ) : (
-          <Typography variant="body2" color="text.secondary">
-            No tags available.
+          <Typography variant={'body2'} color={'text.secondary'}>
+            {'No tags available.'}
           </Typography>
         )}
       </Stack>
@@ -232,27 +232,27 @@ export function DocumentTagsEditor({ documentId, initialTags }: DocumentTagsEdit
             />
             <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
               <Button
-                variant="ghost"
+                variant={'ghost'}
                 onClick={() => {
                   setIsAdding(false)
                   setPendingCreateName('')
                 }}
               >
-                Cancel
+                {'Cancel'}
               </Button>
             </Box>
           </Stack>
         </Paper>
       ) : (
         <Button
-          variant="primary"
+          variant={'primary'}
           startIcon={<IconPlus size={16} />}
           onClick={() => {
             resetMessages()
             setIsAdding(true)
           }}
         >
-          Add Tag
+          {'Add Tag'}
         </Button>
       )}
 

@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { Box } from '@mui/material'
 import { IconSpinner } from '@atoms/icons/IconSpinner'
+import { PRESERVATION_PIPELINE_TITLE } from '@constants/branding'
+import { DASHBOARD_PATH } from '@constants/paths'
 
 import { SidebarHeader } from '@atoms/SidebarHeader'
 
@@ -11,7 +13,7 @@ const meta = {
   args: {
     action: undefined,
     className: '',
-    title: 'Preservation Pipeline',
+    title: PRESERVATION_PIPELINE_TITLE,
   },
   argTypes: {
     action: {
@@ -41,6 +43,12 @@ export const Default: Story = {}
 export const WithAction: Story = {
   args: {
     action: <IconSpinner />,
+  },
+}
+
+export const WithLink: Story = {
+  args: {
+    titleHref: DASHBOARD_PATH,
   },
 }
 

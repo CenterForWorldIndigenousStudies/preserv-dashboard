@@ -4,7 +4,7 @@
  * Prisma's generated client is Node.js-only and uses require() internally,
  * which Rolldown cannot process in a browser ESM context.
  *
- * lib/queries.ts only uses Prisma.sql and Prisma.TransactionClient at runtime
+ * lib/queries/queries.ts only uses Prisma.sql and Prisma.TransactionClient at runtime
  * (no actual database calls - storybook stubs db.ts separately).
  * This stub provides just enough Prisma namespace for type-checking to pass.
  *

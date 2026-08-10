@@ -6,14 +6,15 @@ import { PageHeader } from '@organisms/PageHeader'
 import { ReadyForLibraryTable } from '@organisms/ReadyForLibraryTable'
 import { ReadyForLibraryHandoff } from '@organisms/ReadyForLibraryHandoff'
 import type { DocumentTableFetchResult, DocumentTableQuery } from '@organisms/DocumentTable/types'
-import { getDocumentFilterOptions, getReadyForLibraryDocuments, type DocumentsQueryParams } from '@lib/queries'
+import { getDocumentFilterOptions, getReadyForLibraryDocuments, type DocumentsQueryParams } from '@lib/queries/queries'
 import { getUniqueDocumentCountByAuthor } from '@lib/readyForLibraryAuthorMetrics'
 import type { AdvancedSearchFilters } from '@lib/search'
-import { parseReadyForLibraryQueryParams } from './query'
+import { parseReadyForLibraryQueryParams } from '../../lib/queries/readyForLibarayQuery'
 import { PAGE_LABELS } from '@constants/pageLabels'
 import type { ReadyForLibraryItem } from 'types/documents'
 
 export const dynamic = 'force-dynamic'
+export const READINESS_EXPLANATION_ID = 'ready-for-library-readiness-explanation'
 
 const FEATURED_AUTHOR_NAME = 'Ryser, Rudolph C.'
 
@@ -32,22 +33,22 @@ const READINESS_EXPLANATION_GROUPS = {
 
 function AuthorCountCard({ authorName, count }: { authorName: string; count: number }) {
   return (
-    <Card component="section" sx={{ border: '1px solid', borderColor: 'rgba(53, 88, 52, 0.15)' }}>
+    <Card component={'section'} sx={{ border: '1px solid', borderColor: 'rgba(53, 88, 52, 0.15)' }}>
       <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
         <Typography
-          variant="caption"
+          variant={'caption'}
           sx={{ color: 'text.secondary', letterSpacing: '0.15em', textTransform: 'uppercase' }}
         >
-          Featured author
+          {'Featured author'}
         </Typography>
-        <Typography variant="h6" sx={{ color: 'text.primary', mt: 1 }}>
+        <Typography variant={'h6'} sx={{ color: 'text.primary', mt: 1 }}>
           {authorName}
         </Typography>
-        <Typography component="p" variant="h3" sx={{ color: 'text.primary', mt: 1.5 }}>
+        <Typography component={'p'} variant={'h3'} sx={{ color: 'text.primary', mt: 1.5 }}>
           {count}
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-          Unique documents linked to this author
+        <Typography variant={'body2'} color={'text.secondary'} sx={{ mt: 0.5 }}>
+          {'Unique documents linked to this author'}
         </Typography>
       </CardContent>
     </Card>
@@ -56,13 +57,13 @@ function AuthorCountCard({ authorName, count }: { authorName: string; count: num
 
 function ReadyForLibraryReadinessExplanation() {
   return (
-    <Stack component="section" spacing={1.5} aria-labelledby="ready-for-library-readiness-explanation">
+    <Stack component={'section'} spacing={1.5} aria-labelledby={READINESS_EXPLANATION_ID}>
       <Typography
-        id="ready-for-library-readiness-explanation"
-        variant="caption"
+        id={READINESS_EXPLANATION_ID}
+        variant={'caption'}
         sx={{ color: 'text.secondary', fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase' }}
       >
-        What this workspace tells you
+        {'What this workspace tells you'}
       </Typography>
       <NeedsReviewReasons value={READINESS_EXPLANATION_GROUPS} />
     </Stack>
@@ -172,8 +173,10 @@ export default function ReadyForLibraryPage({ searchParams }: ReadyForLibraryPag
     <Stack spacing={4} sx={{ width: '100%' }}>
       <PageHeader
         eyebrow={PAGE_LABELS.readyForLibrary}
-        title="Post-approval handoff inspection"
-        description="Use this workspace to inspect approved documents with an access level and queue the downstream library handoff when the current review is complete. Metadata completeness is shown to support review, but runtime checks still apply."
+        title={'Post-approval handoff inspection'}
+        description={
+          'Use this workspace to inspect approved documents with an access level and queue the downstream library handoff when the current review is complete. Metadata completeness is shown to support review, but runtime checks still apply.'
+        }
       />
 
       <ReadyForLibraryReadinessExplanation />

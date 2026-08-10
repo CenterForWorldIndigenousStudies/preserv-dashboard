@@ -11,14 +11,10 @@ import { getBatchDeepLinkPath, getDocumentDetailPath, COLLECTIONS_PATH } from '@
 import { PAGE_LABELS } from '@constants/pageLabels'
 import { DocumentNameBlock } from '@molecules/DocumentNameBlock'
 import { DocumentTable } from '@organisms/DocumentTable/DocumentTable'
-import type {
-  DocumentTableConfig,
-  DocumentTableFetchResult,
-  DocumentTableQuery,
-} from '@organisms/DocumentTable/types'
+import type { DocumentTableConfig, DocumentTableFetchResult, DocumentTableQuery } from '@organisms/DocumentTable/types'
 import { useDocumentTableController } from '@organisms/DocumentTable/useDocumentTableController'
 import { serializeStatusesParam, type AdvancedSearchFilters, type FilterOptions } from '@lib/search'
-import type { DocumentsQueryParams } from '@lib/queries'
+import type { DocumentsQueryParams } from '@lib/queries/queries'
 import type { LibraryDocumentItem } from 'types/documents'
 
 interface LibraryTableProps {
@@ -126,7 +122,7 @@ export function LibraryTable({ filterOptions, initialQuery, initialData }: Libra
         enableSorting: false,
         Cell: ({ row }) =>
           row.original.fedoraUrl ? (
-            <Link href={row.original.fedoraUrl} target="_blank" rel="noreferrer">
+            <Link href={row.original.fedoraUrl} target={'_blank'} rel={'noreferrer'}>
               {row.original.fedoraUrl}
             </Link>
           ) : (
@@ -210,5 +206,7 @@ export function LibraryTable({ filterOptions, initialQuery, initialData }: Libra
     },
   }
 
-  return <DocumentTable config={tableConfig} controller={controller} initialData={initialData} initialQuery={initialQuery} />
+  return (
+    <DocumentTable config={tableConfig} controller={controller} initialData={initialData} initialQuery={initialQuery} />
+  )
 }

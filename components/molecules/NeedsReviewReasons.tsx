@@ -10,7 +10,7 @@ function ReasonGroup({ serviceLabel, reasons }: NeedsReviewReasonGroup): React.R
   return (
     <Stack spacing={1}>
       <Typography
-        variant="caption"
+        variant={'caption'}
         sx={{
           color: 'primary.main',
           fontWeight: 700,
@@ -31,7 +31,7 @@ function ReasonGroup({ serviceLabel, reasons }: NeedsReviewReasonGroup): React.R
               color: 'text.primary',
             }}
           >
-            <Typography variant="body2" sx={{ color: 'inherit' }}>
+            <Typography variant={'body2'} sx={{ color: 'inherit' }}>
               {reason}
             </Typography>
           </ListItem>
@@ -50,7 +50,7 @@ export function NeedsReviewReasons({
   if (groups.length === 0) {
     return (
       <Paper
-        variant="outlined"
+        variant={'outlined'}
         sx={{
           borderColor: 'divider',
           borderRadius: 2,
@@ -59,7 +59,7 @@ export function NeedsReviewReasons({
           py: 1.5,
         }}
       >
-        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+        <Typography variant={'body2'} sx={{ color: 'text.secondary' }}>
           {emptyMessage}
         </Typography>
       </Paper>
@@ -68,7 +68,7 @@ export function NeedsReviewReasons({
 
   return (
     <Paper
-      variant="outlined"
+      variant={'outlined'}
       sx={{
         borderColor: 'divider',
         borderRadius: 2,

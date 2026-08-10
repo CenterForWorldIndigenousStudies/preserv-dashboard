@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { deleteTag, deleteTagAndDocumentAssociations } from '@lib/queries'
+import { deleteTag, deleteTagAndDocumentAssociations } from '@lib/queries/queries'
 
 interface RouteContext {
   params: Promise<{
@@ -33,9 +33,9 @@ export async function DELETE(request: NextRequest, context: RouteContext): Promi
           ? 400
           : message.includes('is protected and cannot be deleted from the system.')
             ? 409
-          : message === 'Cannot delete a tag that is still associated with documents.'
-            ? 409
-            : 500
+            : message === 'Cannot delete a tag that is still associated with documents.'
+              ? 409
+              : 500
     return NextResponse.json({ error: message }, { status })
   }
 }

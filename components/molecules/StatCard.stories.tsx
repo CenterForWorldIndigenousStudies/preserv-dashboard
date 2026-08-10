@@ -72,9 +72,9 @@ export const AllCards: Story = {
         gap: 2,
       }}
     >
-      <StatCard title="Total Documents" value={12847} href={DOCUMENTS_API_PATH} />
-      <StatCard title="Pending Review" value={342} href={REVIEW_QUEUE_PATH} />
-      <StatCard title="Failed Pipeline" value={7} href={FAILED_PATH} />
+      <StatCard title={'Total Documents'} value={12847} href={DOCUMENTS_API_PATH} />
+      <StatCard title={'Pending Review'} value={342} href={REVIEW_QUEUE_PATH} />
+      <StatCard title={'Failed Pipeline'} value={7} href={FAILED_PATH} />
     </Box>
   ),
 }

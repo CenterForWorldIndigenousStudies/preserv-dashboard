@@ -20,8 +20,8 @@ export function RemoveTagDialog({ open, tagName, usageCount, onClose, onConfirm 
   return (
     <TagDeleteFlowDialog
       open={open}
-      title="Remove tag?"
-      subjectName="tag"
+      title={'Remove tag?'}
+      subjectName={'tag'}
       usageCount={usageCount}
       primaryMessage={`Remove "${tagName}"?`}
       checkboxLabel={canDeleteFromSystem ? 'Also delete tag and remove from all documents' : undefined}

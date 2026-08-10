@@ -29,7 +29,7 @@ export const ShortValue: Story = {
     children: 'DOC-2024-0042',
   },
   render: (args) => (
-    <Box component="dl" sx={{ m: 0 }}>
+    <Box component={'dl'} sx={{ m: 0 }}>
       <FieldRow {...args} />
     </Box>
   ),
@@ -42,7 +42,7 @@ export const LongValue: Story = {
       'https://archive.cwis.org/repository/indigenous-knowledge/cherokee/oral-traditions/transcripts/2023/session-042-enriched.pdf',
   },
   render: (args) => (
-    <Box component="dl" sx={{ m: 0 }}>
+    <Box component={'dl'} sx={{ m: 0 }}>
       <FieldRow {...args} />
     </Box>
   ),
@@ -54,7 +54,7 @@ export const EmptyValue: Story = {
     children: '—',
   },
   render: (args) => (
-    <Box component="dl" sx={{ m: 0 }}>
+    <Box component={'dl'} sx={{ m: 0 }}>
       <FieldRow {...args} />
     </Box>
   ),
@@ -66,7 +66,7 @@ export const MetadataField: Story = {
     children: 'application/pdf',
   },
   render: (args) => (
-    <Box component="dl" sx={{ m: 0 }}>
+    <Box component={'dl'} sx={{ m: 0 }}>
       <FieldRow {...args} />
     </Box>
   ),
@@ -74,11 +74,11 @@ export const MetadataField: Story = {
 
 export const MultipleFields: Story = {
   render: () => (
-    <Box component="dl" sx={{ display: 'grid', gap: 1.5, m: 0 }}>
-      <FieldRow label="Document ID">DOC-2024-0042</FieldRow>
-      <FieldRow label="File Type">application/pdf</FieldRow>
-      <FieldRow label="Original URL">https://archive.cwis.org/...</FieldRow>
-      <FieldRow label="Parent Collection">—</FieldRow>
+    <Box component={'dl'} sx={{ display: 'grid', gap: 1.5, m: 0 }}>
+      <FieldRow label={'Document ID'}>{'DOC-2024-0042'}</FieldRow>
+      <FieldRow label={'File Type'}>{'application/pdf'}</FieldRow>
+      <FieldRow label={'Original URL'}>{'https://archive.cwis.org/...'}</FieldRow>
+      <FieldRow label={'Parent Collection'}>{'—'}</FieldRow>
     </Box>
   ),
 }

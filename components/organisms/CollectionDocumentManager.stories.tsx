@@ -238,7 +238,7 @@ export const ServerMode: Story = {
     return (
       <CollectionDocumentManager
         {...args}
-        initialAction="add"
+        initialAction={'add'}
         loadInCollection={loadInCollection}
         loadOutOfCollection={loadOutOfCollection}
       />

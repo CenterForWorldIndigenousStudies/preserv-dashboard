@@ -1,23 +1,7 @@
 import type { ReactElement } from 'react'
 import NextLink from 'next/link'
-import {
-  BookOpen,
-  ClipboardList,
-  Database,
-  FolderTree,
-  FolderInput,
-  House,
-  LayoutDashboard,
-} from 'lucide-react'
-import {
-  Box,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Typography,
-} from '@mui/material'
+import { BookOpen, ClipboardList, Database, FolderTree, FolderInput, House, LayoutDashboard } from 'lucide-react'
+import { Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography } from '@mui/material'
 
 import type { DashboardNavigationIconKey, DashboardNavigationSection } from '@constants/navigation'
 
@@ -47,7 +31,7 @@ export function NavSection({ activePathname, onNavigate, section }: NavSectionPr
   return (
     <Box>
       <Typography
-        variant="overline"
+        variant={'overline'}
         sx={{
           color: 'text.secondary',
           display: 'block',

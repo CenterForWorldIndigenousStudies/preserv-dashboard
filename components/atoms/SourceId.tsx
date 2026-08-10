@@ -30,7 +30,7 @@ export function SourceId({ value, maxTruncationLength = 0, sx }: SourceIdProps):
 
   if (!isUuid && !isLikelyGoogleDriveId(normalizedValue)) {
     return (
-      <Typography component="span" variant="body2" sx={sx}>
+      <Typography component={'span'} variant={'body2'} sx={sx}>
         {truncatedSourceId}
       </Typography>
     )
@@ -39,10 +39,10 @@ export function SourceId({ value, maxTruncationLength = 0, sx }: SourceIdProps):
   return (
     <Link
       href={href}
-      target="_blank"
-      rel="noreferrer"
+      target={'_blank'}
+      rel={'noreferrer'}
       title={title}
-      underline="hover"
+      underline={'hover'}
       sx={(theme: Theme) => ({
         color: theme.palette.primary.main,
         ...theme.unstable_sx(sx ?? {}),

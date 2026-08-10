@@ -2,7 +2,6 @@ import {
   BATCHES_PATH,
   COLLECTIONS_PATH,
   COMPONENT_LIBRARY_PATH,
-  DASHBOARD_PATH,
   DB_SCHEMA_PATH,
   DOCUMENTS_PATH,
   EXCLUSION_REVIEW_PATH,
@@ -45,17 +44,16 @@ export interface DashboardNavigationSection {
 }
 
 export const PRIMARY_DASHBOARD_NAVIGATION_ITEMS: readonly DashboardNavigationItem[] = [
-  { href: DASHBOARD_PATH, iconKey: 'dashboard', label: PAGE_LABELS.dashboard },
   { href: DOCUMENTS_PATH, iconKey: 'documents', label: PAGE_LABELS.documents },
   { href: PROCESS_DOCUMENTS_PATH, iconKey: 'process', label: PAGE_LABELS.process },
-  { href: BATCHES_PATH, iconKey: 'batches', label: PAGE_LABELS.batches },
-  { href: EXCLUSION_REVIEW_PATH, iconKey: 'exclusionReview', label: PAGE_LABELS.exclusionReview },
   { href: REVIEW_QUEUE_PATH, iconKey: 'reviewQueue', label: PAGE_LABELS.reviewQueue },
   { href: READY_FOR_LIBRARY_PATH, iconKey: 'readyForLibrary', label: PAGE_LABELS.readyForLibrary },
   { href: LIBRARY_PATH, iconKey: 'library', label: PAGE_LABELS.library },
+  { href: BATCHES_PATH, iconKey: 'batches', label: PAGE_LABELS.batches },
   { href: COLLECTIONS_PATH, iconKey: 'collections', label: PAGE_LABELS.collections },
   { href: TAGS_PAGE_PATH, iconKey: 'tags', label: PAGE_LABELS.tags },
   { href: REPORTS_PAGE_PATH, iconKey: 'reports', label: PAGE_LABELS.reports },
+  { href: EXCLUSION_REVIEW_PATH, iconKey: 'exclusionReview', label: PAGE_LABELS.exclusionReview },
 ] as const
 
 export const UTILITY_DASHBOARD_NAVIGATION_ITEMS: readonly DashboardNavigationItem[] = [

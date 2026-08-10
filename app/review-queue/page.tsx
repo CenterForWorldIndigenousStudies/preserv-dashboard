@@ -18,7 +18,7 @@ import {
   getNeedsReviewDocumentsCount,
   getReadyForLibraryDocuments,
   type DocumentsQueryParams,
-} from '@lib/queries'
+} from '@lib/queries/queries'
 import { PAGE_LABELS } from '@constants/pageLabels'
 
 import { ReviewQueueTabbedWorkspace } from './ReviewQueueTabbedWorkspace'
@@ -97,7 +97,7 @@ async function ReviewQueueContent({ searchParams }: ReviewQueuePageProps) {
       initialData={initialData}
       initialQuery={initialQuery}
       filterOptions={REVIEW_QUEUE_FILTER_OPTIONS}
-      variant="reviewQueue"
+      variant={'reviewQueue'}
       defaultStatuses={[...REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES]}
       serverDriven
     />
@@ -116,8 +116,10 @@ export default async function ReviewQueuePage({ searchParams }: ReviewQueuePageP
     <Stack spacing={4} sx={{ width: '100%' }}>
       <PageHeader
         eyebrow={PAGE_LABELS.reviewQueue}
-        title="Documents needing review."
-        description="Use this human judgment workspace to review documents that need a deliberate approve or reject decision before they move forward."
+        title={'Documents needing review.'}
+        description={
+          'Use this human judgment workspace to review documents that need a deliberate approve or reject decision before they move forward.'
+        }
       />
 
       <Suspense fallback={null}>

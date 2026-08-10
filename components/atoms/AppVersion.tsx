@@ -7,7 +7,7 @@ import { appVersion } from '@lib/appVersion'
 
 export function AppVersion(): ReactElement {
   return (
-    <Typography variant="caption" sx={{ color: 'text.primary', opacity: 0.72 }}>
+    <Typography variant={'caption'} sx={{ color: 'text.primary', opacity: 0.72 }}>
       Version: {appVersion}
     </Typography>
   )

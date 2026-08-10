@@ -9,7 +9,7 @@ import {
   searchExclusionReviewDriveByName,
 } from '@lib/exclusionReviewDrive'
 import { Prisma, type drive_exclusion_review_items } from '@lib/prisma/generated/client'
-import type { QueryDbClient } from '@lib/queries'
+import type { QueryDbClient } from '@lib/queries/queries'
 import type {
   ApplyDecisionInput,
   DriveIndexItem,
@@ -41,9 +41,7 @@ function serializePath(path: string[]): string {
 function parsePath(path: string): string[] {
   try {
     const parsed: unknown = JSON.parse(path)
-    return Array.isArray(parsed)
-      ? parsed.map((value) => String(value).trim()).filter(Boolean)
-      : []
+    return Array.isArray(parsed) ? parsed.map((value) => String(value).trim()).filter(Boolean) : []
   } catch {
     return []
   }
@@ -54,12 +52,7 @@ function toDecision(value: string | null | undefined): ExclusionReviewDecision {
 }
 
 function toSubtreeStatus(value: string | null | undefined): ExclusionReviewSubtreeIndexStatus {
-  return value === 'syncing' ||
-    value === 'complete' ||
-    value === 'error' ||
-    value === 'pending'
-    ? value
-    : 'pending'
+  return value === 'syncing' || value === 'complete' || value === 'error' || value === 'pending' ? value : 'pending'
 }
 
 function buildDriveUrl(itemType: string, driveId: string): string {
@@ -102,8 +95,7 @@ export function reconcileInheritedLineage(input: {
   previousEffectiveAncestorReviewedAt: Date | null
 }): LineageSnapshot {
   const stillUnderSameAncestor =
-    !!input.previousEffectiveAncestorDriveId &&
-    input.nextPath.includes(input.previousEffectiveAncestorDriveId)
+    !!input.previousEffectiveAncestorDriveId && input.nextPath.includes(input.previousEffectiveAncestorDriveId)
 
   if (!stillUnderSameAncestor) {
     return {
@@ -175,8 +167,7 @@ function toTreeNode(
     itemType: record.item_type === 'folder' ? 'folder' : 'file',
     name: record.name,
     mimeType: record.mime_type ?? null,
-    driveUrl:
-      record.drive_url?.trim() || buildDriveUrl(record.item_type, record.drive_id),
+    driveUrl: record.drive_url?.trim() || buildDriveUrl(record.item_type, record.drive_id),
     path: parsePath(record.path),
     depth: record.depth,
     explicitDecision,
@@ -269,11 +260,7 @@ async function buildSearchResultFromIndexedRows(
       ancestorDriveIdsToExpand.add(ancestorDriveId)
     }
 
-    const pathRows = await getIndexedItemsByDriveIds(
-      rootDriveId,
-      [...matchNode.path, matchNode.driveId],
-      client,
-    )
+    const pathRows = await getIndexedItemsByDriveIds(rootDriveId, [...matchNode.path, matchNode.driveId], client)
     for (const pathRow of pathRows) {
       pathNodesByDriveId.set(pathRow.drive_id, toTreeNode(pathRow))
     }
@@ -337,8 +324,7 @@ async function upsertDriveIndexItems(
           drive_url: item.driveUrl,
           path: serializePath(item.path),
           depth: item.depth,
-          subtree_index_status:
-            item.itemType === 'file' ? 'complete' : options.folderStatus ?? 'pending',
+          subtree_index_status: item.itemType === 'file' ? 'complete' : (options.folderStatus ?? 'pending'),
           last_synced_at: syncedAt,
           last_sync_error: null,
           updated_at: syncedAt,
@@ -354,8 +340,7 @@ async function upsertDriveIndexItems(
           drive_url: item.driveUrl,
           path: serializePath(item.path),
           depth: item.depth,
-          subtree_index_status:
-            item.itemType === 'file' ? 'complete' : options.folderStatus ?? 'pending',
+          subtree_index_status: item.itemType === 'file' ? 'complete' : (options.folderStatus ?? 'pending'),
           discovered_at: syncedAt,
           last_synced_at: syncedAt,
           last_sync_error: null,
@@ -367,9 +352,7 @@ async function upsertDriveIndexItems(
   )
 }
 
-async function ensureRootIndexed(
-  client: QueryDbClient,
-): Promise<drive_exclusion_review_items> {
+async function ensureRootIndexed(client: QueryDbClient): Promise<drive_exclusion_review_items> {
   const rootDriveId = getRootDriveId()
   const existing = await getIndexedItem(rootDriveId, rootDriveId, client)
   if (existing) {
@@ -444,9 +427,7 @@ async function recomputeBranchInheritedLineage(
         },
       })
     : []
-  const rowByDriveId = new Map(
-    [...ancestorRows, ...branchRows].map((row) => [row.drive_id, row]),
-  )
+  const rowByDriveId = new Map([...ancestorRows, ...branchRows].map((row) => [row.drive_id, row]))
 
   await Promise.all(
     branchRows.map(async (row) => {
@@ -454,11 +435,8 @@ async function recomputeBranchInheritedLineage(
       const nextLineage: LineageSnapshot = nearestMarkedAncestor
         ? {
             effectiveAncestorDriveId: nearestMarkedAncestor.drive_id,
-            effectiveAncestorDecision: toDecision(
-              nearestMarkedAncestor.explicit_review_decision,
-            ),
-            effectiveAncestorReviewedAt:
-              nearestMarkedAncestor.explicit_reviewed_at ?? null,
+            effectiveAncestorDecision: toDecision(nearestMarkedAncestor.explicit_review_decision),
+            effectiveAncestorReviewedAt: nearestMarkedAncestor.explicit_reviewed_at ?? null,
           }
         : {
             effectiveAncestorDriveId: null,
@@ -565,19 +543,12 @@ async function reconcileMissingDirectChildren(
       })
 
       if (missingChild.item_type === 'folder') {
-        await shiftIndexedDescendantPaths(
-          rootDriveId,
-          missingChild.drive_id,
-          previousPath,
-          movedItem.path,
-          client,
-        )
+        await shiftIndexedDescendantPaths(rootDriveId, missingChild.drive_id, previousPath, movedItem.path, client)
       }
 
       await recomputeBranchInheritedLineage(rootDriveId, missingChild.drive_id, client)
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Unable to reconcile moved branch.'
+      const message = error instanceof Error ? error.message : 'Unable to reconcile moved branch.'
 
       await client.drive_exclusion_review_items.update({
         where: {
@@ -588,8 +559,7 @@ async function reconcileMissingDirectChildren(
         },
         data: {
           last_sync_error: message,
-          subtree_index_status:
-            missingChild.item_type === 'folder' ? 'error' : 'complete',
+          subtree_index_status: missingChild.item_type === 'folder' ? 'error' : 'complete',
           updated_at: syncedAt,
         },
       })
@@ -604,27 +574,16 @@ async function syncDirectChildrenPage(
   pageToken: string | null | undefined,
   client: QueryDbClient,
 ): Promise<ExclusionReviewBranchPage> {
-  const indexedParentRow = await ensureDriveItemIndexed(
-    rootDriveId,
-    parentDriveId,
-    client,
-  )
+  const indexedParentRow = await ensureDriveItemIndexed(rootDriveId, parentDriveId, client)
   const syncedAt = new Date()
-  const page = await listExclusionReviewChildrenFromDrive(
-    parentDriveId,
-    pageToken ?? undefined,
-    [...parsePath(indexedParentRow.path), indexedParentRow.drive_id],
-  )
+  const page = await listExclusionReviewChildrenFromDrive(parentDriveId, pageToken ?? undefined, [
+    ...parsePath(indexedParentRow.path),
+    indexedParentRow.drive_id,
+  ])
 
   await upsertDriveIndexItems(rootDriveId, page.items, client, { syncedAt })
-  const branchRows = await recomputeBranchInheritedLineage(
-    rootDriveId,
-    parentDriveId,
-    client,
-  )
-  const branchRowsByDriveId = new Map(
-    branchRows.map((row) => [row.drive_id, row]),
-  )
+  const branchRows = await recomputeBranchInheritedLineage(rootDriveId, parentDriveId, client)
+  const branchRowsByDriveId = new Map(branchRows.map((row) => [row.drive_id, row]))
   const parentRow = branchRowsByDriveId.get(parentDriveId)
 
   const items = page.items
@@ -644,16 +603,9 @@ async function syncDirectChildrenPage(
   }
 }
 
-export async function loadExclusionReviewRootTree(
-  client: QueryDbClient = db,
-): Promise<ExclusionReviewTreePayload> {
+export async function loadExclusionReviewRootTree(client: QueryDbClient = db): Promise<ExclusionReviewTreePayload> {
   const rootRow = await ensureRootIndexed(client)
-  const rootChildren = await syncDirectChildrenPage(
-    rootRow.root_drive_id,
-    rootRow.drive_id,
-    null,
-    client,
-  )
+  const rootChildren = await syncDirectChildrenPage(rootRow.root_drive_id, rootRow.drive_id, null, client)
   const refreshedRoot = await getIndexedItem(rootRow.root_drive_id, rootRow.drive_id, client)
 
   if (!refreshedRoot) {
@@ -698,11 +650,7 @@ export async function applyExclusionReviewDecision(
     },
   })
 
-  const updatedRows = await recomputeBranchInheritedLineage(
-    rootDriveId,
-    target.drive_id,
-    client,
-  )
+  const updatedRows = await recomputeBranchInheritedLineage(rootDriveId, target.drive_id, client)
 
   return {
     updatedAt: updatedAt.toISOString(),
@@ -727,12 +675,7 @@ export async function searchExclusionReviewTree(
   const rootDriveId = getRootDriveId()
   const indexedMatches = await findIndexedItemsByName(rootDriveId, trimmedQuery, client)
   if (indexedMatches.length > 0) {
-    return buildSearchResultFromIndexedRows(
-      rootDriveId,
-      indexedMatches,
-      trimmedQuery,
-      client,
-    )
+    return buildSearchResultFromIndexedRows(rootDriveId, indexedMatches, trimmedQuery, client)
   }
 
   const liveMatches = await searchExclusionReviewDriveByName(trimmedQuery)
@@ -750,11 +693,7 @@ export async function searchExclusionReviewTree(
     await upsertDriveIndexItems(rootDriveId, chain, client, {
       syncedAt: new Date(),
     })
-    const updatedRows = await recomputeBranchInheritedLineage(
-      rootDriveId,
-      liveMatch.driveId,
-      client,
-    )
+    const updatedRows = await recomputeBranchInheritedLineage(rootDriveId, liveMatch.driveId, client)
     const chainRows = await getIndexedItemsByDriveIds(
       rootDriveId,
       chain.map((item) => item.driveId),
@@ -817,10 +756,7 @@ export async function reconcileExclusionReviewBranch(
 
     /* eslint-disable no-await-in-loop */
     do {
-      const page = await listExclusionReviewChildrenFromDrive(
-        folderDriveId,
-        nextPageToken ?? undefined,
-      )
+      const page = await listExclusionReviewChildrenFromDrive(folderDriveId, nextPageToken ?? undefined)
       for (const item of page.items) {
         seenChildDriveIds.add(item.driveId)
         syncedDriveIds.add(item.driveId)
@@ -835,12 +771,7 @@ export async function reconcileExclusionReviewBranch(
       nextPageToken = page.nextPageToken
     } while (nextPageToken)
 
-    await reconcileMissingDirectChildren(
-      rootDriveId,
-      folderDriveId,
-      seenChildDriveIds,
-      client,
-    )
+    await reconcileMissingDirectChildren(rootDriveId, folderDriveId, seenChildDriveIds, client)
 
     for (const childFolderDriveId of directFolders) {
       await syncFolderSubtree(childFolderDriveId)

@@ -3,6 +3,7 @@ import { Box } from '@mui/material'
 
 import { COMPONENT_LIBRARY_PATH, SIGNIN_PATH } from '@constants/paths'
 import { getDashboardSession } from '@root/auth'
+import { PAGE_LABELS } from '@constants/pageLabels'
 
 function buildStorybookUrl(): string {
   const baseUrl = process.env.STORYBOOK_URL
@@ -24,10 +25,10 @@ export default async function ComponentLibraryPage() {
   return (
     <Box sx={{ height: 'calc(100vh - 8rem)', m: -3, mt: -2 }}>
       <Box
-        component="iframe"
+        component={'iframe'}
         src={src}
-        id="storybook-iframe"
-        title="Storybook Component Library"
+        id={'storybook-iframe'}
+        title={PAGE_LABELS.componentLibrary}
         sx={{ border: 0, display: 'block', height: '100%', width: '100%' }}
       />
     </Box>

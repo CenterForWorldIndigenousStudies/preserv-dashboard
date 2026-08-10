@@ -144,16 +144,16 @@ export function AssignCollectionButton({ documentId, currentTags }: AssignCollec
   return (
     <>
       {/* Trigger button — shown in the Collection Tags field row on the detail page */}
-      <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', mt: 1.5 }}>
+      <Stack direction={'row'} spacing={1.5} sx={{ alignItems: 'center', mt: 1.5 }}>
         {alreadyAssigned ? (
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: 'baseline' }}>
-            <Typography variant="caption" color="text.secondary">
-              Tags assigned.
+          <Stack direction={'row'} spacing={0.5} sx={{ alignItems: 'baseline' }}>
+            <Typography variant={'caption'} color={'text.secondary'}>
+              {'Tags assigned.'}
             </Typography>
             <Button
               onClick={openModal}
-              variant="ghost"
-              size="sm"
+              variant={'ghost'}
+              size={'sm'}
               sx={{
                 minWidth: 0,
                 p: 0,
@@ -162,12 +162,12 @@ export function AssignCollectionButton({ documentId, currentTags }: AssignCollec
                 '&:hover': { textDecoration: 'underline' },
               }}
             >
-              Edit assignment
+              {'Edit assignment'}
             </Button>
           </Stack>
         ) : (
-          <Button onClick={openModal} variant="primary">
-            Assign Collection
+          <Button onClick={openModal} variant={'primary'}>
+            {'Assign Collection'}
           </Button>
         )}
       </Stack>
@@ -177,53 +177,52 @@ export function AssignCollectionButton({ documentId, currentTags }: AssignCollec
         open={isOpen}
         onClose={isLoading ? undefined : closeModal}
         fullWidth
-        maxWidth="sm"
-        aria-labelledby="assign-collection-dialog-title"
+        maxWidth={'sm'}
+        aria-labelledby={'assign-collection-dialog-title'}
         sx={{ '& .MuiDialog-paper': { borderRadius: 2 } }}
       >
         <DialogTitle
-          id="assign-collection-dialog-title"
+          id={'assign-collection-dialog-title'}
           sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pr: 1.5 }}
         >
-          Assign Collection
-          <IconButton onClick={closeModal} disabled={isLoading} aria-label="Close">
+          {'Assign Collection'}
+          <IconButton onClick={closeModal} disabled={isLoading} aria-label={'Close'}>
             <IconX size={20} />
           </IconButton>
         </DialogTitle>
 
         <DialogContent sx={{ display: 'grid', gap: 2.5, pt: 1.5 }}>
-          <Typography variant="body2" color="text.secondary">
-            Select one or more collections to assign to this document. This is the Path B fallback for documents that
-            arrived without a{' '}
-            <Box component="code" sx={{ fontSize: '0.75rem' }}>
-              primary_collection_tag
+          <Typography variant={'body2'} color={'text.secondary'}>
+            {`Select one or more collections to assign to this document. This is the Path B fallback for documents that arrived without a{' '}`}
+            <Box component={'code'} sx={{ fontSize: '0.75rem' }}>
+              {'primary_collection_tag'}
             </Box>
             .
           </Typography>
 
-          {error ? <Alert severity="error">{error}</Alert> : null}
+          {error ? <Alert severity={'error'}>{error}</Alert> : null}
 
-          {success ? <Alert severity="success">Collection tags saved. Reloading...</Alert> : null}
+          {success ? <Alert severity={'success'}>{'Collection tags saved. Reloading...'}</Alert> : null}
 
           {isFetchingTags ? (
-            <Button loading variant="ghost">
-              Loading available collections...
+            <Button loading variant={'ghost'}>
+              {'Loading available collections...'}
             </Button>
           ) : (
             <>
               {/* Existing tag selections */}
               {availableTags.length > 0 && (
                 <Box>
-                  <Typography variant="overline" color="text.secondary">
-                    Known Collections
+                  <Typography variant={'overline'} color={'text.secondary'}>
+                    {'Known Collections'}
                   </Typography>
-                  <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap', mt: 1 }}>
+                  <Stack direction={'row'} spacing={1} useFlexGap sx={{ flexWrap: 'wrap', mt: 1 }}>
                     {availableTags.map((tag) => (
                       <Button
                         key={tag}
                         onClick={() => toggleTag(tag)}
                         variant={selectedTags.includes(tag) ? 'primary' : 'secondary'}
-                        size="sm"
+                        size={'sm'}
                         sx={{ borderRadius: '9999px', px: 1.5, py: 0.5 }}
                       >
                         {tag}
@@ -236,7 +235,7 @@ export function AssignCollectionButton({ documentId, currentTags }: AssignCollec
               {/* Custom tag input */}
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ alignItems: { sm: 'flex-start' } }}>
                 <TextField
-                  label="Add Custom Collection"
+                  label={'Add Custom Collection'}
                   value={customTag}
                   onChange={(event) => setCustomTag(event.target.value)}
                   onKeyDown={(event) => {
@@ -245,27 +244,27 @@ export function AssignCollectionButton({ documentId, currentTags }: AssignCollec
                       addCustomTag()
                     }
                   }}
-                  placeholder="Enter collection name..."
-                  size="small"
+                  placeholder={'Enter collection name...'}
+                  size={'small'}
                   fullWidth
                 />
                 <Button
                   onClick={addCustomTag}
-                  variant="primary"
-                  size="sm"
+                  variant={'primary'}
+                  size={'sm'}
                   sx={{ flexShrink: 0, alignSelf: { xs: 'flex-start', sm: 'center' } }}
                 >
-                  Add
+                  {'Add'}
                 </Button>
               </Stack>
 
               {/* Selected preview */}
               {selectedTags.length > 0 && (
                 <Box>
-                  <Typography variant="overline" color="text.secondary">
-                    Selected ({selectedTags.length})
+                  <Typography variant={'overline'} color={'text.secondary'}>
+                    {`Selected (${selectedTags.length})`}
                   </Typography>
-                  <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap', mt: 1 }}>
+                  <Stack direction={'row'} spacing={1} useFlexGap sx={{ flexWrap: 'wrap', mt: 1 }}>
                     {selectedTags.map((tag) => (
                       <TagPill key={tag} tag={tag} onRemove={toggleTag} />
                     ))}
@@ -277,16 +276,16 @@ export function AssignCollectionButton({ documentId, currentTags }: AssignCollec
         </DialogContent>
 
         <DialogActions sx={{ px: 3, pt: 2, pb: 3 }}>
-          <Button onClick={closeModal} variant="ghost" disabled={isLoading}>
-            Cancel
+          <Button onClick={closeModal} variant={'ghost'} disabled={isLoading}>
+            {'Cancel'}
           </Button>
           <Button
             onClick={() => void handleSave()}
             disabled={isLoading || selectedTags.length === 0}
-            variant="primary"
+            variant={'primary'}
             loading={isLoading}
           >
-            Save Collection Tags
+            {'Save Collection Tags'}
           </Button>
         </DialogActions>
       </Dialog>

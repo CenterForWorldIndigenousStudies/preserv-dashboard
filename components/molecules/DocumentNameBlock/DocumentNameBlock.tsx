@@ -41,17 +41,17 @@ export function DocumentNameBlock({
   maxTruncationLength = 20,
 }: DocumentNameBlockProps): ReactElement {
   return (
-    <Stack direction="column" spacing={0.5}>
-      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+    <Stack direction={'column'} spacing={0.5}>
+      <Stack direction={'row'} spacing={1} sx={{ alignItems: 'center' }}>
         <NameElement name={name} href={href} />
         {isCandidate ? (
-          <Badge variant="warning" outlined>
-            Candidate
+          <Badge variant={'warning'} outlined>
+            {'Candidate'}
           </Badge>
         ) : null}
         {isCanonical ? (
-          <Badge variant="success" outlined>
-            Canonical
+          <Badge variant={'success'} outlined>
+            {'Canonical'}
           </Badge>
         ) : null}
       </Stack>

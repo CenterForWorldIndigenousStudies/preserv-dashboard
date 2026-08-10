@@ -9,7 +9,7 @@ const meta = {
   tags: ['autodocs'],
   args: {
     activeFilterCount: 0,
-    children: <Button variant="secondary">Advanced Search</Button>,
+    children: <Button variant={'secondary'}>Advanced Search</Button>,
   },
   parameters: {
     backgrounds: { default: 'sand' },

@@ -115,7 +115,7 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
   return (
     <>
       <Stack
-        direction="row"
+        direction={'row'}
         spacing={1.5}
         useFlexGap
         sx={{
@@ -123,17 +123,17 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
           flexWrap: 'wrap',
         }}
       >
-        <Button onClick={openModal} variant="secondary">
-          Advanced Search
+        <Button onClick={openModal} variant={'secondary'}>
+          {'Advanced Search'}
         </Button>
         {activeFilterCount > 0 ? (
           <Typography
-            variant="overline"
+            variant={'overline'}
             sx={(theme) => ({
               color: alpha(theme.palette.text.primary, 0.72),
             })}
           >
-            {activeFilterCount} active
+            {`${activeFilterCount} active`}
           </Typography>
         ) : null}
       </Stack>
@@ -142,7 +142,7 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
         open={isOpen}
         onClose={closeModal}
         fullWidth
-        maxWidth="md"
+        maxWidth={'md'}
         sx={{
           '& .MuiBackdrop-root': {
             backgroundColor: (theme) => alpha(theme.palette.text.primary, 0.3),
@@ -156,7 +156,7 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
       >
         <DialogTitle sx={{ pb: 1.5 }}>
           <Stack
-            direction="row"
+            direction={'row'}
             spacing={2}
             sx={{
               alignItems: 'flex-start',
@@ -164,22 +164,22 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
             }}
           >
             <Box>
-              <Typography variant="h6" component="h2">
+              <Typography variant={'h6'} component={'h2'}>
                 Advanced Search
               </Typography>
               <Typography
-                variant="body2"
+                variant={'body2'}
                 sx={(theme) => ({
                   mt: 0.75,
                   color: alpha(theme.palette.text.primary, 0.72),
                 })}
               >
-                All filters are optional and combine with AND logic.
+                {'All filters are optional and combine with AND logic.'}
               </Typography>
             </Box>
             <IconButton
               onClick={closeModal}
-              aria-label="Close advanced search"
+              aria-label={'Close advanced search'}
               sx={(theme) => ({
                 color: alpha(theme.palette.text.primary, 0.56),
                 '&:hover': {
@@ -205,39 +205,39 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
             }}
           >
             <TextField
-              label="Author"
+              label={'Author'}
               value={draftFilters.author ?? ''}
               onChange={(event) =>
                 setDraftFilters((previousFilters) => ({ ...previousFilters, author: event.target.value }))
               }
-              placeholder="Partial author name"
+              placeholder={'Partial author name'}
               fullWidth
               sx={{ mt: 0.5 }}
             />
 
             <TextField
-              label="Batch"
+              label={'Batch'}
               value={draftFilters.batch ?? ''}
               onChange={(event) =>
                 setDraftFilters((previousFilters) => ({ ...previousFilters, batch: event.target.value }))
               }
-              placeholder="Partial batch name"
+              placeholder={'Partial batch name'}
               fullWidth
               sx={{ mt: 0.5 }}
             />
 
             <TextField
-              label="Tag"
+              label={'Tag'}
               value={draftFilters.tag ?? ''}
               onChange={(event) =>
                 setDraftFilters((previousFilters) => ({ ...previousFilters, tag: event.target.value }))
               }
-              placeholder="Tag name or close match"
+              placeholder={'Tag name or close match'}
               fullWidth
             />
 
             <TextField
-              label="Collection"
+              label={'Collection'}
               value={draftFilters.collection ?? ''}
               onChange={(event) =>
                 setDraftFilters((previousFilters) => ({
@@ -248,7 +248,7 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
               select
               fullWidth
             >
-              <MenuItem value="">All collections</MenuItem>
+              <MenuItem value={''}>{'All collections'}</MenuItem>
               {filterOptions.collections.map((collection) => (
                 <MenuItem key={collection} value={collection}>
                   {collection}
@@ -257,7 +257,7 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
             </TextField>
 
             <TextField
-              label="Access Level"
+              label={'Access Level'}
               value={draftFilters.accessLevel ?? ''}
               onChange={(event) =>
                 setDraftFilters((previousFilters) => ({
@@ -268,7 +268,7 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
               select
               fullWidth
             >
-              <MenuItem value="">All access levels</MenuItem>
+              <MenuItem value={''}>{'All access levels'}</MenuItem>
               {filterOptions.accessLevels.map((accessLevel) => (
                 <MenuItem key={accessLevel} value={accessLevel}>
                   {ACCESS_LEVEL_LABELS[accessLevel]}
@@ -278,11 +278,11 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
           </Box>
 
           <Box>
-            <Typography variant="subtitle2" sx={{ mb: 1.25 }}>
-              Status
+            <Typography variant={'subtitle2'} sx={{ mb: 1.25 }}>
+              {'Status'}
             </Typography>
             <Stack
-              direction="row"
+              direction={'row'}
               spacing={1}
               useFlexGap
               sx={{
@@ -329,11 +329,11 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
                 },
               })}
             >
-              Document Type
+              {'Document Type'}
             </FormLabel>
             <RadioGroup
               row
-              name="document-type"
+              name={'document-type'}
               value={draftFilters.documentType ?? 'all'}
               onChange={(event) => {
                 setDraftFilters((previousFilters) => ({
@@ -372,8 +372,8 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
             }}
           >
             <TextField
-              label="Created from"
-              type="date"
+              label={'Created from'}
+              type={'date'}
               value={draftFilters.createdFrom ?? ''}
               onChange={(event) =>
                 setDraftFilters((previousFilters) => ({
@@ -386,8 +386,8 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
             />
 
             <TextField
-              label="Created to"
-              type="date"
+              label={'Created to'}
+              type={'date'}
               value={draftFilters.createdTo ?? ''}
               onChange={(event) =>
                 setDraftFilters((previousFilters) => ({
@@ -414,14 +414,14 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
             },
           }}
         >
-          <Button onClick={resetFilters} variant="ghost">
-            Reset
+          <Button onClick={resetFilters} variant={'ghost'}>
+            {'Reset'}
           </Button>
-          <Button onClick={closeModal} variant="secondary">
-            Cancel
+          <Button onClick={closeModal} variant={'secondary'}>
+            {'Cancel'}
           </Button>
-          <Button onClick={applyFilters} variant="primary">
-            Apply Filters
+          <Button onClick={applyFilters} variant={'primary'}>
+            {'Apply Filters'}
           </Button>
         </DialogActions>
       </Dialog>

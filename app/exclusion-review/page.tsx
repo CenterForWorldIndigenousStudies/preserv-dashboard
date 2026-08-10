@@ -12,8 +12,8 @@ export default function ExclusionReviewPage(): ReactElement {
     <Stack spacing={4} sx={{ width: '100%' }}>
       <PageHeader
         eyebrow={PAGE_LABELS.exclusionReview}
-        title="Review include and exclude decisions for one configured Drive root."
-        description="Browse one configured Google Drive root and record include or exclude review decisions."
+        title={'Review include and exclude decisions for one configured Drive root.'}
+        description={'Browse one configured Google Drive root and record include or exclude review decisions.'}
       />
       <ExclusionReviewWorkspace />
     </Stack>

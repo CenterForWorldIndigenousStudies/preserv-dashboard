@@ -32,27 +32,27 @@ export function Pagination({ currentPage, totalItems, pageSize, buildHref }: Pag
         py: 1.5,
       }}
     >
-      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+      <Typography variant={'body2'} sx={{ color: 'text.secondary' }}>
         Page {currentPage} of {totalPages}
       </Typography>
-      <Stack direction="row" spacing={1}>
+      <Stack direction={'row'} spacing={1}>
         <Button
           component={NextLink}
           href={buildHref(Math.max(1, currentPage - 1))}
-          variant="primary"
-          size="sm"
+          variant={'primary'}
+          size={'sm'}
           disabled={currentPage === 1}
         >
-          Previous
+          {'Previous'}
         </Button>
         <Button
           component={NextLink}
           href={buildHref(Math.min(totalPages, currentPage + 1))}
-          variant="primary"
-          size="sm"
+          variant={'primary'}
+          size={'sm'}
           disabled={currentPage === totalPages}
         >
-          Next
+          {'Next'}
         </Button>
       </Stack>
     </Paper>

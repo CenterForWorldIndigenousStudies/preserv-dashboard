@@ -3,13 +3,15 @@ import { Stack } from '@mui/material'
 import { PageHeader } from '@organisms/PageHeader'
 import { LibraryTable } from '@organisms/LibraryTable'
 import type { DocumentTableFetchResult, DocumentTableQuery } from '@organisms/DocumentTable/types'
-import { getDocumentFilterOptions, getLibraryDocuments, type DocumentsQueryParams } from '@lib/queries'
+import { getDocumentFilterOptions, getLibraryDocuments, type DocumentsQueryParams } from '@lib/queries/queries'
+import { parseLibraryQueryParams } from '@lib/queries/libraryQuery'
 import type { AdvancedSearchFilters } from '@lib/search'
 import { PAGE_LABELS } from '@constants/pageLabels'
-import { parseLibraryQueryParams } from './query'
 import type { LibraryDocumentItem, LibraryDocumentsPageResult } from 'types/documents'
 
 export const dynamic = 'force-dynamic'
+
+export const PAGE_DESCRIPTION = 'The current document state is ingested_fedora.'
 
 interface LibraryPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>
@@ -55,14 +57,10 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
     <Stack spacing={4} sx={{ width: '100%' }}>
       <PageHeader
         eyebrow={PAGE_LABELS.library}
-        title={PAGE_LABELS.library}
-        description="Documents that have successfully reached the library. The current document state is ingested_fedora."
+        title={'Documents that have been published to the library'}
+        description={PAGE_DESCRIPTION}
       />
-      <LibraryTable
-        filterOptions={filterOptions}
-        initialData={buildInitialData(result)}
-        initialQuery={initialQuery}
-      />
+      <LibraryTable filterOptions={filterOptions} initialData={buildInitialData(result)} initialQuery={initialQuery} />
     </Stack>
   )
 }

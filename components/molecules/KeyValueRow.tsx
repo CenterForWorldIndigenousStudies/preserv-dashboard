@@ -73,10 +73,10 @@ function renderDisplayValue(value: unknown): ReactNode {
  * @example
  * ```tsx
  * // Basic row
- * <KeyValueRow label="batch_id" value="abc123" />
+ * <KeyValueRow label={'batch_id'} value={'abc123'} />
  *
  * // Nested row with deeper indent
- * <KeyValueRow label="config" value={{ timeout: 30 }} level={2} />
+ * <KeyValueRow label={'config'} value={{ timeout: 30 }} level={2} />
  * ```
  */
 export function KeyValueRow({

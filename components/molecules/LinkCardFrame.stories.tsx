@@ -13,7 +13,7 @@ const meta = {
     eyebrow: 'Shared Frame',
     href: DOCUMENTS_PATH,
     title: 'Documents',
-    children: <Typography variant="body2">Browse the document collection.</Typography>,
+    children: <Typography variant={'body2'}>{'Browse the document collection.'}</Typography>,
   },
   parameters: {
     backgrounds: { default: 'sand' },
@@ -30,7 +30,7 @@ export const WithoutEyebrow: Story = {
     eyebrow: undefined,
     title: 'Review Queue',
     href: REVIEW_QUEUE_PATH,
-    children: <Typography variant="body2">Review documents requiring human decisions.</Typography>,
+    children: <Typography variant={'body2'}>{'Review documents requiring human decisions.'}</Typography>,
   },
 }
 
@@ -46,11 +46,11 @@ export const CardGrid: Story = {
         },
       }}
     >
-      <LinkCardFrame actionLabel="Open Documents" eyebrow="Collection" href={DOCUMENTS_PATH} title="Documents">
-        <Typography variant="body2">Browse the document collection.</Typography>
+      <LinkCardFrame actionLabel={'Open Documents'} eyebrow={'Collection'} href={DOCUMENTS_PATH} title={'Documents'}>
+        <Typography variant={'body2'}>{'Browse the document collection.'}</Typography>
       </LinkCardFrame>
-      <LinkCardFrame actionLabel="Open Review Queue" href={REVIEW_QUEUE_PATH} title="Review Queue">
-        <Typography variant="body2">Review documents requiring human decisions.</Typography>
+      <LinkCardFrame actionLabel={'Open Review Queue'} href={REVIEW_QUEUE_PATH} title={'Review Queue'}>
+        <Typography variant={'body2'}>{'Review documents requiring human decisions.'}</Typography>
       </LinkCardFrame>
     </Box>
   ),

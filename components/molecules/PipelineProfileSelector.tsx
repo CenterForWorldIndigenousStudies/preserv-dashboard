@@ -46,35 +46,35 @@ export function PipelineProfileSelector({
     >
       <Stack spacing={3}>
         <Box>
-          <Typography variant="overline" sx={{ color: 'text.secondary', letterSpacing: '0.16em' }}>
-            Processing Profile
+          <Typography variant={'overline'} sx={{ color: 'text.secondary', letterSpacing: '0.16em' }}>
+            {'Processing Profile'}
           </Typography>
-          <Typography component="h2" variant="h5" sx={{ mt: 0.5 }}>
-            Choose a pipeline profile
+          <Typography component={'h2'} variant={'h5'} sx={{ mt: 0.5 }}>
+            {'Choose a pipeline profile'}
           </Typography>
-          <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
-            Select a preset or build a custom pipeline step by step.
+          <Typography variant={'body2'} sx={{ mt: 1, color: 'text.secondary' }}>
+            {'Select a preset or build a custom pipeline step by step.'}
           </Typography>
         </Box>
 
         <FormControl fullWidth>
-          <InputLabel id="pipeline-profile-select-label">Profile</InputLabel>
+          <InputLabel id={'pipeline-profile-select-label'}>{'Profile'}</InputLabel>
           <Select
-            labelId="pipeline-profile-select-label"
-            id="pipeline-profile-select"
+            labelId={'pipeline-profile-select-label'}
+            id={'pipeline-profile-select'}
             value={draft.profileId}
-            label="Profile"
+            label={'Profile'}
             onChange={handleChange}
           >
             {PIPELINE_PROFILES.map((profile) => (
               <MenuItem key={profile.id} value={profile.id}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                  <Typography variant={'body1'} sx={{ fontWeight: 600 }}>
                     {profile.label}
                   </Typography>
                   {profile.id === 'custom' && (
                     <Typography
-                      variant="caption"
+                      variant={'caption'}
                       sx={{
                         px: 1,
                         py: 0.25,
@@ -83,7 +83,7 @@ export function PipelineProfileSelector({
                         color: 'text.primary',
                       }}
                     >
-                      Most Flexible
+                      {'Most Flexible'}
                     </Typography>
                   )}
                 </Box>
@@ -93,7 +93,7 @@ export function PipelineProfileSelector({
         </FormControl>
 
         {selectedProfile && (
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+          <Typography variant={'body2'} sx={{ color: 'text.secondary' }}>
             {selectedProfile.description}
           </Typography>
         )}
@@ -109,13 +109,13 @@ export function PipelineProfileSelector({
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                Pipeline Steps
+              <Typography variant={'body2'} sx={{ fontWeight: 600 }}>
+                {'Pipeline Steps'}
               </Typography>
-              <Chip label={configuredStepsLabel} size="small" variant="outlined" />
+              <Chip label={configuredStepsLabel} size={'small'} variant={'outlined'} />
             </Box>
-            <Button variant="contained" onClick={onOpenStepsModal} sx={{ borderRadius: 3 }}>
-              Configure Steps
+            <Button variant={'contained'} onClick={onOpenStepsModal} sx={{ borderRadius: 3 }}>
+              {'Configure Steps'}
             </Button>
           </Box>
 
@@ -124,7 +124,7 @@ export function PipelineProfileSelector({
               <Chip
                 key={step}
                 label={step}
-                size="small"
+                size={'small'}
                 variant={step === 'Ingest' ? 'outlined' : 'filled'}
                 sx={{
                   bgcolor: step === 'Ingest' ? 'transparent' : 'primary.main',
@@ -133,24 +133,26 @@ export function PipelineProfileSelector({
                 }}
               />
             ))}
-            {remainingStepsCount > 0 && <Chip label={`+${remainingStepsCount} more`} size="small" variant="outlined" />}
+            {remainingStepsCount > 0 && (
+              <Chip label={`+${remainingStepsCount} more`} size={'small'} variant={'outlined'} />
+            )}
           </Box>
         </Stack>
 
         {draft.mode === 'preset' && draft.profileId !== 'custom' && (
           <Box>
-            <Button variant="outlined" size="small" onClick={onConvertToCustom} sx={{ borderRadius: 3 }}>
-              Convert to Custom
+            <Button variant={'outlined'} size={'small'} onClick={onConvertToCustom} sx={{ borderRadius: 3 }}>
+              {'Convert to Custom'}
             </Button>
-            <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: 'text.secondary' }}>
-              Fine tune this preset for the current run, or convert it into a custom profile.
+            <Typography variant={'caption'} sx={{ display: 'block', mt: 0.5, color: 'text.secondary' }}>
+              {'Fine tune this preset for the current run, or convert it into a custom profile.'}
             </Typography>
           </Box>
         )}
 
         {isCustomMode && draft.mode === 'custom' && (
           <Typography
-            variant="body2"
+            variant={'body2'}
             sx={{
               p: 1.5,
               borderRadius: 2,
@@ -159,7 +161,7 @@ export function PipelineProfileSelector({
               fontWeight: 500,
             }}
           >
-            Custom mode: configure the exact steps you want in the pipeline.
+            {'Custom mode: configure the exact steps you want in the pipeline.'}
           </Typography>
         )}
       </Stack>

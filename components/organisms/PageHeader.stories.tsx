@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import Box from '@mui/material/Box'
+import { PRESERVATION_PIPELINE_TITLE } from '@constants/branding'
 import { PageHeader } from '@organisms/PageHeader'
 
 const meta = {
@@ -28,7 +29,7 @@ const meta = {
     },
   },
   args: {
-    eyebrow: 'Preservation Pipeline',
+    eyebrow: PRESERVATION_PIPELINE_TITLE,
     title: 'Document Review Queue',
     description:
       'Review and approve documents that have been processed through the CWIS preservation pipeline. Documents requiring attention appear here based on workflow triggers.',

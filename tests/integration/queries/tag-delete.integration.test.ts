@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { db } from '@lib/db'
 import { DUPLICATE_DOCUMENT } from '@constants/tags'
 
-import { deleteCollectionWithOptionsInTransaction, deleteTagInTransaction } from '@lib/queries'
+import { deleteCollectionWithOptionsInTransaction, deleteTagInTransaction } from '@lib/queries/queries'
 vi.mock('@root/auth', () => ({
   auth: () => Promise.resolve({ user: { email: 'test@example.com' } }),
   getDashboardSession: () => Promise.resolve({ user: { email: 'test@example.com' } }),

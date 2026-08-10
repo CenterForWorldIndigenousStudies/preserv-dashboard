@@ -47,7 +47,7 @@ export const BooleanValue: Story = {
 export const ReactElementValue: Story = {
   args: {
     label: 'started_at',
-    value: <DateAtom value="2026-05-19T14:30:00Z" />,
+    value: <DateAtom value={'2026-05-19T14:30:00Z'} />,
   },
 }
 

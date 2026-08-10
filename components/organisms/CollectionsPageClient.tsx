@@ -25,13 +25,13 @@ export function CollectionsPageClient({ collections, filterOptions }: Collection
     <Stack spacing={4}>
       <PageHeader
         eyebrow={PAGE_LABELS.collections}
-        title="Document Collections"
-        description="Browse all document collections and their associated documents."
+        title={'Document Collections'}
+        description={'Browse all document collections and their associated documents.'}
       />
 
       <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <Button variant="primary" startIcon={<IconPlus size={16} />} onClick={() => setIsAddDialogOpen(true)}>
-          Add Collection
+        <Button variant={'primary'} startIcon={<IconPlus size={16} />} onClick={() => setIsAddDialogOpen(true)}>
+          {'Add Collection'}
         </Button>
       </Box>
 

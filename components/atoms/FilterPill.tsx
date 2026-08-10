@@ -21,7 +21,7 @@ export function FilterPill({ label, isActive, href, className = '', sx }: Filter
       component={NextLink}
       href={href}
       className={className || undefined}
-      underline="none"
+      underline={'none'}
       sx={(theme: Theme) => {
         return {
           display: 'inline-flex',

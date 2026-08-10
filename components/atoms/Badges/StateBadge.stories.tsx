@@ -29,7 +29,7 @@ export const DefaultStateBadge: Story = {
 
 export const AllStates: Story = {
   render: () => (
-    <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap' }}>
+    <Stack direction={'row'} spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap' }}>
       {states.map((state, index) => (
         <StateBadge key={`${state}-${index}`} state={state} />
       ))}

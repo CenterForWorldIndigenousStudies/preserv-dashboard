@@ -35,7 +35,7 @@ export function ErrorContent() {
       }}
     >
       <Paper
-        component="section"
+        component={'section'}
         elevation={0}
         sx={{
           border: '1px solid',
@@ -60,22 +60,22 @@ export function ErrorContent() {
               width: 64,
             }}
           >
-            <AlertTriangle aria-hidden="true" size={32} strokeWidth={1.5} />
+            <AlertTriangle aria-hidden={'true'} size={32} strokeWidth={1.5} />
           </Box>
           <Stack spacing={1}>
-            <Typography component="h1" variant="h4" sx={{ color: 'text.primary' }}>
-              Sign In Error
+            <Typography component={'h1'} variant={'h4'} sx={{ color: 'text.primary' }}>
+              {'Sign In Error'}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant={'body2'} color={'text.secondary'}>
               {message}
             </Typography>
           </Stack>
           <Stack spacing={1.5} sx={{ width: '100%' }}>
             <Button component={Link} href={SIGNIN_PATH} fullWidth>
-              Try Again
+              {'Try Again'}
             </Button>
-            <Button component={Link} href="/" variant="secondary" fullWidth>
-              Return Home
+            <Button component={Link} href={'/'} variant={'secondary'} fullWidth>
+              {'Return Home'}
             </Button>
           </Stack>
         </Stack>

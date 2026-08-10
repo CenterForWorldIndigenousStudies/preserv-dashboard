@@ -153,7 +153,7 @@ export function DocumentVersionsButton({
           const value = row.original.hash_binary
           if (!value) return '—'
           return (
-            <Typography component="span" variant="caption" sx={{ fontFamily: 'monospace' }} title={value}>
+            <Typography component={'span'} variant={'caption'} sx={{ fontFamily: 'monospace' }} title={value}>
               {value.length > 20 ? `${value.slice(0, 20)}...` : value}
             </Typography>
           )
@@ -167,7 +167,7 @@ export function DocumentVersionsButton({
           const value = row.original.hash_content
           if (!value) return '—'
           return (
-            <Typography component="span" variant="caption" sx={{ fontFamily: 'monospace' }} title={value}>
+            <Typography component={'span'} variant={'caption'} sx={{ fontFamily: 'monospace' }} title={value}>
               {value.length > 20 ? `${value.slice(0, 20)}...` : value}
             </Typography>
           )
@@ -269,8 +269,8 @@ export function DocumentVersionsButton({
 
   return (
     <>
-      <Button onClick={openModal} variant="secondary">
-        View Versions ({versionFamily.documents.length})
+      <Button onClick={openModal} variant={'secondary'}>
+        {`View Versions (${versionFamily.documents.length})`}
       </Button>
 
       <Dialog
@@ -278,23 +278,23 @@ export function DocumentVersionsButton({
         onClose={closeModal}
         keepMounted
         fullWidth
-        maxWidth="xl"
-        aria-labelledby="document-versions-dialog-title"
+        maxWidth={'xl'}
+        aria-labelledby={'document-versions-dialog-title'}
         sx={{ '& .MuiDialog-paper': { borderRadius: 2, maxHeight: '90vh' } }}
       >
         <DialogTitle
-          id="document-versions-dialog-title"
+          id={'document-versions-dialog-title'}
           sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, pr: 1.5 }}
         >
           <Box>
-            <Typography component="span" variant="h5" color="text.primary">
-              Document Versions
+            <Typography component={'span'} variant={'h5'} color={'text.primary'}>
+              {'Document Versions'}
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              The canonical document is pinned to the top and highlighted separately from duplicate variants.
+            <Typography variant={'body2'} color={'text.secondary'} sx={{ mt: 1 }}>
+              {'The canonical document is pinned to the top and highlighted separately from duplicate variants.'}
             </Typography>
           </Box>
-          <IconButton onClick={closeModal} aria-label="Close">
+          <IconButton onClick={closeModal} aria-label={'Close'}>
             <IconX size={20} />
           </IconButton>
         </DialogTitle>

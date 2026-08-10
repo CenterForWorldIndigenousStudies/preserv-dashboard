@@ -29,7 +29,10 @@ interface BatchSummaryGroup {
   propertyCount: number
 }
 
-export function getInitialExpandedBatchState(batchIds: readonly string[], requestedBatchId?: string): MRT_ExpandedState {
+export function getInitialExpandedBatchState(
+  batchIds: readonly string[],
+  requestedBatchId?: string,
+): MRT_ExpandedState {
   if (!requestedBatchId || !batchIds.includes(requestedBatchId)) {
     return {}
   }
@@ -108,9 +111,9 @@ function BatchDetailPanel({ rows }: { rows: BatchSummary[] }): React.ReactElemen
               <Divider flexItem sx={(theme: Theme) => ({ borderColor: alpha(theme.palette.primary.main, 0.08) })} />
             }
           >
-            <KeyValueRow label="ID" value={batchId} />
-            <KeyValueRow label="Name" value={batchName} />
-            <KeyValueRow label="Started At" value={<DateAtom value={startedAt} />} />
+            <KeyValueRow label={'ID'} value={batchId} />
+            <KeyValueRow label={'Name'} value={batchName} />
+            <KeyValueRow label={'Started At'} value={<DateAtom value={startedAt} />} />
           </Stack>
         </Box>
 
@@ -125,7 +128,7 @@ function BatchDetailPanel({ rows }: { rows: BatchSummary[] }): React.ReactElemen
               mb: 1,
             }}
           >
-            Processing Details
+            {'Processing Details'}
           </Typography>
           <Stack spacing={1.5}>
             {rows.map((propertyRow) => {
@@ -176,7 +179,11 @@ function BatchDetailPanel({ rows }: { rows: BatchSummary[] }): React.ReactElemen
 // BatchSummaryTable
 // ---------------------------------------------------------------------------
 
-export function BatchSummaryTable({ data, initialExpandedBatchId, requestedBatchFound = true }: BatchSummaryTableProps) {
+export function BatchSummaryTable({
+  data,
+  initialExpandedBatchId,
+  requestedBatchFound = true,
+}: BatchSummaryTableProps) {
   const [sorting, setSorting] = useState<MRT_SortingState>([])
   const [globalFilter, setGlobalFilter] = useState('')
 
@@ -199,7 +206,11 @@ export function BatchSummaryTable({ data, initialExpandedBatchId, requestedBatch
   }, [groupedBatches])
 
   const initialExpandedState = useMemo(
-    () => getInitialExpandedBatchState(tableData.map((row) => row.batch_id), initialExpandedBatchId),
+    () =>
+      getInitialExpandedBatchState(
+        tableData.map((row) => row.batch_id),
+        initialExpandedBatchId,
+      ),
     [initialExpandedBatchId, tableData],
   )
   const [expanded, setExpanded] = useState<MRT_ExpandedState>(initialExpandedState)
@@ -215,12 +226,12 @@ export function BatchSummaryTable({ data, initialExpandedBatchId, requestedBatch
             <Box>
               <Typography sx={{ fontWeight: 700, color: 'text.primary' }}>{row.original.batch_name ?? '-'}</Typography>
               <Typography sx={{ color: 'text.secondary', fontSize: '0.8rem', mt: 0.25 }}>
-                Batch ID: {row.original.batch_id}
+                {`Batch ID: ${row.original.batch_id}`}
               </Typography>
             </Box>
             <Chip
               label={`${row.original.propertyCount} ${row.original.propertyCount === 1 ? 'property' : 'properties'}`}
-              size="small"
+              size={'small'}
               sx={{
                 backgroundColor: (theme: Theme) => alpha(theme.palette.primary.main, 0.12),
                 color: 'primary.main',
@@ -228,7 +239,7 @@ export function BatchSummaryTable({ data, initialExpandedBatchId, requestedBatch
               }}
             />
             {row.original.batch_id === initialExpandedBatchId ? (
-              <Chip label="Requested batch" size="small" color="primary" variant="outlined" />
+              <Chip label={'Requested batch'} size={'small'} color={'primary'} variant={'outlined'} />
             ) : null}
           </Box>
         ),
@@ -240,7 +251,9 @@ export function BatchSummaryTable({ data, initialExpandedBatchId, requestedBatch
         enableSorting: false,
         enableColumnFilter: false,
         Cell: () => (
-          <Typography sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>Expand to inspect batch details</Typography>
+          <Typography sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>
+            {'Expand to inspect batch details'}
+          </Typography>
         ),
       },
     ],
@@ -374,12 +387,12 @@ export function BatchSummaryTable({ data, initialExpandedBatchId, requestedBatch
   return (
     <Stack spacing={2}>
       {requestedBatchFound === false && initialExpandedBatchId ? (
-        <Alert severity="warning">Batch “{initialExpandedBatchId}” was not found.</Alert>
+        <Alert severity={'warning'}>{`Batch “${initialExpandedBatchId}” was not found.`}</Alert>
       ) : null}
       <Box>
-        <Typography sx={{ color: 'text.primary', fontWeight: 600 }}>Primary batch drill-in starts here.</Typography>
+        <Typography sx={{ color: 'text.primary', fontWeight: 600 }}>{'Primary batch drill-in starts here.'}</Typography>
         <Typography sx={{ color: 'text.secondary', fontSize: '0.9rem', mt: 0.75 }}>
-          Expand a batch row to inspect the current repository-backed processing details for that run.
+          {'Expand a batch row to inspect the current repository-backed processing details for that run.'}
         </Typography>
       </Box>
       <MaterialReactTable table={table} />

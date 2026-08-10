@@ -27,8 +27,8 @@ export default function AuthStatus() {
   }
 
   return (
-    <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+    <Stack direction={'row'} spacing={1.5} sx={{ alignItems: 'center' }}>
+      <Typography variant={'caption'} sx={{ color: 'text.secondary' }}>
         {session?.user?.email}
       </Typography>
       <Button

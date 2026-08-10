@@ -11,7 +11,7 @@ interface TableStatProps {
 export function TableStat({ label, value, sx }: TableStatProps): ReactElement {
   return (
     <Box
-      component="span"
+      component={'span'}
       sx={(theme: Theme) => ({
         display: 'inline-flex',
         alignItems: 'center',
@@ -24,8 +24,8 @@ export function TableStat({ label, value, sx }: TableStatProps): ReactElement {
       })}
     >
       <Typography
-        component="span"
-        variant="caption"
+        component={'span'}
+        variant={'caption'}
         sx={{
           color: 'text.secondary',
           fontSize: '0.75rem',
@@ -37,8 +37,8 @@ export function TableStat({ label, value, sx }: TableStatProps): ReactElement {
         {label}
       </Typography>
       <Typography
-        component="span"
-        variant="caption"
+        component={'span'}
+        variant={'caption'}
         sx={{
           color: 'text.primary',
           fontSize: '0.75rem',

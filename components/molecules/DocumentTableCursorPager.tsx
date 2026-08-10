@@ -19,7 +19,7 @@ export function DocumentTableCursorPager({
 }: DocumentTableCursorPagerProps): ReactElement {
   return (
     <Stack
-      direction="row"
+      direction={'row'}
       spacing={1.5}
       sx={{
         alignItems: 'center',
@@ -29,12 +29,12 @@ export function DocumentTableCursorPager({
         flexWrap: 'wrap',
       }}
     >
-      <Typography variant="body2">Page {page}</Typography>
-      <Stack direction="row" spacing={1}>
-        <Button variant="ghost" size="sm" disabled={!pageInfo.hasPreviousPage} onClick={onPrevious}>
+      <Typography variant={'body2'}>Page {page}</Typography>
+      <Stack direction={'row'} spacing={1}>
+        <Button variant={'ghost'} size={'sm'} disabled={!pageInfo.hasPreviousPage} onClick={onPrevious}>
           {'Previous'}
         </Button>
-        <Button variant="ghost" size="sm" disabled={!pageInfo.hasNextPage} onClick={onNext}>
+        <Button variant={'ghost'} size={'sm'} disabled={!pageInfo.hasNextPage} onClick={onNext}>
           {'Next'}
         </Button>
       </Stack>

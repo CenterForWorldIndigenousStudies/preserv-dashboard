@@ -18,7 +18,7 @@ export function SourceFolderId({ value, maxTruncationLength = 0, sx }: SourceFol
   const truncatedSourceFolderId = truncateString(normalizedValue, maxTruncationLength)
   if (!isLikelyGoogleDriveId(normalizedValue)) {
     return (
-      <Typography component="span" variant="body2" sx={sx}>
+      <Typography component={'span'} variant={'body2'} sx={sx}>
         {truncatedSourceFolderId}
       </Typography>
     )
@@ -30,10 +30,10 @@ export function SourceFolderId({ value, maxTruncationLength = 0, sx }: SourceFol
   return (
     <Link
       href={href}
-      target="_blank"
-      rel="noreferrer"
+      target={'_blank'}
+      rel={'noreferrer'}
       title={title}
-      underline="hover"
+      underline={'hover'}
       sx={(theme: Theme) => ({
         color: theme.palette.primary.main,
         ...theme.unstable_sx(sx ?? {}),

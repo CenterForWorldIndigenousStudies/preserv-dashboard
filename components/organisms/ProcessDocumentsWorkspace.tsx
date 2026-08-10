@@ -295,7 +295,7 @@ export function ProcessDocumentsWorkspace({ initialBatches }: ProcessDocumentsWo
       />
 
       <Card
-        component="section"
+        component={'section'}
         sx={(theme) => ({ p: 3, borderRadius: 2, border: 1, borderColor: theme.palette.divider, boxShadow: 2 })}
       >
         <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
@@ -309,21 +309,22 @@ export function ProcessDocumentsWorkspace({ initialBatches }: ProcessDocumentsWo
             }}
           >
             <Box sx={{ maxWidth: '42rem' }}>
-              <Typography variant="overline" sx={{ color: 'primary.main', fontWeight: 600, letterSpacing: '0.18em' }}>
-                Recent Launch Activity
+              <Typography variant={'overline'} sx={{ color: 'primary.main', fontWeight: 600, letterSpacing: '0.18em' }}>
+                {'Recent Launch Activity'}
               </Typography>
-              <Typography component="h2" variant="h6" sx={{ mt: 1.5, fontWeight: 600, color: 'text.primary' }}>
-                Keep early batch feedback nearby, then hand off to Batches.
+              <Typography component={'h2'} variant={'h6'} sx={{ mt: 1.5, fontWeight: 600, color: 'text.primary' }}>
+                {'Keep early batch feedback nearby, then hand off to Batches.'}
               </Typography>
               <Typography sx={{ mt: 1.5, fontSize: '0.875rem', lineHeight: 1.6, color: 'text.secondary' }}>
-                These recent status cards help confirm that a launch was accepted and show the first operational
-                signals. Use Batches as the primary workspace for routine monitoring and deeper investigation.
+                {
+                  'These recent status cards help confirm that a launch was accepted and show the first operational signals. Use Batches as the primary workspace for routine monitoring and deeper investigation.'
+                }
               </Typography>
             </Box>
             <Button
               component={Link}
               href={BATCHES_PATH}
-              variant="outlined"
+              variant={'outlined'}
               sx={{
                 borderRadius: 999,
                 px: 2,
@@ -340,7 +341,7 @@ export function ProcessDocumentsWorkspace({ initialBatches }: ProcessDocumentsWo
                 },
               }}
             >
-              Continue to Batches
+              {'Continue to Batches'}
             </Button>
           </Box>
 

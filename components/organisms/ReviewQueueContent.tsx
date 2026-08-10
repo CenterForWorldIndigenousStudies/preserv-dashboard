@@ -8,7 +8,7 @@ import {
   normalizeTextFilter,
   type FilterOptions,
 } from '@lib/search'
-import { getNeedsReviewDocuments, type DocumentsQueryParams } from '@lib/queries'
+import { getNeedsReviewDocuments, type DocumentsQueryParams } from '@lib/queries/queries'
 import { DocumentsTable } from '@organisms/DocumentsTable'
 import type { ReviewQueuePageProps } from 'types/reviewQueue'
 
@@ -72,7 +72,7 @@ export async function ReviewQueueContent({ searchParams }: ReviewQueuePageProps)
       initialData={initialData}
       initialQuery={initialQuery}
       filterOptions={REVIEW_QUEUE_FILTER_OPTIONS}
-      variant="reviewQueue"
+      variant={'reviewQueue'}
       fixedStatuses={['NEEDS_REVIEW']}
       serverDriven
     />

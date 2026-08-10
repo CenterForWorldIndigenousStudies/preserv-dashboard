@@ -40,7 +40,7 @@ vi.mock('@lib/editHistory', () => ({
   createEditHistoryEntry: vi.fn(),
 }))
 
-import { getDocumentDetail } from '@lib/queries'
+import { getDocumentDetail } from '@lib/queries/queries'
 
 describe('getDocumentDetail version family mapping', () => {
   afterEach(() => {
@@ -110,7 +110,7 @@ describe('getDocumentDetail version family mapping', () => {
             document_versions: [
               {
                 id: 'dv-canonical',
-              documents: {
+                documents: {
                   id: 'canonical-1',
                   filesize: 1024,
                   hash_binary: 'binary-a',

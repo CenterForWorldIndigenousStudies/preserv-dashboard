@@ -128,18 +128,18 @@ export function TagSearchCombobox({
         const helperText = 'inputValue' in option ? null : (getOptionHelperText?.(option) ?? null)
 
         return (
-          <Box component="li" key={key} {...optionProps} sx={{ opacity: optionDisabled ? 0.5 : 1 }}>
+          <Box component={'li'} key={key} {...optionProps} sx={{ opacity: optionDisabled ? 0.5 : 1 }}>
             <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-              <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500 }}>
+              <Typography variant={'body2'} sx={{ color: 'text.primary', fontWeight: 500 }}>
                 {option.name}
               </Typography>
               {option.notes ? (
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                <Typography variant={'body2'} sx={{ color: 'text.secondary' }}>
                   {option.notes}
                 </Typography>
               ) : null}
               {helperText ? (
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                <Typography variant={'body2'} sx={{ color: 'text.secondary' }}>
                   {helperText}
                 </Typography>
               ) : null}
@@ -152,7 +152,7 @@ export function TagSearchCombobox({
           {...params}
           label={label}
           placeholder={placeholder}
-          helperText="Choose an existing tag or create a new one"
+          helperText={'Choose an existing tag or create a new one'}
         />
       )}
     />

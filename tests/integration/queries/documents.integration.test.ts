@@ -6,7 +6,7 @@ vi.mock('@lib/editHistory', () => ({
   createEditHistoryEntry: vi.fn(),
 }))
 
-import { getAllDocuments, getDocuments, getReadyForLibraryDocuments } from '@lib/queries'
+import { getAllDocuments, getDocuments, getReadyForLibraryDocuments } from '@lib/queries/queries'
 import { resetTestDatabase, shouldSkipDashboardIntegrationSuite } from '../support/test-db'
 import { withRollbackTransaction } from '../support/transaction'
 

@@ -74,17 +74,17 @@ export function NormalizePassCard({
           onChange={handleCheckboxChange}
           disabled={disabled}
           slotProps={{ input: { 'aria-label': `Enable Normalize Pass ${passNumber}` } }}
-          size="small"
+          size={'small'}
         />
         <Box sx={{ flex: 1 }}>
-          <Typography variant="body1" sx={{ fontWeight: 600 }}>
+          <Typography variant={'body1'} sx={{ fontWeight: 600 }}>
             Normalize Pass {passNumber}
           </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+          <Typography variant={'body2'} sx={{ color: 'text.secondary' }}>
             {passNumber === 1 ? 'Split and rotate original documents' : 'Split and rotate artifacts from Pass 1'}
           </Typography>
           {helperText && (
-            <Typography variant="caption" sx={{ color: 'text.primary', mt: 0.5 }}>
+            <Typography variant={'caption'} sx={{ color: 'text.primary', mt: 0.5 }}>
               {helperText}
             </Typography>
           )}
@@ -94,7 +94,7 @@ export function NormalizePassCard({
         {state.enabled && (
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Typography
-              variant="caption"
+              variant={'caption'}
               sx={{
                 color: 'primary.main',
                 fontWeight: 600,
@@ -109,7 +109,7 @@ export function NormalizePassCard({
               }}
               onClick={() => onAdvancedToggle(!state.advancedOpen)}
             >
-              Advanced
+              {'Advanced'}
             </Typography>
           </Box>
         )}
@@ -135,15 +135,15 @@ export function NormalizePassCard({
                       checked={option.id === 'split' ? state.subSelection.split : state.subSelection.rotate}
                       onChange={option.id === 'split' ? handleSplitChange : handleRotateChange}
                       slotProps={{ input: { 'aria-label': option.label } }}
-                      size="small"
+                      size={'small'}
                     />
                   }
                   label={
                     <Box>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      <Typography variant={'body2'} sx={{ fontWeight: 600 }}>
                         {option.label}
                       </Typography>
-                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                      <Typography variant={'caption'} sx={{ color: 'text.secondary' }}>
                         {option.description}
                       </Typography>
                     </Box>

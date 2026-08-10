@@ -37,10 +37,10 @@ export function DocumentTableToolbar({
         mb: 2,
       }}
     >
-      <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+      <Stack direction={'row'} spacing={1} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
         <TextField
-          type="search"
-          size="small"
+          type={'search'}
+          size={'small'}
           placeholder={searchPlaceholder}
           value={searchValue}
           onChange={(event) => onSearchChange(event.target.value)}
@@ -48,9 +48,9 @@ export function DocumentTableToolbar({
           sx={{ width: { xs: '100%', sm: 256 } }}
         />
         {leadingSlot}
-        {typeof totalCount === 'number' ? <TableStat label="results" value={totalCount} /> : null}
+        {typeof totalCount === 'number' ? <TableStat label={'results'} value={totalCount} /> : null}
       </Stack>
-      <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+      <Stack direction={'row'} spacing={1} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
         {trailingSlot}
         <DocumentTablePageSizeSelect options={pageSizeOptions} value={pageSize} onChange={onPageSizeChange} />
       </Stack>

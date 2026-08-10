@@ -6,6 +6,8 @@ import ReactMarkdown, { type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { PageHeader } from '@organisms/PageHeader'
 import { MermaidDiagram } from '@organisms/MermaidDiagram'
+import { PAGE_LABELS } from '@constants/pageLabels'
+import { PRESERVATION_PIPELINE_TITLE } from '@constants/branding'
 
 export const dynamic = 'force-dynamic'
 const db_schema_markdown = 'PRESERVATION_DB.md'
@@ -22,7 +24,7 @@ export default function DbPage(): ReactElement {
     pre({ children }: { children?: React.ReactNode }) {
       return (
         <Box
-          component="pre"
+          component={'pre'}
           sx={{
             bgcolor: 'background.default',
             borderRadius: 2,
@@ -55,7 +57,7 @@ export default function DbPage(): ReactElement {
       if (language) {
         return (
           <Box
-            component="code"
+            component={'code'}
             sx={{
               bgcolor: 'rgba(233, 105, 84, 0.1)',
               borderRadius: 1,
@@ -75,7 +77,7 @@ export default function DbPage(): ReactElement {
 
       return (
         <Box
-          component="code"
+          component={'code'}
           sx={{
             bgcolor: 'background.default',
             borderRadius: 1,
@@ -93,7 +95,7 @@ export default function DbPage(): ReactElement {
     },
     h1({ children }: { children?: React.ReactNode }) {
       return (
-        <Typography component="h2" variant="h4" sx={{ color: 'text.primary', mb: 2, mt: 0 }}>
+        <Typography component={'h2'} variant={'h4'} sx={{ color: 'text.primary', mb: 2, mt: 0 }}>
           {children}
         </Typography>
       )
@@ -103,46 +105,13 @@ export default function DbPage(): ReactElement {
   return (
     <Stack spacing={4} sx={{ width: '100%' }}>
       <PageHeader
-        eyebrow="Database Schema"
-        title="CWIS Preservation Database"
-        description="Entity-relationship diagram and design notes for the preservation MySQL database."
+        eyebrow={PAGE_LABELS.db}
+        title={`${PRESERVATION_PIPELINE_TITLE} Database Schema`}
+        description={'Entity-relationship diagram and design notes for the preservation MySQL database.'}
       />
 
       <Paper
-        component="section"
-        elevation={0}
-        sx={{
-          bgcolor: 'rgba(255, 255, 255, 0.8)',
-          border: '1px solid',
-          borderColor: 'rgba(53, 88, 52, 0.15)',
-          boxShadow: 2,
-          px: { xs: 2, md: 3 },
-          py: 2,
-        }}
-      >
-        <Typography variant="body2" color="text.secondary">
-          Edit the schema diagram in{' '}
-          <Box
-            component="code"
-            sx={{
-              bgcolor: 'background.default',
-              borderRadius: 1,
-              color: 'text.primary',
-              fontFamily: 'monospace',
-              fontSize: '0.75rem',
-              fontWeight: 500,
-              px: 0.75,
-              py: 0.25,
-            }}
-          >
-            documentation/db/PRESERVATION_DB.md
-          </Box>
-          . Changes appear here after deployment.
-        </Typography>
-      </Paper>
-
-      <Paper
-        component="article"
+        component={'article'}
         elevation={0}
         sx={{
           bgcolor: 'background.paper',

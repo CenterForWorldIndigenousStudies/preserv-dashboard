@@ -35,7 +35,7 @@ export default async function RootLayout({
   const session = await getDashboardSession()
 
   return (
-    <html lang="en" className={`${rethinkSans.variable} ${workSans.variable}`}>
+    <html lang={'en'} className={`${rethinkSans.variable} ${workSans.variable}`}>
       <body>
         <AppRouterCacheProvider>
           <Providers session={session}>

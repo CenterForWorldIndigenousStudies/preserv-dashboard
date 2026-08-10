@@ -19,7 +19,10 @@ function isRollbackRequestEligible({
   lifecycleStatus,
   manualEditAfterStart,
   rollbackStatus,
-}: Pick<BatchRollbackControlProps, 'publicationStatus' | 'lifecycleStatus' | 'manualEditAfterStart' | 'rollbackStatus'>): boolean {
+}: Pick<
+  BatchRollbackControlProps,
+  'publicationStatus' | 'lifecycleStatus' | 'manualEditAfterStart' | 'rollbackStatus'
+>): boolean {
   return (
     publicationStatus === 'not_started' &&
     ['created', 'queued', 'running', 'completed'].includes(lifecycleStatus ?? '') &&
@@ -33,7 +36,10 @@ function isRollbackRetryEligible({
   lifecycleStatus,
   manualEditAfterStart,
   rollbackStatus,
-}: Pick<BatchRollbackControlProps, 'publicationStatus' | 'lifecycleStatus' | 'manualEditAfterStart' | 'rollbackStatus'>): boolean {
+}: Pick<
+  BatchRollbackControlProps,
+  'publicationStatus' | 'lifecycleStatus' | 'manualEditAfterStart' | 'rollbackStatus'
+>): boolean {
   return (
     publicationStatus === 'not_started' &&
     lifecycleStatus === 'rollback_failed' &&
@@ -55,7 +61,12 @@ export function BatchRollbackControl({
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
 
-  const canRequest = isRollbackRequestEligible({ publicationStatus, lifecycleStatus, manualEditAfterStart, rollbackStatus })
+  const canRequest = isRollbackRequestEligible({
+    publicationStatus,
+    lifecycleStatus,
+    manualEditAfterStart,
+    rollbackStatus,
+  })
   const canRetry = isRollbackRetryEligible({ publicationStatus, lifecycleStatus, manualEditAfterStart, rollbackStatus })
 
   async function handleRetry() {
@@ -79,22 +90,28 @@ export function BatchRollbackControl({
   if (canRetry) {
     return (
       <Stack spacing={1.5}>
-        <Typography variant="subtitle2">Retry rollback</Typography>
-        <Button variant="outlined" color="warning" onClick={() => void handleRetry()} disabled={pending}>
+        <Typography variant={'subtitle2'}>Retry rollback</Typography>
+        <Button variant={'outlined'} color={'warning'} onClick={() => void handleRetry()} disabled={pending}>
           {pending ? 'Retrying rollback…' : 'Retry rollback'}
         </Button>
-        {message ? <Alert severity="info">{message}</Alert> : null}
-        {error ? <Alert severity="error">{error}</Alert> : null}
+        {message ? <Alert severity={'info'}>{message}</Alert> : null}
+        {error ? <Alert severity={'error'}>{error}</Alert> : null}
       </Stack>
     )
   }
 
   if (!canRequest) {
     if (manualEditAfterStart && !rollbackStatus) {
-      return <Alert severity="warning">Rollback unavailable: a Dashboard edit was made after the batch started.</Alert>
+      return (
+        <Alert severity={'warning'}>{'Rollback unavailable: a Dashboard edit was made after the batch started.'}</Alert>
+      )
     }
     if (manualEditAfterStart && rollbackStatus === 'failed') {
-      return <Alert severity="warning">Rollback retry unavailable: a Dashboard edit was made after the batch started.</Alert>
+      return (
+        <Alert severity={'warning'}>
+          {'Rollback retry unavailable: a Dashboard edit was made after the batch started.'}
+        </Alert>
+      )
     }
     return null
   }
@@ -119,20 +136,20 @@ export function BatchRollbackControl({
 
   return (
     <Stack spacing={1.5}>
-      <Typography variant="subtitle2">Undo batch</Typography>
+      <Typography variant={'subtitle2'}>{'Undo batch'}</Typography>
       <TextField
-        label="Reason (optional)"
+        label={'Reason (optional)'}
         value={reason}
         onChange={(event) => setReason(event.target.value)}
         multiline
         minRows={2}
-        size="small"
+        size={'small'}
       />
-      <Button variant="outlined" color="warning" onClick={() => void handleRollback()} disabled={pending}>
+      <Button variant={'outlined'} color={'warning'} onClick={() => void handleRollback()} disabled={pending}>
         {pending ? 'Requesting rollback…' : 'Undo batch'}
       </Button>
-      {message ? <Alert severity="info">{message}</Alert> : null}
-      {error ? <Alert severity="error">{error}</Alert> : null}
+      {message ? <Alert severity={'info'}>{message}</Alert> : null}
+      {error ? <Alert severity={'error'}>{error}</Alert> : null}
     </Stack>
   )
 }

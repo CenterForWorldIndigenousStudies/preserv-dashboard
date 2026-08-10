@@ -21,14 +21,14 @@ type Story = StoryObj<typeof meta>
 export const SignedIn: Story = {
   render: () => (
     <Paper sx={{ border: '1px solid', borderColor: 'divider', p: 3 }}>
-      <Typography variant="overline" sx={{ color: 'text.secondary' }}>
+      <Typography variant={'overline'} sx={{ color: 'text.secondary' }}>
         Authenticated
       </Typography>
-      <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', mt: 0.5 }}>
-        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+      <Stack direction={'row'} spacing={1.5} sx={{ alignItems: 'center', mt: 0.5 }}>
+        <Typography variant={'body2'} sx={{ fontWeight: 500 }}>
           marygoldaross@cwis.org
         </Typography>
-        <Button variant="ghost">Sign Out</Button>
+        <Button variant={'ghost'}>{'Sign Out'}</Button>
       </Stack>
     </Paper>
   ),
@@ -37,11 +37,11 @@ export const SignedIn: Story = {
 export const SignedOut: Story = {
   render: () => (
     <Paper sx={{ border: '1px solid', borderColor: 'divider', p: 3 }}>
-      <Typography variant="overline" sx={{ color: 'text.secondary' }}>
-        Not Authenticated
+      <Typography variant={'overline'} sx={{ color: 'text.secondary' }}>
+        {'Not Authenticated'}
       </Typography>
       <Stack sx={{ mt: 0.5 }}>
-        <Button variant="primary">Sign In</Button>
+        <Button variant={'primary'}>{'Sign In'}</Button>
       </Stack>
     </Paper>
   ),

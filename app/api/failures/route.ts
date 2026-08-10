@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-import { getFailures } from '@lib/queries'
+import { getFailures } from '@lib/queries/queries'
 
 export const preferredRegion = 'sfo1'
 

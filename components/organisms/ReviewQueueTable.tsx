@@ -134,11 +134,11 @@ export function ReviewQueueTable({ initialData }: ReviewQueueTableProps) {
         Cell: ({ row }) => {
           const value = row.original.name
           if (!value) {
-            return <span className="txt-muted">--</span>
+            return <span className={'txt-muted'}>--</span>
           }
 
           return (
-            <Link href={`${DOCUMENTS_PATH}/${row.original.id}`} className="lnk-review-queue">
+            <Link href={`${DOCUMENTS_PATH}/${row.original.id}`} className={'lnk-review-queue'}>
               {value}
             </Link>
           )
@@ -151,7 +151,7 @@ export function ReviewQueueTable({ initialData }: ReviewQueueTableProps) {
         Cell: ({ row }) => {
           const value = row.original.validation_status
           if (!value) {
-            return <span className="txt-muted">--</span>
+            return <span className={'txt-muted'}>--</span>
           }
 
           return <Badge variant={getStatusBadgeVariant(value)}>{value}</Badge>
@@ -181,9 +181,9 @@ export function ReviewQueueTable({ initialData }: ReviewQueueTableProps) {
         size: 280,
         enableSorting: false,
         Cell: ({ row }) => (
-          <div className="row-review-reasons">
+          <div className={'row-review-reasons'}>
             {row.original.queue_reasons.map((reason) => (
-              <Badge key={`${row.original.id}-${reason}`} variant="info">
+              <Badge key={`${row.original.id}-${reason}`} variant={'info'}>
                 {reason}
               </Badge>
             ))}
@@ -286,72 +286,72 @@ export function ReviewQueueTable({ initialData }: ReviewQueueTableProps) {
   })
 
   return (
-    <div className="sec-review-queue">
-      <div className="panel-review-queue panel-review-queue-filters">
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} className="form-review-queue">
+    <div className={'sec-review-queue'}>
+      <div className={'panel-review-queue panel-review-queue-filters'}>
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} className={'form-review-queue'}>
           <TextField
-            label="Search review queue"
+            label={'Search review queue'}
             value={search}
             onChange={(event) => {
               setSearch(event.target.value)
               setPagination((current) => ({ ...current, pageIndex: 0 }))
             }}
-            placeholder="Search by document, validator, status, or reason"
+            placeholder={'Search by document, validator, status, or reason'}
             fullWidth
           />
 
           <TextField
-            label="Validation status"
+            label={'Validation status'}
             value={validationStatus}
             onChange={(event) => {
               setValidationStatus(event.target.value)
               setPagination((current) => ({ ...current, pageIndex: 0 }))
             }}
-            placeholder="Example: IN_PROGRESS"
+            placeholder={'Example: IN_PROGRESS'}
             fullWidth
           />
 
           <FormControl fullWidth>
-            <InputLabel id="review-queue-needs-review-label">Needs review</InputLabel>
+            <InputLabel id={'review-queue-needs-review-label'}>{'Needs review'}</InputLabel>
             <Select
-              labelId="review-queue-needs-review-label"
-              label="Needs review"
+              labelId={'review-queue-needs-review-label'}
+              label={'Needs review'}
               value={needsReviewFilter}
               onChange={(event: SelectChangeEvent<ReviewQueueBooleanFilter>) => {
                 setNeedsReviewFilter(event.target.value)
                 setPagination((current) => ({ ...current, pageIndex: 0 }))
               }}
             >
-              <MenuItem value="all">All</MenuItem>
-              <MenuItem value="true">Yes</MenuItem>
-              <MenuItem value="false">No</MenuItem>
+              <MenuItem value={'all'}>{'All'}</MenuItem>
+              <MenuItem value={'true'}>{'Yes'}</MenuItem>
+              <MenuItem value={'false'}>{'No'}</MenuItem>
             </Select>
           </FormControl>
 
           <FormControl fullWidth>
-            <InputLabel id="review-queue-sensitive-label">Sensitive</InputLabel>
+            <InputLabel id={'review-queue-sensitive-label'}>{'Sensitive'}</InputLabel>
             <Select
-              labelId="review-queue-sensitive-label"
-              label="Sensitive"
+              labelId={'review-queue-sensitive-label'}
+              label={'Sensitive'}
               value={sensitiveFilter}
               onChange={(event: SelectChangeEvent<ReviewQueueBooleanFilter>) => {
                 setSensitiveFilter(event.target.value)
                 setPagination((current) => ({ ...current, pageIndex: 0 }))
               }}
             >
-              <MenuItem value="all">All</MenuItem>
-              <MenuItem value="true">Yes</MenuItem>
-              <MenuItem value="false">No</MenuItem>
+              <MenuItem value={'all'}>{'All'}</MenuItem>
+              <MenuItem value={'true'}>{'Yes'}</MenuItem>
+              <MenuItem value={'false'}>{'No'}</MenuItem>
             </Select>
           </FormControl>
         </Stack>
 
-        <Typography variant="body2" className="txt-review-summary">
-          Documents are queued when validation is in progress, needs revision, or metadata marks them for review.
+        <Typography variant={'body2'} className={'txt-review-summary'}>
+          {'Documents are queued when validation is in progress, needs revision, or metadata marks them for review.'}
         </Typography>
       </div>
 
-      {errorMessage ? <Alert severity="error">{errorMessage}</Alert> : null}
+      {errorMessage ? <Alert severity={'error'}>{errorMessage}</Alert> : null}
 
       <MaterialReactTable table={table} />
     </div>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseLibraryQueryParams } from '@root/app/library/query'
+import { parseLibraryQueryParams } from '@lib/queries/libraryQuery'
 
 describe('parseLibraryQueryParams', () => {
   it('normalizes empty Library URL parameters to the shared table defaults', () => {

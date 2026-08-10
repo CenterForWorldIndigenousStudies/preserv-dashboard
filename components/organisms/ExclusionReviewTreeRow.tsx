@@ -1,24 +1,8 @@
 import type { ReactElement } from 'react'
-import {
-  ChevronDown,
-  ChevronRight,
-  ExternalLink,
-  FileText,
-  Folder,
-  RefreshCw,
-} from 'lucide-react'
-import {
-  Box,
-  IconButton,
-  Stack,
-  Tooltip,
-  Typography,
-} from '@mui/material'
+import { ChevronDown, ChevronRight, ExternalLink, FileText, Folder, RefreshCw } from 'lucide-react'
+import { Box, IconButton, Stack, Tooltip, Typography } from '@mui/material'
 
-import type {
-  ExclusionReviewDecision,
-  ExclusionReviewTreeNode,
-} from 'types/exclusionReview'
+import type { ExclusionReviewDecision, ExclusionReviewTreeNode } from 'types/exclusionReview'
 
 export interface ExclusionReviewTreeRowProps {
   depth: number
@@ -26,10 +10,7 @@ export interface ExclusionReviewTreeRowProps {
   isExpanded?: boolean
   isLoading?: boolean
   node: ExclusionReviewTreeNode
-  onDecisionChange: (
-    driveId: string,
-    decision: ExclusionReviewDecision,
-  ) => void
+  onDecisionChange: (driveId: string, decision: ExclusionReviewDecision) => void
   onSyncBranch: (driveId: string) => void
   onToggle?: (driveId: string) => void
 }
@@ -58,10 +39,7 @@ function getBackgroundColor(node: ExclusionReviewTreeNode): string {
   return 'transparent'
 }
 
-function isDecisionActive(
-  node: ExclusionReviewTreeNode,
-  decision: ExclusionReviewDecision,
-): boolean {
+function isDecisionActive(node: ExclusionReviewTreeNode, decision: ExclusionReviewDecision): boolean {
   if (!decision) {
     return false
   }
@@ -73,11 +51,7 @@ function isDecisionActive(
   return node.explicitDecision === decision
 }
 
-function getDecisionButtonStyles(
-  node: ExclusionReviewTreeNode,
-  decision: ExclusionReviewDecision,
-  disabled: boolean,
-) {
+function getDecisionButtonStyles(node: ExclusionReviewTreeNode, decision: ExclusionReviewDecision, disabled: boolean) {
   const active = isDecisionActive(node, decision)
 
   if (!active) {
@@ -110,16 +84,8 @@ export function ExclusionReviewTreeRow({
 }: ExclusionReviewTreeRowProps): ReactElement {
   const showToggle = node.itemType === 'folder'
   const decisionButtonsDisabled = !isEditor || node.isInheritedLocked
-  const includeStyles = getDecisionButtonStyles(
-    node,
-    'include',
-    decisionButtonsDisabled,
-  )
-  const excludeStyles = getDecisionButtonStyles(
-    node,
-    'exclude',
-    decisionButtonsDisabled,
-  )
+  const includeStyles = getDecisionButtonStyles(node, 'include', decisionButtonsDisabled)
+  const excludeStyles = getDecisionButtonStyles(node, 'exclude', decisionButtonsDisabled)
 
   return (
     <Box
@@ -140,7 +106,7 @@ export function ExclusionReviewTreeRow({
           <IconButton
             aria-label={isExpanded ? 'Collapse folder' : 'Expand folder'}
             onClick={() => onToggle?.(node.driveId)}
-            size="small"
+            size={'small'}
           >
             {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
           </IconButton>
@@ -153,11 +119,7 @@ export function ExclusionReviewTreeRow({
         {node.itemType === 'folder' ? <Folder size={18} /> : <FileText size={18} />}
       </Box>
 
-      <Stack
-        direction="row"
-        spacing={0.75}
-        sx={{ alignItems: 'center', justifySelf: 'start', minWidth: 0 }}
-      >
+      <Stack direction={'row'} spacing={0.75} sx={{ alignItems: 'center', justifySelf: 'start', minWidth: 0 }}>
         <Tooltip title={node.name}>
           <Typography
             noWrap
@@ -173,22 +135,17 @@ export function ExclusionReviewTreeRow({
         </Tooltip>
 
         <Stack
-          aria-label="Inline actions"
-          direction="row"
+          aria-label={'Inline actions'}
+          direction={'row'}
           spacing={0.5}
           sx={{ alignItems: 'center', flexShrink: 0 }}
         >
           <IconButton
             aria-disabled={decisionButtonsDisabled}
-            aria-label="Include"
+            aria-label={'Include'}
             disabled={decisionButtonsDisabled}
-            onClick={() =>
-              onDecisionChange(
-                node.driveId,
-                node.explicitDecision === 'include' ? null : 'include',
-              )
-            }
-            size="small"
+            onClick={() => onDecisionChange(node.driveId, node.explicitDecision === 'include' ? null : 'include')}
+            size={'small'}
             sx={{
               ...includeStyles,
               border: '1px solid rgba(0, 0, 0, 0.12)',
@@ -197,21 +154,16 @@ export function ExclusionReviewTreeRow({
               width: 28,
             }}
           >
-            <Typography sx={{ fontWeight: 700 }} variant="caption">
-              i
+            <Typography sx={{ fontWeight: 700 }} variant={'caption'}>
+              {'i'}
             </Typography>
           </IconButton>
           <IconButton
             aria-disabled={decisionButtonsDisabled}
-            aria-label="Exclude"
+            aria-label={'Exclude'}
             disabled={decisionButtonsDisabled}
-            onClick={() =>
-              onDecisionChange(
-                node.driveId,
-                node.explicitDecision === 'exclude' ? null : 'exclude',
-              )
-            }
-            size="small"
+            onClick={() => onDecisionChange(node.driveId, node.explicitDecision === 'exclude' ? null : 'exclude')}
+            size={'small'}
             sx={{
               ...excludeStyles,
               border: '1px solid rgba(0, 0, 0, 0.12)',
@@ -220,15 +172,15 @@ export function ExclusionReviewTreeRow({
               width: 28,
             }}
           >
-            <Typography sx={{ fontWeight: 700 }} variant="caption">
-              e
+            <Typography sx={{ fontWeight: 700 }} variant={'caption'}>
+              {'e'}
             </Typography>
           </IconButton>
           {node.itemType === 'folder' ? (
             <IconButton
-              aria-label="Sync branch"
+              aria-label={'Sync branch'}
               onClick={() => onSyncBranch(node.driveId)}
-              size="small"
+              size={'small'}
               sx={{
                 border: '1px solid rgba(0, 0, 0, 0.12)',
                 borderRadius: 1.5,
@@ -240,12 +192,12 @@ export function ExclusionReviewTreeRow({
             </IconButton>
           ) : null}
           <IconButton
-            aria-label="Open in Drive"
-            component="a"
+            aria-label={'Open in Drive'}
+            component={'a'}
             href={node.driveUrl}
-            rel="noreferrer"
-            size="small"
-            target="_blank"
+            rel={'noreferrer'}
+            size={'small'}
+            target={'_blank'}
             sx={{
               border: '1px solid rgba(0, 0, 0, 0.12)',
               borderRadius: 1.5,

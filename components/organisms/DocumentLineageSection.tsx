@@ -133,32 +133,33 @@ export function DocumentLineageSection({ detail }: { detail: DocumentDetail }): 
     batchLinks.length > 0
 
   return (
-    <Stack component="section" spacing={3}>
+    <Stack component={'section'} spacing={3}>
       <Box>
-        <Typography component="h2" variant="h5" color="text.primary">
+        <Typography component={'h2'} variant={'h5'} color={'text.primary'}>
           Lineage and Provenance
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          Review related version family details, recorded source metadata, and batch links that are already stored for
-          this document.
+        <Typography variant={'body2'} color={'text.secondary'} sx={{ mt: 1 }}>
+          {
+            'Review related version family details, recorded source metadata, and batch links that are already stored for this document.'
+          }
         </Typography>
       </Box>
 
       {!hasSignals ? (
         <Paper elevation={0} sx={lineageCardSx}>
-          <Typography variant="body2" color="text.secondary">
-            No lineage or provenance details are available for this document.
+          <Typography variant={'body2'} color={'text.secondary'}>
+            {'No lineage or provenance details are available for this document.'}
           </Typography>
         </Paper>
       ) : null}
 
       {detail.version_family !== null || currentDocumentStatus !== null ? (
         <Paper elevation={0} sx={lineageCardSx}>
-          <Typography component="h3" variant="h6" color="text.primary">
-            Related version family
+          <Typography component={'h3'} variant={'h6'} color={'text.primary'}>
+            {'Related version family'}
           </Typography>
           <Box
-            component="dl"
+            component={'dl'}
             sx={{
               display: 'grid',
               gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' },
@@ -168,11 +169,11 @@ export function DocumentLineageSection({ detail }: { detail: DocumentDetail }): 
             }}
           >
             {currentDocumentStatus !== null ? (
-              <Box component="div" sx={metadataValuePanelSx}>
-                <Typography component="dt" variant="overline" color="text.secondary">
-                  Current document status
+              <Box component={'div'} sx={metadataValuePanelSx}>
+                <Typography component={'dt'} variant={'overline'} color={'text.secondary'}>
+                  {'Current document status'}
                 </Typography>
-                <Typography component="dd" variant="body2" color="text.primary" sx={{ m: 0, mt: 1 }}>
+                <Typography component={'dd'} variant={'body2'} color={'text.primary'} sx={{ m: 0, mt: 1 }}>
                   {currentDocumentStatus}
                 </Typography>
               </Box>
@@ -180,24 +181,24 @@ export function DocumentLineageSection({ detail }: { detail: DocumentDetail }): 
 
             {detail.version_family !== null ? (
               <>
-                <Box component="div" sx={metadataValuePanelSx}>
-                  <Typography component="dt" variant="overline" color="text.secondary">
-                    Canonical document ID
+                <Box component={'div'} sx={metadataValuePanelSx}>
+                  <Typography component={'dt'} variant={'overline'} color={'text.secondary'}>
+                    {'Canonical document ID'}
                   </Typography>
                   <Typography
-                    component="dd"
-                    variant="body2"
-                    color="text.primary"
+                    component={'dd'}
+                    variant={'body2'}
+                    color={'text.primary'}
                     sx={{ m: 0, mt: 1, overflowWrap: 'anywhere' }}
                   >
                     {detail.version_family.canonical_document_id}
                   </Typography>
                 </Box>
-                <Box component="div" sx={metadataValuePanelSx}>
-                  <Typography component="dt" variant="overline" color="text.secondary">
-                    Related documents
+                <Box component={'div'} sx={metadataValuePanelSx}>
+                  <Typography component={'dt'} variant={'overline'} color={'text.secondary'}>
+                    {'Related documents'}
                   </Typography>
-                  <Typography component="dd" variant="body2" color="text.primary" sx={{ m: 0, mt: 1 }}>
+                  <Typography component={'dd'} variant={'body2'} color={'text.primary'} sx={{ m: 0, mt: 1 }}>
                     {detail.version_family.documents.length}
                   </Typography>
                 </Box>
@@ -206,9 +207,10 @@ export function DocumentLineageSection({ detail }: { detail: DocumentDetail }): 
           </Box>
 
           {detail.version_family === null && detail.document.is_duplicate ? (
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-              A duplicate document tag is recorded for this document, but no related version family is available to
-              display.
+            <Typography variant={'body2'} color={'text.secondary'} sx={{ mt: 2 }}>
+              {
+                'A duplicate document tag is recorded for this document, but no related version family is available to display.'
+              }
             </Typography>
           ) : null}
         </Paper>
@@ -216,21 +218,21 @@ export function DocumentLineageSection({ detail }: { detail: DocumentDetail }): 
 
       {recordedSourceMetadata.length > 0 ? (
         <Paper elevation={0} sx={lineageCardSx}>
-          <Typography component="h3" variant="h6" color="text.primary">
-            Recorded source metadata
+          <Typography component={'h3'} variant={'h6'} color={'text.primary'}>
+            {'Recorded source metadata'}
           </Typography>
           <TableContainer sx={{ mt: 3, overflowX: 'auto' }}>
-            <Table size="small" sx={{ minWidth: 520 }}>
+            <Table size={'small'} sx={{ minWidth: 520 }}>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={tableHeaderCellSx}>Field</TableCell>
-                  <TableCell sx={tableHeaderCellSx}>Value</TableCell>
+                  <TableCell sx={tableHeaderCellSx}>{'Field'}</TableCell>
+                  <TableCell sx={tableHeaderCellSx}>{'Value'}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {recordedSourceMetadata.map((field) => (
                   <TableRow key={field.name}>
-                    <TableCell component="th" scope="row" sx={{ ...tableBodyCellSx, fontWeight: 600 }}>
+                    <TableCell component={'th'} scope={'row'} sx={{ ...tableBodyCellSx, fontWeight: 600 }}>
                       {field.name}
                     </TableCell>
                     <TableCell sx={tableBodyCellSx}>{renderMetadataValue(field)}</TableCell>
@@ -244,22 +246,22 @@ export function DocumentLineageSection({ detail }: { detail: DocumentDetail }): 
 
       {batchLinks.length > 0 ? (
         <Paper elevation={0} sx={lineageCardSx}>
-          <Typography component="h3" variant="h6" color="text.primary">
-            Batch links
+          <Typography component={'h3'} variant={'h6'} color={'text.primary'}>
+            {'Batch links'}
           </Typography>
           <TableContainer sx={{ mt: 3, overflowX: 'auto' }}>
-            <Table size="small" sx={{ minWidth: 640 }}>
+            <Table size={'small'} sx={{ minWidth: 640 }}>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={tableHeaderCellSx}>Batch name</TableCell>
-                  <TableCell sx={tableHeaderCellSx}>Batch origin</TableCell>
-                  <TableCell sx={tableHeaderCellSx}>Added at</TableCell>
+                  <TableCell sx={tableHeaderCellSx}>{'Batch name'}</TableCell>
+                  <TableCell sx={tableHeaderCellSx}>{'Batch origin'}</TableCell>
+                  <TableCell sx={tableHeaderCellSx}>{'Added at'}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {batchLinks.map((batchLink) => (
                   <TableRow key={batchLink.id}>
-                    <TableCell component="th" scope="row" sx={{ ...tableBodyCellSx, fontWeight: 600 }}>
+                    <TableCell component={'th'} scope={'row'} sx={{ ...tableBodyCellSx, fontWeight: 600 }}>
                       {batchLink.batch_name ?? '—'}
                     </TableCell>
                     <TableCell sx={tableBodyCellSx}>{batchLink.batch_origin ?? '—'}</TableCell>

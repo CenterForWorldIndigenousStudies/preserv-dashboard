@@ -18,7 +18,7 @@ interface TagPillProps {
 export function TagPill({ tag, onRemove, className = '' }: TagPillProps): ReactElement {
   return (
     <Box
-      component="span"
+      component={'span'}
       className={className || undefined}
       sx={(theme: Theme) => {
         const actionColor = theme.palette.primary.main
@@ -35,11 +35,11 @@ export function TagPill({ tag, onRemove, className = '' }: TagPillProps): ReactE
         }
       }}
     >
-      <Typography component="span" variant="body2" color="inherit">
+      <Typography component={'span'} variant={'body2'} color={'inherit'}>
         {tag}
       </Typography>
       <IconButton
-        size="small"
+        size={'small'}
         onClick={() => {
           onRemove(tag)
         }}

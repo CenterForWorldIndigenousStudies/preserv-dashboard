@@ -47,15 +47,15 @@ function StepRow({ label, description, checked, disabled = false, onChange }: St
             onChange={handleChange}
             disabled={disabled}
             slotProps={{ input: { 'aria-label': label } }}
-            size="small"
+            size={'small'}
           />
         }
         label={
           <Box>
-            <Typography variant="body1" sx={{ fontWeight: 600 }}>
+            <Typography variant={'body1'} sx={{ fontWeight: 600 }}>
               {label}
             </Typography>
-            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            <Typography variant={'body2'} sx={{ color: 'text.secondary' }}>
               {description}
             </Typography>
           </Box>
@@ -222,14 +222,14 @@ export function PipelineStepSelector({ draft, mode, onDraftChange }: PipelineSte
     >
       <Stack spacing={3}>
         <Box>
-          <Typography variant="overline" sx={{ color: 'text.secondary', letterSpacing: '0.16em' }}>
-            Pipeline Steps
+          <Typography variant={'overline'} sx={{ color: 'text.secondary', letterSpacing: '0.16em' }}>
+            {'Pipeline Steps'}
           </Typography>
-          <Typography component="h3" variant="h5" sx={{ mt: 0.5 }}>
-            Select processing steps
+          <Typography component={'h3'} variant={'h5'} sx={{ mt: 0.5 }}>
+            {'Select processing steps'}
           </Typography>
-          <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
-            Steps run in order. Ingest always runs first.
+          <Typography variant={'body2'} sx={{ mt: 1, color: 'text.secondary' }}>
+            {'Steps run in order. Ingest always runs first.'}
             {isCustomMode
               ? ' Select the steps you want to include.'
               : ' You can fine tune this preset here before converting it to custom.'}
@@ -238,8 +238,8 @@ export function PipelineStepSelector({ draft, mode, onDraftChange }: PipelineSte
 
         <Stack spacing={2}>
           <StepRow
-            label="Ingest"
-            description="Ingest documents from Google Drive source folders"
+            label={'Ingest'}
+            description={'Ingest documents from Google Drive source folders'}
             checked={true}
             disabled={true}
             onChange={() => {}}
@@ -264,15 +264,15 @@ export function PipelineStepSelector({ draft, mode, onDraftChange }: PipelineSte
           />
 
           <StepRow
-            label="OCR Processor"
-            description="Run OCR on normalized documents"
+            label={'OCR Processor'}
+            description={'Run OCR on normalized documents'}
             checked={draft.steps.ocrProcessor}
             onChange={(value) => handleSimpleStepToggle('ocrProcessor', value)}
           />
 
           <StepRow
-            label="Content Dedup"
-            description="Detect and handle duplicate content across documents"
+            label={'Content Dedup'}
+            description={'Detect and handle duplicate content across documents'}
             checked={draft.steps.contentDedup}
             onChange={(value) => handleSimpleStepToggle('contentDedup', value)}
           />
@@ -280,8 +280,8 @@ export function PipelineStepSelector({ draft, mode, onDraftChange }: PipelineSte
           {draft.steps.metadataExtraction !== undefined && (
             <Stack spacing={1}>
               <StepRow
-                label="Metadata Extraction"
-                description="Extract metadata from documents"
+                label={'Metadata Extraction'}
+                description={'Extract metadata from documents'}
                 checked={draft.steps.metadataExtraction}
                 onChange={(value) => handleSimpleStepToggle('metadataExtraction', value)}
               />
@@ -307,17 +307,18 @@ export function PipelineStepSelector({ draft, mode, onDraftChange }: PipelineSte
                             'aria-label': 'Use OpenAI Batch Service for metadata extraction',
                           },
                         }}
-                        size="small"
+                        size={'small'}
                       />
                     }
                     label={
                       <Box>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          Use OpenAI Batch Service for metadata extraction
+                        <Typography variant={'body2'} sx={{ fontWeight: 600 }}>
+                          {'Use OpenAI Batch Service for metadata extraction'}
                         </Typography>
-                        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                          Submits the first metadata extraction wave to OpenAI Batch. This is separate from the
-                          dashboard processing batch.
+                        <Typography variant={'body2'} sx={{ color: 'text.secondary' }}>
+                          {
+                            'Submits the first metadata extraction wave to OpenAI Batch. This is separate from the dashboard processing batch.'
+                          }
                         </Typography>
                       </Box>
                     }
@@ -330,8 +331,8 @@ export function PipelineStepSelector({ draft, mode, onDraftChange }: PipelineSte
 
           {draft.steps.metadataValidation !== undefined && (
             <StepRow
-              label="Metadata Validation"
-              description="Validate extracted metadata (future)"
+              label={'Metadata Validation'}
+              description={'Validate extracted metadata (future)'}
               checked={draft.steps.metadataValidation}
               onChange={(value) => handleSimpleStepToggle('metadataValidation', value)}
             />
@@ -339,8 +340,8 @@ export function PipelineStepSelector({ draft, mode, onDraftChange }: PipelineSte
 
           {draft.steps.rightsDeterminator !== undefined && (
             <StepRow
-              label="Rights Determinator"
-              description="Determine rights and permissions (future)"
+              label={'Rights Determinator'}
+              description={'Determine rights and permissions (future)'}
               checked={draft.steps.rightsDeterminator}
               onChange={(value) => handleSimpleStepToggle('rightsDeterminator', value)}
             />

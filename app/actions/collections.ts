@@ -10,7 +10,7 @@ import {
   getDocumentsNotInCollection,
   removeDocumentsFromCollection,
   type CollectionDocumentQueryParams,
-} from '@lib/queries'
+} from '@lib/queries/queries'
 import type { PaginatedDocumentsResult } from 'types/pagination'
 
 export async function getDocumentsForCollectionAction(

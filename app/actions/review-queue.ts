@@ -6,7 +6,7 @@ import {
   getNeedsReviewDocuments,
   getReviewQueueDocuments,
   type DocumentsQueryParams,
-} from '@lib/queries'
+} from '@lib/queries/queries'
 import type { ReviewQueueDecision, ReviewQueueDocumentsQueryParams } from 'types/reviewQueue'
 import { getDashboardSession } from '@root/auth'
 import { REVIEW_QUEUE_PATH } from '@constants/paths'

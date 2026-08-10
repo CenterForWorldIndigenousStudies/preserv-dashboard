@@ -15,7 +15,7 @@ export default function LayoutBody({ children, isAuthenticated }: LayoutBodyProp
     return (
       <Box sx={{ display: 'flex', minHeight: '100vh', overflow: 'hidden' }}>
         <Box
-          component="main"
+          component={'main'}
           sx={{
             flex: 1,
             overflowY: 'auto',

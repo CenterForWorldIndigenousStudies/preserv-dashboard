@@ -2,10 +2,7 @@ import type { ReactElement } from 'react'
 import { Box, Button, Stack, Typography } from '@mui/material'
 
 import { ExclusionReviewTreeRow } from '@organisms/ExclusionReviewTreeRow'
-import type {
-  ExclusionReviewDecision,
-  ExclusionReviewTreeNode,
-} from 'types/exclusionReview'
+import type { ExclusionReviewDecision, ExclusionReviewTreeNode } from 'types/exclusionReview'
 
 export interface ExclusionReviewBranchState {
   childIds: string[]
@@ -20,10 +17,7 @@ export interface ExclusionReviewTreeProps {
   expandedIds: string[]
   isEditor: boolean
   nodes: Record<string, ExclusionReviewTreeNode>
-  onDecisionChange: (
-    driveId: string,
-    decision: ExclusionReviewDecision,
-  ) => void
+  onDecisionChange: (driveId: string, decision: ExclusionReviewDecision) => void
   onLoadMore: (driveId: string) => void
   onSyncBranch: (driveId: string) => void
   onToggle: (driveId: string) => void
@@ -87,8 +81,8 @@ export function ExclusionReviewTree({
         {isExpanded && children.length > 0 ? children : null}
         {isExpanded && branch?.hasMore ? (
           <Box sx={{ pl: `${(depth + 1) * 16 + 32}px` }}>
-            <Button onClick={() => onLoadMore(driveId)} size="small" variant="text">
-              Load more
+            <Button onClick={() => onLoadMore(driveId)} size={'small'} variant={'text'}>
+              {'Load more'}
             </Button>
           </Box>
         ) : null}
@@ -98,9 +92,5 @@ export function ExclusionReviewTree({
 
   const treeMarkup = renderBranch(rootId, 0)
 
-  return treeMarkup ? (
-    treeMarkup
-  ) : (
-    <Typography color="text.secondary">No items available.</Typography>
-  )
+  return treeMarkup ? treeMarkup : <Typography color={'text.secondary'}>{'No items available.'}</Typography>
 }

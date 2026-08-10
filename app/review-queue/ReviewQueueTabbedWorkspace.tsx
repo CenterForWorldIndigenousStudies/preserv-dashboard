@@ -67,7 +67,7 @@ export function ReviewQueueTabbedWorkspace({
 
   return (
     <Stack
-      component="section"
+      component={'section'}
       spacing={3}
       sx={{
         border: '1px solid',
@@ -78,26 +78,27 @@ export function ReviewQueueTabbedWorkspace({
       }}
     >
       <Box>
-        <Typography component="h2" variant="h5" sx={{ color: 'text.primary' }}>
-          Review decisions and next step
+        <Typography component={'h2'} variant={'h5'} sx={{ color: 'text.primary' }}>
+          {'Review decisions and next step'}
         </Typography>
-        <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
-          Review Queue is where human judgment happens. Approve and reject decisions happen here, and approved work
-          continues to Ready for Library as the next operational checkpoint.
+        <Typography variant={'body2'} sx={{ mt: 1, color: 'text.secondary' }}>
+          {
+            'Review Queue is where human judgment happens. Approve and reject decisions happen here, and approved work continues to Ready for Library as the next operational  checkpoint.'
+          }
         </Typography>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mt: 2 }}>
-          <Badge variant="danger" sx={{ alignSelf: 'flex-start' }}>
-            {needsReviewCount} need review
+          <Badge variant={'danger'} sx={{ alignSelf: 'flex-start' }}>
+            {`${needsReviewCount} need review`}
           </Badge>
-          <Badge variant="success" sx={{ alignSelf: 'flex-start' }}>
-            {readyForLibraryCount} ready for library
+          <Badge variant={'success'} sx={{ alignSelf: 'flex-start' }}>
+            {`${readyForLibraryCount} ready for library`}
           </Badge>
         </Stack>
       </Box>
 
       <Box
-        role="tablist"
-        aria-label="Review Queue sections"
+        role={'tablist'}
+        aria-label={'Review Queue sections'}
         sx={{
           display: 'flex',
           gap: 1,
@@ -114,10 +115,10 @@ export function ReviewQueueTabbedWorkspace({
           return (
             <Box
               key={tabId}
-              component="button"
+              component={'button'}
               id={tabIds[tabId]}
-              role="tab"
-              type="button"
+              role={'tab'}
+              type={'button'}
               aria-selected={isActive}
               aria-controls={panelIds[tabId]}
               onClick={() => setActiveTab(tabId)}
@@ -142,7 +143,7 @@ export function ReviewQueueTabbedWorkspace({
 
       <Box
         id={panelIds.needsReview}
-        role="tabpanel"
+        role={'tabpanel'}
         aria-labelledby={tabIds.needsReview}
         hidden={activeTab !== 'needsReview'}
       >
@@ -151,36 +152,38 @@ export function ReviewQueueTabbedWorkspace({
 
       <Box
         id={panelIds.readyForLibrary}
-        role="tabpanel"
+        role={'tabpanel'}
         aria-labelledby={tabIds.readyForLibrary}
         hidden={activeTab !== 'readyForLibrary'}
       >
         <Stack spacing={2.5}>
           <Box>
-            <Typography component="h3" variant="h5" sx={{ color: 'text.primary' }}>
-              Ready for Library preview
+            <Typography component={'h3'} variant={'h5'} sx={{ color: 'text.primary' }}>
+              {'Ready for Library preview'}
             </Typography>
-            <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
-              Approved documents leave the review queue and move into Ready for Library as the next operational
-              checkpoint before handoff.
+            <Typography variant={'body2'} sx={{ mt: 1, color: 'text.secondary' }}>
+              {
+                'Approved documents leave the review queue and move into Ready for Library as the next operational checkpoint before handoff.'
+              }
             </Typography>
           </Box>
 
-          <Badge variant="success" sx={{ alignSelf: 'flex-start' }}>
-            {readyForLibraryCount} documents currently ready for library review
+          <Badge variant={'success'} sx={{ alignSelf: 'flex-start' }}>
+            {`${readyForLibraryCount} documents currently ready for library review`}
           </Badge>
 
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            Use the standalone Ready for Library workspace to inspect the ingest-ready backlog, review edge cases, and
-            continue pre-handoff readiness work.
+          <Typography variant={'body2'} sx={{ color: 'text.secondary' }}>
+            {
+              'Use the standalone Ready for Library workspace to inspect the ingest-ready backlog, review edge cases, and continue pre-handoff readiness work.'
+            }
           </Typography>
 
           <ActionCard
             href={READY_FOR_LIBRARY_PATH}
-            eyebrow="Next Operational Checkpoint"
-            title="Ready for Library"
-            description="Open the standalone readiness workspace for approved documents before handoff."
-            label="Open Ready for Library"
+            eyebrow={'Next Operational Checkpoint'}
+            title={'Ready for Library'}
+            description={'Open the standalone readiness workspace for approved documents before handoff.'}
+            label={'Open Ready for Library'}
           />
         </Stack>
       </Box>
