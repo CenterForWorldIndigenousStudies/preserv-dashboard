@@ -15,9 +15,12 @@ import { REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES, REVIEW_QUEUE_SORT_FIELDS } fr
 import { db } from '@lib/db'
 import { createEditHistoryEntry } from '@lib/editHistory'
 import { buildNameHash } from '@lib/tagHash'
-import { getSearchCandidateLimit } from '@lib/fuzzySearch'
-import { BATCH_SEARCH_MIN_SCORE, scoreBatchSearchCandidates } from '@lib/batchSearch'
 import { parseMetadataValue } from '@lib/metadata'
+import {
+  resolveBatchSearchIds,
+  resolveTagSearchIds,
+  type SearchQueryDbClient,
+} from '@lib/queries/searchResolvers'
 import {
   Prisma,
   PrismaClient,
@@ -25,10 +28,8 @@ import {
 } from '@lib/prisma/generated/client'
 import {
   getProtectedTagDeletionMessage,
-  getTagSearchCandidateLimit,
   isProtectedTagName,
   normalizeTagName,
-  scoreTags,
 } from '@lib/tagUtils'
 import type { CollectionWithMeta } from 'types/collections'
 import type {
@@ -199,10 +200,6 @@ const DEFAULT_DOCUMENT_TABLE_PAGE_SIZE: (typeof DOCUMENT_TABLE_PAGE_SIZES)[numbe
 const DEFAULT_OVERVIEW_SORT_FIELD: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number] = 'name'
 const DEFAULT_OVERVIEW_SECONDARY_SORT_FIELD: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number] = 'updated_at'
 const DEFAULT_OVERVIEW_SORT_TIMESTAMP = new Date('1000-01-01T00:00:00.000Z')
-const OVERVIEW_TAG_SEARCH_LIMIT = 25
-const OVERVIEW_TAG_SEARCH_MIN_SCORE = 25
-const OVERVIEW_BATCH_SEARCH_LIMIT = 25
-
 export interface DocumentsQueryParams extends AdvancedSearchFilters {
   page?: number
   pageSize?: number
@@ -246,7 +243,7 @@ function normalizeOverviewSortField(
   return isOverviewSortField(value) ? value : DEFAULT_OVERVIEW_SORT_FIELD
 }
 
-export type QueryDbClient = PrismaClient | Prisma.TransactionClient
+export type QueryDbClient = SearchQueryDbClient
 
 export async function getAllDocuments(
   params: DocumentsQueryParams = {},
@@ -262,10 +259,10 @@ export async function getAllDocuments(
       orderBy: params.orderBy,
       sortDirection: params.sortDirection,
       search: normalizeTextFilter(params.search ?? params.author),
-      tagIds: await resolveOverviewTagIds(normalizeTextFilter(params.tag), client),
+      tagIds: await resolveTagSearchIds(normalizeTextFilter(params.tag), client),
       statuses: normalizeStatuses(params.statuses),
       documentType: normalizeDocumentType(params.documentType),
-      batchIds: await resolveOverviewBatchIds(normalizeTextFilter(params.batch), client),
+      batchIds: await resolveBatchSearchIds(normalizeTextFilter(params.batch), client),
       createdFrom: normalizeDateFilter(params.createdFrom),
       createdTo: normalizeDateFilter(params.createdTo),
       collection: normalizeTextFilter(params.collection),
@@ -349,11 +346,11 @@ async function buildLibraryQueryContext(
   const defaultSecondarySortExpression = usesDefaultSort
     ? Prisma.raw(OVERVIEW_SORT_EXPRESSIONS[DEFAULT_OVERVIEW_SECONDARY_SORT_FIELD])
     : undefined
-  const tagIds = await resolveOverviewTagIds(normalizeTextFilter(params.tag), client)
+  const tagIds = await resolveTagSearchIds(normalizeTextFilter(params.tag), client)
   const cursor = params.cursorValue && params.cursorId ? { value: params.cursorValue, id: params.cursorId } : null
   const filterParams = {
     accessLevel: normalizeAccessLevel(params.accessLevel),
-    batchIds: await resolveOverviewBatchIds(normalizeTextFilter(params.batch), client),
+    batchIds: await resolveBatchSearchIds(normalizeTextFilter(params.batch), client),
     collection: normalizeTextFilter(params.collection),
     createdFrom: normalizeDateFilter(params.createdFrom),
     createdTo: normalizeDateFilter(params.createdTo),
@@ -583,9 +580,9 @@ export async function getNeedsReviewDocuments(
       sortDirection: params.sortDirection,
       search: normalizeTextFilter(params.search ?? params.author),
       statuses,
-      tagIds: await resolveOverviewTagIds(normalizeTextFilter(params.tag), client),
+      tagIds: await resolveTagSearchIds(normalizeTextFilter(params.tag), client),
       documentType: normalizeDocumentType(params.documentType),
-      batchIds: await resolveOverviewBatchIds(normalizeTextFilter(params.batch), client),
+      batchIds: await resolveBatchSearchIds(normalizeTextFilter(params.batch), client),
       createdFrom: normalizeDateFilter(params.createdFrom),
       createdTo: normalizeDateFilter(params.createdTo),
       collection: normalizeTextFilter(params.collection),
@@ -623,7 +620,7 @@ export async function getNeedsReviewDocumentsCount(
   const statuses = resolveReviewQueueValidationStatuses(params.statuses)
   const whereSql = buildNeedsReviewDocumentsWhereSql({
     accessLevel: normalizeAccessLevel(params.accessLevel),
-    batchIds: await resolveOverviewBatchIds(normalizeTextFilter(params.batch), client),
+    batchIds: await resolveBatchSearchIds(normalizeTextFilter(params.batch), client),
     collection: normalizeTextFilter(params.collection),
     createdFrom: normalizeDateFilter(params.createdFrom),
     createdTo: normalizeDateFilter(params.createdTo),
@@ -636,7 +633,7 @@ export async function getNeedsReviewDocumentsCount(
     sortExpression: Prisma.raw(OVERVIEW_SORT_EXPRESSIONS[DEFAULT_OVERVIEW_SORT_FIELD]),
     sortField: DEFAULT_OVERVIEW_SORT_FIELD,
     statuses,
-    tagIds: await resolveOverviewTagIds(normalizeTextFilter(params.tag), client),
+    tagIds: await resolveTagSearchIds(normalizeTextFilter(params.tag), client),
   })
 
   const result = await client.$queryRaw<Array<{ total: bigint | number }>>(Prisma.sql`
@@ -647,47 +644,6 @@ export async function getNeedsReviewDocumentsCount(
 
   const total = result[0]?.total
   return typeof total === 'bigint' ? Number(total) : Number(total ?? 0)
-}
-
-async function resolveOverviewTagIds(
-  tagTerm: string | undefined,
-  client: QueryDbClient,
-): Promise<string[] | undefined> {
-  if (!tagTerm) {
-    return undefined
-  }
-
-  const candidates = await client.tags.findMany({
-    orderBy: { name: 'asc' },
-    take: getTagSearchCandidateLimit(OVERVIEW_TAG_SEARCH_LIMIT),
-    select: {
-      id: true,
-      name: true,
-      notes: true,
-    },
-  })
-
-  const matches = scoreTags(candidates, tagTerm, OVERVIEW_TAG_SEARCH_LIMIT)
-  return matches.filter((tag) => tag.score >= OVERVIEW_TAG_SEARCH_MIN_SCORE).map((tag) => tag.id)
-}
-
-async function resolveOverviewBatchIds(
-  batchTerm: string | undefined,
-  client: QueryDbClient,
-): Promise<string[] | undefined> {
-  if (!batchTerm) {
-    return undefined
-  }
-
-  const candidates = await client.batches.findMany({
-    orderBy: { name: 'asc' },
-    take: getSearchCandidateLimit(OVERVIEW_BATCH_SEARCH_LIMIT),
-    select: { id: true, name: true },
-  })
-
-  const matches = scoreBatchSearchCandidates(candidates, batchTerm, OVERVIEW_BATCH_SEARCH_LIMIT)
-
-  return matches.filter((match) => match.score >= BATCH_SEARCH_MIN_SCORE).map((match) => match.id)
 }
 
 export async function applyReviewQueueDecision(params: {
@@ -1558,10 +1514,10 @@ export async function getDocumentsForCollection(
       mode: 'in',
       ...params,
       author: normalizeTextFilter(params?.author),
-      tagIds: await resolveOverviewTagIds(normalizeTextFilter(params?.tag), client),
+      tagIds: await resolveTagSearchIds(normalizeTextFilter(params?.tag), client),
       statuses: normalizeStatuses(params?.statuses),
       documentType: normalizeDocumentType(params?.documentType),
-      batchIds: await resolveOverviewBatchIds(normalizeTextFilter(params?.batch), client),
+      batchIds: await resolveBatchSearchIds(normalizeTextFilter(params?.batch), client),
       createdFrom: normalizeDateFilter(params?.createdFrom),
       createdTo: normalizeDateFilter(params?.createdTo),
       accessLevel: normalizeAccessLevel(params?.accessLevel),
@@ -1581,10 +1537,10 @@ export async function getDocumentsNotInCollection(
       mode: 'out',
       ...params,
       author: normalizeTextFilter(params?.author),
-      tagIds: await resolveOverviewTagIds(normalizeTextFilter(params?.tag), client),
+      tagIds: await resolveTagSearchIds(normalizeTextFilter(params?.tag), client),
       statuses: normalizeStatuses(params?.statuses),
       documentType: normalizeDocumentType(params?.documentType),
-      batchIds: await resolveOverviewBatchIds(normalizeTextFilter(params?.batch), client),
+      batchIds: await resolveBatchSearchIds(normalizeTextFilter(params?.batch), client),
       createdFrom: normalizeDateFilter(params?.createdFrom),
       createdTo: normalizeDateFilter(params?.createdTo),
       accessLevel: normalizeAccessLevel(params?.accessLevel),
@@ -3065,8 +3021,8 @@ export async function getReadyForLibraryDocuments(
     item.name = nameMap.get(item.id) ?? null
   }
 
-  const tagIds = await resolveOverviewTagIds(normalizeTextFilter(params.tag), client)
-  const batchIds = await resolveOverviewBatchIds(normalizeTextFilter(params.batch), client)
+  const tagIds = await resolveTagSearchIds(normalizeTextFilter(params.tag), client)
+  const batchIds = await resolveBatchSearchIds(normalizeTextFilter(params.batch), client)
   const filteredResult = await getOverviewDocumentsPage(
     {
       page: 1,

@@ -1,13 +1,25 @@
-import { PrismaClient, type Prisma } from '@lib/prisma/generated/client'
+import {
+  PrismaClient,
+  type Prisma,
+  type document_quality_validation_status as DocumentQualityValidationStatus,
+} from '@lib/prisma/generated/client'
 
 import { db } from '@lib/db'
-import { normalizeTextFilter } from '@lib/search'
+import { resolveBatchSearchIds, resolveTagSearchIds } from '@lib/queries/searchResolvers'
+import {
+  normalizeAccessLevel,
+  normalizeDateFilter,
+  normalizeDocumentType,
+  normalizeTextFilter,
+  parseStatusesParam,
+} from '@lib/search'
 import type {
   BatchDetail,
   BatchListItem,
   BatchListPageResult,
   BatchOverviewMetrics,
   BatchProperty,
+  BatchQueryFilters,
   BatchTableQuery,
 } from 'types/batches'
 
@@ -15,6 +27,12 @@ const DEFAULT_PAGE_SIZE = 25
 const SUPPORTED_PAGE_SIZES = [25, 50, 100, 250, 500] as const
 
 type BatchQueryDbClient = PrismaClient | Prisma.TransactionClient
+
+const EMPTY_BATCH_QUERY: BatchTableQuery = {
+  page: 1,
+  pageSize: DEFAULT_PAGE_SIZE,
+  filters: {},
+}
 
 interface BatchDatabaseRow {
   id: string
@@ -55,6 +73,17 @@ export function parseBatchQueryParams(params: Record<string, string | string[] |
   const pageSize = Number(firstSearchParam(params.pageSize))
   const sortDirection = firstSearchParam(params.sortDirection)
   const cursorDirection = firstSearchParam(params.cursorDirection)
+  const filters = {
+    author: normalizeTextFilter(firstSearchParam(params.author)),
+    tag: normalizeTextFilter(firstSearchParam(params.tag)),
+    statuses: parseStatusesParam(params.statuses),
+    documentType: normalizeDocumentType(firstSearchParam(params.documentType)),
+    batch: normalizeTextFilter(firstSearchParam(params.batch)),
+    createdFrom: normalizeDateFilter(firstSearchParam(params.createdFrom)),
+    createdTo: normalizeDateFilter(firstSearchParam(params.createdTo)),
+    collection: normalizeTextFilter(firstSearchParam(params.collection)),
+    accessLevel: normalizeAccessLevel(firstSearchParam(params.accessLevel)),
+  }
 
   return {
     page: Number.isInteger(page) && page > 0 ? page : 1,
@@ -65,7 +94,7 @@ export function parseBatchQueryParams(params: Record<string, string | string[] |
     cursorValue: normalizeTextFilter(firstSearchParam(params.cursorValue)),
     cursorId: normalizeTextFilter(firstSearchParam(params.cursorId)),
     cursorDirection: cursorDirection === 'next' || cursorDirection === 'prev' ? cursorDirection : undefined,
-    filters: {},
+    filters,
   }
 }
 
@@ -235,9 +264,118 @@ const batchSelect = {
   },
 } as const
 
-function buildBatchWhere(search?: string) {
+function getAuthorSearchTokens(searchTerm: string): string[] {
+  return Array.from(
+    new Set(
+      searchTerm
+        .trim()
+        .normalize('NFD')
+        .replace(/\p{Diacritic}/gu, '')
+        .toLowerCase()
+        .split(/[^\p{L}\p{N}]+/u)
+        .map((token) => token.trim())
+        .filter(Boolean),
+    ),
+  )
+}
+
+function buildBatchDocumentWhere(
+  filters: BatchQueryFilters,
+  tagIds: string[] | undefined,
+): Prisma.documentsWhereInput | undefined {
+  const conditions: Prisma.documentsWhereInput[] = []
+
+  if (filters.author?.trim()) {
+    const authorTokens = getAuthorSearchTokens(filters.author)
+    if (authorTokens.length > 0) {
+      conditions.push({
+        document_to_authors: {
+          some: {
+            OR: authorTokens.map((token) => ({ authors: { name: { contains: token } } })),
+          },
+        },
+      })
+    }
+  }
+
+  if (tagIds) {
+    conditions.push({
+      document_to_tags: {
+        some: { tag_id: { in: tagIds } },
+      },
+    })
+  }
+
+  if (filters.statuses?.length) {
+    conditions.push({
+      document_quality: {
+        validation_status: { in: filters.statuses as DocumentQualityValidationStatus[] },
+      },
+    })
+  }
+
+  if (filters.documentType === 'duplicate' || filters.documentType === 'unique') {
+    const duplicateCondition: Prisma.documentsWhereInput = {
+      document_to_tags: {
+        some: { tags: { name: 'duplicate_document' } },
+      },
+    }
+    conditions.push(filters.documentType === 'duplicate' ? duplicateCondition : { NOT: duplicateCondition })
+  }
+
+  if (filters.createdFrom || filters.createdTo) {
+    conditions.push({
+      created_at: {
+        ...(filters.createdFrom ? { gte: new Date(`${filters.createdFrom}T00:00:00.000Z`) } : {}),
+        ...(filters.createdTo
+          ? { lt: new Date(new Date(`${filters.createdTo}T00:00:00.000Z`).getTime() + 24 * 60 * 60 * 1000) }
+          : {}),
+      },
+    })
+  }
+
+  if (filters.collection?.trim()) {
+    conditions.push({
+      document_to_tags: {
+        some: { tags: { name: { equals: filters.collection } } },
+      },
+    })
+  }
+
+  if (filters.accessLevel) {
+    conditions.push({
+      document_access: {
+        some: { access_levels: { level_name: { equals: filters.accessLevel } } },
+      },
+    })
+  }
+
+  return conditions.length > 0 ? { AND: conditions } : undefined
+}
+
+function buildBatchWhere(
+  search: string | undefined,
+  filters: BatchQueryFilters,
+  tagIds: string[] | undefined,
+  batchIds: string[] | undefined,
+) {
   const normalizedSearch = normalizeTextFilter(search)
-  return normalizedSearch
+  const documentWhere = buildBatchDocumentWhere(filters, tagIds)
+  const advancedConditions: Prisma.batchesWhereInput[] = []
+
+  if (batchIds) {
+    advancedConditions.push({ id: { in: batchIds } })
+  }
+
+  if (documentWhere) {
+    advancedConditions.push({
+      document_to_batches: {
+        some: { documents: documentWhere },
+      },
+    })
+  }
+
+  const searchCondition = normalizedSearch
     ? {
         OR: [
           { id: { contains: normalizedSearch } },
@@ -246,6 +384,45 @@ function buildBatchWhere(search?: string) {
         ],
       }
     : undefined
+
+  if (!searchCondition && advancedConditions.length === 0) {
+    return undefined
+  }
+
+  if (!searchCondition) {
+    return advancedConditions.length === 1 ? advancedConditions[0] : { AND: advancedConditions }
+  }
+
+  if (advancedConditions.length === 0) {
+    return searchCondition
+  }
+
+  return { AND: [searchCondition, ...advancedConditions] }
+}
+
+async function getFilteredBatchItems(
+  query: BatchTableQuery,
+  client: BatchQueryDbClient,
+): Promise<{ items: BatchListItem[]; totalCount: number }> {
+  const filters = query.filters ?? {}
+  const [tagIds, batchIds] = await Promise.all([
+    resolveTagSearchIds(normalizeTextFilter(filters.tag), client),
+    resolveBatchSearchIds(normalizeTextFilter(filters.batch), client),
+  ])
+  const where = buildBatchWhere(query.search, filters, tagIds, batchIds)
+  const [rows, totalCount] = await Promise.all([
+    client.batches.findMany({ where, select: batchSelect }),
+    client.batches.count({ where }),
+  ])
+
+  return {
+    items: sortBatchItems(
+      (rows as unknown as BatchDatabaseRow[]).map(mapBatchListItem),
+      query.orderBy,
+      query.sortDirection ?? 'desc',
+    ),
+    totalCount: Number(totalCount),
+  }
 }
 
 export async function getBatches(
@@ -254,17 +431,7 @@ export async function getBatches(
 ): Promise<BatchListPageResult> {
   const page = Number.isInteger(query.page) && query.page > 0 ? query.page : 1
   const pageSize = normalizePageSize(query.pageSize)
-  const where = buildBatchWhere(query.search)
-  const [rows, totalCount] = await Promise.all([
-    client.batches.findMany({ where, select: batchSelect }),
-    client.batches.count({ where }),
-  ])
-
-  const allItems = sortBatchItems(
-    (rows as unknown as BatchDatabaseRow[]).map(mapBatchListItem),
-    query.orderBy,
-    query.sortDirection ?? 'desc',
-  )
+  const { items: allItems, totalCount } = await getFilteredBatchItems(query, client)
 
   let offset = (page - 1) * pageSize
   let hasPreviousPage = page > 1
@@ -289,26 +456,24 @@ export async function getBatches(
 
   return {
     data,
-    totalCount: Number(totalCount),
+    totalCount,
     pageInfo: buildPageInfo(data, allItems, pageSize, query.orderBy, hasPreviousPage),
   }
 }
 
-export async function getBatchOverviewMetrics(client: BatchQueryDbClient = db): Promise<BatchOverviewMetrics> {
-  const rows = await client.batches.findMany({
-    select: {
-      processing_details: true,
-      document_to_batches: { select: { id: true } },
-    },
-  })
+export async function getBatchOverviewMetrics(
+  queryOrClient: BatchTableQuery | BatchQueryDbClient = EMPTY_BATCH_QUERY,
+  maybeClient: BatchQueryDbClient = db,
+): Promise<BatchOverviewMetrics> {
+  const isClient = 'batches' in queryOrClient
+  const query = isClient ? EMPTY_BATCH_QUERY : queryOrClient
+  const client = isClient ? queryOrClient : maybeClient
+  const { items } = await getFilteredBatchItems(query, client)
 
-  const totalDocuments = rows.reduce((sum, row) => {
-    const details = parseProcessingDetails(row.processing_details)
-    const count = Number(details.total_documents)
-    return sum + (Number.isFinite(count) && count >= 0 ? count : row.document_to_batches.length)
-  }, 0)
-
-  return { totalBatches: rows.length, totalDocuments }
+  return {
+    totalBatches: items.length,
+    totalDocuments: items.reduce((sum, item) => sum + item.documentCount, 0),
+  }
 }
 
 export async function getBatchDetail(batchId: string, client: BatchQueryDbClient = db): Promise<BatchDetail | null> {

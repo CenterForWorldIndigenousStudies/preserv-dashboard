@@ -1,9 +1,16 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-const { mockGetBatchOverviewMetrics, mockGetBatches, mockParseBatchQueryParams, mocks } = vi.hoisted(() => ({
+const {
+  mockGetBatchOverviewMetrics,
+  mockGetBatches,
+  mockGetDocumentFilterOptions,
+  mockParseBatchQueryParams,
+  mocks,
+} = vi.hoisted(() => ({
   mockGetBatchOverviewMetrics: vi.fn(),
   mockGetBatches: vi.fn(),
+  mockGetDocumentFilterOptions: vi.fn(),
   mockParseBatchQueryParams: vi.fn(),
   mocks: { batchesTableProps: undefined as Record<string, unknown> | undefined },
 }))
@@ -12,6 +19,10 @@ vi.mock('@lib/queries/batchQueries', () => ({
   getBatchOverviewMetrics: mockGetBatchOverviewMetrics,
   getBatches: mockGetBatches,
   parseBatchQueryParams: mockParseBatchQueryParams,
+}))
+
+vi.mock('@lib/queries/queries', () => ({
+  getDocumentFilterOptions: mockGetDocumentFilterOptions,
 }))
 
 vi.mock('@organisms/BatchesTable', () => ({
@@ -54,6 +65,8 @@ const initialData = {
   },
 }
 
+const filterOptions = { collections: ['Collection A'], accessLevels: ['public'], statuses: ['APPROVED'] }
+
 describe('BatchesPage', () => {
   afterEach(() => {
     vi.clearAllMocks()
@@ -64,6 +77,7 @@ describe('BatchesPage', () => {
     mockParseBatchQueryParams.mockReturnValue(initialQuery)
     mockGetBatches.mockResolvedValue(initialData)
     mockGetBatchOverviewMetrics.mockResolvedValue({ totalBatches: 1, totalDocuments: 5 })
+    mockGetDocumentFilterOptions.mockResolvedValue(filterOptions)
 
     const markup = renderToStaticMarkup(await BatchesPage({ searchParams: Promise.resolve({ search: 'batch' }) }))
 
@@ -80,12 +94,14 @@ describe('BatchesPage', () => {
     mockParseBatchQueryParams.mockReturnValue(initialQuery)
     mockGetBatches.mockResolvedValue(initialData)
     mockGetBatchOverviewMetrics.mockResolvedValue({ totalBatches: 1, totalDocuments: 5 })
+    mockGetDocumentFilterOptions.mockResolvedValue(filterOptions)
 
     renderToStaticMarkup(await BatchesPage({ searchParams: Promise.resolve(rawParams) }))
 
     expect(mockParseBatchQueryParams).toHaveBeenCalledWith(rawParams)
     expect(mockGetBatches).toHaveBeenCalledWith(initialQuery)
-    expect(mockGetBatchOverviewMetrics).toHaveBeenCalledOnce()
-    expect(mocks.batchesTableProps).toEqual({ initialData, initialQuery })
+    expect(mockGetBatchOverviewMetrics).toHaveBeenCalledWith(initialQuery)
+    expect(mockGetDocumentFilterOptions).toHaveBeenCalledOnce()
+    expect(mocks.batchesTableProps).toEqual({ initialData, initialQuery, filterOptions })
   })
 })

@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { mockBatchesCount, mockBatchesFindMany, mockBatchesFindUnique } = vi.hoisted(() => ({
+import type { Prisma } from '@lib/prisma/generated/client'
+
+const { mockBatchesCount, mockBatchesFindMany, mockBatchesFindUnique, mockTagsFindMany } = vi.hoisted(() => ({
   mockBatchesCount: vi.fn(),
   mockBatchesFindMany: vi.fn(),
   mockBatchesFindUnique: vi.fn(),
+  mockTagsFindMany: vi.fn(),
 }))
 
 vi.mock('@lib/db', () => ({
@@ -12,6 +15,9 @@ vi.mock('@lib/db', () => ({
       count: mockBatchesCount,
       findMany: mockBatchesFindMany,
       findUnique: mockBatchesFindUnique,
+    },
+    tags: {
+      findMany: mockTagsFindMany,
     },
   },
 }))
@@ -45,8 +51,149 @@ describe('batch query contracts', () => {
       cursorValue: '2026-07-09T00:00:00.000Z',
       cursorId: 'batch-1',
       cursorDirection: 'next',
-      filters: {},
+      filters: {
+        author: undefined,
+        tag: undefined,
+        statuses: undefined,
+        documentType: undefined,
+        batch: undefined,
+        createdFrom: undefined,
+        createdTo: undefined,
+        collection: undefined,
+        accessLevel: undefined,
+      },
     })
+  })
+
+  it('normalizes Advanced Search parameters for batch queries', () => {
+    expect(
+      parseBatchQueryParams({
+        author: ' Ada ',
+        tag: ' refuge ',
+        statuses: 'APPROVED,REJECTED',
+        documentType: 'duplicate',
+        batch: 'Special_RCR',
+        createdFrom: '2026-01-01',
+        createdTo: '2026-01-31',
+        collection: 'Collection A',
+        accessLevel: 'PUBLIC',
+      }).filters,
+    ).toEqual({
+      author: 'Ada',
+      tag: 'refuge',
+      statuses: ['APPROVED', 'REJECTED'],
+      documentType: 'duplicate',
+      batch: 'Special_RCR',
+      createdFrom: '2026-01-01',
+      createdTo: '2026-01-31',
+      collection: 'Collection A',
+      accessLevel: 'public',
+    })
+  })
+
+  it('builds document-membership predicates for Advanced Search filters', async () => {
+    mockBatchesFindMany.mockResolvedValue([])
+    mockBatchesCount.mockResolvedValue(0)
+
+    await getBatches({
+      page: 1,
+      pageSize: 25,
+      filters: {
+        author: 'Ada',
+        statuses: ['APPROVED'],
+        documentType: 'duplicate',
+        createdFrom: '2026-01-01',
+        createdTo: '2026-01-31',
+        collection: 'Collection A',
+        accessLevel: 'public',
+      },
+    })
+
+    const findManyCall = mockBatchesFindMany.mock.calls[0]?.[0] as unknown as {
+      where: Prisma.batchesWhereInput
+    }
+    const where = findManyCall.where
+    const batchDocumentCondition = where as Prisma.batchesWhereInput & {
+      document_to_batches: { some: { documents: Prisma.documentsWhereInput } }
+    }
+    const documentsWhere = batchDocumentCondition.document_to_batches.some.documents
+    const documentConditions = (documentsWhere as Prisma.documentsWhereInput & {
+      AND: Prisma.documentsWhereInput[]
+    }).AND
+
+    expect(documentConditions).toHaveLength(6)
+    expect(documentConditions).toContainEqual({ document_quality: { validation_status: { in: ['APPROVED'] } } })
+    const conditionKeys = (documentConditions as unknown as Record<string, unknown>[])
+      .map((condition) => Object.keys(condition)[0] ?? '')
+      .sort()
+    expect(conditionKeys).toEqual([
+      'created_at',
+      'document_access',
+      'document_to_authors',
+      'document_to_tags',
+      'document_quality',
+      'document_to_tags',
+    ].sort())
+    expect(batchDocumentCondition.document_to_batches).toEqual({ some: { documents: documentsWhere } })
+  })
+
+  it('limits batches to fuzzy batch matches', async () => {
+    mockBatchesFindMany.mockResolvedValueOnce([{ id: 'batch-1', name: 'Special RCR Writings' }]).mockResolvedValueOnce([])
+    mockBatchesCount.mockResolvedValue(0)
+
+    await getBatches({
+      page: 1,
+      pageSize: 25,
+      filters: { batch: 'special rcr' },
+    })
+
+    const findManyCall = mockBatchesFindMany.mock.calls[1]?.[0] as unknown as {
+      where: Prisma.batchesWhereInput
+    }
+    expect(findManyCall.where).toEqual({ id: { in: ['batch-1'] } })
+  })
+
+  it('makes an unmatched fuzzy tag filter return no batches', async () => {
+    mockTagsFindMany.mockResolvedValue([])
+    mockBatchesFindMany.mockResolvedValue([])
+    mockBatchesCount.mockResolvedValue(0)
+
+    await getBatches({
+      page: 1,
+      pageSize: 25,
+      filters: { tag: 'missing' },
+    })
+
+    const findManyCall = mockBatchesFindMany.mock.calls[0]?.[0] as unknown as {
+      where: Prisma.batchesWhereInput
+    }
+    const batchDocumentCondition = findManyCall.where as Prisma.batchesWhereInput & {
+      document_to_batches: { some: { documents: Prisma.documentsWhereInput } }
+    }
+    const documentsWhere = batchDocumentCondition.document_to_batches.some.documents as Prisma.documentsWhereInput & {
+      AND: Prisma.documentsWhereInput[]
+    }
+    expect(documentsWhere.AND).toContainEqual({
+      document_to_tags: { some: { tag_id: { in: [] } } },
+    })
+  })
+
+  it('calculates overview metrics from the filtered batch set', async () => {
+    mockBatchesFindMany.mockResolvedValue([
+      {
+        id: 'batch-1',
+        name: 'Matching Batch',
+        id_legacy: null,
+        started_at: null,
+        processing_details: JSON.stringify({ total_documents: 3 }),
+        document_to_batches: [{ cost: 0, processing_time_seconds: null }],
+      },
+    ])
+    mockBatchesCount.mockResolvedValue(1)
+
+    await expect(
+      getBatchOverviewMetrics({ page: 1, pageSize: 25, filters: { author: 'Ada' } }),
+    ).resolves.toEqual({ totalBatches: 1, totalDocuments: 3 })
   })
 
   it('maps a batch to a display-ready list item', async () => {
@@ -159,7 +306,24 @@ describe('batch query contracts', () => {
   })
 
   it('returns overview metrics from batch associations', async () => {
-    mockBatchesFindMany.mockResolvedValue([{ document_to_batches: [{}, {}, {}] }, { document_to_batches: [{}] }])
+    mockBatchesFindMany.mockResolvedValue([
+      {
+        id: 'batch-1',
+        name: 'Batch One',
+        id_legacy: null,
+        started_at: null,
+        processing_details: JSON.stringify({ total_documents: 3 }),
+        document_to_batches: [{ cost: 0, processing_time_seconds: null }, {}, {}],
+      },
+      {
+        id: 'batch-2',
+        name: 'Batch Two',
+        id_legacy: null,
+        started_at: null,
+        processing_details: JSON.stringify({}),
+        document_to_batches: [{ cost: 0, processing_time_seconds: null }],
+      },
+    ])
 
     await expect(getBatchOverviewMetrics()).resolves.toEqual({ totalBatches: 2, totalDocuments: 4 })
   })

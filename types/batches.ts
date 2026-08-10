@@ -1,6 +1,7 @@
 import type { DocumentTablePageInfo, DocumentTableQuery } from '@organisms/DocumentTable/types'
+import type { AdvancedSearchFilters } from '@lib/search'
 
-export type BatchQueryFilters = Record<string, never>
+export type BatchQueryFilters = AdvancedSearchFilters
 
 export type BatchTableQuery = DocumentTableQuery<BatchQueryFilters>
 

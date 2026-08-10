@@ -1,6 +1,20 @@
 import type { ReactElement } from 'react'
 import NextLink from 'next/link'
-import { BookOpen, ClipboardList, Database, FolderTree, FolderInput, House, LayoutDashboard } from 'lucide-react'
+import {
+  BookOpen,
+  ClipboardList,
+  Database,
+  Egg,
+  FileText,
+  FolderTree,
+  FolderInput,
+  LayoutDashboard,
+  Library,
+  MessageCircleWarning,
+  Tag,
+  SquareLibrary,
+  Puzzle,
+} from 'lucide-react'
 import { Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography } from '@mui/material'
 
 import type { DashboardNavigationIconKey, DashboardNavigationSection } from '@constants/navigation'
@@ -11,20 +25,20 @@ interface NavSectionProps {
   section: DashboardNavigationSection
 }
 
-const navigationIconMap: Record<DashboardNavigationIconKey, typeof House> = {
+const navigationIconMap: Record<DashboardNavigationIconKey, typeof Library> = {
+  batches: Egg,
+  collections: SquareLibrary,
+  componentLibrary: Puzzle,
   dashboard: LayoutDashboard,
-  documents: BookOpen,
-  process: FolderInput,
-  batches: Database,
-  exclusionReview: FolderTree,
-  reviewQueue: ClipboardList,
-  readyForLibrary: BookOpen,
-  library: BookOpen,
-  collections: BookOpen,
-  tags: BookOpen,
-  reports: Database,
   db: Database,
-  componentLibrary: BookOpen,
+  documents: FileText,
+  exclusionReview: FolderTree,
+  library: Library,
+  process: FolderInput,
+  readyForLibrary: BookOpen,
+  reports: MessageCircleWarning,
+  reviewQueue: ClipboardList,
+  tags: Tag,
 }
 
 export function NavSection({ activePathname, onNavigate, section }: NavSectionProps): ReactElement {

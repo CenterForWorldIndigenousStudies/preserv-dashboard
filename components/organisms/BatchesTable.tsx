@@ -12,11 +12,13 @@ import { DocumentTable } from '@organisms/DocumentTable/DocumentTable'
 import type { DocumentTableConfig, DocumentTableFetchResult, DocumentTableQuery } from '@organisms/DocumentTable/types'
 import { useDocumentTableController } from '@organisms/DocumentTable/useDocumentTableController'
 import { EntityNameBlock } from '@molecules/EntityNameBlock'
+import { serializeStatusesParam, type FilterOptions } from '@lib/search'
 import type { BatchListItem, BatchQueryFilters, BatchTableQuery } from 'types/batches'
 
 interface BatchesTableProps {
   initialData?: DocumentTableFetchResult<BatchListItem>
   initialQuery: BatchTableQuery
+  filterOptions: FilterOptions
 }
 
 function syncSearchParam(nextParams: URLSearchParams, key: string, value: string | undefined): void {
@@ -33,7 +35,7 @@ function getCurrentBatchListHref(pathname: string, searchParams: URLSearchParams
   return currentSearch ? `${pathname}?${currentSearch}` : pathname
 }
 
-export function BatchesTable({ initialData, initialQuery }: BatchesTableProps): ReactElement {
+export function BatchesTable({ initialData, initialQuery, filterOptions }: BatchesTableProps): ReactElement {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -45,6 +47,19 @@ export function BatchesTable({ initialData, initialQuery }: BatchesTableProps): 
     nextParams.set('page', String(controller.query.page))
     nextParams.set('pageSize', String(controller.query.pageSize))
     syncSearchParam(nextParams, 'search', controller.query.search)
+    syncSearchParam(nextParams, 'author', controller.query.filters.author)
+    syncSearchParam(nextParams, 'tag', controller.query.filters.tag)
+    syncSearchParam(nextParams, 'statuses', serializeStatusesParam(controller.query.filters.statuses))
+    syncSearchParam(
+      nextParams,
+      'documentType',
+      controller.query.filters.documentType === 'all' ? undefined : controller.query.filters.documentType,
+    )
+    syncSearchParam(nextParams, 'batch', controller.query.filters.batch)
+    syncSearchParam(nextParams, 'createdFrom', controller.query.filters.createdFrom)
+    syncSearchParam(nextParams, 'createdTo', controller.query.filters.createdTo)
+    syncSearchParam(nextParams, 'collection', controller.query.filters.collection)
+    syncSearchParam(nextParams, 'accessLevel', controller.query.filters.accessLevel)
     syncSearchParam(nextParams, 'orderBy', controller.query.orderBy)
     syncSearchParam(nextParams, 'sortDirection', controller.query.sortDirection)
     syncSearchParam(nextParams, 'cursorValue', controller.query.cursorValue)
@@ -109,6 +124,11 @@ export function BatchesTable({ initialData, initialQuery }: BatchesTableProps): 
     },
     emptyMessage: 'No batches are available.',
     searchPlaceholder: 'Search batches...',
+    advancedSearch: {
+      filters: controller.filters,
+      filterOptions,
+      onApply: controller.setFilters,
+    },
   }
 
   return (

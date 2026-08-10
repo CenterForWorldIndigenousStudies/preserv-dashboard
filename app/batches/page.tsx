@@ -6,6 +6,7 @@ import { PAGE_LABELS } from '@constants/pageLabels'
 import { BatchesTable } from '@organisms/BatchesTable'
 import { PageHeader } from '@organisms/PageHeader'
 import { getBatchOverviewMetrics, getBatches, parseBatchQueryParams } from '@lib/queries/batchQueries'
+import { getDocumentFilterOptions } from '@lib/queries/queries'
 
 export const dynamic = 'force-dynamic'
 
@@ -49,7 +50,11 @@ interface BatchesPageProps {
 export default async function BatchesPage({ searchParams }: BatchesPageProps): Promise<ReactElement> {
   const resolvedSearchParams = await searchParams
   const initialQuery = parseBatchQueryParams(resolvedSearchParams)
-  const [initialData, overview] = await Promise.all([getBatches(initialQuery), getBatchOverviewMetrics()])
+  const [initialData, overview, filterOptions] = await Promise.all([
+    getBatches(initialQuery),
+    getBatchOverviewMetrics(initialQuery),
+    getDocumentFilterOptions(),
+  ])
 
   return (
     <Stack spacing={4} sx={{ width: '100%' }}>
@@ -104,7 +109,7 @@ export default async function BatchesPage({ searchParams }: BatchesPageProps): P
       </Card>
 
       <SummaryCard totalBatches={overview.totalBatches} totalDocuments={overview.totalDocuments} />
-      <BatchesTable initialData={initialData} initialQuery={initialQuery} />
+      <BatchesTable initialData={initialData} initialQuery={initialQuery} filterOptions={filterOptions} />
     </Stack>
   )
 }

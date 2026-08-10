@@ -1,17 +1,22 @@
-import type { ReactNode } from 'react'
+// @vitest-environment jsdom
+
+import { act, type ReactNode } from 'react'
+import { createRoot } from 'react-dom/client'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
 
 import { BATCHES_PATH } from '@constants/paths'
+import type { FilterOptions } from '@lib/search'
 
-const { mockGetBatchesAction, mocks } = vi.hoisted(() => ({
+const { mockGetBatchesAction, mockRouterReplace, mocks } = vi.hoisted(() => ({
   mockGetBatchesAction: vi.fn(),
+  mockRouterReplace: vi.fn(),
   mocks: { documentTableProps: undefined as Record<string, unknown> | undefined },
 }))
 
 vi.mock('next/navigation', () => ({
   usePathname: () => BATCHES_PATH,
-  useRouter: () => ({ replace: vi.fn() }),
+  useRouter: () => ({ replace: mockRouterReplace }),
   useSearchParams: () => new URLSearchParams('page=2&pageSize=50'),
 }))
 
@@ -29,6 +34,8 @@ vi.mock('@organisms/DocumentTable/DocumentTable', () => ({
 import { BatchesTable } from '@organisms/BatchesTable'
 import type { BatchListItem } from 'types/batches'
 
+;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+
 const row: BatchListItem = {
   id: 'batch/1',
   name: 'Batch One',
@@ -37,6 +44,31 @@ const row: BatchListItem = {
   documentCount: 5,
   totalCost: '$12.50',
   processingTime: 42,
+}
+
+const filterOptions: FilterOptions = {
+  collections: ['Collection A'],
+  accessLevels: ['public'],
+  statuses: ['APPROVED'],
+}
+
+const initialQuery = {
+  page: 2,
+  pageSize: 50,
+  search: 'batch',
+  orderBy: 'name',
+  sortDirection: 'asc' as const,
+  filters: {
+    author: 'Ada',
+    tag: 'Refugee',
+    statuses: ['APPROVED'],
+    documentType: 'duplicate' as const,
+    batch: 'Special_RCR',
+    createdFrom: '2026-01-01',
+    createdTo: '2026-01-31',
+    collection: 'Collection A',
+    accessLevel: 'public' as const,
+  },
 }
 
 describe('BatchesTable', () => {
@@ -55,7 +87,7 @@ describe('BatchesTable', () => {
 
     renderToStaticMarkup(
       <BatchesTable
-        initialQuery={{ page: 1, pageSize: 25, filters: {} }}
+        initialQuery={initialQuery}
         initialData={{
           data: [row],
           totalCount: 1,
@@ -67,6 +99,7 @@ describe('BatchesTable', () => {
             endCursor: null,
           },
         }}
+        filterOptions={filterOptions}
       />,
     )
 
@@ -77,6 +110,11 @@ describe('BatchesTable', () => {
       }
       emptyMessage?: string
       searchPlaceholder?: string
+      advancedSearch?: {
+        filters: typeof initialQuery.filters
+        filterOptions: FilterOptions
+        onApply: (filters: typeof initialQuery.filters) => void
+      }
     }
 
     expect(config).toMatchObject({
@@ -84,6 +122,8 @@ describe('BatchesTable', () => {
       emptyMessage: 'No batches are available.',
       searchPlaceholder: 'Search batches...',
     })
+    expect(config.advancedSearch?.filters).toEqual(initialQuery.filters)
+    expect(config.advancedSearch?.filterOptions).toEqual(filterOptions)
     expect(config.definition.columns.map((column) => column.header)).toEqual([
       'Batch',
       'Started',
@@ -100,12 +140,56 @@ describe('BatchesTable', () => {
     expect(renderCell(0)).toContain('ID batch/1')
     expect(renderCell(0)).toContain('Legacy LEGACY-BATCH-1')
 
-    const result = (await config.definition.fetcher({ page: 1, pageSize: 25, search: 'batch', filters: {} })) as {
+    const result = (await config.definition.fetcher({ page: 1, pageSize: 25, search: 'batch', filters: initialQuery.filters })) as {
       data: BatchListItem[]
       totalCount: number
     }
 
     expect(result).toEqual(expect.objectContaining({ data: [row], totalCount: 1 }))
-    expect(mockGetBatchesAction).toHaveBeenCalledWith({ page: 1, pageSize: 25, search: 'batch', filters: {} })
+    expect(mockGetBatchesAction).toHaveBeenCalledWith({ page: 1, pageSize: 25, search: 'batch', filters: initialQuery.filters })
+  })
+
+  it('synchronizes Advanced Search filters into the Batches URL', () => {
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    act(() => {
+      root.render(
+        <BatchesTable
+          initialQuery={initialQuery}
+          initialData={{
+            data: [],
+            totalCount: 0,
+            pageInfo: {
+              pageSize: 50,
+              hasNextPage: false,
+              hasPreviousPage: false,
+              startCursor: null,
+              endCursor: null,
+            },
+          }}
+          filterOptions={filterOptions}
+        />,
+      )
+    })
+
+    const nextUrl = mockRouterReplace.mock.calls[0]?.[0] as unknown
+    expect(nextUrl).toEqual(expect.any(String))
+    if (typeof nextUrl !== 'string') {
+      throw new Error('Expected BatchesTable to replace the URL with a string')
+    }
+    expect(nextUrl).toContain('author=Ada')
+    expect(nextUrl).toContain('tag=Refugee')
+    expect(nextUrl).toContain('statuses=APPROVED')
+    expect(nextUrl).toContain('documentType=duplicate')
+    expect(nextUrl).toContain('batch=Special_RCR')
+    expect(nextUrl).toContain('createdFrom=2026-01-01')
+    expect(nextUrl).toContain('createdTo=2026-01-31')
+    expect(nextUrl).toContain('collection=Collection+A')
+    expect(nextUrl).toContain('accessLevel=public')
+
+    act(() => {
+      root.unmount()
+    })
   })
 })

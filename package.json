@@ -1,6 +1,6 @@
 {
   "name": "cwis-preservation-dashboard",
-  "version": "0.2.80",
+  "version": "0.2.81",
   "private": true,
   "scripts": {
     "build": "run-s db:prisma:generate build:next",
@@ -47,7 +47,7 @@
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "^3.13.24",
     "googleapis": "^171.4.0",
-    "lucide-react": "^1.8.0",
+    "lucide-react": "1.31.0",
     "luxon": "^3.7.2",
     "mariadb": "^3.5.2",
     "material-react-table": "^3.2.1",

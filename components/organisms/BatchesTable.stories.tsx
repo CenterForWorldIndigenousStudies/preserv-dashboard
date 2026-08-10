@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 
 import { BatchesTable } from './BatchesTable'
+import type { FilterOptions } from '@lib/search'
 import type { BatchListItem } from 'types/batches'
 
 const rows: BatchListItem[] = [
@@ -30,6 +31,12 @@ const initialQuery = {
   filters: {},
 } as const
 
+const filterOptions: FilterOptions = {
+  collections: ['January collection', 'February collection'],
+  accessLevels: ['public', 'restricted'],
+  statuses: ['APPROVED', 'PENDING'],
+}
+
 const meta = {
   title: 'Organisms/BatchesTable',
   component: BatchesTable,
@@ -42,6 +49,7 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   args: {
     initialQuery,
+    filterOptions,
     initialData: {
       data: rows,
       totalCount: rows.length,
@@ -59,6 +67,7 @@ export const Default: Story = {
 export const Empty: Story = {
   args: {
     initialQuery,
+    filterOptions,
     initialData: {
       data: [],
       totalCount: 0,
