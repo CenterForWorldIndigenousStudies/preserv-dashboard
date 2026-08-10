@@ -3,6 +3,7 @@ import { describe, expect, test } from 'vitest'
 import {
   getPipelineConfigForBatch,
   getExecutionStepRuntimeStatus,
+  getExecutionStepReviewWarningCount,
   getNextEligibleExecutionStep,
   getOrchestratedExecutionPlan,
   isPipelineBatchTerminal,
@@ -214,19 +215,22 @@ describe('pipelineExecution process-documents behavior', () => {
     expect(getNextEligibleExecutionStep(batch)?.pass).toBe(2)
   })
 
-  test('treats review_needed as terminal for the current pass without unlocking dependents', () => {
+  test('unlocks dependent steps when a completed stage still has review warnings', () => {
     const splitPassOneStep = buildExecutionPlan()[1]
+    const rotatePassOneStep = buildExecutionPlan()[2]
     const batch = buildBatchStatus({
       documentSplitter: buildStageStatus({
-        status: 'review_needed' satisfies PipelineStepRuntimeStatus,
+        status: 'completed' satisfies PipelineStepRuntimeStatus,
         currentPass: 1,
+        reviewNeededCount: 1,
+        completedPasses: [1],
         maxPasses: 2,
-        completedPasses: [],
       }),
     })
 
-    expect(getExecutionStepRuntimeStatus(batch, splitPassOneStep)).toBe('review_needed')
-    expect(getNextEligibleExecutionStep(batch)).toBeNull()
+    expect(getExecutionStepRuntimeStatus(batch, splitPassOneStep)).toBe('completed')
+    expect(getExecutionStepReviewWarningCount(batch, splitPassOneStep)).toBe(1)
+    expect(getNextEligibleExecutionStep(batch)).toEqual(rotatePassOneStep)
   })
 
   test('treats a pass as pending when the stage is running a different pass', () => {

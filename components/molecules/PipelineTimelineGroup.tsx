@@ -9,7 +9,8 @@ import type { PipelineStepRuntimeStatus } from '@lib/pipelineExecution'
 export interface TimelineStep {
   label: string
   status: PipelineStepRuntimeStatus
-  subSteps?: Array<{ label: string; status: PipelineStepRuntimeStatus }>
+  warningText?: string | null
+  subSteps?: Array<{ label: string; status: PipelineStepRuntimeStatus; warningText?: string | null }>
 }
 
 const statusLabelMap: Record<PipelineStepRuntimeStatus, string> = {
@@ -71,6 +72,11 @@ export function PipelineTimelineGroup({ step, isLast }: PipelineTimelineGroupPro
               {formatStatusLabel(step.status)}
             </Typography>
           </Box>
+          {step.warningText ? (
+            <Typography variant={'caption'} sx={{ color: 'warning.main', display: 'block', mt: 0.25 }}>
+              {step.warningText}
+            </Typography>
+          ) : null}
 
           {step.subSteps && step.subSteps.length > 0 ? (
             <Collapse in={step.status !== 'pending'} timeout={'auto'} unmountOnExit>
@@ -93,6 +99,11 @@ export function PipelineTimelineGroup({ step, isLast }: PipelineTimelineGroupPro
                     <Typography variant={'caption'} sx={{ color: 'text.secondary' }}>
                       {formatStatusLabel(subStep.status)}
                     </Typography>
+                    {subStep.warningText ? (
+                      <Typography variant={'caption'} sx={{ color: 'warning.main', ml: 1 }}>
+                        {subStep.warningText}
+                      </Typography>
+                    ) : null}
                   </ListItem>
                 ))}
               </List>

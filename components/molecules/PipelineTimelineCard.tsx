@@ -6,6 +6,7 @@ import { Box, Paper, Typography } from '@mui/material'
 import { PipelineTimelineGroup, type TimelineStep } from '@molecules/PipelineTimelineGroup'
 import {
   getExecutionStepRuntimeStatus,
+  getExecutionStepReviewWarningCount,
   getOrchestratedExecutionPlan,
   type PipelineStepRuntimeStatus,
 } from '@lib/pipelineExecution'
@@ -37,6 +38,14 @@ function getGroupStatus(
   return 'pending'
 }
 
+function formatReviewWarning(count: number): string | null {
+  if (count <= 0) {
+    return null
+  }
+
+  return count === 1 ? '1 document needs review' : `${count} documents need review`
+}
+
 function buildTimelineSteps(batch: ProcessBatchStatus): TimelineStep[] {
   const executionPlan = getOrchestratedExecutionPlan(batch)
   const normalizeGroups = new Map<string, PipelineExecutionStep[]>()
@@ -53,6 +62,7 @@ function buildTimelineSteps(batch: ProcessBatchStatus): TimelineStep[] {
     timelineSteps.push({
       label: step.label,
       status: getExecutionStepRuntimeStatus(batch, step),
+      warningText: formatReviewWarning(getExecutionStepReviewWarningCount(batch, step)),
     })
   }
 
@@ -61,12 +71,18 @@ function buildTimelineSteps(batch: ProcessBatchStatus): TimelineStep[] {
     const subSteps = pass1Steps.map((step) => ({
       label: step.label,
       status: getExecutionStepRuntimeStatus(batch, step),
+      warningText: formatReviewWarning(getExecutionStepReviewWarningCount(batch, step)),
     }))
+    const reviewWarningCount = pass1Steps.reduce(
+      (total, step) => total + getExecutionStepReviewWarningCount(batch, step),
+      0,
+    )
 
     timelineSteps.splice(1, 0, {
       label: 'Normalize Pass 1',
       status: getGroupStatus(subSteps),
       subSteps,
+      warningText: formatReviewWarning(reviewWarningCount),
     })
   }
 
@@ -75,7 +91,12 @@ function buildTimelineSteps(batch: ProcessBatchStatus): TimelineStep[] {
     const subSteps = pass2Steps.map((step) => ({
       label: step.label,
       status: getExecutionStepRuntimeStatus(batch, step),
+      warningText: formatReviewWarning(getExecutionStepReviewWarningCount(batch, step)),
     }))
+    const reviewWarningCount = pass2Steps.reduce(
+      (total, step) => total + getExecutionStepReviewWarningCount(batch, step),
+      0,
+    )
 
     const insertIndex = timelineSteps.findIndex((step) => step.label === 'OCR Processor')
     if (insertIndex === -1) {
@@ -83,12 +104,14 @@ function buildTimelineSteps(batch: ProcessBatchStatus): TimelineStep[] {
         label: 'Normalize Pass 2',
         status: getGroupStatus(subSteps),
         subSteps,
+        warningText: formatReviewWarning(reviewWarningCount),
       })
     } else {
       timelineSteps.splice(insertIndex, 0, {
         label: 'Normalize Pass 2',
         status: getGroupStatus(subSteps),
         subSteps,
+        warningText: formatReviewWarning(reviewWarningCount),
       })
     }
   }

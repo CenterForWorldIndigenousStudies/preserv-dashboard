@@ -155,6 +155,44 @@ export async function getProcessBatchStatus(batchId: string): Promise<ProcessBat
   return batch ? await toProcessBatchStatus(batch) : null
 }
 
+function parseCompletionDate(value: string | number | null | undefined): Date | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return new Date(value * 1000)
+  }
+
+  if (typeof value !== 'string') {
+    return null
+  }
+
+  const normalized = value.trim()
+  if (!normalized) {
+    return null
+  }
+
+  if (/^\d+$/.test(normalized)) {
+    return new Date(Number(normalized) * 1000)
+  }
+
+  const parsed = new Date(normalized)
+  return Number.isNaN(parsed.getTime()) ? null : parsed
+}
+
+const stageCompletedAtGetters = {
+  ingester: (batch: ProcessBatchStatus) => batch.ingester?.completedAt ?? null,
+  document_splitter: (batch: ProcessBatchStatus) => batch.documentSplitter?.completedAt ?? null,
+  page_rotator: (batch: ProcessBatchStatus) => batch.pageRotator?.completedAt ?? null,
+  ocr_processor: (batch: ProcessBatchStatus) => batch.ocrProcessor?.completedAt ?? null,
+  content_dedup: (batch: ProcessBatchStatus) => batch.contentDedup?.completedAt ?? null,
+  metadata_extractor: (batch: ProcessBatchStatus) => batch.metadataExtractor?.completedAt ?? null,
+  metadata_validator: (batch: ProcessBatchStatus) => batch.metadataValidator?.completedAt ?? null,
+  rights_determinator: (batch: ProcessBatchStatus) => batch.rightsDeterminator?.completedAt ?? null,
+  fedora_ingester: (batch: ProcessBatchStatus) => batch.fedoraIngester?.completedAt ?? null,
+} satisfies Record<CallbackStageKey, (batch: ProcessBatchStatus) => string | null>
+
+function getStageCompletedAt(batch: ProcessBatchStatus, stageKey: CallbackStageKey): string | null {
+  return stageCompletedAtGetters[stageKey](batch)
+}
+
 function withRequestedStages(details: RawProcessBatchDetails, requestedStages: string[]): RawProcessBatchDetails {
   return {
     ...details,
@@ -214,7 +252,7 @@ async function updateProcessStageCallbackReceived(
 ): Promise<void> {
   const batch = await db.batches.findUnique({
     where: { id: batchId },
-    select: { id: true, processing_details: true },
+    select: processBatchSelect,
   })
 
   if (!batch) {
@@ -240,11 +278,34 @@ async function updateProcessStageCallbackReceived(
     },
   }
 
+  const serializedDetails = JSON.stringify(nextDetails)
+  const nextBatch = buildProcessBatchStatus(
+    {
+      ...batch,
+      processing_details: serializedDetails,
+    },
+    false,
+  )
+  const terminalCompletedAt =
+    parseCompletionDate(getStageCompletedAt(nextBatch, stageKey)) ?? parseCompletionDate(receivedAt)
+  const updateData: {
+    processing_details: string
+    lifecycle_status?: string
+    completed_at?: Date
+  } = {
+    processing_details: serializedDetails,
+  }
+
+  if (batch.lifecycle_status !== 'completed' && isPipelineBatchTerminal(nextBatch)) {
+    updateData.lifecycle_status = 'completed'
+    if (terminalCompletedAt) {
+      updateData.completed_at = terminalCompletedAt
+    }
+  }
+
   await db.batches.update({
     where: { id: batchId },
-    data: {
-      processing_details: JSON.stringify(nextDetails),
-    },
+    data: updateData,
   })
 }
 

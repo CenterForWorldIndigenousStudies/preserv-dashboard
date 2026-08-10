@@ -92,6 +92,23 @@ function getStageForService(
   }
 }
 
+export function getExecutionStepReviewWarningCount(
+  batch: ProcessBatchStatus,
+  step: PipelineExecutionStep,
+): number {
+  const stage = getStageForService(batch, step.service)
+  if (!stage || stage.reviewNeededCount <= 0) {
+    return 0
+  }
+
+  if (!step.pass) {
+    return stage.reviewNeededCount
+  }
+
+  const latestKnownPass = Math.max(stage.currentPass, ...stage.completedPasses)
+  return step.pass === latestKnownPass ? stage.reviewNeededCount : 0
+}
+
 export function getPipelineConfigForBatch(batch: ProcessBatchStatus): PipelineConfig {
   return batch.pipelineConfig ?? INGEST_ONLY_PIPELINE_CONFIG
 }

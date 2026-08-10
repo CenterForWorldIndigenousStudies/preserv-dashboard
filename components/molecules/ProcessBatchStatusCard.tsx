@@ -131,6 +131,14 @@ function formatDateTime(value: string | null): string {
   return date.toLocaleString()
 }
 
+function formatReviewWarning(count: number): string | null {
+  if (count <= 0) {
+    return null
+  }
+
+  return count === 1 ? '1 document needs review' : `${count} documents need review`
+}
+
 function DetailRow({ label, value }: { label: string; value: string }): ReactElement {
   return (
     <Typography variant={'body2'} sx={{ color: 'text.secondary' }}>
@@ -157,6 +165,8 @@ function StageCard({
     return null
   }
 
+  const reviewWarning = formatReviewWarning(stage.reviewNeededCount)
+
   return (
     <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, bgcolor: 'background.default' }}>
       <Stack spacing={2}>
@@ -177,7 +187,14 @@ function StageCard({
               {label}
             </Typography>
           </Box>
-          <PipelineStageStatusBadge status={stage.status} />
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ xs: 'flex-start', sm: 'center' }}>
+            <PipelineStageStatusBadge status={stage.status} />
+            {reviewWarning ? (
+              <Typography variant={'caption'} sx={{ color: 'warning.main', fontWeight: 600 }}>
+                {reviewWarning}
+              </Typography>
+            ) : null}
+          </Stack>
         </Box>
 
         {showOpenAIBatchActions && batchId ? (

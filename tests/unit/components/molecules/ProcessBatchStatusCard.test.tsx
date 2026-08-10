@@ -179,6 +179,64 @@ describe('ProcessBatchStatusCard', () => {
     expect(markup).toContain('Under Review')
   })
 
+  it('warns when a completed stage still has review-needed documents', () => {
+    const markup = renderToStaticMarkup(
+      <ThemeProvider>
+        <ProcessBatchStatusCard
+          batch={buildBatchStatus({
+            pipelineRequestedStages: ['ocr-processor'],
+            ocrProcessor: {
+              status: 'completed',
+              requestId: 'request-12',
+              requestedByApp: 'preserv-dashboard',
+              initiatedAt: '2026-07-02T00:00:00.000Z',
+              startedAt: '2026-07-02T00:00:01.000Z',
+              completedAt: '2026-07-02T00:00:05.000Z',
+              lastTransitionAt: '2026-07-02T00:00:05.000Z',
+              error: null,
+              callbackDeliveryStatus: null,
+              callbackNotifiedAt: null,
+              callbackReceivedAt: null,
+              callbackHttpStatus: null,
+              callbackErrorType: null,
+              callbackErrorMessage: null,
+              processedCount: 4,
+              ingestedCount: 0,
+              duplicateCount: 0,
+              exactDuplicateCount: 0,
+              skippedSameOriginCount: 0,
+              splitCount: 0,
+              childCount: 0,
+              passedThroughCount: 1,
+              rotatedCount: 0,
+              normalizedCount: 0,
+              ocrCompletedCount: 3,
+              extractedCount: 0,
+              metadataValidatedCount: 0,
+              rightsDeterminedCount: 0,
+              underReviewCount: 0,
+              versionedCount: 0,
+              resolvedCount: 0,
+              skippedCount: 0,
+              reviewNeededCount: 1,
+              failedCount: 0,
+              currentPass: 1,
+              maxPasses: 1,
+              completedPasses: [1],
+              sourceFolderIds: [],
+              collectionName: null,
+              collectionNotes: null,
+            },
+          })}
+        />
+      </ThemeProvider>,
+    )
+
+    expect(markup).toContain('OCR Processor')
+    expect(markup).toContain('1 document needs review')
+    expect(markup).toContain('completed')
+  })
+
   it('shows pending rights determinator details when rights was requested but has not started yet', () => {
     const markup = renderToStaticMarkup(
       <ThemeProvider>

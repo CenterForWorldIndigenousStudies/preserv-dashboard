@@ -153,17 +153,18 @@ describe('normalization forward-processing orchestration', () => {
     expect(shouldTriggerDocumentSplitter(batch)).toBe(false)
   })
 
-  it('does not advance from split pass 1 when review is needed', () => {
+  it('advances from split pass 1 when review is needed but the pass completed', () => {
     const batch = buildBatchStatus({
       documentSplitter: buildStageStatus({
-        status: 'review_needed' satisfies PipelineStepRuntimeStatus,
+        status: 'completed' satisfies PipelineStepRuntimeStatus,
         currentPass: 1,
-        completedPasses: [],
+        reviewNeededCount: 1,
+        completedPasses: [1],
       }),
     })
 
-    expectNextStep(batch, null)
-    expect(shouldTriggerPageRotator(batch)).toBe(false)
+    expectNextStep(batch, { service: 'page-rotator', pass: 1 })
+    expect(shouldTriggerPageRotator(batch)).toBe(true)
     expect(shouldTriggerDocumentSplitter(batch)).toBe(false)
   })
 

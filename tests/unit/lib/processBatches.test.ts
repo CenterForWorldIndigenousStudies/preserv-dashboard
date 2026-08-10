@@ -51,6 +51,20 @@ function getUpdatedProcessingDetails(): Record<string, unknown> {
   return JSON.parse(typedUpdateArg.data.processing_details) as Record<string, unknown>
 }
 
+function getUpdateArg(): {
+  where: { id: string }
+  data: Record<string, unknown>
+} {
+  expect(mockUpdate).toHaveBeenCalledTimes(1)
+  const firstCall = mockUpdate.mock.calls[0] as [unknown] | undefined
+  const updateArg = firstCall?.[0]
+  expect(updateArg).toBeDefined()
+  return updateArg as {
+    where: { id: string }
+    data: Record<string, unknown>
+  }
+}
+
 describe('processBatches', () => {
   afterEach(() => {
     vi.clearAllMocks()
@@ -235,6 +249,89 @@ describe('processBatches', () => {
           url: 'http://localhost/callback',
           received_at: '2026-05-29T04:30:00.000Z',
         },
+      },
+    })
+  })
+
+  it('keeps a completed page-rotator callback batch live when OCR is still pending', async () => {
+    mockFindUnique.mockResolvedValue({
+      ...buildBatchRow({
+        pipeline: {
+          requested_stages: ['page-rotator', 'ocr-processor'],
+          config: {
+            profileId: 'custom',
+            mode: 'custom',
+            executionPlan: [
+              {
+                id: 'step-ingester',
+                stepId: 'ingester',
+                service: 'ingester',
+                label: 'Ingest',
+                order: 0,
+                enabled: true,
+              },
+              {
+                id: 'step-normalize-pass-1-rotate',
+                stepId: 'normalize-pass-1',
+                service: 'page-rotator',
+                label: 'Rotate Pass 1',
+                order: 1,
+                enabled: true,
+                pass: 1,
+                dependsOn: ['step-ingester'],
+              },
+              {
+                id: 'step-ocr-processor',
+                stepId: 'ocr-processor',
+                service: 'ocr-processor',
+                label: 'OCR Processor',
+                order: 2,
+                enabled: true,
+                dependsOn: ['step-normalize-pass-1-rotate'],
+              },
+            ],
+          },
+        },
+        data_ingester: {
+          status: 'completed',
+          completed_at: '2026-05-29T04:29:00.000Z',
+        },
+        page_rotator_pass_1: {
+          status: 'completed',
+          current_pass: 1,
+          max_passes: 1,
+          completed_passes: [1],
+          review_needed_count: 1,
+          completed_at: 1780029005,
+          callback: {
+            url: 'http://localhost/callback',
+          },
+        },
+      }),
+      started_at: new Date('2026-05-29T04:20:00.000Z'),
+      lifecycle_status: 'running',
+      publication_status: 'not_started',
+      publication_target: 'fedora',
+      batch_rollbacks: null,
+    })
+    mockUpdate.mockResolvedValue(undefined)
+
+    await markProcessStageCallbackReceived('batch-2', 'page_rotator', '2026-05-29T04:30:00.000Z')
+
+    expect(getUpdatedProcessingDetails()).toMatchObject({
+      page_rotator_pass_1: {
+        status: 'completed',
+        review_needed_count: 1,
+        callback: {
+          url: 'http://localhost/callback',
+          received_at: '2026-05-29T04:30:00.000Z',
+        },
+      },
+    })
+    expect(getUpdateArg()).toEqual({
+      where: { id: 'batch-2' },
+      data: {
+        processing_details: JSON.stringify(getUpdatedProcessingDetails()),
       },
     })
   })
