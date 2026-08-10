@@ -5,6 +5,7 @@ export const SIGNIN_PATH = `${AUTH_PATH}/signin` as const
 export const AUTH_ERROR_PATH = `${AUTH_PATH}/error` as const
 
 export const BATCHES_PATH = '/batches' as const
+export const BATCH_SEARCH_PATH = `${API_PATH}/batches/search` as const
 export const getBatchDetailPath = (batchId: string, returnHref?: string, returnLabel?: string): string => {
   const searchParams = new URLSearchParams()
 

@@ -454,7 +454,7 @@ describeDbIntegration('documents queries (integration)', () => {
       })
     }, 15000)
 
-    it('filters by linked batch origin, legacy id, and legacy_batch_origin metadata when batch name is empty', async () => {
+    it('searches Batch names without matching linked origins, legacy IDs, or metadata', async () => {
       await withRollbackTransaction(async (tx) => {
         const matchingDoc = await createTestDocument(tx, { name: 'BATCH_LINKED_MATCH' })
         const nonMatchingDoc = await createTestDocument(tx, { name: 'BATCH_LINKED_MISS' })
@@ -503,7 +503,7 @@ describeDbIntegration('documents queries (integration)', () => {
         )
 
         const batchOriginIds = new Set(batchOriginResult.data.map((document) => document.id))
-        expect(batchOriginIds.has(matchingDoc.id)).toBe(true)
+        expect(batchOriginIds.has(matchingDoc.id)).toBe(false)
         expect(batchOriginIds.has(nonMatchingDoc.id)).toBe(false)
 
         const batchLegacyResult = await getAllDocuments(
@@ -515,7 +515,7 @@ describeDbIntegration('documents queries (integration)', () => {
         )
 
         const batchLegacyIds = new Set(batchLegacyResult.data.map((document) => document.id))
-        expect(batchLegacyIds.has(matchingDoc.id)).toBe(true)
+        expect(batchLegacyIds.has(matchingDoc.id)).toBe(false)
         expect(batchLegacyIds.has(nonMatchingDoc.id)).toBe(false)
 
         const batchMetadataResult = await getAllDocuments(
@@ -527,7 +527,7 @@ describeDbIntegration('documents queries (integration)', () => {
         )
 
         const batchMetadataIds = new Set(batchMetadataResult.data.map((document) => document.id))
-        expect(batchMetadataIds.has(matchingDoc.id)).toBe(true)
+        expect(batchMetadataIds.has(matchingDoc.id)).toBe(false)
         expect(batchMetadataIds.has(nonMatchingDoc.id)).toBe(false)
       })
     }, 15000)
@@ -608,10 +608,28 @@ describeDbIntegration('documents queries (integration)', () => {
         const nonMatchingDocument = await createTestDocument(tx, { name: 'READY_FILTER_MISS' })
         const matchingAuthor = await createTestAuthor(tx, 'Matching Author')
         const otherAuthor = await createTestAuthor(tx, 'Different Author')
+        const matchingBatch = await createTestBatch(tx, 'Ready Special RCR Writings September 25 2025')
+        const otherBatch = await createTestBatch(tx, 'Ready Other Batch')
 
         await Promise.all([
           linkAuthorToDocument(tx, matchingDocument.id, matchingAuthor.id),
           linkAuthorToDocument(tx, nonMatchingDocument.id, otherAuthor.id),
+          tx.document_to_batches.create({
+            data: {
+              id: `rfb-${matchingDocument.id}`.slice(0, 36),
+              document_id: matchingDocument.id,
+              batch_id: matchingBatch.id,
+              processing_details: JSON.stringify({}),
+            },
+          }),
+          tx.document_to_batches.create({
+            data: {
+              id: `rfb-${nonMatchingDocument.id}`.slice(0, 36),
+              document_id: nonMatchingDocument.id,
+              batch_id: otherBatch.id,
+              processing_details: JSON.stringify({}),
+            },
+          }),
           tx.document_quality.create({
             data: {
               id: `rfq-${matchingDocument.id}`.slice(0, 36),
@@ -665,7 +683,7 @@ describeDbIntegration('documents queries (integration)', () => {
           {
             page: 1,
             pageSize: 1,
-            author: 'Matching',
+            batch: 'Ready Special RCR Writngs September 25 2025',
           },
           tx,
         )

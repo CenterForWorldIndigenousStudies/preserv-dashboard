@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactElement, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Chip from '@mui/material/Chip'
 import Dialog from '@mui/material/Dialog'
@@ -21,6 +21,8 @@ import { alpha, type Theme } from '@mui/material/styles'
 import { Button } from '@atoms/Button'
 import { IconX } from '@atoms/icons/IconX'
 import { ACCESS_LEVEL_LABELS } from '@constants/accessLevels'
+import { useBatchSearch } from '@lib/hooks/useBatchSearch'
+import { useTagSearch, type TagSuggestion } from '@lib/hooks/useTagSearch'
 import {
   DOCUMENT_TYPE_OPTIONS,
   type AccessLevelOption,
@@ -28,6 +30,8 @@ import {
   type FilterOptions,
   type StatusOption,
 } from '@lib/search'
+import { SearchEntityBox } from '@molecules/SearchEntityBox'
+import type { BatchSearchSuggestion } from 'types/batches'
 
 interface AdvancedSearchModalProps {
   filters: AdvancedSearchFilters
@@ -42,9 +46,34 @@ function formatFilterLabel(value: string): string {
     .join(' ')
 }
 
+function renderTagOption(option: TagSuggestion): ReactNode {
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+      <Typography variant={'body2'} sx={{ color: 'text.primary', fontWeight: 500 }}>
+        {option.name}
+      </Typography>
+      {option.notes ? (
+        <Typography variant={'body2'} sx={{ color: 'text.secondary' }}>
+          {option.notes}
+        </Typography>
+      ) : null}
+    </Box>
+  )
+}
+
+function renderBatchOption(option: BatchSearchSuggestion): ReactNode {
+  return (
+    <Typography variant={'body2'} sx={{ color: 'text.primary', fontWeight: 500 }}>
+      {option.name}
+    </Typography>
+  )
+}
+
 export function AdvancedSearchModal({ filters, filterOptions, onApply }: AdvancedSearchModalProps): ReactElement {
   const [isOpen, setIsOpen] = useState(false)
   const [draftFilters, setDraftFilters] = useState<AdvancedSearchFilters>(filters)
+  const tagSearch = useTagSearch(draftFilters.tag ?? '', { enabled: isOpen, limit: 7 })
+  const batchSearch = useBatchSearch(draftFilters.batch ?? '', { enabled: isOpen, limit: 7 })
 
   useEffect(() => {
     if (!isOpen) {
@@ -215,25 +244,42 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
               sx={{ mt: 0.5 }}
             />
 
-            <TextField
+            <SearchEntityBox<BatchSearchSuggestion>
+              inputValue={draftFilters.batch ?? ''}
+              options={batchSearch.suggestions}
+              loading={batchSearch.isLoading}
+              error={Boolean(batchSearch.error)}
               label={'Batch'}
-              value={draftFilters.batch ?? ''}
-              onChange={(event) =>
-                setDraftFilters((previousFilters) => ({ ...previousFilters, batch: event.target.value }))
-              }
               placeholder={'Partial batch name'}
-              fullWidth
-              sx={{ mt: 0.5 }}
+              helperText={batchSearch.error ?? undefined}
+              onInputChange={(value) =>
+                setDraftFilters((previousFilters) => ({ ...previousFilters, batch: value }))
+              }
+              onSelectOption={(option) =>
+                setDraftFilters((previousFilters) => ({ ...previousFilters, batch: option.name }))
+              }
+              getOptionLabel={(option) => option.name}
+              getOptionKey={(option) => option.id}
+              renderOption={renderBatchOption}
             />
 
-            <TextField
+            <SearchEntityBox<TagSuggestion>
+              inputValue={draftFilters.tag ?? ''}
+              options={tagSearch.suggestions}
+              loading={tagSearch.isLoading}
+              error={Boolean(tagSearch.error)}
               label={'Tag'}
-              value={draftFilters.tag ?? ''}
-              onChange={(event) =>
-                setDraftFilters((previousFilters) => ({ ...previousFilters, tag: event.target.value }))
-              }
               placeholder={'Tag name or close match'}
-              fullWidth
+              helperText={tagSearch.error ?? undefined}
+              onInputChange={(value) =>
+                setDraftFilters((previousFilters) => ({ ...previousFilters, tag: value }))
+              }
+              onSelectOption={(option) =>
+                setDraftFilters((previousFilters) => ({ ...previousFilters, tag: option.name }))
+              }
+              getOptionLabel={(option) => option.name}
+              getOptionKey={(option) => option.id}
+              renderOption={renderTagOption}
             />
 
             <TextField

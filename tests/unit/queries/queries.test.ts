@@ -12,6 +12,7 @@ const {
   mockDocumentMetadataFindMany,
   mockDocumentsFindMany,
   mockTagsFindMany,
+  mockBatchesFindMany,
 } = vi.hoisted(() => ({
   mockQueryRaw: vi.fn(),
   mockMetadataFindMany: vi.fn(),
@@ -20,6 +21,7 @@ const {
   mockDocumentMetadataFindMany: vi.fn(),
   mockDocumentsFindMany: vi.fn(),
   mockTagsFindMany: vi.fn(),
+  mockBatchesFindMany: vi.fn(),
 }))
 
 vi.mock('@lib/db', () => ({
@@ -31,6 +33,7 @@ vi.mock('@lib/db', () => ({
     document_to_metadata: { findMany: mockDocumentMetadataFindMany },
     documents: { findMany: mockDocumentsFindMany },
     tags: { findMany: mockTagsFindMany },
+    batches: { findMany: mockBatchesFindMany },
   },
 }))
 
@@ -122,6 +125,7 @@ describe('getReadyForLibraryDocuments advanced filters', () => {
     mockDocumentMetadataFindMany.mockReset()
     mockDocumentsFindMany.mockReset()
     mockTagsFindMany.mockReset()
+    mockBatchesFindMany.mockReset()
 
     mockMetadataFindMany.mockResolvedValue([
       { id: 'meta-title', name: 'dc_title' },
@@ -147,6 +151,7 @@ describe('getReadyForLibraryDocuments advanced filters', () => {
     ])
     mockDocumentsFindMany.mockResolvedValue([{ id: 'doc-ready', name: 'Ready document' }])
     mockTagsFindMany.mockResolvedValue([{ id: 'tag-collection', name: 'collection-tag', notes: null }])
+    mockBatchesFindMany.mockResolvedValue([{ id: 'batch-2026', name: 'batch-2026' }])
     mockQueryRaw.mockResolvedValueOnce([])
   })
 
@@ -349,6 +354,7 @@ describe('getAllDocuments', () => {
 
   it('applies advanced search filters with AND logic', async () => {
     mockQueryRaw.mockResolvedValueOnce([])
+    mockBatchesFindMany.mockResolvedValueOnce([{ id: 'batch-april', name: 'April batch' }])
 
     await getAllDocuments({
       search: 'Mary Ross',
@@ -369,6 +375,34 @@ describe('getAllDocuments', () => {
     expect(sql).toContain('LOWER(al.level_name) =')
     expect(sql).toContain('d.created_at >=')
     expect(sql).toContain('DATE_ADD(')
+  })
+
+  it('resolves a fuzzy Batch name to matching Batch IDs before building SQL', async () => {
+    mockQueryRaw.mockResolvedValueOnce([])
+    mockBatchesFindMany.mockResolvedValueOnce([
+      { id: 'batch-special', name: 'Special RCR Writings September 25 2025' },
+      { id: 'batch-other', name: 'Coastal Fisheries' },
+    ])
+
+    await getAllDocuments({ batch: 'Special RCR Writngs September 25 2025' })
+
+    const sql = queryText(0)
+    expect(sql).toContain('b.id IN')
+    expect(sql).not.toContain('b.id_legacy')
+    expect(sql).not.toContain('batch_origin')
+    expect(queryCall(0).values).toContain('batch-special')
+    expect(queryCall(0).values).not.toContain('batch-other')
+  })
+
+  it('returns an always-false predicate when no Batch name matches', async () => {
+    mockQueryRaw.mockResolvedValueOnce([])
+    mockBatchesFindMany.mockResolvedValueOnce([{ id: 'batch-special', name: 'Special RCR Writings' }])
+
+    await getAllDocuments({ batch: 'legacy-batch-origin-only' })
+
+    const sql = queryText(0)
+    expect(sql).toContain('1 = 0')
+    expect(sql).not.toContain('b.id IN')
   })
 
   it('can require documents to already have validation status', async () => {

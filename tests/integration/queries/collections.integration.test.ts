@@ -89,6 +89,92 @@ describeDbIntegration('collection queries (integration)', () => {
         expect(documents).toEqual([])
       })
     })
+
+    it('fuzzy-matches Batch names without escaping the collection scope', async () => {
+      await withRollbackTransaction(async (tx) => {
+        const token = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`
+        const collectionTag = await tx.tags.create({
+          data: { id: `ct${token}`, name: `Batch Search Collection ${token}` },
+          select: { id: true },
+        })
+        const collection = await tx.collections.create({
+          data: { id: `cc${token}`, tag_id: collectionTag.id },
+          select: { id: true },
+        })
+        const matchingDocument = await tx.documents.create({
+          data: {
+            id: `cd${token}match`,
+            id_legacy: `cl${token}match`,
+            name: 'Collection Batch Match',
+            hash_binary: `cb${token}match`,
+            hash_content: `cc${token}match`,
+            filesize: BigInt(1),
+          },
+          select: { id: true },
+        })
+        const nonMatchingDocument = await tx.documents.create({
+          data: {
+            id: `cd${token}other`,
+            id_legacy: `cl${token}other`,
+            name: 'Collection Batch Other',
+            hash_binary: `cb${token}other`,
+            hash_content: `cc${token}other`,
+            filesize: BigInt(1),
+          },
+          select: { id: true },
+        })
+        const matchingBatch = await tx.batches.create({
+          data: {
+            id: `cba${token}match`,
+            name: 'Collection Special RCR Writings September 25 2025',
+            processing_details: JSON.stringify({}),
+          },
+          select: { id: true },
+        })
+        const otherBatch = await tx.batches.create({
+          data: {
+            id: `cba${token}other`,
+            name: 'Collection Other Batch',
+            processing_details: JSON.stringify({}),
+          },
+          select: { id: true },
+        })
+
+        await tx.document_to_tags.createMany({
+          data: [
+            { id: `cdt${token}match`, document_id: matchingDocument.id, tag_id: collectionTag.id },
+            { id: `cdt${token}other`, document_id: nonMatchingDocument.id, tag_id: collectionTag.id },
+          ],
+        })
+        await tx.document_to_batches.createMany({
+          data: [
+            {
+              id: `cdb${token}match`,
+              document_id: matchingDocument.id,
+              batch_id: matchingBatch.id,
+              processing_details: JSON.stringify({}),
+            },
+            {
+              id: `cdb${token}other`,
+              document_id: nonMatchingDocument.id,
+              batch_id: otherBatch.id,
+              processing_details: JSON.stringify({}),
+            },
+          ],
+        })
+
+        const result = await getDocumentsForCollection(
+          collection.id,
+          {
+            batch: 'Collection Special RCR Writngs September 25 2025',
+            pageSize: 100,
+          },
+          tx,
+        )
+
+        expect(result.documents.map((document) => document.id)).toEqual([matchingDocument.id])
+      })
+    })
   })
 
   describe('getDocumentsNotInCollection', () => {

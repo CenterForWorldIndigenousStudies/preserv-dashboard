@@ -1,14 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { mockQueryRaw, mockTagsFindMany } = vi.hoisted(() => ({
+const { mockQueryRaw, mockTagsFindMany, mockBatchesFindMany } = vi.hoisted(() => ({
   mockQueryRaw: vi.fn(),
   mockTagsFindMany: vi.fn(),
+  mockBatchesFindMany: vi.fn(),
 }))
 
 vi.mock('@lib/db', () => ({
   db: {
     $queryRaw: mockQueryRaw,
     tags: { findMany: mockTagsFindMany },
+    batches: { findMany: mockBatchesFindMany },
   },
 }))
 vi.mock('@lib/editHistory', () => ({ createEditHistoryEntry: vi.fn() }))
@@ -120,6 +122,8 @@ describe('getLibraryDocuments', () => {
     mockQueryRaw.mockReset()
     mockTagsFindMany.mockReset()
     mockTagsFindMany.mockResolvedValue([])
+    mockBatchesFindMany.mockReset()
+    mockBatchesFindMany.mockResolvedValue([])
   })
 
   it('uses the current document state-history row and keeps the upload state as a fixed condition', async () => {
@@ -136,6 +140,7 @@ describe('getLibraryDocuments', () => {
 
   it('applies the full Advanced Search filter set in SQL', async () => {
     mockTagsFindMany.mockResolvedValue([{ id: 'tag-1', name: 'collection-tag', notes: null }])
+    mockBatchesFindMany.mockResolvedValue([{ id: 'batch-1', name: 'batch-2026' }])
     mockQueryRaw.mockResolvedValueOnce([{ total: 0 }]).mockResolvedValueOnce([])
 
     await getLibraryDocuments({

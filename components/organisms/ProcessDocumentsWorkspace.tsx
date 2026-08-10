@@ -8,6 +8,7 @@ import { Box, Button, Card, CardContent, Stack, Typography } from '@mui/material
 import { BATCHES_PATH, PROCESS_EVENTS_PATH, PROCESS_FOLDERS_PATH, PROCESS_START_PATH } from '@constants/paths'
 import type { ProfileId } from '@constants/pipeline'
 import type { DriveFolderOption } from '@lib/googleDrive'
+import { useBatchSearch } from '@lib/hooks/useBatchSearch'
 import {
   buildAcceptedBatchStatus,
   getLiveBatchIds,
@@ -55,6 +56,7 @@ export function ProcessDocumentsWorkspace({ initialBatches }: ProcessDocumentsWo
   const [foldersError, setFoldersError] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [acceptedResult, setAcceptedResult] = useState<{ batch_id: string; batch_name: string } | null>(null)
+  const batchSearch = useBatchSearch(batchName, { enabled: true, limit: 7 })
 
   useEffect(() => {
     setRecentBatches(initialBatches)
@@ -124,7 +126,8 @@ export function ProcessDocumentsWorkspace({ initialBatches }: ProcessDocumentsWo
   }, [liveBatchIdsKey])
 
   const selectedFolderList = useMemo(() => Object.values(selectedFolders), [selectedFolders])
-  const canSubmit = batchName.trim().length > 0 && selectedFolderList.length > 0 && !isSubmitting
+  const batchNameExists = Boolean(batchName.trim()) && batchSearch.exactMatch !== null
+  const canSubmit = batchName.trim().length > 0 && selectedFolderList.length > 0 && !isSubmitting && !batchNameExists
 
   async function loadChildFolders(parentId: string): Promise<void> {
     if (childFoldersByParent[parentId]) {
@@ -263,6 +266,8 @@ export function ProcessDocumentsWorkspace({ initialBatches }: ProcessDocumentsWo
         canSubmit={canSubmit}
         submitError={submitError}
         acceptedBatchName={acceptedResult?.batch_name ?? null}
+        batchNameSearchError={batchSearch.error}
+        batchNameExists={batchNameExists}
         pipelineDraft={pipelineDraft}
         isPipelineStepsModalOpen={isPipelineStepsModalOpen}
         rootFolders={rootFolders}

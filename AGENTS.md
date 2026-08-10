@@ -63,12 +63,12 @@ Important pipeline integration areas:
 - use MUI components and theme-driven styling
 - use semantic theme roles for visual styling and semantic class names for custom structural and layout styling
 - do not introduce ad hoc presentational class names or new styling patterns
-- do not use `Tailwind`
 - treat the shared preservation database schema as the external source of truth
 - keep auth and session concerns in Auth.js and proxy configuration
 - keep pipeline callback routes outside the Auth.js proxy when they are meant for server-to-server access
 - prefer extending existing query helpers, components, and documentation over creating parallel patterns
 - this is "greenfield" development, we do not need backward compatibility
+- When creating specs or plans, remember [Documentation Standards](../../documentation/standards/DOCUMENTATION_STANDARDS.md) and [Markdown Standards](../../documentation/standards/MARKDOWN_STANDARDS.md)
 
 ## Validation
 

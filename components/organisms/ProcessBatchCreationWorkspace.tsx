@@ -21,6 +21,8 @@ interface ProcessBatchCreationWorkspaceProps {
   canSubmit: boolean
   submitError: string | null
   acceptedBatchName: string | null
+  batchNameSearchError: string | null
+  batchNameExists: boolean
   pipelineDraft: PipelineSelectionDraft
   isPipelineStepsModalOpen: boolean
   rootFolders: DriveFolderOption[]
@@ -51,6 +53,8 @@ export function ProcessBatchCreationWorkspace({
   canSubmit,
   submitError,
   acceptedBatchName,
+  batchNameSearchError,
+  batchNameExists,
   pipelineDraft,
   isPipelineStepsModalOpen,
   rootFolders,
@@ -92,6 +96,8 @@ export function ProcessBatchCreationWorkspace({
           canSubmit={canSubmit}
           submitError={submitError}
           acceptedBatchName={acceptedBatchName}
+          batchNameSearchError={batchNameSearchError}
+          batchNameExists={batchNameExists}
           onBatchNameChange={onBatchNameChange}
           onCollectionNameChange={onCollectionNameChange}
           onCollectionNotesChange={onCollectionNotesChange}

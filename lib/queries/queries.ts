@@ -15,6 +15,8 @@ import { REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES, REVIEW_QUEUE_SORT_FIELDS } fr
 import { db } from '@lib/db'
 import { createEditHistoryEntry } from '@lib/editHistory'
 import { buildNameHash } from '@lib/tagHash'
+import { getSearchCandidateLimit } from '@lib/fuzzySearch'
+import { BATCH_SEARCH_MIN_SCORE, scoreBatchSearchCandidates } from '@lib/batchSearch'
 import { parseMetadataValue } from '@lib/metadata'
 import {
   Prisma,
@@ -199,6 +201,7 @@ const DEFAULT_OVERVIEW_SECONDARY_SORT_FIELD: (typeof DOCUMENTS_ORDERABLE_FIELDS)
 const DEFAULT_OVERVIEW_SORT_TIMESTAMP = new Date('1000-01-01T00:00:00.000Z')
 const OVERVIEW_TAG_SEARCH_LIMIT = 25
 const OVERVIEW_TAG_SEARCH_MIN_SCORE = 25
+const OVERVIEW_BATCH_SEARCH_LIMIT = 25
 
 export interface DocumentsQueryParams extends AdvancedSearchFilters {
   page?: number
@@ -262,7 +265,7 @@ export async function getAllDocuments(
       tagIds: await resolveOverviewTagIds(normalizeTextFilter(params.tag), client),
       statuses: normalizeStatuses(params.statuses),
       documentType: normalizeDocumentType(params.documentType),
-      batch: normalizeTextFilter(params.batch),
+      batchIds: await resolveOverviewBatchIds(normalizeTextFilter(params.batch), client),
       createdFrom: normalizeDateFilter(params.createdFrom),
       createdTo: normalizeDateFilter(params.createdTo),
       collection: normalizeTextFilter(params.collection),
@@ -315,7 +318,7 @@ interface LibraryQueryContext {
   cursor: DocumentsCursor | null
   filterParams: {
     accessLevel?: AccessLevelOption
-    batch?: string
+    batchIds?: string[]
     collection?: string
     createdFrom?: string
     createdTo?: string
@@ -350,7 +353,7 @@ async function buildLibraryQueryContext(
   const cursor = params.cursorValue && params.cursorId ? { value: params.cursorValue, id: params.cursorId } : null
   const filterParams = {
     accessLevel: normalizeAccessLevel(params.accessLevel),
-    batch: normalizeTextFilter(params.batch),
+    batchIds: await resolveOverviewBatchIds(normalizeTextFilter(params.batch), client),
     collection: normalizeTextFilter(params.collection),
     createdFrom: normalizeDateFilter(params.createdFrom),
     createdTo: normalizeDateFilter(params.createdTo),
@@ -378,13 +381,13 @@ async function buildLibraryQueryContext(
 
 function buildLibraryWhereSql(context: LibraryQueryContext, includeCursor: boolean): Prisma.Sql {
   const additionalConditions: Prisma.Sql[] = [Prisma.sql`latest_state.new_state = 'ingested_fedora'`]
-  if (context.filterParams.batch) {
-    additionalConditions.push(buildLibraryBatchConditionSql(context.filterParams.batch))
+  if (context.filterParams.batchIds) {
+    additionalConditions.push(buildLibraryBatchConditionSql(context.filterParams.batchIds))
   }
 
   return buildOverviewDocumentsWhereSql({
     ...context.filterParams,
-    batch: undefined,
+    batchIds: undefined,
     additionalConditions,
     cursor: includeCursor ? context.cursor : null,
     cursorDirection: context.cursorDirection,
@@ -582,7 +585,7 @@ export async function getNeedsReviewDocuments(
       statuses,
       tagIds: await resolveOverviewTagIds(normalizeTextFilter(params.tag), client),
       documentType: normalizeDocumentType(params.documentType),
-      batch: normalizeTextFilter(params.batch),
+      batchIds: await resolveOverviewBatchIds(normalizeTextFilter(params.batch), client),
       createdFrom: normalizeDateFilter(params.createdFrom),
       createdTo: normalizeDateFilter(params.createdTo),
       collection: normalizeTextFilter(params.collection),
@@ -620,7 +623,7 @@ export async function getNeedsReviewDocumentsCount(
   const statuses = resolveReviewQueueValidationStatuses(params.statuses)
   const whereSql = buildNeedsReviewDocumentsWhereSql({
     accessLevel: normalizeAccessLevel(params.accessLevel),
-    batch: normalizeTextFilter(params.batch),
+    batchIds: await resolveOverviewBatchIds(normalizeTextFilter(params.batch), client),
     collection: normalizeTextFilter(params.collection),
     createdFrom: normalizeDateFilter(params.createdFrom),
     createdTo: normalizeDateFilter(params.createdTo),
@@ -666,6 +669,25 @@ async function resolveOverviewTagIds(
 
   const matches = scoreTags(candidates, tagTerm, OVERVIEW_TAG_SEARCH_LIMIT)
   return matches.filter((tag) => tag.score >= OVERVIEW_TAG_SEARCH_MIN_SCORE).map((tag) => tag.id)
+}
+
+async function resolveOverviewBatchIds(
+  batchTerm: string | undefined,
+  client: QueryDbClient,
+): Promise<string[] | undefined> {
+  if (!batchTerm) {
+    return undefined
+  }
+
+  const candidates = await client.batches.findMany({
+    orderBy: { name: 'asc' },
+    take: getSearchCandidateLimit(OVERVIEW_BATCH_SEARCH_LIMIT),
+    select: { id: true, name: true },
+  })
+
+  const matches = scoreBatchSearchCandidates(candidates, batchTerm, OVERVIEW_BATCH_SEARCH_LIMIT)
+
+  return matches.filter((match) => match.score >= BATCH_SEARCH_MIN_SCORE).map((match) => match.id)
 }
 
 export async function applyReviewQueueDecision(params: {
@@ -1350,7 +1372,7 @@ interface CollectionDocumentSqlParams {
   tagIds?: string[]
   statuses?: StatusOption[]
   documentType?: DocumentTypeOption
-  batch?: string
+  batchIds?: string[]
   createdFrom?: string
   createdTo?: string
   accessLevel?: AccessLevelOption
@@ -1390,8 +1412,8 @@ function buildCollectionDocumentAdvancedFilterSql(params: CollectionDocumentSqlP
     )
   }
 
-  if (params.batch?.trim()) {
-    filterConditions.push(buildOverviewBatchConditionSql(params.batch))
+  if (params.batchIds) {
+    filterConditions.push(buildOverviewBatchConditionSql(params.batchIds))
   }
 
   if (params.createdFrom) {
@@ -1510,8 +1532,11 @@ function buildCollectionDocumentRowsSql(params: CollectionDocumentSqlParams): Pr
   `
 }
 
-async function getCollectionDocumentsPage(params: CollectionDocumentSqlParams): Promise<CollectionDocumentQueryResult> {
-  const rows = await db.$queryRaw<Array<CollectionDocumentRow & { total: bigint | number | string }>>(
+async function getCollectionDocumentsPage(
+  params: CollectionDocumentSqlParams,
+  client: QueryDbClient = db,
+): Promise<CollectionDocumentQueryResult> {
+  const rows = await client.$queryRaw<Array<CollectionDocumentRow & { total: bigint | number | string }>>(
     buildCollectionDocumentRowsSql(params),
   )
 
@@ -1525,27 +1550,47 @@ async function getCollectionDocumentsPage(params: CollectionDocumentSqlParams): 
 export async function getDocumentsForCollection(
   collectionId: string,
   params?: CollectionDocumentQueryParams,
+  client: QueryDbClient = db,
 ): Promise<CollectionDocumentQueryResult> {
-  return getCollectionDocumentsPage({
-    collectionId,
-    mode: 'in',
-    ...params,
-    author: normalizeTextFilter(params?.author),
-    tagIds: await resolveOverviewTagIds(normalizeTextFilter(params?.tag), db),
-    statuses: normalizeStatuses(params?.statuses),
-    documentType: normalizeDocumentType(params?.documentType),
-    batch: normalizeTextFilter(params?.batch),
-    createdFrom: normalizeDateFilter(params?.createdFrom),
-    createdTo: normalizeDateFilter(params?.createdTo),
-    accessLevel: normalizeAccessLevel(params?.accessLevel),
-  })
+  return getCollectionDocumentsPage(
+    {
+      collectionId,
+      mode: 'in',
+      ...params,
+      author: normalizeTextFilter(params?.author),
+      tagIds: await resolveOverviewTagIds(normalizeTextFilter(params?.tag), client),
+      statuses: normalizeStatuses(params?.statuses),
+      documentType: normalizeDocumentType(params?.documentType),
+      batchIds: await resolveOverviewBatchIds(normalizeTextFilter(params?.batch), client),
+      createdFrom: normalizeDateFilter(params?.createdFrom),
+      createdTo: normalizeDateFilter(params?.createdTo),
+      accessLevel: normalizeAccessLevel(params?.accessLevel),
+    },
+    client,
+  )
 }
 
 export async function getDocumentsNotInCollection(
   collectionId: string,
   params?: CollectionDocumentQueryParams,
+  client: QueryDbClient = db,
 ): Promise<CollectionDocumentQueryResult> {
-  return getCollectionDocumentsPage({ collectionId, mode: 'out', ...params })
+  return getCollectionDocumentsPage(
+    {
+      collectionId,
+      mode: 'out',
+      ...params,
+      author: normalizeTextFilter(params?.author),
+      tagIds: await resolveOverviewTagIds(normalizeTextFilter(params?.tag), client),
+      statuses: normalizeStatuses(params?.statuses),
+      documentType: normalizeDocumentType(params?.documentType),
+      batchIds: await resolveOverviewBatchIds(normalizeTextFilter(params?.batch), client),
+      createdFrom: normalizeDateFilter(params?.createdFrom),
+      createdTo: normalizeDateFilter(params?.createdTo),
+      accessLevel: normalizeAccessLevel(params?.accessLevel),
+    },
+    client,
+  )
 }
 
 export async function addDocumentsToCollection(collectionId: string, documentIds: string[]): Promise<void> {
@@ -1706,7 +1751,7 @@ async function getOverviewDocumentsPage(
     tagIds?: string[]
     statuses?: StatusOption[]
     documentType?: DocumentTypeOption
-    batch?: string
+    batchIds?: string[]
     createdFrom?: string
     createdTo?: string
     collection?: string
@@ -1730,7 +1775,7 @@ async function getOverviewDocumentsPage(
     : undefined
   const whereSql = buildOverviewDocumentsWhereSql({
     accessLevel: params.accessLevel,
-    batch: params.batch,
+    batchIds: params.batchIds,
     collection: params.collection,
     createdFrom: params.createdFrom,
     createdTo: params.createdTo,
@@ -1829,7 +1874,7 @@ async function getNeedsReviewDocumentsPage(
     statuses: StatusOption[]
     tagIds?: string[]
     documentType?: DocumentTypeOption
-    batch?: string
+    batchIds?: string[]
     createdFrom?: string
     createdTo?: string
     collection?: string
@@ -1851,7 +1896,7 @@ async function getNeedsReviewDocumentsPage(
     : undefined
   const whereSql = buildNeedsReviewDocumentsWhereSql({
     accessLevel: params.accessLevel,
-    batch: params.batch,
+    batchIds: params.batchIds,
     collection: params.collection,
     createdFrom: params.createdFrom,
     createdTo: params.createdTo,
@@ -1927,7 +1972,7 @@ function buildOverviewDocumentsWhereSql(params: {
   tagIds?: string[]
   statuses?: StatusOption[]
   documentType?: DocumentTypeOption
-  batch?: string
+  batchIds?: string[]
   createdFrom?: string
   createdTo?: string
   collection?: string
@@ -1963,8 +2008,8 @@ function buildOverviewDocumentsWhereSql(params: {
     conditions.push(Prisma.sql`dup.document_id IS NOT NULL`)
   }
 
-  if (params.batch) {
-    conditions.push(buildOverviewBatchConditionSql(params.batch))
+  if (params.batchIds) {
+    conditions.push(buildOverviewBatchConditionSql(params.batchIds))
   }
 
   if (params.createdFrom) {
@@ -2020,7 +2065,7 @@ function buildNeedsReviewDocumentsWhereSql(params: {
   statuses: StatusOption[]
   tagIds?: string[]
   documentType?: DocumentTypeOption
-  batch?: string
+  batchIds?: string[]
   createdFrom?: string
   createdTo?: string
   collection?: string
@@ -2050,8 +2095,8 @@ function buildNeedsReviewDocumentsWhereSql(params: {
     conditions.push(Prisma.sql`dup.document_id IS NOT NULL`)
   }
 
-  if (params.batch) {
-    conditions.push(buildOverviewBatchConditionSql(params.batch))
+  if (params.batchIds) {
+    conditions.push(buildOverviewBatchConditionSql(params.batchIds))
   }
 
   if (params.createdFrom) {
@@ -2147,8 +2192,10 @@ function buildOverviewAuthorSearchConditionSql(searchTerm: string): Prisma.Sql {
   `
 }
 
-function buildOverviewBatchConditionSql(batchTerm: string): Prisma.Sql {
-  const likeValue = `%${escapeLikePattern(batchTerm.toLowerCase())}%`
+function buildOverviewBatchConditionSql(batchIds: string[]): Prisma.Sql {
+  if (batchIds.length === 0) {
+    return Prisma.sql`1 = 0`
+  }
 
   return Prisma.sql`
     EXISTS (
@@ -2156,25 +2203,15 @@ function buildOverviewBatchConditionSql(batchTerm: string): Prisma.Sql {
       FROM document_to_batches dtb
       INNER JOIN batches b ON b.id = dtb.batch_id
       WHERE dtb.document_id = d.id
-        AND (
-          LOWER(COALESCE(b.name, '')) LIKE ${likeValue} ESCAPE '\\\\'
-          OR LOWER(COALESCE(b.id_legacy, '')) LIKE ${likeValue} ESCAPE '\\\\'
-          OR LOWER(COALESCE(dtb.batch_origin, '')) LIKE ${likeValue} ESCAPE '\\\\'
-          OR EXISTS (
-            SELECT 1
-            FROM batch_to_batches_metadata btbm
-            INNER JOIN batch_metadata bm ON bm.id = btbm.batch_metadata_id
-            WHERE btbm.batch_id = b.id
-              AND LOWER(bm.name) = 'legacy_batch_origin'
-              AND LOWER(COALESCE(btbm.value, '')) LIKE ${likeValue} ESCAPE '\\\\'
-          )
-        )
+        AND b.id IN (${Prisma.join(batchIds)})
     )
   `
 }
 
-function buildLibraryBatchConditionSql(batchTerm: string): Prisma.Sql {
-  const likeValue = `%${escapeLikePattern(batchTerm.toLowerCase())}%`
+function buildLibraryBatchConditionSql(batchIds: string[]): Prisma.Sql {
+  if (batchIds.length === 0) {
+    return Prisma.sql`1 = 0`
+  }
 
   return Prisma.sql`
     EXISTS (
@@ -2190,25 +2227,9 @@ function buildLibraryBatchConditionSql(batchTerm: string): Prisma.Sql {
           ORDER BY latest_dtb.added_at DESC, latest_b.created_at DESC, latest_dtb.batch_id DESC
           LIMIT 1
         )
-        AND (
-          LOWER(COALESCE(filtered_b.name, '')) LIKE ${likeValue} ESCAPE '\\\\'
-          OR LOWER(COALESCE(filtered_b.id_legacy, '')) LIKE ${likeValue} ESCAPE '\\\\'
-          OR LOWER(COALESCE(filtered_dtb.batch_origin, '')) LIKE ${likeValue} ESCAPE '\\\\'
-          OR EXISTS (
-            SELECT 1
-            FROM batch_to_batches_metadata filtered_btbm
-            INNER JOIN batch_metadata filtered_bm ON filtered_bm.id = filtered_btbm.batch_metadata_id
-            WHERE filtered_btbm.batch_id = filtered_b.id
-              AND LOWER(filtered_bm.name) = 'legacy_batch_origin'
-              AND LOWER(COALESCE(filtered_btbm.value, '')) LIKE ${likeValue} ESCAPE '\\\\'
-          )
-        )
+        AND filtered_b.id IN (${Prisma.join(batchIds)})
     )
   `
-}
-
-function escapeLikePattern(value: string): string {
-  return value.replace(/[\\%_]/g, '\\$&')
 }
 
 function buildOverviewTagConditionSql(tagIds: string[]): Prisma.Sql {
@@ -3045,6 +3066,7 @@ export async function getReadyForLibraryDocuments(
   }
 
   const tagIds = await resolveOverviewTagIds(normalizeTextFilter(params.tag), client)
+  const batchIds = await resolveOverviewBatchIds(normalizeTextFilter(params.batch), client)
   const filteredResult = await getOverviewDocumentsPage(
     {
       page: 1,
@@ -3053,7 +3075,7 @@ export async function getReadyForLibraryDocuments(
       tagIds,
       statuses: normalizedStatuses ?? ['APPROVED'],
       documentType: normalizeDocumentType(params.documentType),
-      batch: normalizeTextFilter(params.batch),
+      batchIds,
       createdFrom: normalizeDateFilter(params.createdFrom),
       createdTo: normalizeDateFilter(params.createdTo),
       collection: normalizeTextFilter(params.collection),

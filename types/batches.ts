@@ -37,3 +37,14 @@ export interface BatchDetail {
   startedAt: string | Date | null
   properties: BatchProperty[]
 }
+
+export interface BatchSearchSuggestion {
+  id: string
+  name: string
+  score: number
+}
+
+export interface BatchSearchResponse {
+  batches: BatchSearchSuggestion[]
+  exactMatch: BatchSearchSuggestion | null
+}

@@ -1,11 +1,10 @@
 'use client'
 
-import { useMemo, useState, type ReactElement, type SyntheticEvent } from 'react'
-import Autocomplete from '@mui/material/Autocomplete'
+import { useMemo, useState, type ReactElement } from 'react'
 import Box from '@mui/material/Box'
-import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { useTagSearch, type TagSuggestion } from '@lib/hooks/useTagSearch'
+import { SearchEntityBox } from '@molecules/SearchEntityBox'
 
 interface CreateOption {
   id: '__create__'
@@ -29,16 +28,6 @@ interface TagSearchComboboxProps {
   getOptionHelperText?: (tag: TagSuggestion) => string | null
 }
 
-function tagSearchFilterOptions(options: TagSearchOption[], { inputValue }: { inputValue: string }): TagSearchOption[] {
-  if (!inputValue.trim()) {
-    return []
-  }
-
-  // The API already handles scoring and ranking, so we pass all results through.
-  // We only filter here for the "Create new tag" option.
-  return [...options]
-}
-
 export function TagSearchCombobox({
   open,
   value = '',
@@ -56,15 +45,8 @@ export function TagSearchCombobox({
     limit: 7,
   })
 
-  const options = useMemo(() => suggestions, [suggestions])
-
-  async function handleChange(_event: SyntheticEvent, selected: TagSearchOption | string | null): Promise<void> {
+  async function handleSelectOption(selected: TagSearchOption): Promise<void> {
     if (!selected) {
-      return
-    }
-
-    if (typeof selected === 'string') {
-      onSelectCreate(selected)
       return
     }
 
@@ -81,40 +63,40 @@ export function TagSearchCombobox({
     setInputValue('')
   }
 
+  const options = useMemo<TagSearchOption[]>(() => {
+    const normalizedInput = inputValue.trim()
+    if (!normalizedInput) {
+      return []
+    }
+
+    return [
+      ...suggestions,
+      {
+        id: '__create__',
+        inputValue: normalizedInput,
+        name: `Create new tag "${normalizedInput}"`,
+        notes: null,
+        score: -1,
+      },
+    ]
+  }, [inputValue, suggestions])
+
   return (
-    <Autocomplete<TagSearchOption, false, false, true>
-      freeSolo
-      openOnFocus
-      options={options}
-      loading={isLoading}
+    <SearchEntityBox<TagSearchOption>
       inputValue={inputValue}
-      onInputChange={(_event, nextValue) => setInputValue(nextValue)}
-      onChange={(event, selected) => {
-        void handleChange(event, selected)
+      options={options}
+      openOnFocus
+      loading={isLoading}
+      freeSolo
+      onInputChange={setInputValue}
+      onSelectOption={(selected) => {
+        void handleSelectOption(selected)
       }}
+      onSelectFreeText={onSelectCreate}
       disabled={disabled}
-      filterOptions={(availableOptions, params) => {
-        const filtered = tagSearchFilterOptions(availableOptions, params)
-        const normalizedInput = params.inputValue.trim()
-
-        if (normalizedInput.length > 0) {
-          filtered.push({
-            id: '__create__',
-            inputValue: normalizedInput,
-            name: `Create new tag "${normalizedInput}"`,
-            notes: null,
-            score: -1,
-          })
-        }
-
-        return filtered
-      }}
-      getOptionDisabled={(option) => ('inputValue' in option ? false : (getOptionDisabled?.(option) ?? false))}
+      label={label}
+      placeholder={placeholder}
       getOptionLabel={(option) => {
-        if (typeof option === 'string') {
-          return option
-        }
-
         if ('inputValue' in option) {
           // Return the raw input value, not the display name
           return option.inputValue
@@ -122,13 +104,13 @@ export function TagSearchCombobox({
 
         return option.name
       }}
-      renderOption={(props, option) => {
-        const { key, ...optionProps } = props
+      getOptionDisabled={(option) => ('inputValue' in option ? false : (getOptionDisabled?.(option) ?? false))}
+      renderOption={(option) => {
         const optionDisabled = 'inputValue' in option ? false : (getOptionDisabled?.(option) ?? false)
         const helperText = 'inputValue' in option ? null : (getOptionHelperText?.(option) ?? null)
 
         return (
-          <Box component={'li'} key={key} {...optionProps} sx={{ opacity: optionDisabled ? 0.5 : 1 }}>
+          <Box component={'span'} sx={{ display: 'block', opacity: optionDisabled ? 0.5 : 1 }}>
             <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
               <Typography variant={'body2'} sx={{ color: 'text.primary', fontWeight: 500 }}>
                 {option.name}
@@ -147,14 +129,7 @@ export function TagSearchCombobox({
           </Box>
         )
       }}
-      renderInput={(params) => (
-        <TextField
-          {...params}
-          label={label}
-          placeholder={placeholder}
-          helperText={'Choose an existing tag or create a new one'}
-        />
-      )}
+      helperText={'Choose an existing tag or create a new one'}
     />
   )
 }

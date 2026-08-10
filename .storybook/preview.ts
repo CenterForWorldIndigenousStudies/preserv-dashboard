@@ -5,7 +5,6 @@ import ThemeProvider from '../components/ThemeProvider'
 import '../app/globals.css'
 
 const withRootLayout: Decorator = (story) => {
-  // Minimal decorator that ensures Tailwind is applied.
   // The actual root layout is applied per-story via nextjs-vite framework.
   return story()
 }

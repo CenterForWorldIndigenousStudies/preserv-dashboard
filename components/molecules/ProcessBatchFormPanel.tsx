@@ -2,6 +2,8 @@ import type { ChangeEvent, ReactElement } from 'react'
 import { Alert, Paper, Stack, TextField, Typography } from '@mui/material'
 
 import { Button } from '@atoms/Button'
+import { BATCH_NAME_EXISTS_MESSAGE } from '@constants/batches'
+import { SearchEntityBox } from '@molecules/SearchEntityBox'
 
 interface ProcessBatchFormPanelProps {
   batchName: string
@@ -12,6 +14,8 @@ interface ProcessBatchFormPanelProps {
   canSubmit: boolean
   submitError: string | null
   acceptedBatchName: string | null
+  batchNameSearchError: string | null
+  batchNameExists: boolean
   onBatchNameChange: (value: string) => void
   onCollectionNameChange: (value: string) => void
   onCollectionNotesChange: (value: string) => void
@@ -34,6 +38,8 @@ export function ProcessBatchFormPanel({
   canSubmit,
   submitError,
   acceptedBatchName,
+  batchNameSearchError,
+  batchNameExists,
   onBatchNameChange,
   onCollectionNameChange,
   onCollectionNotesChange,
@@ -58,13 +64,17 @@ export function ProcessBatchFormPanel({
           </Typography>
         </div>
 
-        <TextField
-          label={'Batch Name'}
-          value={batchName}
-          onChange={handleTextChange(onBatchNameChange)}
-          placeholder={'May 2026 Refugee Mental Health Ingest'}
+        <SearchEntityBox<string>
+          inputValue={batchName}
+          options={[]}
+          error={batchNameExists}
           required
-          fullWidth
+          openOnFocus={false}
+          label={'Batch Name'}
+          placeholder={'May 2026 Refugee Mental Health Ingest'}
+          helperText={batchNameExists ? BATCH_NAME_EXISTS_MESSAGE : (batchNameSearchError ?? undefined)}
+          onInputChange={onBatchNameChange}
+          getOptionLabel={(option) => option}
         />
 
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>

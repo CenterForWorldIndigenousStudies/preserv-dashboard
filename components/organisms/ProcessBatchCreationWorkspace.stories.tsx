@@ -22,6 +22,8 @@ const meta = {
     canSubmit: true,
     submitError: null,
     acceptedBatchName: null,
+    batchNameSearchError: null,
+    batchNameExists: false,
     pipelineDraft: createDefaultDraft(),
     isPipelineStepsModalOpen: false,
     rootFolders: folders,

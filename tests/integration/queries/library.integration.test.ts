@@ -213,7 +213,7 @@ describeDbIntegration('library documents query (integration)', () => {
     })
   })
 
-  it('treats underscores in batch filters as literal characters', async () => {
+  it('fuzzy-matches Batch names and excludes a different Batch name', async () => {
     await withRollbackTransaction(async (tx) => {
       const token = makeToken()
       const matchingDocument = await createDocument(tx, {
@@ -232,7 +232,7 @@ describeDbIntegration('library documents query (integration)', () => {
       const literalBatch = await tx.batches.create({
         data: {
           id: `b${token}literal`,
-          name: 'Special_RCR_Writings_sept_25_2025',
+          name: 'Special RCR Writings September 25 2025',
           processing_details: JSON.stringify({}),
           created_at: new Date('2026-07-10T00:00:00.000Z'),
         },
@@ -241,7 +241,7 @@ describeDbIntegration('library documents query (integration)', () => {
       const wildcardBatch = await tx.batches.create({
         data: {
           id: `b${token}wildcard`,
-          name: 'SpecialxRCRxWritingsxseptx25x2025',
+          name: 'Coastal Fisheries',
           processing_details: JSON.stringify({}),
           created_at: new Date('2026-07-11T00:00:00.000Z'),
         },
@@ -265,7 +265,7 @@ describeDbIntegration('library documents query (integration)', () => {
         ],
       })
 
-      const result = await getLibraryDocuments({ batch: 'Special_RCR_Writings_sept_25_2025', pageSize: 100 }, tx)
+      const result = await getLibraryDocuments({ batch: 'Special RCR Writngs September 25 2025', pageSize: 100 }, tx)
 
       expect(result.items.map((item) => item.id)).toEqual([matchingDocument.id])
     })
@@ -283,7 +283,7 @@ describeDbIntegration('library documents query (integration)', () => {
       const historicalBatch = await tx.batches.create({
         data: {
           id: `b${token}historical`,
-          name: 'Special_RCR_Writings_sept_25_2025',
+          name: 'Historical Special RCR Writings September 25 2025',
           processing_details: JSON.stringify({}),
           created_at: new Date('2026-07-12T00:00:00.000Z'),
         },
@@ -318,7 +318,10 @@ describeDbIntegration('library documents query (integration)', () => {
         ],
       })
 
-      const result = await getLibraryDocuments({ batch: 'Special_RCR_Writings_sept_25_2025', pageSize: 100 }, tx)
+      const result = await getLibraryDocuments(
+        { batch: 'Historical Special RCR Writngs September 25 2025', pageSize: 100 },
+        tx,
+      )
 
       expect(result.items.map((item) => item.id)).not.toContain(document.id)
     })

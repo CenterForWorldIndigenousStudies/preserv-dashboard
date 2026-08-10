@@ -251,6 +251,7 @@ export function DocumentTagsEditor({ documentId, initialTags }: DocumentTagsEdit
             resetMessages()
             setIsAdding(true)
           }}
+          sx={{ alignSelf: 'flex-start' }}
         >
           {'Add Tag'}
         </Button>

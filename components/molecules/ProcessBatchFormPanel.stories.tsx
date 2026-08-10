@@ -17,6 +17,8 @@ const meta = {
     canSubmit: true,
     submitError: null,
     acceptedBatchName: null,
+    batchNameSearchError: null,
+    batchNameExists: false,
     onBatchNameChange: fn(),
     onCollectionNameChange: fn(),
     onCollectionNotesChange: fn(),
@@ -52,5 +54,18 @@ export const Accepted: Story = {
 export const SubmitError: Story = {
   args: {
     submitError: 'Unable to start the pipeline. Please verify the selected folders and try again.',
+  },
+}
+
+export const ExistingBatchName: Story = {
+  args: {
+    batchNameExists: true,
+    canSubmit: false,
+  },
+}
+
+export const BatchSearchError: Story = {
+  args: {
+    batchNameSearchError: 'Unable to search batches right now.',
   },
 }
