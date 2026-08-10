@@ -6,7 +6,12 @@ vi.mock('@lib/editHistory', () => ({
   createEditHistoryEntry: vi.fn(),
 }))
 
-import { getAllDocuments, getDocuments, getReadyForLibraryDocuments } from '@lib/queries/queries'
+import {
+  getAllDocuments,
+  getDocuments,
+  getNeedsReviewDocuments,
+  getReadyForLibraryDocuments,
+} from '@lib/queries/queries'
 import { resetTestDatabase, shouldSkipDashboardIntegrationSuite } from '../support/test-db'
 import { withRollbackTransaction } from '../support/transaction'
 
@@ -14,26 +19,29 @@ const describeDbIntegration = shouldSkipDashboardIntegrationSuite() ? describe.s
 
 describeDbIntegration('documents queries (integration)', () => {
   let sourceIdMetadataId: string
+  let needsReviewMetadataId: string
   let duplicateTagId: string
   let restrictedAccessLevelId: string
 
   beforeAll(async () => {
     await resetTestDatabase()
     await db.$connect()
-    const [sourceMetadata, duplicateTag, accessLevels] = await Promise.all([
+    const [sourceMetadata, needsReviewMetadata, duplicateTag, accessLevels] = await Promise.all([
       db.metadata.findFirst({ where: { name: 'source_id' }, select: { id: true } }),
+      db.metadata.findFirst({ where: { name: 'needs_review' }, select: { id: true } }),
       db.tags.findFirst({ where: { name: 'duplicate_document' }, select: { id: true } }),
       db.access_levels.findMany({ select: { id: true, level_name: true } }),
     ])
     const restrictedAccessLevel = accessLevels.find(
       (accessLevel) => accessLevel.level_name.toLowerCase() === 'restricted',
     )
-    if (!sourceMetadata || !duplicateTag || !restrictedAccessLevel) {
+    if (!sourceMetadata || !needsReviewMetadata || !duplicateTag || !restrictedAccessLevel) {
       throw new Error(
-        'Expected source_id metadata, duplicate_document tag, and restricted access level to exist in integration DB',
+        'Expected source_id and needs_review metadata, duplicate_document tag, and restricted access level to exist in integration DB',
       )
     }
     sourceIdMetadataId = sourceMetadata.id
+    needsReviewMetadataId = needsReviewMetadata.id
     duplicateTagId = duplicateTag.id
     restrictedAccessLevelId = restrictedAccessLevel.id
   })
@@ -91,6 +99,48 @@ describeDbIntegration('documents queries (integration)', () => {
     if (!doc) throw lastErr
     return doc
   }
+
+  describe('getNeedsReviewDocuments', () => {
+    it('hydrates structured needs-review reasons from stored metadata', async () => {
+      await withRollbackTransaction(async (tx) => {
+        const document = await createTestDocument(tx, { name: 'Needs Review Reasons Test' })
+
+        await Promise.all([
+          tx.document_quality.create({
+            data: {
+              id: `nrq-${document.id}`.slice(0, 36),
+              document_id: document.id,
+              validation_status: 'NEEDS_REVIEW',
+            },
+          }),
+          tx.document_to_metadata.create({
+            data: {
+              id: `nrm-${document.id}`.slice(0, 36),
+              document_id: document.id,
+              metadata_id: needsReviewMetadataId,
+              value: JSON.stringify({
+                value: {
+                  document_splitter_1: ['Boundary requires review.'],
+                },
+              }),
+              value_type: 'json',
+            },
+          }),
+        ])
+
+        const result = await getNeedsReviewDocuments({ pageSize: 100 }, tx)
+        const found = result.data.find((item) => item.id === document.id)
+
+        expect(found?.needs_review_reasons).toEqual([
+          {
+            serviceKey: 'document_splitter_1',
+            serviceLabel: 'Document Splitter Pass 1',
+            reasons: ['Boundary requires review.'],
+          },
+        ])
+      })
+    })
+  })
 
   const createTestAuthor = async (tx: Prisma.TransactionClient, name: string): Promise<{ id: string }> => {
     const { token } = makeIds()

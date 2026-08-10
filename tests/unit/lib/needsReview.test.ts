@@ -22,6 +22,34 @@ describe('normalizeNeedsReviewValue', () => {
     ])
   })
 
+  it('normalizes the stored JSON metadata wrapper', () => {
+    const storedValue = JSON.stringify({
+      value: {
+        document_splitter_1: ['Ambiguous boundary between source pages 78 and 79 (logical boundary 136)'],
+      },
+    })
+
+    expect(normalizeNeedsReviewValue(storedValue)).toEqual([
+      {
+        serviceKey: 'document_splitter_1',
+        serviceLabel: 'Document Splitter Pass 1',
+        reasons: ['Ambiguous boundary between source pages 78 and 79 (logical boundary 136)'],
+      },
+    ])
+  })
+
+  it('preserves already-normalized reason groups', () => {
+    const groups = [
+      {
+        serviceKey: 'document_splitter_1',
+        serviceLabel: 'Document Splitter Pass 1',
+        reasons: ['Boundary requires review.'],
+      },
+    ]
+
+    expect(normalizeNeedsReviewValue(groups)).toEqual(groups)
+  })
+
   it('normalizes legacy plain strings under Legacy', () => {
     expect(normalizeNeedsReviewValue('download failed')).toEqual([
       {

@@ -1,4 +1,5 @@
 import type { DbDocumentQuality, DbDocumentVersion } from 'types/db'
+import type { NeedsReviewReasonGroup } from 'types/needsReview'
 
 export interface Document {
   id: string
@@ -16,6 +17,7 @@ export interface Document {
   created_at: Date | string | null
   updated_at: Date | string | null
   is_duplicate?: boolean
+  needs_review_reasons?: NeedsReviewReasonGroup[]
 }
 
 export interface DocumentQuality extends Omit<DbDocumentQuality, 'validation_timestamp' | 'reprocess'> {

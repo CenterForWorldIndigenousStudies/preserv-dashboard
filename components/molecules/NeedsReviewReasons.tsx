@@ -1,5 +1,6 @@
 import { Box, List, ListItem, Paper, Stack, Typography } from '@mui/material'
-import { normalizeNeedsReviewValue, type NeedsReviewReasonGroup } from '@lib/needsReview'
+import { normalizeNeedsReviewValue } from '@lib/needsReview'
+import type { NeedsReviewReasonGroup } from 'types/needsReview'
 
 export interface NeedsReviewReasonsProps {
   value: unknown

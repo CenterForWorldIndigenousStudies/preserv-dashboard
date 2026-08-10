@@ -29,6 +29,7 @@ import type { Document } from 'types/documents'
 import type { DocumentsPageResult } from 'types/pagination'
 import type { ReviewQueueDecision } from 'types/reviewQueue'
 import { EntityNameBlock } from '@molecules/EntityNameBlock'
+import { NeedsReviewReasonsPopover } from '@molecules/NeedsReviewReasonsPopover'
 import { DocumentTable } from '@organisms/DocumentTable/DocumentTable'
 import type { DocumentTableConfig } from '@organisms/DocumentTable/types'
 
@@ -283,6 +284,15 @@ function buildReviewQueueColumns(params: {
 
         return <Badge variant={getValidationStatusBadgeVariant(validation_status)}>{validation_status}</Badge>
       },
+    },
+    {
+      id: 'review_reasons',
+      header: 'Review Reasons',
+      size: 150,
+      enableSorting: false,
+      Cell: ({ row: { original } }) => (
+        <NeedsReviewReasonsPopover documentId={original.id} groups={original.needs_review_reasons ?? []} />
+      ),
     },
     {
       id: 'review_details',

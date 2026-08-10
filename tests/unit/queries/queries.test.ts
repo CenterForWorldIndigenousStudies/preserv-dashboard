@@ -46,6 +46,7 @@ import {
   getAllDocuments,
   getDocuments,
   getNeedsReviewDocuments,
+  getNeedsReviewDocumentsCount,
   getReadyForLibraryDocuments,
 } from '@lib/queries/queries'
 
@@ -435,8 +436,13 @@ describe('getNeedsReviewDocuments', () => {
     sort_value: null,
   }
 
+  beforeEach(() => {
+    mockDocumentMetadataFindMany.mockResolvedValue([])
+  })
+
   afterEach(() => {
     mockQueryRaw.mockReset()
+    mockDocumentMetadataFindMany.mockReset()
   })
 
   it('uses an inner join to document_quality with the default review queue status scope', async () => {
@@ -509,6 +515,46 @@ describe('getNeedsReviewDocuments', () => {
     expect(result.data[0]?.validator_name).toBe('Maria Reviewer')
     expect(result.data[0]?.validation_comment).toBe('Needs a second look.')
     expect(result.data[0]?.validation_comment_additional).toBe('Check the appendix pages.')
+  })
+
+  it('hydrates needs-review reasons in one metadata query for the returned page', async () => {
+    mockQueryRaw.mockResolvedValueOnce([defaultRow])
+    mockDocumentMetadataFindMany.mockResolvedValueOnce([
+      {
+        document_id: 'doc-1',
+        value: JSON.stringify({
+          value: {
+            document_splitter_1: ['Boundary requires review.'],
+          },
+        }),
+      },
+    ])
+
+    const result = await getNeedsReviewDocuments()
+
+    expect(result.data[0]?.needs_review_reasons).toEqual([
+      {
+        serviceKey: 'document_splitter_1',
+        serviceLabel: 'Document Splitter Pass 1',
+        reasons: ['Boundary requires review.'],
+      },
+    ])
+    expect(mockDocumentMetadataFindMany).toHaveBeenCalledTimes(1)
+    expect(mockDocumentMetadataFindMany).toHaveBeenCalledWith({
+      where: {
+        document_id: { in: ['doc-1'] },
+        metadata: { name: 'needs_review' },
+      },
+      select: { document_id: true, value: true },
+    })
+  })
+
+  it('does not hydrate reason metadata for the count query', async () => {
+    mockQueryRaw.mockResolvedValueOnce([{ total: BigInt(1) }])
+
+    await getNeedsReviewDocumentsCount()
+
+    expect(mockDocumentMetadataFindMany).not.toHaveBeenCalled()
   })
 })
 

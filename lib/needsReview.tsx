@@ -1,11 +1,8 @@
 import { getPipelineServiceDisplayName } from '@constants/pipelineServices'
 import { formatMetadataValue } from '@lib/metadata'
+import type { NeedsReviewReasonGroup } from 'types/needsReview'
 
-export interface NeedsReviewReasonGroup {
-  serviceKey: string
-  serviceLabel: string
-  reasons: string[]
-}
+export type { NeedsReviewReasonGroup } from 'types/needsReview'
 
 function normalizeReasonMessages(value: unknown): string[] {
   if (typeof value === 'string') {
@@ -23,13 +20,56 @@ function normalizeReasonMessages(value: unknown): string[] {
   return []
 }
 
+function isNeedsReviewReasonGroup(value: unknown): value is NeedsReviewReasonGroup {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return false
+  }
+
+  const group = value as Partial<NeedsReviewReasonGroup>
+  return (
+    typeof group.serviceKey === 'string' &&
+    typeof group.serviceLabel === 'string' &&
+    Array.isArray(group.reasons) &&
+    group.reasons.every((reason) => typeof reason === 'string')
+  )
+}
+
+function unwrapNeedsReviewValue(value: unknown): unknown {
+  if (typeof value !== 'string') {
+    if (
+      typeof value === 'object' &&
+      value !== null &&
+      !Array.isArray(value) &&
+      Object.keys(value).length === 1 &&
+      Object.prototype.hasOwnProperty.call(value, 'value')
+    ) {
+      return unwrapNeedsReviewValue((value as { value: unknown }).value)
+    }
+
+    return value
+  }
+
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return value
+  }
+
+  try {
+    return unwrapNeedsReviewValue(JSON.parse(trimmed))
+  } catch {
+    return value
+  }
+}
+
 export function normalizeNeedsReviewValue(value: unknown): NeedsReviewReasonGroup[] {
-  if (value === null || value === undefined) {
+  const unwrappedValue = unwrapNeedsReviewValue(value)
+
+  if (unwrappedValue === null || unwrappedValue === undefined) {
     return []
   }
 
-  if (typeof value === 'string') {
-    const reasons = normalizeReasonMessages(value)
+  if (typeof unwrappedValue === 'string') {
+    const reasons = normalizeReasonMessages(unwrappedValue)
     return reasons.length === 0
       ? []
       : [
@@ -41,8 +81,12 @@ export function normalizeNeedsReviewValue(value: unknown): NeedsReviewReasonGrou
         ]
   }
 
-  if (Array.isArray(value)) {
-    const reasons = normalizeReasonMessages(value)
+  if (Array.isArray(unwrappedValue)) {
+    if (unwrappedValue.length > 0 && unwrappedValue.every(isNeedsReviewReasonGroup)) {
+      return unwrappedValue
+    }
+
+    const reasons = normalizeReasonMessages(unwrappedValue)
     return reasons.length === 0
       ? []
       : [
@@ -54,8 +98,8 @@ export function normalizeNeedsReviewValue(value: unknown): NeedsReviewReasonGrou
         ]
   }
 
-  if (typeof value === 'object') {
-    const groups = Object.entries(value as Record<string, unknown>)
+  if (typeof unwrappedValue === 'object') {
+    const groups = Object.entries(unwrappedValue as Record<string, unknown>)
       .map(([serviceKey, messages]) => {
         const reasons = normalizeReasonMessages(messages)
         if (reasons.length === 0) {
@@ -75,7 +119,7 @@ export function normalizeNeedsReviewValue(value: unknown): NeedsReviewReasonGrou
     }
   }
 
-  const fallbackReason = formatMetadataValue(value)
+  const fallbackReason = formatMetadataValue(unwrappedValue)
   return fallbackReason
     ? [
         {

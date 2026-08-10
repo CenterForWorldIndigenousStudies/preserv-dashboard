@@ -1,6 +1,8 @@
 import { renderToStaticMarkup } from 'react-dom/server'
+import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { FilterOptions } from '@lib/search'
+import type { Document } from 'types/documents'
 
 const mocks = vi.hoisted(() => ({
   documentTableProps: undefined as Record<string, unknown> | undefined,
@@ -76,7 +78,14 @@ describe('DocumentsTable adapter', () => {
     )
 
     const config = mocks.documentTableProps?.config as {
-      definition: { tableId: string }
+      definition: {
+        tableId: string
+        columns: Array<{
+          id?: string
+          header?: string
+          Cell?: (props: { row: { original: Document } }) => ReactNode
+        }>
+      }
       rowActions?: Array<{ id: string }>
       enableRowSelection?: boolean
     }
@@ -84,5 +93,35 @@ describe('DocumentsTable adapter', () => {
     expect(config.definition.tableId).toBe('review-queue-documents')
     expect(config.rowActions?.map(({ id }) => id)).toEqual(['review-decisions'])
     expect(config.enableRowSelection).toBe(true)
+    expect(config.definition.columns.map(({ header }) => header)).toContain('Review Reasons')
+
+    const reviewReasonsCell = config.definition.columns.find(({ id }) => id === 'review_reasons')?.Cell
+    expect(reviewReasonsCell).toBeDefined()
+    const cellMarkup = renderToStaticMarkup(
+      <>
+        {reviewReasonsCell?.({
+          row: {
+            original: {
+              id: 'doc-1',
+              name: 'Needs review document',
+              id_legacy: null,
+              filesize: null,
+              hash_binary: null,
+              hash_content: null,
+              created_at: null,
+              updated_at: null,
+              needs_review_reasons: [
+                {
+                  serviceKey: 'document_splitter_1',
+                  serviceLabel: 'Document Splitter Pass 1',
+                  reasons: ['Boundary requires review.', 'Another boundary requires review.'],
+                },
+              ],
+            } satisfies Document,
+          },
+        })}
+      </>,
+    )
+    expect(cellMarkup).toContain('2 reasons')
   })
 })

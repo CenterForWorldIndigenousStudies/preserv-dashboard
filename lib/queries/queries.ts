@@ -15,6 +15,7 @@ import { REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES, REVIEW_QUEUE_SORT_FIELDS } fr
 import { db } from '@lib/db'
 import { createEditHistoryEntry } from '@lib/editHistory'
 import { buildNameHash } from '@lib/tagHash'
+import { normalizeNeedsReviewValue } from '@lib/needsReview'
 import { parseMetadataValue } from '@lib/metadata'
 import {
   resolveBatchSearchIds,
@@ -244,6 +245,33 @@ function normalizeOverviewSortField(
 }
 
 export type QueryDbClient = SearchQueryDbClient
+
+async function hydrateNeedsReviewReasons(documents: Document[], client: QueryDbClient): Promise<Document[]> {
+  if (documents.length === 0) {
+    return documents
+  }
+
+  const metadataRows = await client.document_to_metadata.findMany({
+    where: {
+      document_id: { in: documents.map((document) => document.id) },
+      metadata: { name: 'needs_review' },
+    },
+    select: { document_id: true, value: true },
+  })
+  const reasonsByDocumentId = new Map<string, ReturnType<typeof normalizeNeedsReviewValue>>()
+
+  for (const metadataRow of metadataRows) {
+    const reasons = normalizeNeedsReviewValue(metadataRow.value)
+    if (reasons.length > 0) {
+      reasonsByDocumentId.set(metadataRow.document_id, reasons)
+    }
+  }
+
+  return documents.map((document) => {
+    const reasons = reasonsByDocumentId.get(document.id)
+    return reasons ? { ...document, needs_review_reasons: reasons } : document
+  })
+}
 
 export async function getAllDocuments(
   params: DocumentsQueryParams = {},
@@ -572,7 +600,7 @@ export async function getNeedsReviewDocuments(
   const pageSize = normalizeDocumentTablePageSize(params.pageSize)
   const statuses = resolveReviewQueueValidationStatuses(params.statuses)
 
-  return getNeedsReviewDocumentsPage(
+  const result = await getNeedsReviewDocumentsPage(
     {
       page,
       pageSize,
@@ -592,6 +620,11 @@ export async function getNeedsReviewDocuments(
     },
     client,
   )
+
+  return {
+    ...result,
+    data: await hydrateNeedsReviewReasons(result.data, client),
+  }
 }
 
 const needsReviewDocumentsBaseFromSql = Prisma.sql`
