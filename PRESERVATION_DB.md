@@ -454,6 +454,8 @@ These keys are the current shared source of truth defined in `preserv-db` and ar
 | `preservation_candidate` | Boolean flag for the current active preservation artifact in a lineage. | Shared pipeline services | Marks the artifact that should continue through downstream preservation stages and final Fedora ingest. |
 | `comment_pipeline` | Structured pipeline comments keyed by service run identity. | Pipeline services that persist review/failure context | Show per-run processing notes, review reasons, and failure context without overloading `document_quality.comment`. |
 | `content_dedup_text_source_id` | Google Drive file ID of the document artifact used as the text source for content deduplication. | `preserv-content-dedup` | Trace which managed artifact was actually hashed and compared during content deduplication. |
+| `needs_review` | Active, unresolved review reasons for the current review episode. | Pipeline stages and data-combiner | Drives Review Queue eligibility when no persisted quality status exists and provides the specific reasons shown to reviewers. |
+| `needs_review_history` | Append-only JSON history of resolved review episodes. | Dashboard decisions and legacy reconciliation | Preserves reasons, decisions, timestamps, and reviewers after active review metadata is removed. |
 
 Practical rule:
 
@@ -521,6 +523,14 @@ In practice, most dashboard queries should:
 - use canonical metadata keys for current Drive/provenance fields
 - use `legacy_*` metadata only for historical context, validation, or advanced search
 
+Review lifecycle note:
+
+- `needs_review` and `needs_review_history` are metadata definitions in `metadata`, not columns on `documents`.
+- Their values are stored in `document_to_metadata`, with one value per document and metadata definition because `(document_id, metadata_id)` is unique.
+- `needs_review` is removed when a dashboard approval or rejection resolves the current episode.
+- `needs_review_history` retains the resolved episodes in its versioned `episodes` array and is never removed by normal review decisions.
+- See the [dashboard review lifecycle runbook](../dashboard/REVIEW_LIFECYCLE.md) for view eligibility and legacy reconciliation.
+
 ## Table Reference
 
 ### documents
@@ -579,6 +589,7 @@ One quality/validation record per document.
 | `document_id` | `VARCHAR(36)` | FK to `documents.id`. Unique. |
 | `comment` | `TEXT` | Primary quality note. |
 | `comment_additional` | `TEXT` | Additional quality note. |
+| `review_checklist` | `JSON` | Current Review Queue checklist state. Manual changes are audited in `edit_history`; the active state is cleared when a review decision is finalized. |
 | `validation_status` | `ENUM` | Normalized validation outcome. Allowed values: `VALIDATED`, `APPROVED`, `FORMAT_ERRORS`, `METADATA_ISSUES`, `NEEDS_REVIEW`, `GENERAL_ERRORS`, `REJECTED`. |
 | `validation_timestamp` | `BIGINT` | Unix timestamp. |
 | `validator_name` | `VARCHAR(255)` | Validator display name. |

@@ -1,15 +1,22 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-const { mockApplyReviewQueueDecision, mockGetDashboardSession, mockRevalidatePath } = vi.hoisted(() => ({
+const {
+  mockApplyReviewQueueDecision,
+  mockGetDashboardSession,
+  mockRevalidatePath,
+  mockUpdateReviewQueueChecklist,
+} = vi.hoisted(() => ({
   mockApplyReviewQueueDecision: vi.fn(),
   mockGetDashboardSession: vi.fn(),
   mockRevalidatePath: vi.fn(),
+  mockUpdateReviewQueueChecklist: vi.fn(),
 }))
 
 vi.mock('@lib/queries/queries', () => ({
   applyReviewQueueDecision: mockApplyReviewQueueDecision,
   getNeedsReviewDocuments: vi.fn(),
   getReviewQueueDocuments: vi.fn(),
+  updateReviewQueueChecklist: mockUpdateReviewQueueChecklist,
 }))
 
 vi.mock('next/cache', () => ({
@@ -20,8 +27,8 @@ vi.mock('@root/auth', () => ({
   getDashboardSession: mockGetDashboardSession,
 }))
 
-import { applyReviewQueueBatchApproveAction } from '@actions/review-queue'
-import { REVIEW_QUEUE_PATH } from '@constants/paths'
+import { applyReviewQueueBatchApproveAction, updateReviewQueueChecklistAction } from '@actions/review-queue'
+import { LIBRARY_PATH, READY_FOR_LIBRARY_PATH, REVIEW_QUEUE_PATH } from '@constants/paths'
 
 describe('applyReviewQueueBatchApproveAction', () => {
   afterEach(() => {
@@ -61,8 +68,10 @@ describe('applyReviewQueueBatchApproveAction', () => {
       validationTimestamp: 1747094400,
       validatorName: 'Maria Reviewer',
     })
-    expect(mockRevalidatePath).toHaveBeenCalledTimes(1)
-    expect(mockRevalidatePath).toHaveBeenCalledWith(REVIEW_QUEUE_PATH)
+    expect(mockRevalidatePath).toHaveBeenCalledTimes(3)
+    expect(mockRevalidatePath).toHaveBeenNthCalledWith(1, REVIEW_QUEUE_PATH)
+    expect(mockRevalidatePath).toHaveBeenNthCalledWith(2, READY_FOR_LIBRARY_PATH)
+    expect(mockRevalidatePath).toHaveBeenNthCalledWith(3, LIBRARY_PATH)
   })
 
   it('rejects empty selections before invoking the approve flow', async () => {
@@ -77,5 +86,43 @@ describe('applyReviewQueueBatchApproveAction', () => {
     expect(mockApplyReviewQueueDecision).not.toHaveBeenCalled()
     expect(mockRevalidatePath).not.toHaveBeenCalled()
     expect(mockGetDashboardSession).not.toHaveBeenCalled()
+  })
+})
+
+describe('updateReviewQueueChecklistAction', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('updates the checklist and revalidates the review queue', async () => {
+    const checklist = {
+      metadataReviewed: true,
+      rightsReviewed: false,
+      classificationReviewed: false,
+      duplicatesChecked: false,
+      completenessReviewed: false,
+    }
+    mockUpdateReviewQueueChecklist.mockResolvedValue(checklist)
+
+    await expect(updateReviewQueueChecklistAction(' doc-1 ', 'metadataReviewed', true)).resolves.toEqual({
+      ok: true,
+      checklist,
+    })
+
+    expect(mockUpdateReviewQueueChecklist).toHaveBeenCalledWith({
+      documentId: 'doc-1',
+      itemKey: 'metadataReviewed',
+      completed: true,
+    })
+    expect(mockRevalidatePath).toHaveBeenCalledWith(REVIEW_QUEUE_PATH)
+  })
+
+  it('returns a user-facing error when the checklist cannot be saved', async () => {
+    mockUpdateReviewQueueChecklist.mockRejectedValue(new Error('Checklist could not be saved.'))
+
+    await expect(updateReviewQueueChecklistAction('doc-1', 'rightsReviewed', false)).resolves.toEqual({
+      ok: false,
+      error: 'Checklist could not be saved.',
+    })
   })
 })

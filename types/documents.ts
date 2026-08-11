@@ -1,5 +1,6 @@
 import type { DbDocumentQuality, DbDocumentVersion } from 'types/db'
 import type { NeedsReviewReasonGroup } from 'types/needsReview'
+import type { ReviewQueueChecklistState } from '@constants/reviewQueueChecklist'
 
 export interface Document {
   id: string
@@ -18,10 +19,12 @@ export interface Document {
   updated_at: Date | string | null
   is_duplicate?: boolean
   needs_review_reasons?: NeedsReviewReasonGroup[]
+  review_checklist?: ReviewQueueChecklistState | null
 }
 
 export interface DocumentQuality extends Omit<DbDocumentQuality, 'validation_timestamp' | 'reprocess'> {
   validation_timestamp: string | number | null
+  review_checklist: ReviewQueueChecklistState | null
 }
 
 export interface DocumentVersion extends Omit<DbDocumentVersion, 'analyzed_at'> {

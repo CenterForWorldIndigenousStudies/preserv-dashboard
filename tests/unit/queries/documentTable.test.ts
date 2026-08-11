@@ -36,6 +36,13 @@ function expectDefaultOrderBy(sql: string): void {
   expect(sql).toContain('d.id ASC')
 }
 
+function expectNeedsReviewDefaultOrderBy(sql: string): void {
+  expect(sql).toContain('ORDER BY')
+  expect(sql).toContain('counted_documents.sort_value ASC')
+  expect(sql).toContain('counted_documents.secondary_sort_value ASC')
+  expect(sql).toContain('counted_documents.id ASC')
+}
+
 const DEFAULT_ROW = {
   id: 'doc-1',
   filesize: null,
@@ -118,6 +125,6 @@ describe('document table default ordering', () => {
 
     await getNeedsReviewDocuments()
 
-    expectDefaultOrderBy(queryText(0))
+    expectNeedsReviewDefaultOrderBy(queryText(0))
   })
 })

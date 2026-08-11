@@ -1,15 +1,18 @@
 import type { Prisma } from '@lib/prisma/generated/client'
 import { afterAll, beforeAll, describe, it, expect, vi } from 'vitest'
 import { db } from '@lib/db'
+import type { ReviewHistoryValue } from 'types/reviewHistory'
 
 vi.mock('@lib/editHistory', () => ({
   createEditHistoryEntry: vi.fn(),
 }))
 
 import {
+  applyReviewQueueDecisionInTransaction,
   getAllDocuments,
   getDocuments,
   getNeedsReviewDocuments,
+  getNeedsReviewDocumentsCount,
   getReadyForLibraryDocuments,
 } from '@lib/queries/queries'
 import { resetTestDatabase, shouldSkipDashboardIntegrationSuite } from '../support/test-db'
@@ -101,6 +104,146 @@ describeDbIntegration('documents queries (integration)', () => {
   }
 
   describe('getNeedsReviewDocuments', () => {
+    it('archives active review reasons when a decision resolves the episode', async () => {
+      await withRollbackTransaction(async (tx) => {
+        const document = await createTestDocument(tx, { name: 'Review Decision History Test' })
+        const historyMetadata =
+          (await tx.metadata.findFirst({
+            where: { name: 'needs_review_history' },
+            select: { id: true },
+          })) ??
+          (await tx.metadata.create({
+            data: {
+              id: `nrhm-${makeIds().token}`,
+              name: 'needs_review_history',
+              notes: 'Integration history metadata.',
+            },
+            select: { id: true },
+          }))
+
+        await Promise.all([
+          tx.document_quality.create({
+            data: {
+              id: `rdq-${document.id}`.slice(0, 36),
+              document_id: document.id,
+              validation_status: 'NEEDS_REVIEW',
+            },
+          }),
+          tx.document_to_metadata.create({
+            data: {
+              id: `rdm-${document.id}`.slice(0, 36),
+              document_id: document.id,
+              metadata_id: needsReviewMetadataId,
+              value: JSON.stringify({ value: { legacy: ['Review this document.'] } }),
+              value_type: 'json',
+            },
+          }),
+          tx.document_to_metadata.create({
+            data: {
+              id: `rdh-${document.id}`.slice(0, 36),
+              document_id: document.id,
+              metadata_id: historyMetadata.id,
+              value: JSON.stringify({ value: { version: 1, episodes: [] } }),
+              value_type: 'json',
+            },
+          }),
+        ])
+
+        await applyReviewQueueDecisionInTransaction(tx, {
+          documentId: document.id,
+          decision: 'APPROVED',
+          validationTimestamp: 1747094400,
+          validatorName: 'Integration Reviewer',
+        })
+
+        const activeMetadata = await tx.document_to_metadata.findFirst({
+          where: {
+            document_id: document.id,
+            metadata: { name: 'needs_review' },
+          },
+          select: { id: true },
+        })
+        const history = await tx.document_to_metadata.findFirst({
+          where: {
+            document_id: document.id,
+            metadata: { name: 'needs_review_history' },
+          },
+          select: { value: true },
+        })
+        const historyValue = JSON.parse(history?.value ?? '{}') as ReviewHistoryValue
+
+        expect(activeMetadata).toBeNull()
+        expect(historyValue.episodes).toHaveLength(1)
+        expect(historyValue.episodes[0]).toMatchObject({
+          decision: 'APPROVED',
+          resolved_by: 'Integration Reviewer',
+          validation_status_before: 'NEEDS_REVIEW',
+          source: 'dashboard_decision',
+          inferred: false,
+        })
+      })
+    })
+
+    it('includes status-only and metadata-only candidates with status-aware filtering', async () => {
+      await withRollbackTransaction(async (tx) => {
+        const statusOnlyDocument = await createTestDocument(tx, { name: 'Status Only Review Candidate' })
+        const metadataOnlyDocument = await createTestDocument(tx, { name: 'Metadata Only Review Candidate' })
+        const formatErrorDocument = await createTestDocument(tx, { name: 'Format Error Review Candidate' })
+
+        await tx.document_quality.createMany({
+          data: [
+            {
+              id: `nq-status-${statusOnlyDocument.id}`.slice(0, 36),
+              document_id: statusOnlyDocument.id,
+              validation_status: 'NEEDS_REVIEW',
+            },
+            {
+              id: `nq-format-${formatErrorDocument.id}`.slice(0, 36),
+              document_id: formatErrorDocument.id,
+              validation_status: 'FORMAT_ERRORS',
+            },
+          ],
+        })
+        await tx.document_to_metadata.create({
+          data: {
+            id: `nrm-only-${metadataOnlyDocument.id}`.slice(0, 36),
+            document_id: metadataOnlyDocument.id,
+            metadata_id: needsReviewMetadataId,
+            value: JSON.stringify({ value: { legacy: ['Metadata requires review.'] } }),
+            value_type: 'json',
+          },
+        })
+
+        const defaultResult = await getNeedsReviewDocuments({ pageSize: 100 }, tx)
+        const defaultIds = new Set(defaultResult.data.map((item) => item.id))
+        expect([...defaultIds]).toEqual(
+          expect.arrayContaining([statusOnlyDocument.id, metadataOnlyDocument.id, formatErrorDocument.id]),
+        )
+        expect(defaultResult.data.find((item) => item.id === statusOnlyDocument.id)?.needs_review_reasons).toEqual([
+          {
+            serviceKey: 'review_queue',
+            serviceLabel: 'Review Queue',
+            reasons: ['Document requires human review.'],
+          },
+        ])
+
+        const needsReviewResult = await getNeedsReviewDocuments({ statuses: ['NEEDS_REVIEW'], pageSize: 100 }, tx)
+        const needsReviewIds = new Set(needsReviewResult.data.map((item) => item.id))
+        expect(needsReviewIds.has(statusOnlyDocument.id)).toBe(true)
+        expect(needsReviewIds.has(metadataOnlyDocument.id)).toBe(true)
+        expect(needsReviewIds.has(formatErrorDocument.id)).toBe(false)
+
+        const formatErrorResult = await getNeedsReviewDocuments({ statuses: ['FORMAT_ERRORS'], pageSize: 100 }, tx)
+        const formatErrorIds = new Set(formatErrorResult.data.map((item) => item.id))
+        expect(formatErrorIds.has(formatErrorDocument.id)).toBe(true)
+        expect(formatErrorIds.has(statusOnlyDocument.id)).toBe(false)
+        expect(formatErrorIds.has(metadataOnlyDocument.id)).toBe(false)
+
+        const count = await getNeedsReviewDocumentsCount({ statuses: ['NEEDS_REVIEW'] }, tx)
+        expect(count).toBeGreaterThanOrEqual(2)
+      })
+    }, 15000)
+
     it('hydrates structured needs-review reasons from stored metadata', async () => {
       await withRollbackTransaction(async (tx) => {
         const document = await createTestDocument(tx, { name: 'Needs Review Reasons Test' })
@@ -138,6 +281,66 @@ describeDbIntegration('documents queries (integration)', () => {
             reasons: ['Boundary requires review.'],
           },
         ])
+      })
+    })
+
+    it('excludes approved or published documents even when stale review metadata remains', async () => {
+      await withRollbackTransaction(async (tx) => {
+        const approvedDocument = await createTestDocument(tx, { name: 'Approved With Stale Review Metadata' })
+        const publishedDocument = await createTestDocument(tx, { name: 'Published With Stale Review Metadata' })
+
+        await tx.document_quality.createMany({
+          data: [
+            {
+              id: `rq-approved-${approvedDocument.id}`.slice(0, 36),
+              document_id: approvedDocument.id,
+              validation_status: 'APPROVED',
+            },
+            {
+              id: `rq-published-${publishedDocument.id}`.slice(0, 36),
+              document_id: publishedDocument.id,
+              validation_status: 'NEEDS_REVIEW',
+            },
+          ],
+        })
+        const publishedState = await tx.state_history.create({
+          data: {
+            id: `rqs-${publishedDocument.id}`.slice(0, 36),
+            document_id: publishedDocument.id,
+            previous_state: 'approved',
+            new_state: 'ingested_fedora',
+            changed_at: new Date('2026-08-01T12:00:00.000Z'),
+          },
+          select: { id: true },
+        })
+        await tx.document_quality.update({
+          where: { document_id: publishedDocument.id },
+          data: { current_status: publishedState.id },
+        })
+        await tx.document_to_metadata.createMany({
+          data: [
+            {
+              id: `rqa-${approvedDocument.id}`.slice(0, 36),
+              document_id: approvedDocument.id,
+              metadata_id: needsReviewMetadataId,
+              value: JSON.stringify({ value: { legacy: ['Stale approval reason.'] } }),
+              value_type: 'json',
+            },
+            {
+              id: `rqp-${publishedDocument.id}`.slice(0, 36),
+              document_id: publishedDocument.id,
+              metadata_id: needsReviewMetadataId,
+              value: JSON.stringify({ value: { legacy: ['Stale publication reason.'] } }),
+              value_type: 'json',
+            },
+          ],
+        })
+
+        const result = await getNeedsReviewDocuments({ pageSize: 100 }, tx)
+        const resultIds = new Set(result.data.map((item) => item.id))
+
+        expect(resultIds.has(approvedDocument.id)).toBe(false)
+        expect(resultIds.has(publishedDocument.id)).toBe(false)
       })
     })
   })
@@ -742,6 +945,81 @@ describeDbIntegration('documents queries (integration)', () => {
         expect(result.items.map((item) => item.id)).toEqual([matchingDocument.id])
       })
     }, 15000)
+
+    it('excludes approved documents whose latest state is ingested_fedora', async () => {
+      await withRollbackTransaction(async (tx) => {
+        const requiredMetadataNames = ['dc_title', 'dc_type', 'dc_subject', 'dc_rights']
+        const existingMetadata = await tx.metadata.findMany({
+          where: { name: { in: requiredMetadataNames } },
+          select: { id: true, name: true },
+        })
+        const existingMetadataNames = new Set(existingMetadata.map(({ name }) => name))
+        await Promise.all(
+          requiredMetadataNames
+            .filter((name) => !existingMetadataNames.has(name))
+            .map((name) =>
+              tx.metadata.create({
+                data: {
+                  id: `rflmd-${makeIds().token}`,
+                  name,
+                  notes: `Integration fixture definition for ${name}`,
+                },
+              }),
+            ),
+        )
+        const requiredMetadata = await tx.metadata.findMany({
+          where: { name: { in: requiredMetadataNames } },
+          select: { id: true, name: true },
+        })
+        const openAccessLevel = await tx.access_levels.findFirst({
+          where: { level_name: 'public' },
+          select: { id: true },
+        })
+        expect(requiredMetadata).toHaveLength(4)
+        expect(openAccessLevel).toBeDefined()
+        if (!openAccessLevel) return
+
+        const document = await createTestDocument(tx, { name: 'Already Uploaded Ready Candidate' })
+        const uploadedState = await tx.state_history.create({
+          data: {
+            id: `rfls-${document.id}`.slice(0, 36),
+            document_id: document.id,
+            previous_state: 'approved',
+            new_state: 'ingested_fedora',
+            changed_at: new Date('2026-08-02T12:00:00.000Z'),
+          },
+          select: { id: true },
+        })
+        await tx.document_quality.create({
+          data: {
+            id: `rflq-${document.id}`.slice(0, 36),
+            document_id: document.id,
+            validation_status: 'APPROVED',
+            current_status: uploadedState.id,
+          },
+        })
+        await tx.document_access.create({
+          data: {
+            id: `rfla-${document.id}`.slice(0, 36),
+            document_id: document.id,
+            access_level_id: openAccessLevel.id,
+          },
+        })
+        await tx.document_to_metadata.createMany({
+          data: requiredMetadata.map(({ id: metadataId }) => ({
+            id: `rflm-${document.id}-${metadataId}`.slice(0, 36),
+            document_id: document.id,
+            metadata_id: metadataId,
+            value: JSON.stringify('ready'),
+            value_type: 'string',
+          })),
+        })
+
+        const result = await getReadyForLibraryDocuments({}, tx)
+
+        expect(result.items.some((item) => item.id === document.id)).toBe(false)
+      })
+    })
   })
 
   // ---------------------------------------------------------------------------

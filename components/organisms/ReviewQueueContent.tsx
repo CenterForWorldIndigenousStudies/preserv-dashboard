@@ -9,7 +9,7 @@ import {
   type FilterOptions,
 } from '@lib/search'
 import { getNeedsReviewDocuments, type DocumentsQueryParams } from '@lib/queries/queries'
-import { DocumentsTable } from '@organisms/DocumentsTable'
+import { ReviewQueueTable } from '@organisms/ReviewQueueTable'
 import type { ReviewQueuePageProps } from 'types/reviewQueue'
 
 const REVIEW_QUEUE_FILTER_OPTIONS: FilterOptions = {
@@ -67,14 +67,12 @@ export async function ReviewQueueContent({ searchParams }: ReviewQueuePageProps)
   const tableKey = JSON.stringify(initialQuery)
 
   return (
-    <DocumentsTable
+    <ReviewQueueTable
       key={tableKey}
       initialData={initialData}
       initialQuery={initialQuery}
       filterOptions={REVIEW_QUEUE_FILTER_OPTIONS}
-      variant={'reviewQueue'}
       fixedStatuses={['NEEDS_REVIEW']}
-      serverDriven
     />
   )
 }

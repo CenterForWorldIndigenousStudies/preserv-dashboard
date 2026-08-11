@@ -4,6 +4,12 @@ import type { NeedsReviewReasonGroup } from 'types/needsReview'
 
 export type { NeedsReviewReasonGroup } from 'types/needsReview'
 
+const REVIEW_QUEUE_FALLBACK_REASONS: Record<string, string> = {
+  NEEDS_REVIEW: 'Document requires human review.',
+  METADATA_ISSUES: 'Document has metadata issues.',
+  FORMAT_ERRORS: 'Document has format errors.',
+}
+
 function normalizeReasonMessages(value: unknown): string[] {
   if (typeof value === 'string') {
     const trimmed = value.trim()
@@ -125,6 +131,27 @@ export function normalizeNeedsReviewValue(value: unknown): NeedsReviewReasonGrou
         {
           serviceKey: 'legacy',
           serviceLabel: 'Legacy',
+          reasons: [fallbackReason],
+        },
+      ]
+    : []
+}
+
+export function composeReviewQueueReasons(value: unknown, validationStatus: string | null | undefined) {
+  const explicitReasons = normalizeNeedsReviewValue(value)
+  if (explicitReasons.length > 0) {
+    return explicitReasons
+  }
+
+  const fallbackReason = validationStatus
+    ? REVIEW_QUEUE_FALLBACK_REASONS[validationStatus.trim().toUpperCase()]
+    : undefined
+
+  return fallbackReason
+    ? [
+        {
+          serviceKey: 'review_queue',
+          serviceLabel: 'Review Queue',
           reasons: [fallbackReason],
         },
       ]

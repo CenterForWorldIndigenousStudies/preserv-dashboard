@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { act } from 'react'
+import { act, type ReactNode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it } from 'vitest'
 import { NeedsReviewReasonsPopover } from '@molecules/NeedsReviewReasonsPopover'
@@ -22,13 +22,13 @@ const groups = [
 
 let mountedRoot: Root | undefined
 
-function renderPopover(reasonGroups = groups): HTMLElement {
+function renderPopover(reasonGroups = groups, trigger?: ReactNode): HTMLElement {
   const container = document.createElement('div')
   document.body.appendChild(container)
   mountedRoot = createRoot(container)
 
   act(() => {
-    mountedRoot?.render(<NeedsReviewReasonsPopover documentId={'doc-1'} groups={reasonGroups} />)
+    mountedRoot?.render(<NeedsReviewReasonsPopover documentId={'doc-1'} groups={reasonGroups} trigger={trigger} />)
   })
 
   return container
@@ -72,6 +72,14 @@ describe('NeedsReviewReasonsPopover', () => {
     })
 
     expect(trigger?.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('uses a supplied trigger while preserving the accessible popover behavior', () => {
+    const container = renderPopover(groups, <span>NEEDS_REVIEW</span>)
+    const trigger = container.querySelector('button')
+
+    expect(trigger?.textContent).toBe('NEEDS_REVIEW')
+    expect(trigger?.getAttribute('aria-label')).toBe('View 3 needs review reasons for document doc-1')
   })
 
   it('renders an em dash when no reasons are available', () => {

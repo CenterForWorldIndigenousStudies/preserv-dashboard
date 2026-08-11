@@ -29,6 +29,7 @@ Use the focused docs instead of growing this file:
 - current pipeline initiation integration: [../../documentation/dashboard/PIPELINE_INITIATION_INTEGRATION.md](../../documentation/dashboard/PIPELINE_INITIATION_INTEGRATION.md)
 - database connection guidance: [../../documentation/dashboard/db/CONNECTING_TO_DB.md](../../documentation/dashboard/db/CONNECTING_TO_DB.md)
 - database reference: [../../documentation/db/PRESERVATION_DB.md](../../documentation/db/PRESERVATION_DB.md)
+- review lifecycle and reconciliation: [../../documentation/dashboard/REVIEW_LIFECYCLE.md](../../documentation/dashboard/REVIEW_LIFECYCLE.md)
 - testing overview: [../../documentation/dashboard/testing/TESTING.md](../../documentation/dashboard/testing/TESTING.md)
 
 ## Where To Start In Code

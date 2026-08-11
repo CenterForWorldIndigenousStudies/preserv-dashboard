@@ -12,10 +12,23 @@ import {
   type StatusOption,
 } from '@lib/search'
 import { REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES, REVIEW_QUEUE_SORT_FIELDS } from '@constants/reviewQueue'
+import {
+  isReviewQueueChecklistItemKey,
+  normalizeReviewQueueChecklist,
+  REVIEW_QUEUE_CHECKLIST_ITEMS,
+  type ReviewQueueChecklistItemKey,
+  type ReviewQueueChecklistState,
+} from '@constants/reviewQueueChecklist'
+import {
+  NEEDS_REVIEW_HISTORY_METADATA_NAME,
+  NEEDS_REVIEW_HISTORY_METADATA_NOTES,
+  NEEDS_REVIEW_METADATA_NAME,
+} from '@constants/documentMetadata'
 import { db } from '@lib/db'
 import { createEditHistoryEntry } from '@lib/editHistory'
 import { buildNameHash } from '@lib/tagHash'
-import { normalizeNeedsReviewValue } from '@lib/needsReview'
+import { composeReviewQueueReasons } from '@lib/needsReview'
+import { appendReviewHistoryEpisode } from '@lib/reviewHistory'
 import { parseMetadataValue } from '@lib/metadata'
 import {
   resolveBatchSearchIds,
@@ -51,6 +64,7 @@ import type {
 } from 'types/documents'
 import type { DocumentsCursor, DocumentsPageResult, PagedResult } from 'types/pagination'
 import type { PipelineSummary } from 'types/pipeline'
+import type { ReviewHistoryEpisode } from 'types/reviewHistory'
 import {
   type ReviewQueryParams,
   type ReviewQueueDocumentsQueryParams,
@@ -85,10 +99,15 @@ interface OverviewDocumentRow {
   validator_name?: string | null
   validation_comment?: string | null
   validation_comment_additional?: string | null
+  review_checklist?: unknown
   created_at: Date | string | null
   updated_at: Date | string | null
   is_duplicate: boolean | number | bigint | string | null
   sort_value: string | number | bigint | Date | null
+}
+
+interface NeedsReviewDocumentRow extends OverviewDocumentRow {
+  total_count: bigint | number | string | null
 }
 
 export interface LibraryBatchAssociation {
@@ -258,18 +277,15 @@ async function hydrateNeedsReviewReasons(documents: Document[], client: QueryDbC
     },
     select: { document_id: true, value: true },
   })
-  const reasonsByDocumentId = new Map<string, ReturnType<typeof normalizeNeedsReviewValue>>()
+  const metadataValueByDocumentId = new Map<string, unknown>()
 
   for (const metadataRow of metadataRows) {
-    const reasons = normalizeNeedsReviewValue(metadataRow.value)
-    if (reasons.length > 0) {
-      reasonsByDocumentId.set(metadataRow.document_id, reasons)
-    }
+    metadataValueByDocumentId.set(metadataRow.document_id, metadataRow.value)
   }
 
   return documents.map((document) => {
-    const reasons = reasonsByDocumentId.get(document.id)
-    return reasons ? { ...document, needs_review_reasons: reasons } : document
+    const reasons = composeReviewQueueReasons(metadataValueByDocumentId.get(document.id), document.validation_status)
+    return reasons.length > 0 ? { ...document, needs_review_reasons: reasons } : document
   })
 }
 
@@ -598,7 +614,7 @@ export async function getNeedsReviewDocuments(
 ): Promise<DocumentsPageResult> {
   const page = normalizePageNumber(params.page)
   const pageSize = normalizeDocumentTablePageSize(params.pageSize)
-  const statuses = resolveReviewQueueValidationStatuses(params.statuses)
+  const { statuses, includeMetadataOnly } = resolveReviewQueueValidationScope(params.statuses)
 
   const result = await getNeedsReviewDocumentsPage(
     {
@@ -608,6 +624,7 @@ export async function getNeedsReviewDocuments(
       sortDirection: params.sortDirection,
       search: normalizeTextFilter(params.search ?? params.author),
       statuses,
+      includeMetadataOnly,
       tagIds: await resolveTagSearchIds(normalizeTextFilter(params.tag), client),
       documentType: normalizeDocumentType(params.documentType),
       batchIds: await resolveBatchSearchIds(normalizeTextFilter(params.batch), client),
@@ -641,7 +658,7 @@ const needsReviewDocumentsBaseFromSql = Prisma.sql`
     INNER JOIN tags t ON t.id = dtt.tag_id
     WHERE t.name = 'duplicate_document'
   ) AS dup ON dup.document_id = d.id
-  INNER JOIN document_quality dq ON dq.document_id = d.id
+  LEFT JOIN document_quality dq ON dq.document_id = d.id
   LEFT JOIN document_access da ON da.document_id = d.id
   LEFT JOIN access_levels al ON al.id = da.access_level_id
 `
@@ -650,7 +667,7 @@ export async function getNeedsReviewDocumentsCount(
   params: DocumentsQueryParams = {},
   client: QueryDbClient = db,
 ): Promise<number> {
-  const statuses = resolveReviewQueueValidationStatuses(params.statuses)
+  const { statuses, includeMetadataOnly } = resolveReviewQueueValidationScope(params.statuses)
   const whereSql = buildNeedsReviewDocumentsWhereSql({
     accessLevel: normalizeAccessLevel(params.accessLevel),
     batchIds: await resolveBatchSearchIds(normalizeTextFilter(params.batch), client),
@@ -666,6 +683,7 @@ export async function getNeedsReviewDocumentsCount(
     sortExpression: Prisma.raw(OVERVIEW_SORT_EXPRESSIONS[DEFAULT_OVERVIEW_SORT_FIELD]),
     sortField: DEFAULT_OVERVIEW_SORT_FIELD,
     statuses,
+    includeMetadataOnly,
     tagIds: await resolveTagSearchIds(normalizeTextFilter(params.tag), client),
   })
 
@@ -679,12 +697,205 @@ export async function getNeedsReviewDocumentsCount(
   return typeof total === 'bigint' ? Number(total) : Number(total ?? 0)
 }
 
-export async function applyReviewQueueDecision(params: {
+export interface ReviewQueueDecisionParams {
   documentId: string
   decision: 'APPROVED' | 'REJECTED'
   validationTimestamp?: number
   validatorName?: string | null
-}): Promise<void> {
+}
+
+export interface ReviewQueueChecklistUpdateParams {
+  documentId: string
+  itemKey: ReviewQueueChecklistItemKey
+  completed: boolean
+}
+
+export async function updateReviewQueueChecklist(
+  params: ReviewQueueChecklistUpdateParams,
+): Promise<ReviewQueueChecklistState> {
+  const documentId = params.documentId.trim()
+  if (!documentId) {
+    throw new Error('Document ID is required.')
+  }
+
+  if (!isReviewQueueChecklistItemKey(params.itemKey)) {
+    throw new Error('Review checklist item is invalid.')
+  }
+
+  return db.$transaction(async (tx) => {
+    const qualityRecord = await tx.document_quality.findUnique({
+      where: { document_id: documentId },
+      select: { id: true, review_checklist: true },
+    })
+
+    if (!qualityRecord) {
+      throw new Error(`Document ${documentId} does not have a quality record.`)
+    }
+
+    const previousChecklist = normalizeReviewQueueChecklist(qualityRecord.review_checklist)
+    const nextChecklist: ReviewQueueChecklistState = {
+      ...previousChecklist,
+      [params.itemKey]: params.completed,
+    }
+
+    if (previousChecklist[params.itemKey] === params.completed) {
+      return previousChecklist
+    }
+
+    await tx.document_quality.update({
+      where: { document_id: documentId },
+      data: { review_checklist: JSON.stringify(nextChecklist) },
+    })
+
+    const checklistLabel = REVIEW_QUEUE_CHECKLIST_ITEMS.find((item) => item.key === params.itemKey)?.label ?? params.itemKey
+    await createEditHistoryEntry(tx, {
+      entityTable: 'document_quality',
+      entityId: qualityRecord.id,
+      previousValue: { review_checklist: previousChecklist },
+      newValue: { review_checklist: nextChecklist },
+      editSummary: `Updated review checklist item "${checklistLabel}" for document "${documentId}"`,
+    })
+
+    return nextChecklist
+  })
+}
+
+interface NormalizedReviewQueueDecisionParams {
+  documentId: string
+  decision: 'APPROVED' | 'REJECTED'
+  validationTimestamp: number
+  validatorName: string
+}
+
+export async function applyReviewQueueDecisionInTransaction(
+  tx: Prisma.TransactionClient,
+  params: NormalizedReviewQueueDecisionParams,
+): Promise<void> {
+  const { documentId, decision, validationTimestamp, validatorName } = params
+  const newState = params.decision === 'APPROVED' ? 'approved' : 'rejected'
+  const nextValidationStatus: DocumentQualityValidationStatus = params.decision
+
+  const qualityRecord = await tx.document_quality.findUnique({
+    where: { document_id: documentId },
+    select: { id: true, document_id: true, validation_status: true, review_checklist: true },
+  })
+
+  if (!qualityRecord) {
+    throw new Error(`Document ${documentId} does not have a quality record.`)
+  }
+
+  const [activeReviewMetadata, reviewHistoryMetadata, latestState] = await Promise.all([
+    tx.document_to_metadata.findFirst({
+      where: {
+        document_id: documentId,
+        metadata: { name: NEEDS_REVIEW_METADATA_NAME },
+      },
+      select: { id: true, value: true },
+    }),
+    tx.document_to_metadata.findFirst({
+      where: {
+        document_id: documentId,
+        metadata: { name: NEEDS_REVIEW_HISTORY_METADATA_NAME },
+      },
+      select: { id: true, metadata_id: true, value: true },
+    }),
+    tx.state_history.findFirst({
+      where: { document_id: documentId },
+      select: { new_state: true },
+      orderBy: [{ changed_at: 'desc' }, { id: 'desc' }],
+    }),
+  ])
+
+  const reasons = composeReviewQueueReasons(activeReviewMetadata?.value, qualityRecord.validation_status)
+  const episode: ReviewHistoryEpisode = {
+    episode_id: crypto.randomUUID(),
+    resolved_at: new Date().toISOString(),
+    resolved_by: validatorName || null,
+    decision,
+    validation_status_before: qualityRecord.validation_status ?? null,
+    reasons,
+    source: 'dashboard_decision',
+    inferred: false,
+  }
+
+  let historyMetadataId = reviewHistoryMetadata?.metadata_id
+  if (!historyMetadataId) {
+    const existingHistoryDefinition = await tx.metadata.findFirst({
+      where: { name: NEEDS_REVIEW_HISTORY_METADATA_NAME },
+      select: { id: true },
+    })
+    historyMetadataId = existingHistoryDefinition?.id
+
+    if (!historyMetadataId) {
+      const createdHistoryDefinition = await tx.metadata.create({
+        data: {
+          id: crypto.randomUUID(),
+          name: NEEDS_REVIEW_HISTORY_METADATA_NAME,
+          notes: NEEDS_REVIEW_HISTORY_METADATA_NOTES,
+        },
+        select: { id: true },
+      })
+      historyMetadataId = createdHistoryDefinition.id
+    }
+  }
+
+  const historyValue = appendReviewHistoryEpisode(reviewHistoryMetadata?.value, episode)
+  await tx.document_to_metadata.upsert({
+    where: {
+      document_id_metadata_id: {
+        document_id: documentId,
+        metadata_id: historyMetadataId,
+      },
+    },
+    create: {
+      id: crypto.randomUUID(),
+      document_id: documentId,
+      metadata_id: historyMetadataId,
+      value: JSON.stringify(historyValue),
+      value_type: 'json',
+    },
+    update: {
+      value: JSON.stringify(historyValue),
+      value_type: 'json',
+    },
+  })
+
+  if (activeReviewMetadata) {
+    await tx.document_to_metadata.delete({ where: { id: activeReviewMetadata.id } })
+  }
+
+  if (qualityRecord.review_checklist !== null && qualityRecord.review_checklist !== undefined) {
+    await createEditHistoryEntry(tx, {
+      entityTable: 'document_quality',
+      entityId: qualityRecord.id,
+      previousValue: { review_checklist: normalizeReviewQueueChecklist(qualityRecord.review_checklist) },
+      newValue: { review_checklist: null },
+      editSummary: `Cleared review checklist for document "${documentId}" after ${decision.toLowerCase()}`,
+    })
+  }
+
+  await tx.state_history.create({
+    data: {
+      id: crypto.randomUUID(),
+      document_id: documentId,
+      previous_state: latestState?.new_state ?? null,
+      new_state: newState,
+      changed_at: new Date(),
+    },
+  })
+
+  await tx.document_quality.update({
+    where: { document_id: documentId },
+    data: {
+      validation_status: nextValidationStatus,
+      validation_timestamp: validationTimestamp,
+      validator_name: validatorName || undefined,
+      review_checklist: null,
+    },
+  })
+}
+
+export async function applyReviewQueueDecision(params: ReviewQueueDecisionParams): Promise<void> {
   const documentId = params.documentId.trim()
   if (!documentId) {
     throw new Error('Document ID is required.')
@@ -694,44 +905,15 @@ export async function applyReviewQueueDecision(params: {
     ? Math.floor(params.validationTimestamp ?? 0)
     : Math.floor(Date.now() / 1000)
   const validatorName = params.validatorName?.trim() ?? ''
-  const newState = params.decision === 'APPROVED' ? 'approved' : 'rejected'
-  const nextValidationStatus: DocumentQualityValidationStatus = params.decision
 
-  await db.$transaction(async (tx) => {
-    const qualityRecord = await tx.document_quality.findUnique({
-      where: { document_id: documentId },
-      select: { document_id: true },
-    })
-
-    if (!qualityRecord) {
-      throw new Error(`Document ${documentId} does not have a quality record.`)
-    }
-
-    const latestState = await tx.state_history.findFirst({
-      where: { document_id: documentId },
-      select: { new_state: true },
-      orderBy: [{ changed_at: 'desc' }, { id: 'desc' }],
-    })
-
-    await tx.state_history.create({
-      data: {
-        id: crypto.randomUUID(),
-        document_id: documentId,
-        previous_state: latestState?.new_state ?? null,
-        new_state: newState,
-        changed_at: new Date(),
-      },
-    })
-
-    await tx.document_quality.update({
-      where: { document_id: documentId },
-      data: {
-        validation_status: nextValidationStatus,
-        validation_timestamp: validationTimestamp,
-        validator_name: validatorName || undefined,
-      },
-    })
-  })
+  await db.$transaction((tx) =>
+    applyReviewQueueDecisionInTransaction(tx, {
+      documentId,
+      decision: params.decision,
+      validationTimestamp,
+      validatorName,
+    }),
+  )
 }
 
 const PAGE_SIZE = 20
@@ -1747,6 +1929,7 @@ async function getOverviewDocumentsPage(
     accessLevel?: AccessLevelOption
     documentIds?: string[]
     requireValidationStatus?: boolean
+    additionalConditions?: readonly Prisma.Sql[]
     cursor?: DocumentsCursor | null
     cursorDirection?: 'next' | 'prev'
   },
@@ -1780,6 +1963,7 @@ async function getOverviewDocumentsPage(
     statuses: params.statuses,
     tagIds: params.tagIds,
     documentIds: params.documentIds,
+    additionalConditions: params.additionalConditions,
   })
   const orderBySql = buildOverviewDocumentsOrderBySql({
     cursorDirection,
@@ -1861,6 +2045,7 @@ async function getNeedsReviewDocumentsPage(
     sortDirection?: 'asc' | 'desc'
     search?: string
     statuses: StatusOption[]
+    includeMetadataOnly: boolean
     tagIds?: string[]
     documentType?: DocumentTypeOption
     batchIds?: string[]
@@ -1889,7 +2074,7 @@ async function getNeedsReviewDocumentsPage(
     collection: params.collection,
     createdFrom: params.createdFrom,
     createdTo: params.createdTo,
-    cursor: params.cursor,
+    cursor: null,
     cursorDirection,
     defaultSecondarySortExpression,
     documentType: params.documentType,
@@ -1898,17 +2083,30 @@ async function getNeedsReviewDocumentsPage(
     sortExpression,
     sortField,
     statuses: params.statuses,
+    includeMetadataOnly: params.includeMetadataOnly,
     tagIds: params.tagIds,
   })
-  const orderBySql = buildOverviewDocumentsOrderBySql({
+  const secondarySortSelect = defaultSecondarySortExpression
+    ? Prisma.sql`, ${defaultSecondarySortExpression} AS secondary_sort_value`
+    : Prisma.empty
+  const orderBySql = buildFilteredReviewQueueOrderBySql({
     cursorDirection,
-    defaultSecondarySortExpression,
+    usesDefaultSort,
     sortDirection,
-    sortExpression,
   })
+  const cursorWhereSql = params.cursor
+    ? Prisma.sql`WHERE ${buildFilteredReviewQueueCursorConditionSql({
+        cursor: params.cursor,
+        cursorDirection,
+        sortDirection,
+        sortField,
+        usesDefaultSort,
+      })}`
+    : Prisma.empty
 
-  const items = await client.$queryRaw<OverviewDocumentRow[]>(Prisma.sql`
-      SELECT
+  const items = await client.$queryRaw<NeedsReviewDocumentRow[]>(Prisma.sql`
+    WITH filtered_documents AS (
+      SELECT DISTINCT
         d.id,
         d.filesize,
         d.hash_binary,
@@ -1925,15 +2123,28 @@ async function getNeedsReviewDocumentsPage(
         dq.validator_name,
         dq.comment AS validation_comment,
         dq.comment_additional AS validation_comment_additional,
+        dq.review_checklist,
         d.created_at,
         d.updated_at,
         CASE WHEN dup.document_id IS NULL THEN 0 ELSE 1 END AS is_duplicate,
         ${sortExpression} AS sort_value
+        ${secondarySortSelect}
       ${needsReviewDocumentsBaseFromSql}
       ${whereSql}
-      ${orderBySql}
-      LIMIT ${params.pageSize + 1}
-    `)
+    ),
+    counted_documents AS (
+      SELECT
+        filtered_documents.*,
+        COUNT(*) OVER() AS total_count
+      FROM filtered_documents
+    )
+    SELECT
+      counted_documents.*
+    FROM counted_documents
+    ${cursorWhereSql}
+    ${orderBySql}
+    LIMIT ${params.pageSize + 1}
+  `)
 
   const hasMore = items.length > params.pageSize
   const slicedItems = hasMore ? items.slice(0, params.pageSize) : items
@@ -1941,9 +2152,12 @@ async function getNeedsReviewDocumentsPage(
   const normalizedItems = orderedItems.map(normalizeOverviewDocumentRow)
   const startCursor = buildDocumentsCursor(orderedItems[0], sortField, usesDefaultSort)
   const endCursor = buildDocumentsCursor(orderedItems.at(-1), sortField, usesDefaultSort)
+  const totalCountValue = items[0]?.total_count
+  const totalCount = typeof totalCountValue === 'bigint' ? Number(totalCountValue) : Number(totalCountValue ?? 0)
 
   return {
     data: normalizedItems,
+    totalCount,
     pageInfo: {
       page: params.page,
       pageSize: params.pageSize,
@@ -1953,6 +2167,81 @@ async function getNeedsReviewDocumentsPage(
       endCursor,
     },
   }
+}
+
+function buildFilteredReviewQueueOrderBySql(params: {
+  cursorDirection: 'next' | 'prev'
+  usesDefaultSort: boolean
+  sortDirection: 'asc' | 'desc'
+}): Prisma.Sql {
+  const primaryDirection =
+    params.cursorDirection === 'prev'
+      ? params.sortDirection === 'asc'
+        ? 'DESC'
+        : 'ASC'
+      : params.sortDirection === 'asc'
+        ? 'ASC'
+        : 'DESC'
+  const secondaryDirection = params.cursorDirection === 'prev' ? 'DESC' : 'ASC'
+
+  if (params.usesDefaultSort) {
+    return Prisma.sql`
+      ORDER BY
+        counted_documents.sort_value ${Prisma.raw(primaryDirection)},
+        counted_documents.secondary_sort_value ${Prisma.raw(primaryDirection)},
+        counted_documents.id ${Prisma.raw(secondaryDirection)}
+    `
+  }
+
+  return Prisma.sql`
+    ORDER BY counted_documents.sort_value ${Prisma.raw(primaryDirection)},
+      counted_documents.id ${Prisma.raw(secondaryDirection)}
+  `
+}
+
+function buildFilteredReviewQueueCursorConditionSql(params: {
+  cursor: DocumentsCursor
+  cursorDirection: 'next' | 'prev'
+  sortDirection: 'asc' | 'desc'
+  sortField: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
+  usesDefaultSort: boolean
+}): Prisma.Sql {
+  const movesForward = params.cursorDirection === 'next'
+  const usesAscendingPrimary =
+    (params.sortDirection === 'asc' && movesForward) || (params.sortDirection === 'desc' && !movesForward)
+  const primaryComparator = Prisma.raw(usesAscendingPrimary ? '>' : '<')
+  const secondaryComparator = Prisma.raw(movesForward ? '>' : '<')
+
+  if (params.usesDefaultSort) {
+    const compositeCursorValue = coerceDefaultOverviewCursorValue(params.cursor.value)
+
+    return Prisma.sql`
+      (
+        counted_documents.sort_value ${primaryComparator} ${compositeCursorValue.primary}
+        OR (
+          counted_documents.sort_value = ${compositeCursorValue.primary}
+          AND counted_documents.secondary_sort_value ${primaryComparator} ${compositeCursorValue.secondary}
+        )
+        OR (
+          counted_documents.sort_value = ${compositeCursorValue.primary}
+          AND counted_documents.secondary_sort_value = ${compositeCursorValue.secondary}
+          AND counted_documents.id ${secondaryComparator} ${params.cursor.id}
+        )
+      )
+    `
+  }
+
+  const cursorValue = coerceDocumentsCursorValue(params.sortField, params.cursor.value)
+
+  return Prisma.sql`
+    (
+      counted_documents.sort_value ${primaryComparator} ${cursorValue}
+      OR (
+        counted_documents.sort_value = ${cursorValue}
+        AND counted_documents.id ${secondaryComparator} ${params.cursor.id}
+      )
+    )
+  `
 }
 
 function buildOverviewDocumentsWhereSql(params: {
@@ -2049,9 +2338,35 @@ function buildOverviewDocumentsWhereSql(params: {
   return Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`
 }
 
+function buildLatestStateConditionSql(alias: string, newState: string): Prisma.Sql {
+  const stateAlias = Prisma.raw(alias)
+  const newerStateAlias = Prisma.raw(`newer_${alias}`)
+  const stateValue = newState === 'ingested_fedora' ? Prisma.raw("'ingested_fedora'") : Prisma.sql`${newState}`
+
+  return Prisma.sql`EXISTS (
+    SELECT 1
+    FROM state_history ${stateAlias}
+    WHERE ${stateAlias}.document_id = d.id
+      AND ${stateAlias}.new_state = ${stateValue}
+      AND NOT EXISTS (
+        SELECT 1
+        FROM state_history ${newerStateAlias}
+        WHERE ${newerStateAlias}.document_id = ${stateAlias}.document_id
+          AND (
+            ${newerStateAlias}.changed_at > ${stateAlias}.changed_at
+            OR (
+              ${newerStateAlias}.changed_at = ${stateAlias}.changed_at
+              AND ${newerStateAlias}.id > ${stateAlias}.id
+            )
+          )
+      )
+  )`
+}
+
 function buildNeedsReviewDocumentsWhereSql(params: {
   searchTerm?: string
   statuses: StatusOption[]
+  includeMetadataOnly: boolean
   tagIds?: string[]
   documentType?: DocumentTypeOption
   batchIds?: string[]
@@ -2066,7 +2381,28 @@ function buildNeedsReviewDocumentsWhereSql(params: {
   sortExpression: Prisma.Sql
   sortField: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
 }): Prisma.Sql {
-  const conditions: Prisma.Sql[] = [buildOverviewStatusConditionSql(params.statuses)]
+  const statusCondition = buildOverviewStatusConditionSql(params.statuses)
+  const conditions: Prisma.Sql[] = [
+    params.includeMetadataOnly
+      ? Prisma.sql`(
+          ${statusCondition}
+          OR (
+            dq.validation_status IS NULL
+            AND EXISTS (
+              SELECT 1
+              FROM document_to_metadata review_metadata
+              INNER JOIN metadata review_metadata_definition
+                ON review_metadata_definition.id = review_metadata.metadata_id
+              WHERE review_metadata.document_id = d.id
+                AND review_metadata_definition.name = 'needs_review'
+                AND review_metadata.value IS NOT NULL
+                AND TRIM(CAST(review_metadata.value AS CHAR)) <> ''
+            )
+          )
+        )`
+      : statusCondition,
+    Prisma.sql`NOT ${buildLatestStateConditionSql('latest_review_state', 'ingested_fedora')}`,
+  ]
 
   if (params.searchTerm) {
     conditions.push(buildOverviewAuthorSearchConditionSql(params.searchTerm))
@@ -2122,11 +2458,24 @@ function buildNeedsReviewDocumentsWhereSql(params: {
   return Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`
 }
 
-function resolveReviewQueueValidationStatuses(statuses: StatusOption[] | undefined): StatusOption[] {
+function resolveReviewQueueValidationScope(statuses: StatusOption[] | undefined): {
+  statuses: StatusOption[]
+  includeMetadataOnly: boolean
+} {
   const allowedStatuses = new Set<string>(REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES)
   const filteredStatuses = normalizeStatuses(statuses)?.filter((status) => allowedStatuses.has(status)) ?? []
 
-  return filteredStatuses.length > 0 ? filteredStatuses : [...REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES]
+  if (filteredStatuses.length > 0) {
+    return {
+      statuses: filteredStatuses,
+      includeMetadataOnly: filteredStatuses.includes('NEEDS_REVIEW'),
+    }
+  }
+
+  return {
+    statuses: [...REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES],
+    includeMetadataOnly: true,
+  }
 }
 
 function buildOverviewStatusConditionSql(statuses: StatusOption[]): Prisma.Sql {
@@ -2423,6 +2772,9 @@ function normalizeOverviewDocumentRow(row: OverviewDocumentRow): Document {
     validator_name: row.validator_name ?? null,
     validation_comment: row.validation_comment ?? null,
     validation_comment_additional: row.validation_comment_additional ?? null,
+    ...(row.review_checklist !== undefined
+      ? { review_checklist: normalizeReviewQueueChecklist(row.review_checklist) }
+      : {}),
     created_at: row.created_at ?? null,
     updated_at: row.updated_at ?? null,
     is_duplicate: Boolean(Number(row.is_duplicate ?? 0)),
@@ -2575,6 +2927,7 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
           : null,
       validator_name: row.validator_name ?? null,
       validator_email: row.validator_email ?? null,
+      review_checklist: row.review_checklist === null ? null : normalizeReviewQueueChecklist(row.review_checklist),
       current_status: row.current_status ?? null,
       created_at: row.created_at ?? null,
       updated_at: row.updated_at ?? null,
@@ -3070,6 +3423,7 @@ export async function getReadyForLibraryDocuments(
       collection: normalizeTextFilter(params.collection),
       accessLevel: normalizeAccessLevel(params.accessLevel),
       documentIds: approvedWithAccess,
+      additionalConditions: [Prisma.sql`NOT ${buildLatestStateConditionSql('latest_ready_state', 'ingested_fedora')}`],
     },
     client,
   )

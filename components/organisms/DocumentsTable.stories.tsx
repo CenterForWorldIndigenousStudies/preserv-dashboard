@@ -138,31 +138,3 @@ export const ManyResults: Story = {
     return <DocumentsTable initialData={buildPageResult(many)} filterOptions={filterOptions} />
   },
 }
-
-export const ReviewQueueVariant: Story = {
-  args: {
-    initialData: buildPageResult(
-      mockDocuments.map((document, index) => ({
-        ...document,
-        validation_status: index === 0 ? 'NEEDS_REVIEW' : index === 1 ? 'APPROVED' : 'REJECTED',
-        needs_review_reasons:
-          index === 0
-            ? [
-                {
-                  serviceKey: 'document_splitter_1',
-                  serviceLabel: 'Document Splitter Pass 1',
-                  reasons: ['Ambiguous boundary between source pages 78 and 79.'],
-                },
-                {
-                  serviceKey: 'ocr_processor',
-                  serviceLabel: 'OCR Processor',
-                  reasons: ['OCR output confidence is too low for metadata extraction.'],
-                },
-              ]
-            : [],
-      })),
-    ),
-    filterOptions,
-    variant: 'reviewQueue',
-  },
-}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { normalizeNeedsReviewValue } from '@lib/needsReview'
+import { composeReviewQueueReasons, normalizeNeedsReviewValue } from '@lib/needsReview'
 
 describe('normalizeNeedsReviewValue', () => {
   it('normalizes grouped service reasons with humanized pass labels', () => {
@@ -73,5 +73,39 @@ describe('normalizeNeedsReviewValue', () => {
   it('returns an empty list for null or blank values', () => {
     expect(normalizeNeedsReviewValue(null)).toEqual([])
     expect(normalizeNeedsReviewValue('   ')).toEqual([])
+  })
+})
+
+describe('composeReviewQueueReasons', () => {
+  it.each([
+    ['NEEDS_REVIEW', 'Document requires human review.'],
+    ['METADATA_ISSUES', 'Document has metadata issues.'],
+    ['FORMAT_ERRORS', 'Document has format errors.'],
+  ])('provides a fallback reason for %s', (validationStatus, reason) => {
+    expect(composeReviewQueueReasons(null, validationStatus)).toEqual([
+      {
+        serviceKey: 'review_queue',
+        serviceLabel: 'Review Queue',
+        reasons: [reason],
+      },
+    ])
+  })
+
+  it('does not provide a fallback for unrelated statuses', () => {
+    expect(composeReviewQueueReasons(null, 'APPROVED')).toEqual([])
+  })
+
+  it('preserves explicit reason groups instead of adding a fallback', () => {
+    const groups = {
+      document_splitter_1: ['Boundary requires review.'],
+    }
+
+    expect(composeReviewQueueReasons(groups, 'NEEDS_REVIEW')).toEqual([
+      {
+        serviceKey: 'document_splitter_1',
+        serviceLabel: 'Document Splitter Pass 1',
+        reasons: ['Boundary requires review.'],
+      },
+    ])
   })
 })

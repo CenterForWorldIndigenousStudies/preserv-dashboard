@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { Stack } from '@mui/material'
 import { REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES } from '@constants/reviewQueue'
-import { DocumentsTable } from '@organisms/DocumentsTable'
+import { ReviewQueueTable } from '@organisms/ReviewQueueTable'
 import { PageHeader } from '@organisms/PageHeader'
 import {
   ACCESS_LEVEL_OPTIONS,
@@ -13,15 +13,10 @@ import {
   type FilterOptions,
   type StatusOption,
 } from '@lib/search'
-import {
-  getNeedsReviewDocuments,
-  getNeedsReviewDocumentsCount,
-  getReadyForLibraryDocuments,
-  type DocumentsQueryParams,
-} from '@lib/queries/queries'
+import { getNeedsReviewDocuments, type DocumentsQueryParams } from '@lib/queries/queries'
 import { PAGE_LABELS } from '@constants/pageLabels'
 
-import { ReviewQueueTabbedWorkspace } from './ReviewQueueTabbedWorkspace'
+import { ReviewQueueWorkspace } from './ReviewQueueWorkspace'
 
 export const dynamic = 'force-dynamic'
 
@@ -92,42 +87,29 @@ async function ReviewQueueContent({ searchParams }: ReviewQueuePageProps) {
   const tableKey = JSON.stringify(initialQuery)
 
   return (
-    <DocumentsTable
+    <ReviewQueueTable
       key={tableKey}
       initialData={initialData}
       initialQuery={initialQuery}
       filterOptions={REVIEW_QUEUE_FILTER_OPTIONS}
-      variant={'reviewQueue'}
       defaultStatuses={[...REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES]}
-      serverDriven
     />
   )
 }
 
-export default async function ReviewQueuePage({ searchParams }: ReviewQueuePageProps) {
-  const [needsReviewCount, readyForLibraryResult] = await Promise.all([
-    getNeedsReviewDocumentsCount({
-      statuses: [...REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES],
-    }),
-    getReadyForLibraryDocuments(),
-  ])
-
+export default function ReviewQueuePage({ searchParams }: ReviewQueuePageProps) {
   return (
     <Stack spacing={4} sx={{ width: '100%' }}>
       <PageHeader
         eyebrow={PAGE_LABELS.reviewQueue}
         title={'Documents needing review.'}
         description={
-          'Use this human judgment workspace to review documents that need a deliberate approve or reject decision before they move forward.'
+          'Use this human judgment workspace to review documents, make deliberate approve or reject decisions, and move approved work to Ready for Library.'
         }
       />
 
       <Suspense fallback={null}>
-        <ReviewQueueTabbedWorkspace
-          needsReviewCount={needsReviewCount}
-          readyForLibraryCount={readyForLibraryResult.total}
-          needsReviewPanel={<ReviewQueueContent searchParams={searchParams} />}
-        />
+        <ReviewQueueWorkspace needsReviewPanel={<ReviewQueueContent searchParams={searchParams} />} />
       </Suspense>
     </Stack>
   )

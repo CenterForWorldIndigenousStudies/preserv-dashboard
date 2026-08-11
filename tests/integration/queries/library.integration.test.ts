@@ -15,16 +15,23 @@ const describeDbIntegration = shouldSkipDashboardIntegrationSuite() ? describe.s
 
 describeDbIntegration('library documents query (integration)', () => {
   let fedoraUrlMetadataId: string
+  let needsReviewMetadataId: string
 
   beforeAll(async () => {
     await resetTestDatabase()
     await db.$connect()
 
-    const metadata = await db.metadata.findFirst({ where: { name: 'fedora_url' }, select: { id: true } })
-    if (!metadata) {
-      throw new Error('Expected fedora_url metadata to exist in integration DB')
+    const metadata = await db.metadata.findMany({
+      where: { name: { in: ['fedora_url', 'needs_review'] } },
+      select: { id: true, name: true },
+    })
+    const fedoraUrlMetadata = metadata.find((item) => item.name === 'fedora_url')
+    const needsReviewMetadata = metadata.find((item) => item.name === 'needs_review')
+    if (!fedoraUrlMetadata || !needsReviewMetadata) {
+      throw new Error('Expected fedora_url and needs_review metadata to exist in integration DB')
     }
-    fedoraUrlMetadataId = metadata.id
+    fedoraUrlMetadataId = fedoraUrlMetadata.id
+    needsReviewMetadataId = needsReviewMetadata.id
   })
 
   afterAll(async () => {
@@ -178,6 +185,15 @@ describeDbIntegration('library documents query (integration)', () => {
           { id: `x${token}a`, document_id: first.id, tag_id: collectionTag.id },
           { id: `x${token}b`, document_id: second.id, tag_id: collectionTag.id },
         ],
+      })
+      await tx.document_to_metadata.create({
+        data: {
+          id: `n${token}review`,
+          document_id: first.id,
+          metadata_id: needsReviewMetadataId,
+          value: JSON.stringify({ value: { legacy: ['Stale review reason.'] } }),
+          value_type: 'json',
+        },
       })
 
       const firstPage = await getLibraryDocuments({ orderBy: 'name', sortDirection: 'asc', pageSize: 25 }, tx)

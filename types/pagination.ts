@@ -21,6 +21,7 @@ export interface DocumentsPageInfo {
 
 export interface DocumentTablePageResult<TRow extends DocumentTableRow = DocumentTableRow> {
   data: TRow[]
+  totalCount?: number
   pageInfo: DocumentsPageInfo
 }
 

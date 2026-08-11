@@ -1,6 +1,6 @@
 'use client'
 
-import { useId, useState, type ReactElement } from 'react'
+import { useId, useState, type ReactElement, type ReactNode } from 'react'
 import Button from '@mui/material/Button'
 import Popover from '@mui/material/Popover'
 import { NeedsReviewReasons } from '@molecules/NeedsReviewReasons'
@@ -9,6 +9,8 @@ import type { NeedsReviewReasonGroup } from 'types/needsReview'
 export interface NeedsReviewReasonsPopoverProps {
   documentId: string
   groups: NeedsReviewReasonGroup[]
+  trigger?: ReactNode
+  triggerLabel?: string
 }
 
 function countReasons(groups: NeedsReviewReasonGroup[]): number {
@@ -21,6 +23,8 @@ function countReasons(groups: NeedsReviewReasonGroup[]): number {
 export function NeedsReviewReasonsPopover({
   documentId,
   groups,
+  trigger,
+  triggerLabel,
 }: NeedsReviewReasonsPopoverProps): ReactElement {
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null)
   const popoverId = `needs-review-reasons-${useId().replace(/:/g, '-')}`
@@ -32,6 +36,8 @@ export function NeedsReviewReasonsPopover({
   }
 
   const reasonLabel = reasonCount === 1 ? 'reason' : 'reasons'
+  const accessibleTriggerLabel =
+    triggerLabel ?? `View ${reasonCount} needs review ${reasonLabel} for document ${documentId}`
 
   return (
     <>
@@ -39,13 +45,19 @@ export function NeedsReviewReasonsPopover({
         aria-controls={popoverId}
         aria-expanded={isOpen}
         aria-haspopup={'dialog'}
-        aria-label={`View ${reasonCount} needs review ${reasonLabel} for document ${documentId}`}
+        aria-label={accessibleTriggerLabel}
         onClick={(event) => setAnchorEl(event.currentTarget)}
         size={'small'}
         variant={'text'}
-        sx={{ minWidth: 0, px: 0.5, textTransform: 'none' }}
+        sx={{
+          minWidth: 0,
+          px: trigger ? 0 : 0.5,
+          borderRadius: '9999px',
+          textTransform: 'none',
+          '&:hover': { backgroundColor: 'action.hover' },
+        }}
       >
-        {reasonCount} {reasonLabel}
+        {trigger ?? `${reasonCount} ${reasonLabel}`}
       </Button>
       <Popover
         id={popoverId}

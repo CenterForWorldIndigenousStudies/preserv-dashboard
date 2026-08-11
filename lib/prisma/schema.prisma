@@ -201,6 +201,7 @@ model document_quality {
   document_id          String                              @unique(map: "uk_document_quality_document_id") @db.VarChar(36)
   comment              String?                             @db.Text
   comment_additional   String?                             @db.Text
+  review_checklist     String?                             @db.LongText
   validation_status    document_quality_validation_status?
   validation_timestamp BigInt?
   validator_name       String?                             @db.VarChar(255)

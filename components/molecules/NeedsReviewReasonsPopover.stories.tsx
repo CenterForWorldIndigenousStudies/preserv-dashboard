@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { Badge } from '@atoms/Badges/Badge'
 import { NeedsReviewReasonsPopover } from './NeedsReviewReasonsPopover'
 
 const meta = {
@@ -48,5 +49,20 @@ export const Empty: Story = {
   args: {
     documentId: 'document-789',
     groups: [],
+  },
+}
+
+export const StatusPillTrigger: Story = {
+  args: {
+    documentId: 'document-123',
+    trigger: <Badge variant={'danger'}>{'NEEDS_REVIEW'}</Badge>,
+    triggerLabel: 'View review reasons for document document-123',
+    groups: [
+      {
+        serviceKey: 'document_splitter_1',
+        serviceLabel: 'Document Splitter Pass 1',
+        reasons: ['Ambiguous document boundary requires review.'],
+      },
+    ],
   },
 }
