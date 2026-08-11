@@ -187,7 +187,11 @@ function StageCard({
               {label}
             </Typography>
           </Box>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ xs: 'flex-start', sm: 'center' }}>
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1}
+            sx={{ alignItems: { xs: 'flex-start', sm: 'center' } }}
+          >
             <PipelineStageStatusBadge status={stage.status} />
             {reviewWarning ? (
               <Typography variant={'caption'} sx={{ color: 'warning.main', fontWeight: 600 }}>

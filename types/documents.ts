@@ -22,7 +22,8 @@ export interface Document {
   review_checklist?: ReviewQueueChecklistState | null
 }
 
-export interface DocumentQuality extends Omit<DbDocumentQuality, 'validation_timestamp' | 'reprocess'> {
+export interface DocumentQuality
+  extends Omit<DbDocumentQuality, 'validation_timestamp' | 'reprocess' | 'review_checklist'> {
   validation_timestamp: string | number | null
   review_checklist: ReviewQueueChecklistState | null
 }
