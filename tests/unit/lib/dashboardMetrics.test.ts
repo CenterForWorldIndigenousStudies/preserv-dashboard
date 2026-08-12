@@ -53,9 +53,7 @@ describe('dashboardMetrics', () => {
 
     const metrics = await getDashboardKpiMetrics()
 
-    expect(mockGetNeedsReviewDocumentsCount).toHaveBeenCalledWith({
-      statuses: ['NEEDS_REVIEW', 'METADATA_ISSUES', 'FORMAT_ERRORS'],
-    })
+    expect(mockGetNeedsReviewDocumentsCount).toHaveBeenCalledWith()
     expect(mockGetReadyForLibraryDocuments).toHaveBeenCalledWith()
     expect(mockGetProcessBatchStatuses).toHaveBeenCalledWith(50)
     expect(metrics).toEqual([

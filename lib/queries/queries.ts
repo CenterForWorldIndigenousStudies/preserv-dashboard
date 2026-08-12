@@ -421,7 +421,10 @@ async function buildLibraryQueryContext(
 }
 
 function buildLibraryWhereSql(context: LibraryQueryContext, includeCursor: boolean): Prisma.Sql {
-  const additionalConditions: Prisma.Sql[] = [Prisma.sql`latest_state.new_state = 'ingested_fedora'`]
+  const additionalConditions: Prisma.Sql[] = [
+    buildPreservationCandidateConditionSql('d'),
+    Prisma.sql`latest_state.new_state = 'ingested_fedora'`,
+  ]
   if (context.filterParams.batchIds) {
     additionalConditions.push(buildLibraryBatchConditionSql(context.filterParams.batchIds))
   }
@@ -614,7 +617,7 @@ export async function getNeedsReviewDocuments(
 ): Promise<DocumentsPageResult> {
   const page = normalizePageNumber(params.page)
   const pageSize = normalizeDocumentTablePageSize(params.pageSize)
-  const { statuses, includeMetadataOnly } = resolveReviewQueueValidationScope(params.statuses)
+  const statuses = resolveReviewQueueValidationScope(params.statuses)
 
   const result = await getNeedsReviewDocumentsPage(
     {
@@ -624,7 +627,6 @@ export async function getNeedsReviewDocuments(
       sortDirection: params.sortDirection,
       search: normalizeTextFilter(params.search ?? params.author),
       statuses,
-      includeMetadataOnly,
       tagIds: await resolveTagSearchIds(normalizeTextFilter(params.tag), client),
       documentType: normalizeDocumentType(params.documentType),
       batchIds: await resolveBatchSearchIds(normalizeTextFilter(params.batch), client),
@@ -667,7 +669,7 @@ export async function getNeedsReviewDocumentsCount(
   params: DocumentsQueryParams = {},
   client: QueryDbClient = db,
 ): Promise<number> {
-  const { statuses, includeMetadataOnly } = resolveReviewQueueValidationScope(params.statuses)
+  const statuses = resolveReviewQueueValidationScope(params.statuses)
   const whereSql = buildNeedsReviewDocumentsWhereSql({
     accessLevel: normalizeAccessLevel(params.accessLevel),
     batchIds: await resolveBatchSearchIds(normalizeTextFilter(params.batch), client),
@@ -683,7 +685,6 @@ export async function getNeedsReviewDocumentsCount(
     sortExpression: Prisma.raw(OVERVIEW_SORT_EXPRESSIONS[DEFAULT_OVERVIEW_SORT_FIELD]),
     sortField: DEFAULT_OVERVIEW_SORT_FIELD,
     statuses,
-    includeMetadataOnly,
     tagIds: await resolveTagSearchIds(normalizeTextFilter(params.tag), client),
   })
 
@@ -2044,8 +2045,7 @@ async function getNeedsReviewDocumentsPage(
     orderBy?: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
     sortDirection?: 'asc' | 'desc'
     search?: string
-    statuses: StatusOption[]
-    includeMetadataOnly: boolean
+    statuses?: StatusOption[]
     tagIds?: string[]
     documentType?: DocumentTypeOption
     batchIds?: string[]
@@ -2083,7 +2083,6 @@ async function getNeedsReviewDocumentsPage(
     sortExpression,
     sortField,
     statuses: params.statuses,
-    includeMetadataOnly: params.includeMetadataOnly,
     tagIds: params.tagIds,
   })
   const secondarySortSelect = defaultSecondarySortExpression
@@ -2363,10 +2362,43 @@ function buildLatestStateConditionSql(alias: string, newState: string): Prisma.S
   )`
 }
 
+function buildPreservationCandidateConditionSql(alias: string): Prisma.Sql {
+  const documentAlias = Prisma.raw(alias)
+
+  return Prisma.sql`EXISTS (
+    SELECT 1
+    FROM document_to_metadata candidate_metadata
+    INNER JOIN metadata candidate_metadata_definition
+      ON candidate_metadata_definition.id = candidate_metadata.metadata_id
+    WHERE candidate_metadata.document_id = ${documentAlias}.id
+      AND candidate_metadata_definition.name = 'preservation_candidate'
+      AND COALESCE(
+        JSON_UNQUOTE(JSON_EXTRACT(candidate_metadata.value, '$.value')),
+        JSON_UNQUOTE(JSON_EXTRACT(candidate_metadata.value, '$')),
+        TRIM(CAST(candidate_metadata.value AS CHAR))
+      ) = 'true'
+  )`
+}
+
+async function getPreservationCandidateDocumentIds(
+  documentIds: readonly string[],
+  client: QueryDbClient,
+): Promise<Set<string>> {
+  if (documentIds.length === 0) return new Set()
+
+  const rows = await client.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+    SELECT d.id
+    FROM documents d
+    WHERE d.id IN (${Prisma.join(documentIds)})
+      AND ${buildPreservationCandidateConditionSql('d')}
+  `)
+
+  return new Set(rows.map((row) => String(row.id)))
+}
+
 function buildNeedsReviewDocumentsWhereSql(params: {
   searchTerm?: string
-  statuses: StatusOption[]
-  includeMetadataOnly: boolean
+  statuses?: StatusOption[]
   tagIds?: string[]
   documentType?: DocumentTypeOption
   batchIds?: string[]
@@ -2381,28 +2413,16 @@ function buildNeedsReviewDocumentsWhereSql(params: {
   sortExpression: Prisma.Sql
   sortField: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
 }): Prisma.Sql {
-  const statusCondition = buildOverviewStatusConditionSql(params.statuses)
   const conditions: Prisma.Sql[] = [
-    params.includeMetadataOnly
-      ? Prisma.sql`(
-          ${statusCondition}
-          OR (
-            dq.validation_status IS NULL
-            AND EXISTS (
-              SELECT 1
-              FROM document_to_metadata review_metadata
-              INNER JOIN metadata review_metadata_definition
-                ON review_metadata_definition.id = review_metadata.metadata_id
-              WHERE review_metadata.document_id = d.id
-                AND review_metadata_definition.name = 'needs_review'
-                AND review_metadata.value IS NOT NULL
-                AND TRIM(CAST(review_metadata.value AS CHAR)) <> ''
-            )
-          )
-        )`
-      : statusCondition,
+    buildPreservationCandidateConditionSql('d'),
+    buildActiveNeedsReviewConditionSql(),
+    Prisma.sql`LOWER(COALESCE(dq.validation_status, '')) NOT IN ('approved', 'rejected')`,
     Prisma.sql`NOT ${buildLatestStateConditionSql('latest_review_state', 'ingested_fedora')}`,
   ]
+
+  if (params.statuses?.length) {
+    conditions.push(buildOverviewStatusConditionSql(params.statuses))
+  }
 
   if (params.searchTerm) {
     conditions.push(buildOverviewAuthorSearchConditionSql(params.searchTerm))
@@ -2458,24 +2478,24 @@ function buildNeedsReviewDocumentsWhereSql(params: {
   return Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`
 }
 
-function resolveReviewQueueValidationScope(statuses: StatusOption[] | undefined): {
-  statuses: StatusOption[]
-  includeMetadataOnly: boolean
-} {
+function resolveReviewQueueValidationScope(statuses: StatusOption[] | undefined): StatusOption[] | undefined {
   const allowedStatuses = new Set<string>(REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES)
   const filteredStatuses = normalizeStatuses(statuses)?.filter((status) => allowedStatuses.has(status)) ?? []
 
-  if (filteredStatuses.length > 0) {
-    return {
-      statuses: filteredStatuses,
-      includeMetadataOnly: filteredStatuses.includes('NEEDS_REVIEW'),
-    }
-  }
+  return filteredStatuses.length > 0 ? filteredStatuses : undefined
+}
 
-  return {
-    statuses: [...REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES],
-    includeMetadataOnly: true,
-  }
+function buildActiveNeedsReviewConditionSql(): Prisma.Sql {
+  return Prisma.sql`EXISTS (
+    SELECT 1
+    FROM document_to_metadata review_metadata
+    INNER JOIN metadata review_metadata_definition
+      ON review_metadata_definition.id = review_metadata.metadata_id
+    WHERE review_metadata.document_id = d.id
+      AND review_metadata_definition.name = 'needs_review'
+      AND review_metadata.value IS NOT NULL
+      AND TRIM(CAST(review_metadata.value AS CHAR)) <> ''
+  )`
 }
 
 function buildOverviewStatusConditionSql(statuses: StatusOption[]): Prisma.Sql {
@@ -3356,10 +3376,16 @@ export async function getReadyForLibraryDocuments(
   }
 
   const approvedDocIds = [...new Set(qualityDocs.map((d) => d.document_id))]
+  const candidateDocumentIds = await getPreservationCandidateDocumentIds(approvedDocIds, client)
+  const approvedCandidateDocIds = approvedDocIds.filter((id) => candidateDocumentIds.has(id))
+
+  if (approvedCandidateDocIds.length === 0) {
+    return { items: [], total: 0 }
+  }
 
   // Get documents that have at least one access_level set via document_access
   const accessRows = await client.document_access.findMany({
-    where: { document_id: { in: approvedDocIds } },
+    where: { document_id: { in: approvedCandidateDocIds } },
     select: { document_id: true, access_level_id: true, access_levels: { select: { level_name: true } } },
   })
   const docAccessMap = new Map<string, string>()
@@ -3369,7 +3395,7 @@ export async function getReadyForLibraryDocuments(
     }
   }
 
-  const approvedWithAccess = approvedDocIds.filter((id) => docAccessMap.has(id))
+  const approvedWithAccess = approvedCandidateDocIds.filter((id) => docAccessMap.has(id))
 
   if (approvedWithAccess.length === 0) {
     return { items: [], total: 0 }
@@ -3423,7 +3449,10 @@ export async function getReadyForLibraryDocuments(
       collection: normalizeTextFilter(params.collection),
       accessLevel: normalizeAccessLevel(params.accessLevel),
       documentIds: approvedWithAccess,
-      additionalConditions: [Prisma.sql`NOT ${buildLatestStateConditionSql('latest_ready_state', 'ingested_fedora')}`],
+      additionalConditions: [
+        buildPreservationCandidateConditionSql('d'),
+        Prisma.sql`NOT ${buildLatestStateConditionSql('latest_ready_state', 'ingested_fedora')}`,
+      ],
     },
     client,
   )

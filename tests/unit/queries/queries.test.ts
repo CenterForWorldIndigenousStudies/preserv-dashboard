@@ -153,7 +153,7 @@ describe('getReadyForLibraryDocuments advanced filters', () => {
     mockDocumentsFindMany.mockResolvedValue([{ id: 'doc-ready', name: 'Ready document' }])
     mockTagsFindMany.mockResolvedValue([{ id: 'tag-collection', name: 'collection-tag', notes: null }])
     mockBatchesFindMany.mockResolvedValue([{ id: 'batch-2026', name: 'batch-2026' }])
-    mockQueryRaw.mockResolvedValueOnce([])
+    mockQueryRaw.mockResolvedValueOnce([{ id: 'doc-ready' }]).mockResolvedValueOnce([])
   })
 
   it('applies the full Advanced Search filter set to ready candidates before returning items', async () => {
@@ -169,7 +169,7 @@ describe('getReadyForLibraryDocuments advanced filters', () => {
       accessLevel: 'public',
     })
 
-    const sql = queryText(0)
+    const sql = queryText(1)
     expect(sql).toContain('d.id IN')
     expect(sql).toContain('FROM document_to_authors dta')
     expect(sql).toContain('FROM document_to_tags dtt')
@@ -183,7 +183,7 @@ describe('getReadyForLibraryDocuments advanced filters', () => {
   it('excludes already-published approved candidates from Ready for Library', async () => {
     await getReadyForLibraryDocuments({ statuses: ['APPROVED'] })
 
-    const sql = queryText(0)
+    const sql = queryText(1)
     expect(sql).toContain("latest_ready_state.new_state = 'ingested_fedora'")
   })
 
@@ -452,32 +452,28 @@ describe('getNeedsReviewDocuments', () => {
     mockDocumentMetadataFindMany.mockReset()
   })
 
-  it('includes metadata-only candidates in the default review queue scope', async () => {
+  it('uses active needs-review metadata as the default review queue scope', async () => {
     mockQueryRaw.mockResolvedValueOnce([])
 
     await getNeedsReviewDocuments()
 
     const sql = queryText(0)
     expect(sql).toContain('LEFT JOIN document_quality dq ON dq.document_id = d.id')
-    expect(sql).toContain("LOWER(COALESCE(dq.validation_status, '')) IN")
     expect(sql).toContain("review_metadata_definition.name = 'needs_review'")
     expect(sql).toContain('review_metadata.value IS NOT NULL')
-    expect(sql).toContain('dq.validation_status IS NULL')
+    expect(sql).toContain("LOWER(COALESCE(dq.validation_status, '')) NOT IN ('approved', 'rejected')")
     expect(sql).toContain("latest_review_state.new_state = 'ingested_fedora'")
-    expect(queryCall(0).values).toContain('needs_review')
-    expect(queryCall(0).values).toContain('metadata_issues')
-    expect(queryCall(0).values).toContain('format_errors')
   })
 
-  it('narrows review queue queries to an explicit approved status subset', async () => {
+  it('narrows review queue queries to an explicit status subset', async () => {
     mockQueryRaw.mockResolvedValueOnce([])
 
     await getNeedsReviewDocuments({
       statuses: ['FORMAT_ERRORS'],
     })
 
+    expect(queryText(0)).toContain("review_metadata_definition.name = 'needs_review'")
     expect(queryCall(0).values).toContain('format_errors')
-    expect(queryCall(0).values).not.toContain('needs_review')
     expect(queryCall(0).values).not.toContain('metadata_issues')
   })
 
@@ -489,18 +485,16 @@ describe('getNeedsReviewDocuments', () => {
     })
 
     expect(queryText(0)).toContain("review_metadata_definition.name = 'needs_review'")
-    expect(queryCall(0).values).toContain('needs_review')
   })
 
-  it('excludes metadata-only candidates when only non-NEEDS_REVIEW statuses are selected', async () => {
+  it('requires active review metadata for non-NEEDS_REVIEW status filters', async () => {
     mockQueryRaw.mockResolvedValueOnce([])
 
     await getNeedsReviewDocuments({
       statuses: ['METADATA_ISSUES', 'FORMAT_ERRORS'],
     })
 
-    expect(queryText(0)).not.toContain("review_metadata_definition.name = 'needs_review'")
-    expect(queryCall(0).values).not.toContain('needs_review')
+    expect(queryText(0)).toContain("review_metadata_definition.name = 'needs_review'")
   })
 
   it('does not allow approved documents with stale review metadata into the queue', async () => {
@@ -509,21 +503,18 @@ describe('getNeedsReviewDocuments', () => {
     await getNeedsReviewDocuments()
 
     const sql = queryText(0)
-    expect(sql).toContain('dq.validation_status IS NULL')
+    expect(sql).toContain("LOWER(COALESCE(dq.validation_status, '')) NOT IN ('approved', 'rejected')")
     expect(sql).toContain('review_metadata.document_id = d.id')
     expect(sql).toContain("latest_review_state.new_state = 'ingested_fedora'")
   })
 
-  it('falls back to the default review queue scope when given statuses outside the approved slice', async () => {
+  it('uses the unfiltered active-metadata scope when given unsupported statuses', async () => {
     mockQueryRaw.mockResolvedValueOnce([])
 
     await getNeedsReviewDocuments({
       statuses: ['APPROVED'],
     })
 
-    expect(queryCall(0).values).toContain('needs_review')
-    expect(queryCall(0).values).toContain('metadata_issues')
-    expect(queryCall(0).values).toContain('format_errors')
     expect(queryCall(0).values).not.toContain('approved')
   })
 

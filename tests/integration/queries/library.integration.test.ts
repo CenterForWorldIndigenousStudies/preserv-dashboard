@@ -16,22 +16,27 @@ const describeDbIntegration = shouldSkipDashboardIntegrationSuite() ? describe.s
 describeDbIntegration('library documents query (integration)', () => {
   let fedoraUrlMetadataId: string
   let needsReviewMetadataId: string
+  let preservationCandidateMetadataId: string
 
   beforeAll(async () => {
     await resetTestDatabase()
     await db.$connect()
 
     const metadata = await db.metadata.findMany({
-      where: { name: { in: ['fedora_url', 'needs_review'] } },
+      where: { name: { in: ['fedora_url', 'needs_review', 'preservation_candidate'] } },
       select: { id: true, name: true },
     })
     const fedoraUrlMetadata = metadata.find((item) => item.name === 'fedora_url')
     const needsReviewMetadata = metadata.find((item) => item.name === 'needs_review')
-    if (!fedoraUrlMetadata || !needsReviewMetadata) {
-      throw new Error('Expected fedora_url and needs_review metadata to exist in integration DB')
+    const preservationCandidateMetadata = metadata.find((item) => item.name === 'preservation_candidate')
+    if (!fedoraUrlMetadata || !needsReviewMetadata || !preservationCandidateMetadata) {
+      throw new Error(
+        'Expected fedora_url, needs_review, and preservation_candidate metadata to exist in integration DB',
+      )
     }
     fedoraUrlMetadataId = fedoraUrlMetadata.id
     needsReviewMetadataId = needsReviewMetadata.id
+    preservationCandidateMetadataId = preservationCandidateMetadata.id
   })
 
   afterAll(async () => {
@@ -48,6 +53,7 @@ describeDbIntegration('library documents query (integration)', () => {
       token: string
       uploadedAt: Date
       fedoraUrl?: string
+      preservationCandidate?: boolean
     },
   ) {
     const document = await tx.documents.create({
@@ -79,6 +85,16 @@ describeDbIntegration('library documents query (integration)', () => {
         document_id: document.id,
         validation_status: 'APPROVED',
         current_status: stateHistory.id,
+      },
+    })
+
+    await tx.document_to_metadata.create({
+      data: {
+        id: `pc${options.token}`,
+        document_id: document.id,
+        metadata_id: preservationCandidateMetadataId,
+        value: JSON.stringify(options.preservationCandidate ?? true),
+        value_type: 'boolean',
       },
     })
 
@@ -114,6 +130,13 @@ describeDbIntegration('library documents query (integration)', () => {
         token: `${token}b`,
         uploadedAt: new Date('2026-07-02T12:00:00.000Z'),
         fedoraUrl: 'https://fedora.example/beta',
+      })
+      const staleAncestor = await createDocument(tx, {
+        name: 'Library Integration Stale Ancestor',
+        state: 'ingested_fedora',
+        token: `${token}ancestor`,
+        uploadedAt: new Date('2026-06-30T12:00:00.000Z'),
+        preservationCandidate: false,
       })
       await createDocument(tx, {
         name: 'Library Integration Reprocessed',
@@ -206,6 +229,7 @@ describeDbIntegration('library documents query (integration)', () => {
         batch: { id: newBatch.id, name: 'Library New Batch' },
       })
       expect(firstPage.total).toBe(26)
+      expect(firstPage.items.some((item) => item.id === staleAncestor.id)).toBe(false)
       expect(firstPage.hasNextPage).toBe(true)
 
       const secondPage = await getLibraryDocuments(

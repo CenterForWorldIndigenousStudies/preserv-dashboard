@@ -8,6 +8,7 @@ const REVIEW_QUEUE_FALLBACK_REASONS: Record<string, string> = {
   NEEDS_REVIEW: 'Document requires human review.',
   METADATA_ISSUES: 'Document has metadata issues.',
   FORMAT_ERRORS: 'Document has format errors.',
+  GENERAL_ERRORS: 'Document has general errors.',
 }
 
 function normalizeReasonMessages(value: unknown): string[] {

@@ -1,5 +1,4 @@
 import { BATCHES_PATH, READY_FOR_LIBRARY_PATH, REVIEW_QUEUE_PATH } from '@constants/paths'
-import { REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES } from '@constants/reviewQueue'
 import { hasTerminalPipelineFailure, isPipelineBatchTerminal } from '@lib/pipelineExecution'
 import { getProcessBatchStatuses } from '@lib/processBatches'
 import { getNeedsReviewDocumentsCount, getReadyForLibraryDocuments } from '@lib/queries/queries'
@@ -26,9 +25,7 @@ function countActiveBatches(batches: Parameters<typeof hasTerminalPipelineFailur
 
 export async function getDashboardKpiMetrics(): Promise<DashboardKpiMetric[]> {
   const [needsReviewCount, readyForLibraryResult, batches] = await Promise.all([
-    getNeedsReviewDocumentsCount({
-      statuses: [...REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES],
-    }),
+    getNeedsReviewDocumentsCount(),
     getReadyForLibraryDocuments(),
     getProcessBatchStatuses(50),
   ])

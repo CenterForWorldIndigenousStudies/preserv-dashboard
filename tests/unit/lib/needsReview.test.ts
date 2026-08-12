@@ -81,6 +81,7 @@ describe('composeReviewQueueReasons', () => {
     ['NEEDS_REVIEW', 'Document requires human review.'],
     ['METADATA_ISSUES', 'Document has metadata issues.'],
     ['FORMAT_ERRORS', 'Document has format errors.'],
+    ['GENERAL_ERRORS', 'Document has general errors.'],
   ])('provides a fallback reason for %s', (validationStatus, reason) => {
     expect(composeReviewQueueReasons(null, validationStatus)).toEqual([
       {

@@ -26,11 +26,11 @@ const REVIEW_QUEUE_FILTER_OPTIONS: FilterOptions = {
   statuses: [...REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES],
 }
 
-function normalizeReviewQueueStatuses(statuses: StatusOption[] | undefined): StatusOption[] {
+function normalizeReviewQueueStatuses(statuses: StatusOption[] | undefined): StatusOption[] | undefined {
   const allowedStatuses = new Set<string>(REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES)
   const filteredStatuses = statuses?.filter((status) => allowedStatuses.has(status)) ?? []
 
-  return filteredStatuses.length > 0 ? filteredStatuses : [...REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES]
+  return filteredStatuses.length > 0 ? filteredStatuses : undefined
 }
 
 interface ReviewQueuePageProps {
@@ -92,7 +92,6 @@ async function ReviewQueueContent({ searchParams }: ReviewQueuePageProps) {
       initialData={initialData}
       initialQuery={initialQuery}
       filterOptions={REVIEW_QUEUE_FILTER_OPTIONS}
-      defaultStatuses={[...REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES]}
     />
   )
 }

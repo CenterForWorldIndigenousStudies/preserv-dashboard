@@ -23,28 +23,38 @@ const describeDbIntegration = shouldSkipDashboardIntegrationSuite() ? describe.s
 describeDbIntegration('documents queries (integration)', () => {
   let sourceIdMetadataId: string
   let needsReviewMetadataId: string
+  let preservationCandidateMetadataId: string
   let duplicateTagId: string
   let restrictedAccessLevelId: string
 
   beforeAll(async () => {
     await resetTestDatabase()
     await db.$connect()
-    const [sourceMetadata, needsReviewMetadata, duplicateTag, accessLevels] = await Promise.all([
-      db.metadata.findFirst({ where: { name: 'source_id' }, select: { id: true } }),
-      db.metadata.findFirst({ where: { name: 'needs_review' }, select: { id: true } }),
-      db.tags.findFirst({ where: { name: 'duplicate_document' }, select: { id: true } }),
-      db.access_levels.findMany({ select: { id: true, level_name: true } }),
-    ])
+    const [sourceMetadata, needsReviewMetadata, preservationCandidateMetadata, duplicateTag, accessLevels] =
+      await Promise.all([
+        db.metadata.findFirst({ where: { name: 'source_id' }, select: { id: true } }),
+        db.metadata.findFirst({ where: { name: 'needs_review' }, select: { id: true } }),
+        db.metadata.findFirst({ where: { name: 'preservation_candidate' }, select: { id: true } }),
+        db.tags.findFirst({ where: { name: 'duplicate_document' }, select: { id: true } }),
+        db.access_levels.findMany({ select: { id: true, level_name: true } }),
+      ])
     const restrictedAccessLevel = accessLevels.find(
       (accessLevel) => accessLevel.level_name.toLowerCase() === 'restricted',
     )
-    if (!sourceMetadata || !needsReviewMetadata || !duplicateTag || !restrictedAccessLevel) {
+    if (
+      !sourceMetadata ||
+      !needsReviewMetadata ||
+      !preservationCandidateMetadata ||
+      !duplicateTag ||
+      !restrictedAccessLevel
+    ) {
       throw new Error(
-        'Expected source_id and needs_review metadata, duplicate_document tag, and restricted access level to exist in integration DB',
+        'Expected source_id, needs_review, and preservation_candidate metadata, duplicate_document tag, and restricted access level to exist in integration DB',
       )
     }
     sourceIdMetadataId = sourceMetadata.id
     needsReviewMetadataId = needsReviewMetadata.id
+    preservationCandidateMetadataId = preservationCandidateMetadata.id
     duplicateTagId = duplicateTag.id
     restrictedAccessLevelId = restrictedAccessLevel.id
   })
@@ -74,6 +84,7 @@ describeDbIntegration('documents queries (integration)', () => {
       filesize?: bigint
       created_at?: Date
       updated_at?: Date
+      preservation_candidate?: boolean
     } = {},
   ) => {
     let doc: { id: string } | null = null
@@ -100,6 +111,15 @@ describeDbIntegration('documents queries (integration)', () => {
       }
     }
     if (!doc) throw lastErr
+    await tx.document_to_metadata.create({
+      data: {
+        id: `pc-${doc.id}`.slice(0, 36),
+        document_id: doc.id,
+        metadata_id: preservationCandidateMetadataId,
+        value: JSON.stringify(overrides.preservation_candidate ?? true),
+        value_type: 'boolean',
+      },
+    })
     return doc
   }
 
@@ -184,11 +204,17 @@ describeDbIntegration('documents queries (integration)', () => {
       })
     })
 
-    it('includes status-only and metadata-only candidates with status-aware filtering', async () => {
+    it('includes active metadata candidates with status-aware filtering', async () => {
       await withRollbackTransaction(async (tx) => {
         const statusOnlyDocument = await createTestDocument(tx, { name: 'Status Only Review Candidate' })
         const metadataOnlyDocument = await createTestDocument(tx, { name: 'Metadata Only Review Candidate' })
         const formatErrorDocument = await createTestDocument(tx, { name: 'Format Error Review Candidate' })
+        const generalErrorDocument = await createTestDocument(tx, { name: 'General Error Review Candidate' })
+        const rejectedDocument = await createTestDocument(tx, { name: 'Rejected Review Candidate' })
+        const staleAncestor = await createTestDocument(tx, {
+          name: 'Stale Non Candidate Review Ancestor',
+          preservation_candidate: false,
+        })
 
         await tx.document_quality.createMany({
           data: [
@@ -202,6 +228,21 @@ describeDbIntegration('documents queries (integration)', () => {
               document_id: formatErrorDocument.id,
               validation_status: 'FORMAT_ERRORS',
             },
+            {
+              id: `nq-general-${generalErrorDocument.id}`.slice(0, 36),
+              document_id: generalErrorDocument.id,
+              validation_status: 'GENERAL_ERRORS',
+            },
+            {
+              id: `nq-rejected-${rejectedDocument.id}`.slice(0, 36),
+              document_id: rejectedDocument.id,
+              validation_status: 'REJECTED',
+            },
+            {
+              id: `nq-stale-${staleAncestor.id}`.slice(0, 36),
+              document_id: staleAncestor.id,
+              validation_status: 'NEEDS_REVIEW',
+            },
           ],
         })
         await tx.document_to_metadata.create({
@@ -213,24 +254,67 @@ describeDbIntegration('documents queries (integration)', () => {
             value_type: 'json',
           },
         })
+        await tx.document_to_metadata.createMany({
+          data: [
+            {
+              id: `nrm-format-${formatErrorDocument.id}`.slice(0, 36),
+              document_id: formatErrorDocument.id,
+              metadata_id: needsReviewMetadataId,
+              value: JSON.stringify({ value: { legacy: ['Format requires review.'] } }),
+              value_type: 'json',
+            },
+            {
+              id: `nrm-general-${generalErrorDocument.id}`.slice(0, 36),
+              document_id: generalErrorDocument.id,
+              metadata_id: needsReviewMetadataId,
+              value: JSON.stringify({ value: { legacy: ['General error requires review.'] } }),
+              value_type: 'json',
+            },
+          ],
+        })
+        await tx.document_to_metadata.create({
+          data: {
+            id: `nrm-stale-${staleAncestor.id}`.slice(0, 36),
+            document_id: staleAncestor.id,
+            metadata_id: needsReviewMetadataId,
+            value: JSON.stringify({ value: { legacy: ['Stale ancestor review.'] } }),
+            value_type: 'json',
+          },
+        })
+        await tx.document_to_metadata.create({
+          data: {
+            id: `nrm-rejected-${rejectedDocument.id}`.slice(0, 36),
+            document_id: rejectedDocument.id,
+            metadata_id: needsReviewMetadataId,
+            value: JSON.stringify({ value: { legacy: ['Rejected stale reason.'] } }),
+            value_type: 'json',
+          },
+        })
 
         const defaultResult = await getNeedsReviewDocuments({ pageSize: 100 }, tx)
         const defaultIds = new Set(defaultResult.data.map((item) => item.id))
         expect([...defaultIds]).toEqual(
-          expect.arrayContaining([statusOnlyDocument.id, metadataOnlyDocument.id, formatErrorDocument.id]),
+          expect.arrayContaining([
+            metadataOnlyDocument.id,
+            formatErrorDocument.id,
+            generalErrorDocument.id,
+          ]),
         )
-        expect(defaultResult.data.find((item) => item.id === statusOnlyDocument.id)?.needs_review_reasons).toEqual([
+        expect(defaultIds.has(statusOnlyDocument.id)).toBe(false)
+        expect(defaultIds.has(rejectedDocument.id)).toBe(false)
+        expect(defaultIds.has(staleAncestor.id)).toBe(false)
+        expect(defaultResult.data.find((item) => item.id === metadataOnlyDocument.id)?.needs_review_reasons).toEqual([
           {
-            serviceKey: 'review_queue',
-            serviceLabel: 'Review Queue',
-            reasons: ['Document requires human review.'],
+            serviceKey: 'legacy',
+            serviceLabel: 'Legacy',
+            reasons: ['Metadata requires review.'],
           },
         ])
 
         const needsReviewResult = await getNeedsReviewDocuments({ statuses: ['NEEDS_REVIEW'], pageSize: 100 }, tx)
         const needsReviewIds = new Set(needsReviewResult.data.map((item) => item.id))
-        expect(needsReviewIds.has(statusOnlyDocument.id)).toBe(true)
-        expect(needsReviewIds.has(metadataOnlyDocument.id)).toBe(true)
+        expect(needsReviewIds.has(statusOnlyDocument.id)).toBe(false)
+        expect(needsReviewIds.has(metadataOnlyDocument.id)).toBe(false)
         expect(needsReviewIds.has(formatErrorDocument.id)).toBe(false)
 
         const formatErrorResult = await getNeedsReviewDocuments({ statuses: ['FORMAT_ERRORS'], pageSize: 100 }, tx)
@@ -239,8 +323,13 @@ describeDbIntegration('documents queries (integration)', () => {
         expect(formatErrorIds.has(statusOnlyDocument.id)).toBe(false)
         expect(formatErrorIds.has(metadataOnlyDocument.id)).toBe(false)
 
+        const generalErrorResult = await getNeedsReviewDocuments({ statuses: ['GENERAL_ERRORS'], pageSize: 100 }, tx)
+        const generalErrorIds = new Set(generalErrorResult.data.map((item) => item.id))
+        expect(generalErrorIds.has(generalErrorDocument.id)).toBe(true)
+        expect(generalErrorIds.has(rejectedDocument.id)).toBe(false)
+
         const count = await getNeedsReviewDocumentsCount({ statuses: ['NEEDS_REVIEW'] }, tx)
-        expect(count).toBeGreaterThanOrEqual(2)
+        expect(count).toBe(0)
       })
     }, 15000)
 
@@ -943,6 +1032,83 @@ describeDbIntegration('documents queries (integration)', () => {
 
         expect(result.total).toBe(1)
         expect(result.items.map((item) => item.id)).toEqual([matchingDocument.id])
+      })
+    }, 15000)
+
+    it('uses candidate-owned readiness data instead of an approved ancestor', async () => {
+      await withRollbackTransaction(async (tx) => {
+        const requiredMetadataNames = ['dc_title', 'dc_type', 'dc_subject', 'dc_rights']
+        const requiredMetadata = await tx.metadata.findMany({
+          where: { name: { in: requiredMetadataNames } },
+          select: { id: true },
+        })
+        const openAccessLevel = await tx.access_levels.findFirst({
+          where: { level_name: 'public' },
+          select: { id: true },
+        })
+        expect(requiredMetadata).toHaveLength(4)
+        expect(openAccessLevel).toBeDefined()
+        if (!openAccessLevel) return
+
+        const ancestor = await createTestDocument(tx, {
+          name: 'Approved Non Candidate Ancestor',
+          preservation_candidate: false,
+        })
+        const candidate = await createTestDocument(tx, { name: 'Approved Candidate Child' })
+
+        await Promise.all([
+          tx.document_quality.create({
+            data: {
+              id: `rfcq-${ancestor.id}`.slice(0, 36),
+              document_id: ancestor.id,
+              validation_status: 'APPROVED',
+            },
+          }),
+          tx.document_quality.create({
+            data: {
+              id: `rfcq-${candidate.id}`.slice(0, 36),
+              document_id: candidate.id,
+              validation_status: 'APPROVED',
+            },
+          }),
+          tx.document_access.create({
+            data: {
+              id: `rfca-${ancestor.id}`.slice(0, 36),
+              document_id: ancestor.id,
+              access_level_id: openAccessLevel.id,
+            },
+          }),
+          tx.document_access.create({
+            data: {
+              id: `rfca-${candidate.id}`.slice(0, 36),
+              document_id: candidate.id,
+              access_level_id: openAccessLevel.id,
+            },
+          }),
+        ])
+
+        await tx.document_to_metadata.createMany({
+          data: requiredMetadata.flatMap(({ id: metadataId }) => [
+            {
+              id: `rfcm-${ancestor.id}-${metadataId}`.slice(0, 36),
+              document_id: ancestor.id,
+              metadata_id: metadataId,
+              value: JSON.stringify('ancestor value'),
+              value_type: 'string',
+            },
+            {
+              id: `rfcm-${candidate.id}-${metadataId}`.slice(0, 36),
+              document_id: candidate.id,
+              metadata_id: metadataId,
+              value: JSON.stringify('candidate value'),
+              value_type: 'string',
+            },
+          ]),
+        })
+
+        const result = await getReadyForLibraryDocuments({}, tx)
+
+        expect(result.items.map((item) => item.id)).toEqual([candidate.id])
       })
     }, 15000)
 
