@@ -111,6 +111,7 @@ describeDbIntegration('batch queries (integration)', () => {
       if (!restrictedAccess || !publicAccess || !duplicateTag) {
         throw new Error('Expected public and restricted access levels and duplicate_document tag in integration DB')
       }
+      const duplicateTagId = duplicateTag.id
 
       const author = await tx.authors.create({
         data: { id: randomUUID(), name: 'Ada Integration Author' },
@@ -199,7 +200,7 @@ describeDbIntegration('batch queries (integration)', () => {
           documentTags.push({ id: randomUUID(), document_id: options.id, tag_id: searchTag.id })
         }
         if (options.includeDuplicate) {
-          documentTags.push({ id: randomUUID(), document_id: options.id, tag_id: duplicateTag.id })
+          documentTags.push({ id: randomUUID(), document_id: options.id, tag_id: duplicateTagId })
         }
         if (documentTags.length > 0) {
           await tx.document_to_tags.createMany({ data: documentTags })
@@ -228,7 +229,7 @@ describeDbIntegration('batch queries (integration)', () => {
       const filters = [
         { label: 'author', filter: { author: 'Ada Integration Author' } },
         { label: 'tag', filter: { tag: 'Batch Filter Tag' } },
-        { label: 'statuses', filter: { statuses: ['APPROVED'] as const } },
+        { label: 'statuses', filter: { statuses: ['APPROVED'] } },
         { label: 'document type', filter: { documentType: 'duplicate' as const } },
         { label: 'batch', filter: { batch: 'Matching Batch Filter Integration' } },
         {
@@ -243,7 +244,10 @@ describeDbIntegration('batch queries (integration)', () => {
         // Keep these checks sequential because they share one rollback transaction.
         // eslint-disable-next-line no-await-in-loop
         const result = await getBatches({ page: 1, pageSize: 25, filters: filter.filter }, tx)
-        expect(result.data.map((item) => item.id), filter.label).toEqual([matchingBatch.id])
+        expect(
+          result.data.map((item) => item.id),
+          filter.label,
+        ).toEqual([matchingBatch.id])
       }
 
       const combinedQuery = {

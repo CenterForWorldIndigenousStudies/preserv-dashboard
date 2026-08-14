@@ -45,6 +45,9 @@ function buildStageStatus(status: ProcessStageStatus['status']): ProcessStageSta
     sourceFolderIds: [],
     collectionName: null,
     collectionNotes: null,
+    mode: null,
+    openaiBatchWave1: null,
+    openaiBatchWave2: null,
   }
 }
 

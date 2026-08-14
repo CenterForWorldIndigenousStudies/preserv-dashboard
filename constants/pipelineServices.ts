@@ -1,12 +1,8 @@
-import pipelineServicesContract from '@contracts/pipeline-services.json'
+import { GENERATED_PIPELINE_SERVICES, type GeneratedPipelineServiceKey } from '@constants/generated/pipelineServices'
 
-interface PipelineServiceContractEntry {
-  display_name: string
-}
+export const PIPELINE_SERVICES = GENERATED_PIPELINE_SERVICES
 
-type PipelineServicesContract = Record<string, PipelineServiceContractEntry>
-
-const pipelineServices = pipelineServicesContract as PipelineServicesContract
+export type PipelineServiceKey = GeneratedPipelineServiceKey
 
 const passSuffixPattern = /^(.*)_(\d+)$/
 
@@ -27,11 +23,12 @@ export function getPipelineServiceDisplayName(serviceKey: string): string {
   const match = normalizedKey.match(passSuffixPattern)
   const baseServiceKey = match?.[1] ?? normalizedKey
   const passNumber = match?.[2] ?? null
-  const baseDisplayName = pipelineServices[baseServiceKey]?.display_name ?? titleCaseFallback(baseServiceKey)
+  const baseDisplayName =
+    PIPELINE_SERVICES[baseServiceKey as PipelineServiceKey]?.display_name ?? titleCaseFallback(baseServiceKey)
 
   return passNumber === null ? baseDisplayName : `${baseDisplayName} Pass ${passNumber}`
 }
 
 export const pipelineServiceDisplayNames = Object.freeze(
-  Object.fromEntries(Object.entries(pipelineServices).map(([key, value]) => [key, value.display_name])),
+  Object.fromEntries(Object.entries(PIPELINE_SERVICES).map(([key, value]) => [key, value.display_name])),
 )

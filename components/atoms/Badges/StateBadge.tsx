@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Badge, type BadgeVariant } from '@atoms/Badges/Badge'
+import { DOCUMENT_STATES } from '@constants/documentStates'
 
 interface StateBadgeProps {
   state?: string
@@ -7,9 +8,11 @@ interface StateBadgeProps {
 }
 
 export const stateVariantMap = {
-  completed: 'success',
-  failed: 'danger',
-  under_review: 'info',
+  [DOCUMENT_STATES.APPROVED]: 'success',
+  [DOCUMENT_STATES.FAILED]: 'danger',
+  [DOCUMENT_STATES.INGESTED_FEDORA]: 'success',
+  [DOCUMENT_STATES.REJECTED]: 'danger',
+  [DOCUMENT_STATES.UNDER_REVIEW]: 'info',
 } as const
 
 /**

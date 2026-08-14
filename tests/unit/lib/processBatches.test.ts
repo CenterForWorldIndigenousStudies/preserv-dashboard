@@ -415,18 +415,10 @@ describe('processBatches', () => {
     )
 
     const batch = await getProcessBatchStatus('batch-1')
-    const extractor = batch?.metadataExtractor as (typeof batch.metadataExtractor & {
-      mode?: string | null
-      openaiBatchWave1?: {
-        status: string | null
-        openaiBatchId: string | null
-        submittedAt: string | null
-      } | null
-      openaiBatchWave2?: {
-        status: string | null
-        processedCount: number
-      } | null
-    }) | null
+    if (!batch) {
+      throw new Error('Expected a process batch status')
+    }
+    const extractor = batch.metadataExtractor
 
     expect(extractor?.mode).toBe('openai_batch')
     expect(extractor?.openaiBatchWave1).toEqual(
@@ -491,7 +483,11 @@ describe('processBatches', () => {
     const batch = await getProcessBatchStatus('batch-1')
 
     expect(batch).not.toBeNull()
-    expect(batch?.pipelineRequestedStages).toEqual(['metadata-extraction', 'metadata-validation', 'rights-determinator'])
+    expect(batch?.pipelineRequestedStages).toEqual([
+      'metadata-extraction',
+      'metadata-validation',
+      'rights-determinator',
+    ])
     expect(batch?.rightsDeterminator?.status).toBe('completed')
     expect(batch?.rightsDeterminator?.requestId).toBe('request-11')
     expect(batch?.rightsDeterminator?.rightsDeterminedCount).toBe(2)
@@ -525,47 +521,45 @@ describe('processBatches', () => {
   })
 
   it('records metadata extractor completion on batch processing details', async () => {
-    mockFindUnique.mockResolvedValue(
-      {
-        ...buildBatchRow({
-          pipeline: {
-            requested_stages: ['metadata-extraction'],
-            config: {
-              profileId: 'custom',
-              mode: 'custom',
-              executionPlan: [
-                {
-                  id: 'step-ingester',
-                  stepId: 'ingester',
-                  service: 'ingester',
-                  label: 'Ingest',
-                  order: 0,
-                  enabled: true,
-                },
-                {
-                  id: 'step-metadata-extraction',
-                  stepId: 'metadata-extraction',
-                  service: 'metadata-extraction',
-                  label: 'Metadata Extraction',
-                  order: 1,
-                  enabled: true,
-                  dependsOn: ['step-ingester'],
-                },
-              ],
-            },
+    mockFindUnique.mockResolvedValue({
+      ...buildBatchRow({
+        pipeline: {
+          requested_stages: ['metadata-extraction'],
+          config: {
+            profileId: 'custom',
+            mode: 'custom',
+            executionPlan: [
+              {
+                id: 'step-ingester',
+                stepId: 'ingester',
+                service: 'ingester',
+                label: 'Ingest',
+                order: 0,
+                enabled: true,
+              },
+              {
+                id: 'step-metadata-extraction',
+                stepId: 'metadata-extraction',
+                service: 'metadata-extraction',
+                label: 'Metadata Extraction',
+                order: 1,
+                enabled: true,
+                dependsOn: ['step-ingester'],
+              },
+            ],
           },
-          data_ingester: {
-            status: 'completed',
-            completed_at: '2026-05-29T04:39:55.000Z',
-          },
-        }),
-        started_at: new Date('2026-05-29T04:39:50.000Z'),
-        lifecycle_status: 'running',
-        publication_status: 'not_started',
-        publication_target: 'fedora',
-        batch_rollbacks: null,
-      },
-    )
+        },
+        data_ingester: {
+          status: 'completed',
+          completed_at: '2026-05-29T04:39:55.000Z',
+        },
+      }),
+      started_at: new Date('2026-05-29T04:39:50.000Z'),
+      lifecycle_status: 'running',
+      publication_status: 'not_started',
+      publication_target: 'fedora',
+      batch_rollbacks: null,
+    })
     mockUpdate.mockResolvedValue(undefined)
 
     await recordMetadataExtractorCompletion('batch-4', {

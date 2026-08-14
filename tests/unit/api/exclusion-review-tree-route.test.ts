@@ -71,7 +71,7 @@ describe('exclusion review tree routes', () => {
       },
     })
 
-    const response = await getTree(new NextRequest('http://localhost/api/exclusion-review/tree'))
+    const response = await getTree()
     const payload = (await response.json()) as {
       isEditor?: boolean
       tree?: { root: { driveId: string } }
@@ -98,7 +98,7 @@ describe('exclusion review tree routes', () => {
       },
     })
 
-    const response = await getTree(new NextRequest('http://localhost/api/exclusion-review/tree'))
+    const response = await getTree()
     const payload = (await response.json()) as { error?: string }
 
     expect(response.status).toBe(503)
@@ -119,7 +119,7 @@ describe('exclusion review tree routes', () => {
       throw error
     })
 
-    const response = await getTree(new NextRequest('http://localhost/api/exclusion-review/tree'))
+    const response = await getTree()
     const payload = (await response.json()) as { error?: string }
 
     expect(response.status).toBe(503)

@@ -45,7 +45,10 @@ describe('dashboard MUI theme', () => {
 
   it('styles contained primary buttons with the primary action role', () => {
     const primaryButtonVariant = theme.components?.MuiButton?.variants?.find(
-      (variant) => variant.props?.variant === 'contained' && variant.props?.color === 'primary',
+      (variant) =>
+        typeof variant.props !== 'function' &&
+        variant.props?.variant === 'contained' &&
+        variant.props?.color === 'primary',
     )
 
     expect(primaryButtonVariant?.style).toMatchObject({

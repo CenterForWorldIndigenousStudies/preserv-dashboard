@@ -12,6 +12,7 @@ import {
   type StatusOption,
 } from '@lib/search'
 import { REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES, REVIEW_QUEUE_SORT_FIELDS } from '@constants/reviewQueue'
+import { DOCUMENT_STATES } from '@constants/documentStates'
 import {
   isReviewQueueChecklistItemKey,
   normalizeReviewQueueChecklist,
@@ -423,7 +424,7 @@ async function buildLibraryQueryContext(
 function buildLibraryWhereSql(context: LibraryQueryContext, includeCursor: boolean): Prisma.Sql {
   const additionalConditions: Prisma.Sql[] = [
     buildPreservationCandidateConditionSql('d'),
-    Prisma.sql`latest_state.new_state = 'ingested_fedora'`,
+    Prisma.sql`latest_state.new_state = ${Prisma.raw(`'${DOCUMENT_STATES.INGESTED_FEDORA}'`)}`,
   ]
   if (context.filterParams.batchIds) {
     additionalConditions.push(buildLibraryBatchConditionSql(context.filterParams.batchIds))
@@ -773,7 +774,7 @@ export async function applyReviewQueueDecisionInTransaction(
   params: NormalizedReviewQueueDecisionParams,
 ): Promise<void> {
   const { documentId, decision, validationTimestamp, validatorName } = params
-  const newState = params.decision === 'APPROVED' ? 'approved' : 'rejected'
+  const newState = params.decision === 'APPROVED' ? DOCUMENT_STATES.APPROVED : DOCUMENT_STATES.REJECTED
   const nextValidationStatus: DocumentQualityValidationStatus = params.decision
 
   const qualityRecord = await tx.document_quality.findUnique({
@@ -2340,7 +2341,10 @@ function buildOverviewDocumentsWhereSql(params: {
 function buildLatestStateConditionSql(alias: string, newState: string): Prisma.Sql {
   const stateAlias = Prisma.raw(alias)
   const newerStateAlias = Prisma.raw(`newer_${alias}`)
-  const stateValue = newState === 'ingested_fedora' ? Prisma.raw("'ingested_fedora'") : Prisma.sql`${newState}`
+  const stateValue =
+    newState === DOCUMENT_STATES.INGESTED_FEDORA
+      ? Prisma.raw(`'${DOCUMENT_STATES.INGESTED_FEDORA}'`)
+      : Prisma.sql`${newState}`
 
   return Prisma.sql`EXISTS (
     SELECT 1
@@ -2417,7 +2421,7 @@ function buildNeedsReviewDocumentsWhereSql(params: {
     buildPreservationCandidateConditionSql('d'),
     buildActiveNeedsReviewConditionSql(),
     Prisma.sql`LOWER(COALESCE(dq.validation_status, '')) NOT IN ('approved', 'rejected')`,
-    Prisma.sql`NOT ${buildLatestStateConditionSql('latest_review_state', 'ingested_fedora')}`,
+    Prisma.sql`NOT ${buildLatestStateConditionSql('latest_review_state', DOCUMENT_STATES.INGESTED_FEDORA)}`,
   ]
 
   if (params.statuses?.length) {
@@ -3451,7 +3455,7 @@ export async function getReadyForLibraryDocuments(
       documentIds: approvedWithAccess,
       additionalConditions: [
         buildPreservationCandidateConditionSql('d'),
-        Prisma.sql`NOT ${buildLatestStateConditionSql('latest_ready_state', 'ingested_fedora')}`,
+        Prisma.sql`NOT ${buildLatestStateConditionSql('latest_ready_state', DOCUMENT_STATES.INGESTED_FEDORA)}`,
       ],
     },
     client,

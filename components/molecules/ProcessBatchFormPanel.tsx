@@ -106,7 +106,9 @@ export function ProcessBatchFormPanel({
         {submitError ? <Alert severity={'error'}>{submitError}</Alert> : null}
         {acceptedBatchName ? (
           <Alert severity={'success'}>
-            {`Batch <strong>${acceptedBatchName}</strong> was accepted. Live process updates will appear below.`}
+            {`Batch `}
+            <strong>${acceptedBatchName}</strong>
+            {` was accepted. Live process updates will appear below.`}
           </Alert>
         ) : null}
       </Stack>

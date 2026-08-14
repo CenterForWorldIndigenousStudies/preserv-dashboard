@@ -7,11 +7,10 @@ import { getDocumentFilterOptions, getLibraryDocuments, type DocumentsQueryParam
 import { parseLibraryQueryParams } from '@lib/queries/libraryQuery'
 import type { AdvancedSearchFilters } from '@lib/search'
 import { PAGE_LABELS } from '@constants/pageLabels'
+import { LIBRARY_PAGE_DESCRIPTION } from '@constants/pageContent'
 import type { LibraryDocumentItem, LibraryDocumentsPageResult } from 'types/documents'
 
 export const dynamic = 'force-dynamic'
-
-export const PAGE_DESCRIPTION = 'The current document state is ingested_fedora.'
 
 interface LibraryPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>
@@ -58,7 +57,7 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
       <PageHeader
         eyebrow={PAGE_LABELS.library}
         title={'Documents that have been published to the library'}
-        description={PAGE_DESCRIPTION}
+        description={LIBRARY_PAGE_DESCRIPTION}
       />
       <LibraryTable filterOptions={filterOptions} initialData={buildInitialData(result)} initialQuery={initialQuery} />
     </Stack>

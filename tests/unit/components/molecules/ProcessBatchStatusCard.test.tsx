@@ -168,6 +168,9 @@ describe('ProcessBatchStatusCard', () => {
               sourceFolderIds: [],
               collectionName: null,
               collectionNotes: null,
+              mode: null,
+              openaiBatchWave1: null,
+              openaiBatchWave2: null,
             },
           })}
         />
@@ -226,6 +229,9 @@ describe('ProcessBatchStatusCard', () => {
               sourceFolderIds: [],
               collectionName: null,
               collectionNotes: null,
+              mode: null,
+              openaiBatchWave1: null,
+              openaiBatchWave2: null,
             },
           })}
         />
@@ -299,6 +305,9 @@ describe('ProcessBatchStatusCard', () => {
               sourceFolderIds: [],
               collectionName: null,
               collectionNotes: null,
+              mode: null,
+              openaiBatchWave1: null,
+              openaiBatchWave2: null,
             },
           })}
         />

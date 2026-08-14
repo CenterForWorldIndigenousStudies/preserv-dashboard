@@ -616,6 +616,7 @@ Document state transitions over time.
 
 Query note: use this table for status history; `document_quality.current_status` points to one row here.
 The table also enforces a composite unique constraint on `(document_id, previous_state, new_state, changed_at)`.
+The persisted state values are strings; the canonical known-value contract is [`contracts/document-states.json`](../../contracts/document-states.json).
 
 ### authors
 

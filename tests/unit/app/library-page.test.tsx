@@ -20,7 +20,8 @@ vi.mock('@organisms/LibraryTable', () => ({
   },
 }))
 
-import LibraryPage, { PAGE_DESCRIPTION } from '@root/app/library/page'
+import LibraryPage from '@root/app/library/page'
+import { LIBRARY_PAGE_DESCRIPTION } from '@constants/pageContent'
 import { PAGE_LABELS } from '@constants/pageLabels'
 
 describe('LibraryPage', () => {
@@ -49,7 +50,7 @@ describe('LibraryPage', () => {
     )
 
     expect(markup).toContain(PAGE_LABELS.library)
-    expect(markup).toContain(PAGE_DESCRIPTION)
+    expect(markup).toContain(LIBRARY_PAGE_DESCRIPTION)
     expect(mockGetLibraryDocuments).toHaveBeenCalledWith({
       page: 2,
       pageSize: 25,

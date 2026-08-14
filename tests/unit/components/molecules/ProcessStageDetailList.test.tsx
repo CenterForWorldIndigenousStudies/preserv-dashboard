@@ -47,6 +47,9 @@ function buildStageStatus(overrides: Partial<ProcessStageStatus> = {}): ProcessS
     sourceFolderIds: ['folder-1'],
     collectionName: 'Collection A',
     collectionNotes: 'Notes',
+    mode: null,
+    openaiBatchWave1: null,
+    openaiBatchWave2: null,
     ...overrides,
   }
 }

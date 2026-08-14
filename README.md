@@ -142,6 +142,7 @@ Additional project documentation:
 - [Deployment](../../documentation/dashboard/DEPLOYMENT.md)
 - [Pipeline trigger and callback architecture](../../documentation/dashboard/PIPELINE_TRIGGER_CALLBACK_ARCHITECTURE.md)
 - [Current pipeline initiation integration](../../documentation/dashboard/PIPELINE_INITIATION_INTEGRATION.md)
+- [Shared contract adapters](../../documentation/common/CONTRACT_ADAPTERS.md)
 - [Component architecture](../../documentation/dashboard/COMPONENT_ARCHITECTURE.md)
 - [Dashboard styling guide](../../documentation/dashboard/STYLING_GUIDE.md)
 - [Structural class naming](../../documentation/dashboard/styles/SEMANTIC_CLASSES.md)

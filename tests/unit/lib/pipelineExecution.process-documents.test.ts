@@ -151,6 +151,9 @@ function buildStageStatus(overrides: Partial<ProcessStageStatus> = {}): ProcessS
     sourceFolderIds: [],
     collectionName: null,
     collectionNotes: null,
+    mode: null,
+    openaiBatchWave1: null,
+    openaiBatchWave2: null,
     ...overrides,
   }
 }
@@ -159,6 +162,7 @@ function buildBatchStatus(overrides: Partial<ProcessBatchStatus> = {}): ProcessB
   const pipelineConfig: PipelineConfig = {
     profileId: 'custom',
     mode: 'custom',
+    metadataExtraction: { mode: 'direct' },
     executionPlan: buildExecutionPlan(),
   }
 
@@ -192,7 +196,9 @@ describe('pipelineExecution process-documents behavior', () => {
     const batch = buildBatchStatus({ rollbackStatus: 'reverting' })
 
     expect(isPipelineBatchTerminal(batch)).toBe(false)
-    expect(isPipelineBatchTerminal({ ...batch, rollbackStatus: 'failed', lifecycleStatus: 'rollback_failed' })).toBe(true)
+    expect(isPipelineBatchTerminal({ ...batch, rollbackStatus: 'failed', lifecycleStatus: 'rollback_failed' })).toBe(
+      true,
+    )
   })
 
   test('returns rotate pass 2 as next eligible step after split pass 2 completes', () => {

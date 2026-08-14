@@ -11,10 +11,10 @@ import { getUniqueDocumentCountByAuthor } from '@lib/readyForLibraryAuthorMetric
 import type { AdvancedSearchFilters } from '@lib/search'
 import { parseReadyForLibraryQueryParams } from '../../lib/queries/readyForLibarayQuery'
 import { PAGE_LABELS } from '@constants/pageLabels'
+import { READY_FOR_LIBRARY_READINESS_EXPLANATION_ID } from '@constants/pageContent'
 import type { ReadyForLibraryItem } from 'types/documents'
 
 export const dynamic = 'force-dynamic'
-export const READINESS_EXPLANATION_ID = 'ready-for-library-readiness-explanation'
 
 const FEATURED_AUTHOR_NAME = 'Ryser, Rudolph C.'
 
@@ -57,9 +57,9 @@ function AuthorCountCard({ authorName, count }: { authorName: string; count: num
 
 function ReadyForLibraryReadinessExplanation() {
   return (
-    <Stack component={'section'} spacing={1.5} aria-labelledby={READINESS_EXPLANATION_ID}>
+    <Stack component={'section'} spacing={1.5} aria-labelledby={READY_FOR_LIBRARY_READINESS_EXPLANATION_ID}>
       <Typography
-        id={READINESS_EXPLANATION_ID}
+        id={READY_FOR_LIBRARY_READINESS_EXPLANATION_ID}
         variant={'caption'}
         sx={{ color: 'text.secondary', fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase' }}
       >

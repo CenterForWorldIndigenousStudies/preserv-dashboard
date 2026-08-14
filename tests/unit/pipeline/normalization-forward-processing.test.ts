@@ -96,6 +96,9 @@ function buildStageStatus(overrides: Partial<ProcessStageStatus> = {}): ProcessS
     sourceFolderIds: [],
     collectionName: null,
     collectionNotes: null,
+    mode: null,
+    openaiBatchWave1: null,
+    openaiBatchWave2: null,
     ...overrides,
   }
 }
@@ -104,6 +107,7 @@ function buildBatchStatus(overrides: Partial<ProcessBatchStatus> = {}): ProcessB
   const pipelineConfig: PipelineConfig = {
     profileId: 'custom',
     mode: 'custom',
+    metadataExtraction: { mode: 'direct' },
     executionPlan: buildExecutionPlan(),
   }
 
