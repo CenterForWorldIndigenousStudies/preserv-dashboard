@@ -7,7 +7,7 @@ export interface ReviewHistoryEpisode {
   decision: 'APPROVED' | 'REJECTED' | null
   validation_status_before: string | null
   reasons: NeedsReviewReasonGroup[]
-  source: 'dashboard_decision' | 'legacy_reconciliation'
+  source: 'dashboard_decision' | 'legacy_reconciliation' | 'pipeline_readiness' | 'data_combiner'
   inferred: boolean
 }
 

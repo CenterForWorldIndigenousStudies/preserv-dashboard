@@ -29,6 +29,7 @@ import { db } from '@lib/db'
 import { createEditHistoryEntry } from '@lib/editHistory'
 import { buildNameHash } from '@lib/tagHash'
 import { composeReviewQueueReasons } from '@lib/needsReview'
+import { evaluateDocumentReadiness } from '@lib/pipelineReadiness'
 import { appendReviewHistoryEpisode } from '@lib/reviewHistory'
 import { parseMetadataValue } from '@lib/metadata'
 import {
@@ -53,6 +54,7 @@ import type {
   DocumentDetail,
   DocumentQuality,
   DocumentQueryParams,
+  DocumentReadiness,
   FailureItem,
   LibraryBatch,
   LibraryCollection,
@@ -706,6 +708,16 @@ export interface ReviewQueueDecisionParams {
   validatorName?: string | null
 }
 
+export class ReviewQueueApprovalBlockedError extends Error {
+  readonly unmetRequirements: string[]
+
+  constructor(unmetRequirements: string[]) {
+    super(`Document is not ready for approval: ${unmetRequirements.join(', ')}`)
+    this.name = 'ReviewQueueApprovalBlockedError'
+    this.unmetRequirements = unmetRequirements
+  }
+}
+
 export interface ReviewQueueChecklistUpdateParams {
   documentId: string
   itemKey: ReviewQueueChecklistItemKey
@@ -784,6 +796,16 @@ export async function applyReviewQueueDecisionInTransaction(
 
   if (!qualityRecord) {
     throw new Error(`Document ${documentId} does not have a quality record.`)
+  }
+
+  if (decision === 'APPROVED') {
+    const readiness = await evaluateDocumentReadiness(documentId, tx)
+    if (!readiness.isPreservationCandidate) {
+      throw new ReviewQueueApprovalBlockedError(['preservation_candidate'])
+    }
+    if (!readiness.evaluation.approved) {
+      throw new ReviewQueueApprovalBlockedError(readiness.evaluation.unmetRequirements)
+    }
   }
 
   const [activeReviewMetadata, reviewHistoryMetadata, latestState] = await Promise.all([
@@ -2936,6 +2958,19 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
     ])
 
   const access_levels = normalizeDocumentAccessLevels(accessRows.map((row) => row.access_levels.level_name))
+  const readinessResult = await evaluateDocumentReadiness(documentId).catch(() => null)
+  const readiness: DocumentReadiness | null = readinessResult
+    ? {
+        isPreservationCandidate: readinessResult.isPreservationCandidate,
+        ...readinessResult.evaluation,
+        reasonGroups: readinessResult.evaluation.reasonGroups.map((group) => ({
+          ...group,
+          serviceLabel: group.serviceKey,
+        })),
+      }
+    : null
+  const activeReviewValue = metadata.find((row) => row.metadata.name === NEEDS_REVIEW_METADATA_NAME)?.value
+  const reviewReasons = composeReviewQueueReasons(activeReviewValue, quality?.validation_status)
 
   const mapQuality = (row: typeof quality): DocumentQuality | null => {
     if (!row) return null
@@ -3039,10 +3074,13 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
       hash_content: document.hash_content ?? null,
       id_legacy: document.id_legacy ?? null,
       name: document.name ?? null,
+      validation_status: quality?.validation_status ?? null,
       created_at: document.created_at ?? null,
       updated_at: document.updated_at ?? null,
       is_duplicate: hasDuplicateTag,
+      ...(reviewReasons.length > 0 ? { needs_review_reasons: reviewReasons } : {}),
     },
+    readiness,
     quality: mapQuality(quality),
     access_levels,
     versions: versions.map((v) => ({

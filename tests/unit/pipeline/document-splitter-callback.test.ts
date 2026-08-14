@@ -12,6 +12,7 @@ const {
   mockTriggerOcrProcessor,
   mockTriggerContentDedup,
   mockTriggerMetadataExtractor,
+  mockFinalizePipelineReadinessIfDue,
   mockLogEvent,
 } = vi.hoisted(() => ({
   mockGetProcessBatchStatus: vi.fn(),
@@ -24,6 +25,7 @@ const {
   mockTriggerOcrProcessor: vi.fn(),
   mockTriggerContentDedup: vi.fn(),
   mockTriggerMetadataExtractor: vi.fn(),
+  mockFinalizePipelineReadinessIfDue: vi.fn(),
   mockLogEvent: vi.fn(),
 }))
 
@@ -41,6 +43,7 @@ vi.mock('@lib/pipelineTriggers', () => ({
   triggerOcrProcessor: mockTriggerOcrProcessor,
   triggerContentDedup: mockTriggerContentDedup,
   triggerMetadataExtractor: mockTriggerMetadataExtractor,
+  finalizePipelineReadinessIfDue: mockFinalizePipelineReadinessIfDue,
 }))
 
 vi.mock('@lib/observability', () => ({

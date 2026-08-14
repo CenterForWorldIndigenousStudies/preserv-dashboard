@@ -22,6 +22,13 @@ export interface Document {
   review_checklist?: ReviewQueueChecklistState | null
 }
 
+export interface DocumentReadiness {
+  isPreservationCandidate: boolean
+  approved: boolean
+  unmetRequirements: string[]
+  reasonGroups: NeedsReviewReasonGroup[]
+}
+
 export interface DocumentQuality
   extends Omit<DbDocumentQuality, 'validation_timestamp' | 'reprocess' | 'review_checklist'> {
   validation_timestamp: string | number | null
@@ -113,6 +120,7 @@ export interface ReviewItem {
 
 export interface DocumentDetail {
   document: Document
+  readiness?: DocumentReadiness | null
   quality: DocumentQuality | null
   access_levels: string[]
   versions: DocumentVersion[]

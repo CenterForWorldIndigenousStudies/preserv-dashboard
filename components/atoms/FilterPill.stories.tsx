@@ -43,7 +43,7 @@ export const AllFilters: Story = {
       <FilterPill label={'All'} isActive={true} href={DOCUMENTS_PATH} />
       <FilterPill label={'Completed'} isActive={false} href={`${DOCUMENTS_PATH}?state=completed`} />
       <FilterPill label={'Failed'} isActive={false} href={`${DOCUMENTS_PATH}?state=failed`} />
-      <FilterPill label={'Under Review'} isActive={false} href={`${DOCUMENTS_PATH}?state=under_review`} />
+      <FilterPill label={'Needs Review'} isActive={false} href={`${DOCUMENTS_PATH}?state=needs_review`} />
     </Stack>
   ),
 }

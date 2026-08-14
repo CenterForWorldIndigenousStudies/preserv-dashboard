@@ -107,6 +107,10 @@ function normalizeReviewQueueComment(value: string | null | undefined): string |
   return normalizedValue ? normalizedValue : null
 }
 
+function getReadinessReasons(document: Document) {
+  return (document.needs_review_reasons ?? []).filter((group) => group.serviceKey === 'readiness')
+}
+
 function buildReviewQueueColumns(params: {
   preservedOverviewHref: string
   getChecklistState: (document: Document) => ReviewQueueChecklistState
@@ -531,20 +535,45 @@ export function ReviewQueueTable({
           const isApprovePending = activeDecision?.documentId === row.id && activeDecision.decision === 'APPROVED'
           const isRejectPending = activeDecision?.documentId === row.id && activeDecision.decision === 'REJECTED'
           const isPending = isApprovePending || isRejectPending || batchApprovePending
+          const readinessReasons = getReadinessReasons(row)
+          const approvalBlocked = readinessReasons.length > 0
+          const approveButton = (
+            <Button
+              variant={'secondary'}
+              size={'sm'}
+              loading={isApprovePending}
+              aria-disabled={approvalBlocked || undefined}
+              disabled={isPending && !approvalBlocked}
+              onClick={() => {
+                if (!approvalBlocked) {
+                  void handleReviewDecision(row.id, 'APPROVED')
+                }
+              }}
+              sx={
+                approvalBlocked
+                  ? {
+                      cursor: 'not-allowed',
+                      opacity: 0.55,
+                    }
+                  : undefined
+              }
+            >
+              {'Approve'}
+            </Button>
+          )
 
           return (
             <Stack direction={'row'} spacing={1} sx={{ alignItems: 'center' }}>
-              <Button
-                variant={'secondary'}
-                size={'sm'}
-                loading={isApprovePending}
-                disabled={isPending}
-                onClick={() => {
-                  void handleReviewDecision(row.id, 'APPROVED')
-                }}
-              >
-                {'Approve'}
-              </Button>
+              {approvalBlocked ? (
+                <NeedsReviewReasonsPopover
+                  documentId={row.id}
+                  groups={readinessReasons}
+                  trigger={approveButton}
+                  triggerLabel={`View unmet approval requirements for document ${row.id}`}
+                />
+              ) : (
+                approveButton
+              )}
               <Button
                 variant={'ghost'}
                 size={'sm'}

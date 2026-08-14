@@ -4,9 +4,11 @@ import {
   getPipelineConfigForBatch,
   getExecutionStepRuntimeStatus,
   getExecutionStepReviewWarningCount,
+  getLastEnabledAutomatedExecutionStep,
   getNextEligibleExecutionStep,
   getOrchestratedExecutionPlan,
   isPipelineBatchTerminal,
+  shouldFinalizePipelineReadiness,
   type PipelineStepRuntimeStatus,
 } from '@lib/pipelineExecution'
 import type { PipelineConfig, PipelineExecutionStep } from '@lib/pipelineConfig'
@@ -139,7 +141,7 @@ function buildStageStatus(overrides: Partial<ProcessStageStatus> = {}): ProcessS
     extractedCount: 0,
     metadataValidatedCount: 0,
     rightsDeterminedCount: 0,
-    underReviewCount: 0,
+    needsReviewCount: 0,
     versionedCount: 0,
     resolvedCount: 0,
     skippedCount: 0,
@@ -383,5 +385,61 @@ describe('pipelineExecution process-documents behavior', () => {
     })
 
     expect(getNextEligibleExecutionStep(batch)?.service).toBe('rights-determinator')
+  })
+
+  test('identifies the last enabled automated step without Fedora handoff', () => {
+    const batch = buildBatchStatus({
+      rightsDeterminator: buildStageStatus({ status: 'completed' }),
+    })
+
+    expect(getLastEnabledAutomatedExecutionStep(batch)).toEqual(
+      expect.objectContaining({ service: 'rights-determinator' }),
+    )
+  })
+
+  test('does not treat a Fedora step as part of automated processing', () => {
+    const batch = buildBatchStatus({
+      pipelineConfig: {
+        profileId: 'custom',
+        mode: 'custom',
+        metadataExtraction: { mode: 'direct' },
+        executionPlan: [
+          ...buildExecutionPlan(),
+          {
+            id: 'step-fedora-ingester',
+            stepId: 'fedora-ingester',
+            service: 'fedora-ingester',
+            label: 'Fedora Ingester',
+            order: 10,
+            enabled: true,
+          },
+        ],
+      },
+      rightsDeterminator: buildStageStatus({ status: 'completed' }),
+    })
+
+    expect(getLastEnabledAutomatedExecutionStep(batch)).toEqual(
+      expect.objectContaining({ service: 'rights-determinator' }),
+    )
+  })
+
+  test('finalizes readiness only after the last automated step completes', () => {
+    const batch = buildBatchStatus({
+      pipelineConfig: {
+        profileId: 'custom',
+        mode: 'custom',
+        metadataExtraction: { mode: 'direct' },
+        executionPlan: [buildExecutionPlan()[0], buildExecutionPlan()[9]],
+      },
+      rightsDeterminator: buildStageStatus({ status: 'completed' }),
+    })
+
+    expect(shouldFinalizePipelineReadiness(batch)).toBe(true)
+    expect(
+      shouldFinalizePipelineReadiness({
+        ...batch,
+        rightsDeterminator: buildStageStatus({ status: 'running' }),
+      }),
+    ).toBe(false)
   })
 })

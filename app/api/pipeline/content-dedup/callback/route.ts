@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { logEvent } from '@lib/observability'
 import { parseBearerToken, parsePipelineCallbackBody } from '@lib/pipelineCallbacks'
-import { shouldTriggerMetadataExtractor, triggerMetadataExtractor } from '@lib/pipelineTriggers'
+import {
+  finalizePipelineReadinessIfDue,
+  shouldTriggerMetadataExtractor,
+  triggerMetadataExtractor,
+} from '@lib/pipelineTriggers'
 import { getProcessBatchStatus, markProcessStageCallbackReceived } from '@lib/processBatches'
 import type { PipelineCallbackBody } from 'types/pipelineContracts'
 
@@ -50,6 +54,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (shouldTriggerMetadataExtractor(batch)) {
       await triggerMetadataExtractor(batch)
     }
+    await finalizePipelineReadinessIfDue(batch)
     return new NextResponse(null, { status: 204 })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to record content-dedup callback.'

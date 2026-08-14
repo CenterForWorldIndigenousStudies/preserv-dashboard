@@ -25,7 +25,6 @@ const ORCHESTRATED_SERVICES = new Set<string>([
   METADATA_EXTRACTOR_STAGE,
   METADATA_VALIDATOR_STAGE,
   RIGHTS_DETERMINATOR_STAGE,
-  FEDORA_INGESTER_STAGE,
 ])
 
 const INGEST_ONLY_PIPELINE_CONFIG: PipelineConfig = {
@@ -117,6 +116,23 @@ export function getOrchestratedExecutionPlan(batch: ProcessBatchStatus): Pipelin
   return getPipelineConfigForBatch(batch)
     .executionPlan.filter((step) => step.enabled && ORCHESTRATED_SERVICES.has(step.service))
     .sort((left, right) => left.order - right.order)
+}
+
+export function getLastEnabledAutomatedExecutionStep(batch: ProcessBatchStatus): PipelineExecutionStep | null {
+  return getOrchestratedExecutionPlan(batch).at(-1) ?? null
+}
+
+export function shouldFinalizePipelineReadiness(batch: ProcessBatchStatus): boolean {
+  const lastStep = getLastEnabledAutomatedExecutionStep(batch)
+  if (!lastStep || !isExecutionStepCompleted(batch, lastStep)) {
+    return false
+  }
+
+  if (hasTerminalPipelineFailure(batch)) {
+    return false
+  }
+
+  return getNextEligibleExecutionStep(batch) === null
 }
 
 export function isExecutionStepCompleted(batch: ProcessBatchStatus, step: PipelineExecutionStep): boolean {

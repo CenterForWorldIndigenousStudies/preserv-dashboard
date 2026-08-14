@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { logEvent } from '@lib/observability'
 import { parseBearerToken, parsePipelineCallbackBody } from '@lib/pipelineCallbacks'
-import { shouldTriggerMetadataValidator, triggerMetadataValidator } from '@lib/pipelineTriggers'
+import {
+  finalizePipelineReadinessIfDue,
+  shouldTriggerMetadataValidator,
+  triggerMetadataValidator,
+} from '@lib/pipelineTriggers'
 import {
   getProcessBatchStatus,
   markProcessStageCallbackReceived,
@@ -84,6 +88,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (shouldTriggerMetadataValidator(batch)) {
       await triggerMetadataValidator(batch)
     }
+    await finalizePipelineReadinessIfDue(batch)
 
     return new NextResponse(null, { status: 204 })
   } catch (error: unknown) {

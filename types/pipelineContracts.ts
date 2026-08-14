@@ -39,7 +39,7 @@ export interface RawProcessStageDetails {
   extracted_count?: unknown
   metadata_validated_count?: unknown
   rights_determined_count?: unknown
-  under_review_count?: unknown
+  needs_review_count?: unknown
   versioned_count?: unknown
   resolved_count?: unknown
   skipped_count?: unknown
@@ -147,7 +147,7 @@ export interface NormalizedProcessStageStatus {
   extractedCount: number
   metadataValidatedCount: number
   rightsDeterminedCount: number
-  underReviewCount: number
+  needsReviewCount: number
   versionedCount: number
   resolvedCount: number
   skippedCount: number

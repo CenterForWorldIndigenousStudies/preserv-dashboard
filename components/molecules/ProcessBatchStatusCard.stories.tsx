@@ -50,7 +50,7 @@ export const CompletedWithReview: Story = {
         status: 'completed',
         processedCount: 54,
         metadataValidatedCount: 49,
-        underReviewCount: 5,
+        needsReviewCount: 5,
         reviewNeededCount: 5,
         collectionName: 'Review Queue Collection',
         collectionNotes: 'Records requiring archivist review.',

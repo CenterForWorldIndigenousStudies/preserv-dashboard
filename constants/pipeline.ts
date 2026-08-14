@@ -156,14 +156,6 @@ export const PIPELINE_STEPS: StepDefinition[] = [
     order: 7,
     dependsOn: ['metadata-validation'],
   },
-  {
-    id: 'fedora-ingester',
-    label: 'Fedora Ingester',
-    description: 'Ingest into Fedora digital repository (future)',
-    service: 'fedora-ingester',
-    order: 8,
-    dependsOn: ['rights-determinator'],
-  },
 ]
 
 // Lookup helpers

@@ -7,6 +7,7 @@ const {
   mockMarkProcessStageCallbackReceived,
   mockShouldTriggerMetadataValidator,
   mockTriggerMetadataValidator,
+  mockFinalizePipelineReadinessIfDue,
   mockLogEvent,
 } = vi.hoisted(() => ({
   mockGetProcessBatchStatus: vi.fn(),
@@ -14,6 +15,7 @@ const {
   mockMarkProcessStageCallbackReceived: vi.fn(),
   mockShouldTriggerMetadataValidator: vi.fn(),
   mockTriggerMetadataValidator: vi.fn(),
+  mockFinalizePipelineReadinessIfDue: vi.fn(),
   mockLogEvent: vi.fn(),
 }))
 
@@ -26,6 +28,7 @@ vi.mock('@lib/processBatches', () => ({
 vi.mock('@lib/pipelineTriggers', () => ({
   shouldTriggerMetadataValidator: mockShouldTriggerMetadataValidator,
   triggerMetadataValidator: mockTriggerMetadataValidator,
+  finalizePipelineReadinessIfDue: mockFinalizePipelineReadinessIfDue,
 }))
 
 vi.mock('@lib/observability', () => ({

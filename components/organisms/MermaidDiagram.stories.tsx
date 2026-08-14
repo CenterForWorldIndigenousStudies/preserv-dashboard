@@ -37,7 +37,7 @@ export const SimpleFlowchart: Story = {
       F --> G[Review Queue]
       G --> H{Approved?}
       H -->|Yes| I[State: completed]
-      H -->|No| J[State: under_review]`,
+      H -->|No| J[State: needs_review]`,
   },
 }
 

@@ -11,7 +11,9 @@ import {
   getNextEligibleExecutionStep,
   getPipelineConfigForBatch,
   isPipelineBatchTerminal,
+  shouldFinalizePipelineReadiness,
 } from '@lib/pipelineExecution'
+import { finalizePipelineBatchReadiness } from '@lib/pipelineReadiness'
 export {
   triggerContentDedup,
   triggerDocumentSplitter,
@@ -90,11 +92,14 @@ export function shouldTriggerRightsDeterminator(batch: ProcessBatchStatus): bool
   return isNextEligibleStep(batch, RIGHTS_DETERMINATOR_STAGE)
 }
 
-export function shouldTriggerFedoraIngester(batch: ProcessBatchStatus): boolean {
-  getPipelineConfigForBatch(batch)
-  return isNextEligibleStep(batch, 'fedora-ingester')
-}
-
 export function shouldCloseProcessStream(batch: ProcessBatchStatus): boolean {
   return isPipelineBatchTerminal(batch)
+}
+
+export async function finalizePipelineReadinessIfDue(batch: ProcessBatchStatus | null): Promise<void> {
+  if (!batch || !shouldFinalizePipelineReadiness(batch)) {
+    return
+  }
+
+  await finalizePipelineBatchReadiness(batch.batchId)
 }

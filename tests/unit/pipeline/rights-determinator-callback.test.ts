@@ -54,7 +54,7 @@ describe('rights-determinator callback route', () => {
         status: 'completed',
         processed_count: 4,
         rights_determined_count: 2,
-        under_review_count: 1,
+        needs_review_count: 1,
         failed_count: 1,
       }),
     })
@@ -68,7 +68,7 @@ describe('rights-determinator callback route', () => {
       completedAt: '2026-07-02T21:00:00.000Z',
       processedCount: 4,
       rightsDeterminedCount: 2,
-      underReviewCount: 1,
+      needsReviewCount: 1,
       failedCount: 1,
     })
     expect(mockMarkProcessStageCallbackReceived).toHaveBeenCalledWith('batch-1', 'rights_determinator', 1783026000)

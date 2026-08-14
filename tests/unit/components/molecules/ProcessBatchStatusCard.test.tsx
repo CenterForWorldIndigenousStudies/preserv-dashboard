@@ -156,7 +156,7 @@ describe('ProcessBatchStatusCard', () => {
               extractedCount: 0,
               metadataValidatedCount: 3,
               rightsDeterminedCount: 0,
-              underReviewCount: 1,
+              needsReviewCount: 1,
               versionedCount: 0,
               resolvedCount: 0,
               skippedCount: 0,
@@ -179,7 +179,7 @@ describe('ProcessBatchStatusCard', () => {
 
     expect(markup).toContain('Metadata Validator')
     expect(markup).toContain('Validated')
-    expect(markup).toContain('Under Review')
+    expect(markup).toContain('Needs Review')
   })
 
   it('warns when a completed stage still has review-needed documents', () => {
@@ -217,7 +217,7 @@ describe('ProcessBatchStatusCard', () => {
               extractedCount: 0,
               metadataValidatedCount: 0,
               rightsDeterminedCount: 0,
-              underReviewCount: 0,
+              needsReviewCount: 0,
               versionedCount: 0,
               resolvedCount: 0,
               skippedCount: 0,
@@ -293,7 +293,7 @@ describe('ProcessBatchStatusCard', () => {
               extractedCount: 0,
               metadataValidatedCount: 0,
               rightsDeterminedCount: 2,
-              underReviewCount: 1,
+              needsReviewCount: 1,
               versionedCount: 0,
               resolvedCount: 0,
               skippedCount: 0,
@@ -316,7 +316,7 @@ describe('ProcessBatchStatusCard', () => {
 
     expect(markup).toContain('Rights Determinator')
     expect(markup).toContain('Rights Determined')
-    expect(markup).toContain('Under Review')
+    expect(markup).toContain('Needs Review')
     expect(markup).toContain('Failed')
   })
 })

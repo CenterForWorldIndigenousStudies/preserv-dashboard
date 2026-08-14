@@ -92,7 +92,7 @@ function parseStageCountFields(
   | 'extractedCount'
   | 'metadataValidatedCount'
   | 'rightsDeterminedCount'
-  | 'underReviewCount'
+  | 'needsReviewCount'
   | 'versionedCount'
   | 'resolvedCount'
   | 'skippedCount'
@@ -114,7 +114,7 @@ function parseStageCountFields(
     extractedCount: parseNumber(stage.extracted_count),
     metadataValidatedCount: parseNumber(stage.metadata_validated_count),
     rightsDeterminedCount: parseNumber(stage.rights_determined_count),
-    underReviewCount: parseNumber(stage.under_review_count),
+    needsReviewCount: parseNumber(stage.needs_review_count),
     versionedCount: parseNumber(stage.versioned_count),
     resolvedCount: parseNumber(stage.resolved_count),
     skippedCount: parseNumber(stage.skipped_count),

@@ -6,12 +6,14 @@ const {
   mockMarkProcessStageCallbackReceived,
   mockShouldTriggerMetadataExtractor,
   mockTriggerMetadataExtractor,
+  mockFinalizePipelineReadinessIfDue,
   mockLogEvent,
 } = vi.hoisted(() => ({
   mockGetProcessBatchStatus: vi.fn(),
   mockMarkProcessStageCallbackReceived: vi.fn(),
   mockShouldTriggerMetadataExtractor: vi.fn(),
   mockTriggerMetadataExtractor: vi.fn(),
+  mockFinalizePipelineReadinessIfDue: vi.fn(),
   mockLogEvent: vi.fn(),
 }))
 
@@ -23,6 +25,7 @@ vi.mock('@lib/processBatches', () => ({
 vi.mock('@lib/pipelineTriggers', () => ({
   shouldTriggerMetadataExtractor: mockShouldTriggerMetadataExtractor,
   triggerMetadataExtractor: mockTriggerMetadataExtractor,
+  finalizePipelineReadinessIfDue: mockFinalizePipelineReadinessIfDue,
 }))
 
 vi.mock('@lib/observability', () => ({

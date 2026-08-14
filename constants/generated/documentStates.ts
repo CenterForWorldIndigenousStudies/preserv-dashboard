@@ -11,7 +11,7 @@ export const GENERATED_DOCUMENT_STATES = {
   METADATA_EXTRACTED: 'metadata_extracted',
   RIGHTS_DETERMINED: 'rights_determined',
   METADATA_VALIDATED: 'metadata_validated',
-  UNDER_REVIEW: 'under_review',
+  NEEDS_REVIEW: 'needs_review',
   APPROVED: 'approved',
   REJECTED: 'rejected',
   NOT_APPROVED: 'not_approved',

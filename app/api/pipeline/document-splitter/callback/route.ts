@@ -4,6 +4,7 @@ import { logEvent } from '@lib/observability'
 import { parseBearerToken, parsePipelineCallbackBody } from '@lib/pipelineCallbacks'
 import {
   shouldTriggerContentDedup,
+  finalizePipelineReadinessIfDue,
   shouldTriggerMetadataExtractor,
   shouldTriggerOcrProcessor,
   shouldTriggerPageRotator,
@@ -65,6 +66,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     } else if (shouldTriggerMetadataExtractor(batch)) {
       await triggerMetadataExtractor(batch)
     }
+    await finalizePipelineReadinessIfDue(batch)
     return new NextResponse(null, { status: 204 })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to record document-splitter callback.'

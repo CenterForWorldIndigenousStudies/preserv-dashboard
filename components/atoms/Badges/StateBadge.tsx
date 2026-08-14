@@ -12,7 +12,7 @@ export const stateVariantMap = {
   [DOCUMENT_STATES.FAILED]: 'danger',
   [DOCUMENT_STATES.INGESTED_FEDORA]: 'success',
   [DOCUMENT_STATES.REJECTED]: 'danger',
-  [DOCUMENT_STATES.UNDER_REVIEW]: 'info',
+  [DOCUMENT_STATES.NEEDS_REVIEW]: 'info',
 } as const
 
 /**

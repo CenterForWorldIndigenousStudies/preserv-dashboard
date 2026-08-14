@@ -18,7 +18,11 @@ vi.mock('@lib/editHistory', () => ({
   createEditHistoryEntry: mockCreateEditHistoryEntry,
 }))
 
-import { applyReviewQueueDecision, updateReviewQueueChecklist } from '@lib/queries/queries'
+import {
+  applyReviewQueueDecision,
+  ReviewQueueApprovalBlockedError,
+  updateReviewQueueChecklist,
+} from '@lib/queries/queries'
 import type { ReviewHistoryValue } from 'types/reviewHistory'
 
 interface MockTransactionClient {
@@ -32,8 +36,15 @@ interface MockTransactionClient {
   }
   document_to_metadata: {
     findFirst: ReturnType<typeof vi.fn>
+    findMany: ReturnType<typeof vi.fn>
     upsert: ReturnType<typeof vi.fn>
     delete: ReturnType<typeof vi.fn>
+  }
+  document_access: {
+    findMany: ReturnType<typeof vi.fn>
+  }
+  document_to_batches: {
+    findMany: ReturnType<typeof vi.fn>
   }
   state_history: {
     findFirst: ReturnType<typeof vi.fn>
@@ -84,8 +95,15 @@ function createTransactionClient(): MockTransactionClient {
     },
     document_to_metadata: {
       findFirst: vi.fn(),
+      findMany: vi.fn(),
       upsert: vi.fn(),
       delete: vi.fn(),
+    },
+    document_access: {
+      findMany: vi.fn(),
+    },
+    document_to_batches: {
+      findMany: vi.fn(),
     },
     state_history: {
       findFirst: vi.fn(),
@@ -102,7 +120,7 @@ describe('applyReviewQueueDecision', () => {
   it('writes state history and updates document quality for approvals', async () => {
     const tx = createTransactionClient()
     tx.document_quality.findUnique.mockResolvedValue({ document_id: 'doc-1' })
-    tx.state_history.findFirst.mockResolvedValue({ new_state: 'under_review' })
+    tx.state_history.findFirst.mockResolvedValue({ new_state: 'needs_review' })
     tx.state_history.create.mockResolvedValue({ id: 'state-1' })
     tx.document_quality.update.mockResolvedValue({ document_id: 'doc-1' })
     mockTransaction.mockImplementation(async (callback: (client: MockTransactionClient) => Promise<unknown>) =>
@@ -128,6 +146,18 @@ describe('applyReviewQueueDecision', () => {
         metadata_id: 'meta-history',
         value: JSON.stringify({ value: { version: 1, episodes: [] } }),
       })
+    tx.document_to_metadata.findMany.mockResolvedValue([
+      { document_id: 'doc-1', value: JSON.stringify({ value: true }), metadata: { name: 'preservation_candidate' } },
+      { document_id: 'doc-1', value: JSON.stringify({ value: 'A document' }), metadata: { name: 'dc_title' } },
+      { document_id: 'doc-1', value: JSON.stringify({ value: '2025' }), metadata: { name: 'dc_date' } },
+      { document_id: 'doc-1', value: JSON.stringify({ value: 'Report' }), metadata: { name: 'dc_type' } },
+      { document_id: 'doc-1', value: JSON.stringify({ value: 'eng' }), metadata: { name: 'dc_language_iso' } },
+      { document_id: 'doc-1', value: JSON.stringify({ value: 'Abstract' }), metadata: { name: 'dc_description_abstract' } },
+      { document_id: 'doc-1', value: JSON.stringify({ value: 'Public domain' }), metadata: { name: 'dc_rights' } },
+      { document_id: 'doc-1', value: JSON.stringify({ value: 'Indigenous peoples' }), metadata: { name: 'dc_subject_unesco' } },
+    ])
+    tx.document_access.findMany.mockResolvedValue([{ access_levels: { level_name: 'public' } }])
+    tx.document_to_batches.findMany.mockResolvedValue([{ document_id: 'doc-1', processing_details: '{}' }])
     tx.metadata.findFirst.mockResolvedValue({ id: 'meta-history' })
     tx.document_to_metadata.upsert.mockResolvedValue({ id: 'history-link-1' })
     tx.document_to_metadata.delete.mockResolvedValue({ id: 'active-review-1' })
@@ -143,7 +173,7 @@ describe('applyReviewQueueDecision', () => {
     expect(tx.state_history.create.mock.calls[0]?.[0]).toMatchObject({
       data: {
         document_id: 'doc-1',
-        previous_state: 'under_review',
+        previous_state: 'needs_review',
         new_state: 'approved',
       },
     })
@@ -252,6 +282,18 @@ describe('applyReviewQueueDecision', () => {
     tx.state_history.create.mockResolvedValue({ id: 'state-3' })
     tx.document_quality.update.mockResolvedValue({ document_id: 'doc-3' })
     tx.document_to_metadata.findFirst.mockResolvedValue(null)
+    tx.document_to_metadata.findMany.mockResolvedValue([
+      { document_id: 'doc-3', value: JSON.stringify({ value: true }), metadata: { name: 'preservation_candidate' } },
+      { document_id: 'doc-3', value: JSON.stringify({ value: 'A document' }), metadata: { name: 'dc_title' } },
+      { document_id: 'doc-3', value: JSON.stringify({ value: '2025' }), metadata: { name: 'dc_date' } },
+      { document_id: 'doc-3', value: JSON.stringify({ value: 'Report' }), metadata: { name: 'dc_type' } },
+      { document_id: 'doc-3', value: JSON.stringify({ value: 'eng' }), metadata: { name: 'dc_language_iso' } },
+      { document_id: 'doc-3', value: JSON.stringify({ value: 'Abstract' }), metadata: { name: 'dc_description_abstract' } },
+      { document_id: 'doc-3', value: JSON.stringify({ value: 'Public domain' }), metadata: { name: 'dc_rights' } },
+      { document_id: 'doc-3', value: JSON.stringify({ value: 'Indigenous peoples' }), metadata: { name: 'dc_subject_unesco' } },
+    ])
+    tx.document_access.findMany.mockResolvedValue([{ access_levels: { level_name: 'public' } }])
+    tx.document_to_batches.findMany.mockResolvedValue([{ document_id: 'doc-3', processing_details: '{}' }])
     tx.metadata.findFirst.mockResolvedValue({ id: 'meta-history-3' })
     tx.document_to_metadata.upsert.mockResolvedValue({ id: 'history-link-3' })
     mockTransaction.mockImplementation(async (callback: (client: MockTransactionClient) => Promise<unknown>) =>
@@ -293,6 +335,46 @@ describe('applyReviewQueueDecision', () => {
 
     expect(tx.state_history.create).not.toHaveBeenCalled()
     expect(tx.document_quality.update).not.toHaveBeenCalled()
+  })
+
+  it('blocks approval when candidate readiness requirements are unmet', async () => {
+    const tx = createTransactionClient()
+    tx.document_quality.findUnique.mockResolvedValue({
+      id: 'quality-blocked-1',
+      document_id: 'doc-blocked',
+      validation_status: 'NEEDS_REVIEW',
+      review_checklist: null,
+    })
+    tx.document_to_metadata.findFirst.mockResolvedValue(null)
+    tx.document_to_metadata.findMany.mockResolvedValue([
+      { document_id: 'doc-blocked', value: JSON.stringify({ value: true }), metadata: { name: 'preservation_candidate' } },
+      { document_id: 'doc-blocked', value: JSON.stringify({ value: 'A document' }), metadata: { name: 'dc_title' } },
+    ])
+    tx.document_access.findMany.mockResolvedValue([])
+    tx.document_to_batches.findMany.mockResolvedValue([{ document_id: 'doc-blocked', processing_details: '{}' }])
+    mockTransaction.mockImplementation(async (callback: (client: MockTransactionClient) => Promise<unknown>) =>
+      callback(tx),
+    )
+
+    let approvalError: unknown
+    try {
+      await applyReviewQueueDecision({
+        documentId: 'doc-blocked',
+        decision: 'APPROVED',
+        validationTimestamp: 1747094404,
+      })
+    } catch (error: unknown) {
+      approvalError = error
+    }
+
+    if (!(approvalError instanceof ReviewQueueApprovalBlockedError)) {
+      throw approvalError
+    }
+
+    expect(approvalError.unmetRequirements).toEqual(expect.arrayContaining(['dc_date', 'access_level']))
+    expect(tx.state_history.create).not.toHaveBeenCalled()
+    expect(tx.document_quality.update).not.toHaveBeenCalled()
+    expect(tx.document_to_metadata.upsert).not.toHaveBeenCalled()
   })
 
   it('persists one checklist change and audits the previous and next state', async () => {

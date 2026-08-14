@@ -19,6 +19,7 @@ import { SourceId } from '@atoms/SourceId'
 import { SourceFolderId } from '@atoms/SourceFolderId'
 import { AuditHistoryTable } from '@organisms/AuditHistoryTable'
 import { DocumentLineageSection } from '@organisms/DocumentLineageSection'
+import { DocumentReadinessDiagnostics } from '@organisms/DocumentReadinessDiagnostics'
 import { DocumentTagsEditor } from '@organisms/DocumentTagsEditor'
 import { DocumentVersionsButton } from '@organisms/DocumentVersionsButton'
 import { DetailPageSection } from '@organisms/DetailPageSection'
@@ -401,6 +402,11 @@ export default async function DocumentDetailPage({
           </Paper>
 
           <DocumentLineageSection detail={detail} />
+
+          <DocumentReadinessDiagnostics
+            readiness={detail.readiness}
+            activeReviewReasons={detail.document.needs_review_reasons}
+          />
 
           <Paper component={'section'} elevation={0} sx={panelSx}>
             <Typography component={'h2'} variant={'h5'} color={'text.primary'}>

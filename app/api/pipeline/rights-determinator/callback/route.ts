@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { logEvent } from '@lib/observability'
 import { parseBearerToken, parsePipelineCallbackBody } from '@lib/pipelineCallbacks'
-import { shouldTriggerFedoraIngester, triggerFedoraIngester } from '@lib/pipelineTriggers'
+import { finalizePipelineReadinessIfDue } from '@lib/pipelineTriggers'
 import {
   getProcessBatchStatus,
   markProcessStageCallbackReceived,
@@ -16,7 +16,7 @@ export const preferredRegion = 'sfo1'
 interface RightsDeterminatorCallbackBody extends PipelineCallbackBody {
   processed_count?: unknown
   rights_determined_count?: unknown
-  under_review_count?: unknown
+  needs_review_count?: unknown
   failed_count?: unknown
 }
 
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       completedAt,
       processedCount: parseCount(body.processed_count),
       rightsDeterminedCount: parseCount(body.rights_determined_count),
-      underReviewCount: parseCount(body.under_review_count),
+      needsReviewCount: parseCount(body.needs_review_count),
       failedCount: parseCount(body.failed_count),
     })
     await markProcessStageCallbackReceived(batchId, 'rights_determinator', receivedAt)
@@ -68,9 +68,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       errorMessage: errorMessage || null,
     })
     const batch = await getProcessBatchStatus(batchId)
-    if (batch && shouldTriggerFedoraIngester(batch)) {
-      await triggerFedoraIngester(batch)
-    }
+    await finalizePipelineReadinessIfDue(batch)
     return new NextResponse(null, { status: 204 })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to record rights-determinator callback.'

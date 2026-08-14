@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { logEvent } from '@lib/observability'
 import { parseBearerToken, parsePipelineCallbackBody } from '@lib/pipelineCallbacks'
-import { shouldTriggerRightsDeterminator, triggerRightsDeterminator } from '@lib/pipelineTriggers'
+import {
+  finalizePipelineReadinessIfDue,
+  shouldTriggerRightsDeterminator,
+  triggerRightsDeterminator,
+} from '@lib/pipelineTriggers'
 import {
   getProcessBatchStatus,
   markProcessStageCallbackReceived,
@@ -16,7 +20,7 @@ export const preferredRegion = 'sfo1'
 interface MetadataValidatorCallbackBody extends PipelineCallbackBody {
   processed_count?: unknown
   metadata_validated_count?: unknown
-  under_review_count?: unknown
+  needs_review_count?: unknown
   failed_count?: unknown
 }
 
@@ -57,7 +61,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       completedAt,
       processedCount: parseCount(body.processed_count),
       metadataValidatedCount: parseCount(body.metadata_validated_count),
-      underReviewCount: parseCount(body.under_review_count),
+      needsReviewCount: parseCount(body.needs_review_count),
       failedCount: parseCount(body.failed_count),
     })
     await markProcessStageCallbackReceived(batchId, 'metadata_validator', receivedAt)
@@ -76,6 +80,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (shouldTriggerRightsDeterminator(batch)) {
       await triggerRightsDeterminator(batch)
     }
+    await finalizePipelineReadinessIfDue(batch)
 
     return new NextResponse(null, { status: 204 })
   } catch (error: unknown) {

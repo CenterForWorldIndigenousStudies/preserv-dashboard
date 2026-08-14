@@ -73,7 +73,10 @@ describe('ReviewQueueTable adapter', () => {
           Cell?: (props: { row: { original: Document } }) => ReactNode
         }>
       }
-      rowActions?: Array<{ id: string }>
+      rowActions?: Array<{
+        id: string
+        render?: (params: { row: Document }) => ReactNode
+      }>
       enableRowSelection?: boolean
     }
 
@@ -81,6 +84,36 @@ describe('ReviewQueueTable adapter', () => {
     expect(config.rowActions?.map(({ id }) => id)).toEqual(['review-decisions'])
     expect(config.enableRowSelection).toBe(true)
     expect(config.definition.columns.map(({ header }) => header)).not.toContain('Review Reasons')
+
+    const reviewAction = config.rowActions?.[0]
+    expect(reviewAction?.render).toBeDefined()
+    const blockedActionMarkup = renderToStaticMarkup(
+      <>
+        {reviewAction?.render?.({
+          row: {
+            id: 'doc-1',
+            name: 'Needs review document',
+            id_legacy: null,
+            filesize: null,
+            hash_binary: null,
+            hash_content: null,
+            validation_status: 'NEEDS_REVIEW',
+            created_at: null,
+            updated_at: null,
+            needs_review_reasons: [
+              {
+                serviceKey: 'readiness',
+                serviceLabel: 'Readiness',
+                reasons: ['Missing required metadata: dc_subject.'],
+              },
+            ],
+          } satisfies Document,
+        })}
+      </>,
+    )
+    expect(blockedActionMarkup).toContain('aria-disabled="true"')
+    expect(blockedActionMarkup).toContain('View unmet approval requirements for document doc-1')
+    expect(blockedActionMarkup).toContain('Approve')
 
     const validationStatusCell = config.definition.columns.find(
       ({ accessorKey }) => accessorKey === 'validation_status',

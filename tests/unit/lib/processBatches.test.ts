@@ -445,7 +445,7 @@ describe('processBatches', () => {
           completed_at: 1780027660,
           processed_count: 4,
           metadata_validated_count: 3,
-          under_review_count: 1,
+          needs_review_count: 1,
           failed_count: 0,
         },
       }),
@@ -458,7 +458,7 @@ describe('processBatches', () => {
     expect(batch?.metadataValidator?.status).toBe('completed')
     expect(batch?.metadataValidator?.requestId).toBe('request-8')
     expect(batch?.metadataValidator?.metadataValidatedCount).toBe(3)
-    expect(batch?.metadataValidator?.underReviewCount).toBe(1)
+    expect(batch?.metadataValidator?.needsReviewCount).toBe(1)
   })
 
   it('parses rights determinator details from processing details', async () => {
@@ -474,7 +474,7 @@ describe('processBatches', () => {
           completed_at: 1780027760,
           processed_count: 4,
           rights_determined_count: 2,
-          under_review_count: 1,
+          needs_review_count: 1,
           failed_count: 1,
         },
       }),
@@ -491,7 +491,7 @@ describe('processBatches', () => {
     expect(batch?.rightsDeterminator?.status).toBe('completed')
     expect(batch?.rightsDeterminator?.requestId).toBe('request-11')
     expect(batch?.rightsDeterminator?.rightsDeterminedCount).toBe(2)
-    expect(batch?.rightsDeterminator?.underReviewCount).toBe(1)
+    expect(batch?.rightsDeterminator?.needsReviewCount).toBe(1)
   })
 
   it('records metadata extractor callback receipt under the metadata_extractor key', async () => {
@@ -617,7 +617,7 @@ describe('processBatches', () => {
       completedAt: '2026-05-29T04:45:06.000Z',
       processedCount: 4,
       metadataValidatedCount: 3,
-      underReviewCount: 1,
+      needsReviewCount: 1,
       failedCount: 0,
     })
 
@@ -635,7 +635,7 @@ describe('processBatches', () => {
         last_transition_at: '2026-05-29T04:45:06.000Z',
         processed_count: 4,
         metadata_validated_count: 3,
-        under_review_count: 1,
+        needs_review_count: 1,
         failed_count: 0,
         current_pass: 1,
         max_passes: 1,
@@ -660,7 +660,7 @@ describe('processBatches', () => {
       completedAt: '2026-05-29T04:50:07.000Z',
       processedCount: 4,
       rightsDeterminedCount: 2,
-      underReviewCount: 1,
+      needsReviewCount: 1,
       failedCount: 1,
     })
 
@@ -678,7 +678,7 @@ describe('processBatches', () => {
         last_transition_at: '2026-05-29T04:50:07.000Z',
         processed_count: 4,
         rights_determined_count: 2,
-        under_review_count: 1,
+        needs_review_count: 1,
         failed_count: 1,
         current_pass: 1,
         max_passes: 1,

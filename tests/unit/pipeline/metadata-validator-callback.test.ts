@@ -7,6 +7,7 @@ const {
   mockMarkProcessStageCallbackReceived,
   mockShouldTriggerRightsDeterminator,
   mockTriggerRightsDeterminator,
+  mockFinalizePipelineReadinessIfDue,
   mockLogEvent,
 } = vi.hoisted(() => ({
   mockGetProcessBatchStatus: vi.fn(),
@@ -14,6 +15,7 @@ const {
   mockMarkProcessStageCallbackReceived: vi.fn(),
   mockShouldTriggerRightsDeterminator: vi.fn(),
   mockTriggerRightsDeterminator: vi.fn(),
+  mockFinalizePipelineReadinessIfDue: vi.fn(),
   mockLogEvent: vi.fn(),
 }))
 
@@ -26,6 +28,7 @@ vi.mock('@lib/processBatches', () => ({
 vi.mock('@lib/pipelineTriggers', () => ({
   shouldTriggerRightsDeterminator: mockShouldTriggerRightsDeterminator,
   triggerRightsDeterminator: mockTriggerRightsDeterminator,
+  finalizePipelineReadinessIfDue: mockFinalizePipelineReadinessIfDue,
 }))
 
 vi.mock('@lib/observability', () => ({
@@ -69,7 +72,7 @@ describe('metadata-validator callback route', () => {
         status: 'completed',
         processed_count: 4,
         metadata_validated_count: 3,
-        under_review_count: 1,
+        needs_review_count: 1,
         failed_count: 0,
       }),
     })
@@ -83,7 +86,7 @@ describe('metadata-validator callback route', () => {
       completedAt: '2026-07-02T21:00:00.000Z',
       processedCount: 4,
       metadataValidatedCount: 3,
-      underReviewCount: 1,
+      needsReviewCount: 1,
       failedCount: 0,
     })
     expect(mockMarkProcessStageCallbackReceived).toHaveBeenCalledWith('batch-1', 'metadata_validator', 1783026000)

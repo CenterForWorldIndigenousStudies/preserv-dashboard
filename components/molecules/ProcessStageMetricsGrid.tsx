@@ -53,14 +53,14 @@ function getMetrics(stageLabel: string, stage: ProcessStageStatus): Array<{ labe
       return [
         { label: 'Processed', value: stage.processedCount },
         { label: 'Validated', value: stage.metadataValidatedCount },
-        { label: 'Under Review', value: stage.underReviewCount },
+        { label: 'Needs Review', value: stage.needsReviewCount },
         { label: 'Failed', value: stage.failedCount },
       ]
     case 'Rights Determinator':
       return [
         { label: 'Processed', value: stage.processedCount },
         { label: 'Rights Determined', value: stage.rightsDeterminedCount },
-        { label: 'Under Review', value: stage.underReviewCount },
+        { label: 'Needs Review', value: stage.needsReviewCount },
         { label: 'Failed', value: stage.failedCount },
       ]
     default:

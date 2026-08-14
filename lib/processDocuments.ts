@@ -98,7 +98,7 @@ export function buildAcceptedBatchStatus({
       extractedCount: 0,
       metadataValidatedCount: 0,
       rightsDeterminedCount: 0,
-      underReviewCount: 0,
+      needsReviewCount: 0,
       versionedCount: 0,
       resolvedCount: 0,
       skippedCount: 0,

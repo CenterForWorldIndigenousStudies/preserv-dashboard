@@ -127,6 +127,65 @@ describeDbIntegration('documents queries (integration)', () => {
     it('archives active review reasons when a decision resolves the episode', async () => {
       await withRollbackTransaction(async (tx) => {
         const document = await createTestDocument(tx, { name: 'Review Decision History Test' })
+        const requiredReadinessMetadataNames = [
+          'dc_title',
+          'dc_date',
+          'dc_type',
+          'dc_language_iso',
+          'dc_description_abstract',
+          'dc_rights',
+          'dc_subject_unesco',
+        ]
+        const existingReadinessMetadata = await tx.metadata.findMany({
+          where: { name: { in: requiredReadinessMetadataNames } },
+          select: { id: true, name: true },
+        })
+        const existingReadinessMetadataNames = new Set(existingReadinessMetadata.map(({ name }) => name))
+        await Promise.all(
+          requiredReadinessMetadataNames
+            .filter((name) => !existingReadinessMetadataNames.has(name))
+            .map((name) =>
+              tx.metadata.create({
+                data: {
+                  id: `rdmd-${makeIds().token}`,
+                  name,
+                  notes: `Integration readiness fixture for ${name}.`,
+                },
+              }),
+            ),
+        )
+        const readinessMetadata = await tx.metadata.findMany({
+          where: { name: { in: requiredReadinessMetadataNames } },
+          select: { id: true, name: true },
+        })
+        const publicAccessLevel = await tx.access_levels.findFirst({
+          where: { level_name: 'public' },
+          select: { id: true },
+        })
+        expect(readinessMetadata).toHaveLength(requiredReadinessMetadataNames.length)
+        expect(publicAccessLevel).toBeDefined()
+        if (!publicAccessLevel) {
+          throw new Error('Expected public access level to exist in the integration database.')
+        }
+
+        await Promise.all([
+          tx.document_access.create({
+            data: {
+              id: `rda-${makeIds().token}`,
+              document_id: document.id,
+              access_level_id: publicAccessLevel.id,
+            },
+          }),
+          tx.document_to_metadata.createMany({
+            data: readinessMetadata.map(({ id }) => ({
+              id: `rdm-${makeIds().token}`,
+              document_id: document.id,
+              metadata_id: id,
+              value: JSON.stringify('ready'),
+              value_type: 'string',
+            })),
+          }),
+        ])
         const historyMetadata =
           (await tx.metadata.findFirst({
             where: { name: 'needs_review_history' },

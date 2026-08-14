@@ -332,7 +332,7 @@ interface MetadataValidatorCompletionArgs {
   completedAt: string
   processedCount: number
   metadataValidatedCount: number
-  underReviewCount: number
+  needsReviewCount: number
   failedCount: number
 }
 
@@ -342,7 +342,7 @@ interface RightsDeterminatorCompletionArgs {
   completedAt: string
   processedCount: number
   rightsDeterminedCount: number
-  underReviewCount: number
+  needsReviewCount: number
   failedCount: number
 }
 
@@ -432,7 +432,7 @@ export async function recordMetadataValidatorCompletion(
     completedAt,
     processedCount,
     metadataValidatedCount,
-    underReviewCount,
+    needsReviewCount,
     failedCount,
   }: MetadataValidatorCompletionArgs,
 ): Promise<void> {
@@ -462,7 +462,7 @@ export async function recordMetadataValidatorCompletion(
       last_transition_at: completedAt,
       processed_count: processedCount,
       metadata_validated_count: metadataValidatedCount,
-      under_review_count: underReviewCount,
+      needs_review_count: needsReviewCount,
       failed_count: failedCount,
       current_pass: 1,
       max_passes: 1,
@@ -486,7 +486,7 @@ export async function recordRightsDeterminatorCompletion(
     completedAt,
     processedCount,
     rightsDeterminedCount,
-    underReviewCount,
+    needsReviewCount,
     failedCount,
   }: RightsDeterminatorCompletionArgs,
 ): Promise<void> {
@@ -516,7 +516,7 @@ export async function recordRightsDeterminatorCompletion(
       last_transition_at: completedAt,
       processed_count: processedCount,
       rights_determined_count: rightsDeterminedCount,
-      under_review_count: underReviewCount,
+      needs_review_count: needsReviewCount,
       failed_count: failedCount,
       current_pass: 1,
       max_passes: 1,
