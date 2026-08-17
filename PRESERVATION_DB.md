@@ -1,5 +1,7 @@
 # CWIS Preservation Database Schema
 
+Keywords: CWIS Preservation Database Schema, PRESERVATION DB
+
 ```mermaid
 erDiagram
     documents {

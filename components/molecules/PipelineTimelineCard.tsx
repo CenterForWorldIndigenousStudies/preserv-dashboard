@@ -155,7 +155,7 @@ export function PipelineTimelineCard({ batch }: PipelineTimelineCardProps): Reac
             fontWeight: 500,
           }}
         >
-          {`{timelineSteps.length} steps`}
+          {`${timelineSteps.length} steps`}
         </Typography>
       </Box>
 
