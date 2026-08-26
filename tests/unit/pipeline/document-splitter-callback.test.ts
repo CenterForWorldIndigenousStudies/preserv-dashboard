@@ -35,6 +35,7 @@ vi.mock('@lib/processBatches', () => ({
 }))
 
 vi.mock('@lib/pipelineTriggers', () => ({
+  getPipelineContinuationContext: () => undefined,
   shouldTriggerPageRotator: mockShouldTriggerPageRotator,
   shouldTriggerOcrProcessor: mockShouldTriggerOcrProcessor,
   shouldTriggerContentDedup: mockShouldTriggerContentDedup,

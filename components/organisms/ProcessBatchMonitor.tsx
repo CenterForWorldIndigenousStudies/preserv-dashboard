@@ -1,15 +1,20 @@
 import type { ReactElement } from 'react'
 import { Box, Stack, Typography } from '@mui/material'
 
-import { ProcessBatchStatusCard } from '@molecules/ProcessBatchStatusCard'
+import { ProcessBatchLiveProgress } from '@organisms/ProcessBatchLiveProgress'
 import type { ProcessBatchStatus } from 'types/pipelineContracts'
 
 interface ProcessBatchMonitorProps {
   batches: ProcessBatchStatus[]
   onRollbackRequested?: () => void
+  showExecutionActions?: boolean
 }
 
-export function ProcessBatchMonitor({ batches, onRollbackRequested }: ProcessBatchMonitorProps): ReactElement {
+export function ProcessBatchMonitor({
+  batches,
+  onRollbackRequested,
+  showExecutionActions = true,
+}: ProcessBatchMonitorProps): ReactElement {
   if (batches.length === 0) {
     return (
       <Box
@@ -35,7 +40,12 @@ export function ProcessBatchMonitor({ batches, onRollbackRequested }: ProcessBat
   return (
     <Stack spacing={3}>
       {batches.map((batch) => (
-        <ProcessBatchStatusCard key={batch.batchId} batch={batch} onRollbackRequested={onRollbackRequested} />
+        <ProcessBatchLiveProgress
+          key={batch.batchId}
+          initialBatch={batch}
+          onRollbackRequested={onRollbackRequested}
+          showExecutionActions={showExecutionActions}
+        />
       ))}
     </Stack>
   )

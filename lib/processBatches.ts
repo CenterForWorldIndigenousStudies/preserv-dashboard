@@ -317,6 +317,71 @@ export async function markProcessStageCallbackReceived(
   await updateProcessStageCallbackReceived(batchId, stageKey, receivedAt)
 }
 
+export interface ProcessStageFailureArgs {
+  requestId: string
+  operationId: string
+  executionMode: string
+  errorType: string
+  errorMessage: string
+  receivedAt: number | string
+}
+
+export async function recordProcessStageFailure(
+  batchId: string,
+  stageKey: CallbackStageKey,
+  {
+    requestId,
+    operationId,
+    executionMode,
+    errorType,
+    errorMessage,
+    receivedAt,
+  }: ProcessStageFailureArgs,
+): Promise<void> {
+  const batch = await db.batches.findUnique({
+    where: { id: batchId },
+    select: processBatchSelect,
+  })
+
+  if (!batch) {
+    throw new Error(`Batch ${batchId} was not found`)
+  }
+
+  const details = parseProcessingDetails(batch.processing_details)
+  const stageDetailKey = resolveStageDetailKey(details, stageKey)
+  if (!stageDetailKey) {
+    throw new Error(`Batch ${batchId} does not contain ${stageKey} processing details`)
+  }
+
+  const currentStage = details[stageDetailKey as keyof RawProcessBatchDetails]
+  const currentStageDetails =
+    currentStage && typeof currentStage === 'object' ? (currentStage as RawProcessStageDetails) : {}
+  const completedAt = new Date().toISOString()
+  const nextDetails: RawProcessBatchDetails = {
+    ...details,
+    [stageDetailKey]: {
+      ...currentStageDetails,
+      status: 'failed',
+      request_id: requestId,
+      operation_id: operationId,
+      execution_mode: executionMode,
+      error: errorMessage,
+      last_transition_at: completedAt,
+      callback: {
+        ...(currentStageDetails.callback ?? {}),
+        received_at: receivedAt,
+        error_type: errorType,
+        error_message: errorMessage,
+      },
+    },
+  }
+
+  await db.batches.update({
+    where: { id: batchId },
+    data: { processing_details: JSON.stringify(nextDetails) },
+  })
+}
+
 interface MetadataExtractorCompletionArgs {
   requestId: string
   initiatedAt: string

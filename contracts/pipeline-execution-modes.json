@@ -1,0 +1,6 @@
+{
+  "NORMAL": "normal",
+  "RETRY": "retry",
+  "RERUN": "rerun",
+  "REPROCESS": "reprocess"
+}

@@ -18,6 +18,9 @@ export interface RawProcessStageDetails {
   status?: string | null
   mode?: string | null
   request_id?: string | null
+  operation_id?: string | null
+  idempotency_key?: string | null
+  execution_mode?: string | null
   requested_by_app?: string | null
   initiated_at?: unknown
   started_at?: unknown
@@ -79,6 +82,17 @@ export interface RawDocumentFailure {
 export interface RawProcessPipelineDetails {
   requested_stages?: unknown
   config?: unknown
+  current_execution?: RawPipelineExecutionDetails | null
+  execution_history?: RawPipelineExecutionDetails[] | null
+}
+
+export interface RawPipelineExecutionDetails {
+  execution_mode?: unknown
+  operation_id?: unknown
+  idempotency_key?: unknown
+  stage?: unknown
+  reason?: unknown
+  source_document_ids?: unknown
 }
 
 export interface RawProcessBatchDetails {
@@ -104,6 +118,11 @@ export interface PipelineCallbackBody {
   request_id?: unknown
   status?: unknown
   error?: unknown
+  operation_id?: unknown
+  idempotency_key?: unknown
+  execution_mode?: unknown
+  queue_item_id?: unknown
+  stage?: unknown
 }
 
 export type CallbackStageKey =
@@ -121,6 +140,9 @@ export interface NormalizedProcessStageStatus {
   status: string | null
   mode: string | null
   requestId: string | null
+  operationId?: string | null
+  idempotencyKey?: string | null
+  executionMode?: string | null
   requestedByApp: string | null
   initiatedAt: string | null
   startedAt: string | null
@@ -184,6 +206,7 @@ export interface NormalizedDocumentFailure {
 export interface NormalizedProcessBatchDetails {
   pipelineRequestedStages: string[]
   pipelineConfig: PipelineConfig | null
+  currentExecution?: NormalizedPipelineExecution | null
   ingester: NormalizedProcessStageStatus | null
   documentSplitter: NormalizedProcessStageStatus | null
   pageRotator: NormalizedProcessStageStatus | null
@@ -193,6 +216,15 @@ export interface NormalizedProcessBatchDetails {
   metadataValidator: NormalizedProcessStageStatus | null
   rightsDeterminator: NormalizedProcessStageStatus | null
   fedoraIngester?: NormalizedProcessStageStatus | null
+}
+
+export interface NormalizedPipelineExecution {
+  executionMode: string | null
+  operationId: string | null
+  idempotencyKey: string | null
+  stage: string | null
+  reason: string | null
+  sourceDocumentIds: string[]
 }
 
 export type ProcessStageStatus = NormalizedProcessStageStatus

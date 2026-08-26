@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { draftToPipelineConfig, parsePipelineConfig, type PipelineSelectionDraft } from '@lib/pipelineConfig'
+import {
+  draftToPipelineConfig,
+  parsePipelineConfig,
+  pipelineConfigToDraft,
+  type PipelineSelectionDraft,
+} from '@lib/pipelineConfig'
 
 function buildDraft(): PipelineSelectionDraft {
   return {
@@ -93,5 +98,31 @@ describe('pipelineConfig', () => {
     } | null
 
     expect(config?.metadataExtraction.mode).toBe('openai_batch')
+  })
+
+  it('restores the shared configuration UX from a persisted pipeline config', () => {
+    const draft = pipelineConfigToDraft(
+      draftToPipelineConfig({
+        ...buildDraft(),
+        metadataExtraction: { mode: 'openai_batch' },
+        steps: {
+          ...buildDraft().steps,
+          normalizePass1: {
+            ...buildDraft().steps.normalizePass1,
+            subSelection: { split: true, rotate: false },
+          },
+          normalizePass2: {
+            ...buildDraft().steps.normalizePass2,
+            enabled: true,
+            subSelection: { split: true, rotate: true },
+          },
+        },
+      }),
+    )
+
+    expect(draft.metadataExtraction.mode).toBe('openai_batch')
+    expect(draft.steps.normalizePass1.subSelection).toEqual({ split: true, rotate: false })
+    expect(draft.steps.normalizePass2.subSelection).toEqual({ split: true, rotate: true })
+    expect(draft.steps.metadataExtraction).toBe(true)
   })
 })

@@ -1,3 +1,6 @@
+import { randomUUID } from 'node:crypto'
+
+import { PIPELINE_EXECUTION_MODES } from '@constants/pipelineExecutionModes'
 import {
   CONTENT_DEDUP_STAGE,
   DOCUMENT_SPLITTER_STAGE,
@@ -14,6 +17,7 @@ import {
   shouldFinalizePipelineReadiness,
 } from '@lib/pipelineExecution'
 import { finalizePipelineBatchReadiness } from '@lib/pipelineReadiness'
+import type { PipelineExecutionContextInput } from '@lib/pipelineExecutionContext'
 export {
   triggerContentDedup,
   triggerDocumentSplitter,
@@ -26,6 +30,36 @@ export {
 } from '@lib/pipelineTriggerRequests'
 import type { PipelineExecutionStep } from '@lib/pipelineConfig'
 import type { ProcessBatchStatus } from 'types/pipelineContracts'
+
+export function getPipelineContinuationContext(
+  batch: ProcessBatchStatus,
+): PipelineExecutionContextInput | undefined {
+  const execution = batch.currentExecution
+  const executionMode = execution?.executionMode as Exclude<
+    PipelineExecutionContextInput['executionMode'],
+    undefined
+  >
+  if (
+    !execution?.operationId ||
+    !execution.idempotencyKey ||
+    !execution.executionMode ||
+    ![
+      PIPELINE_EXECUTION_MODES.RETRY,
+      PIPELINE_EXECUTION_MODES.RERUN,
+      PIPELINE_EXECUTION_MODES.REPROCESS,
+    ].includes(executionMode as Exclude<PipelineExecutionContextInput['executionMode'], undefined | 'normal'>)
+  ) {
+    return undefined
+  }
+
+  return {
+    executionMode,
+    operationId: execution.operationId,
+    idempotencyKey: randomUUID(),
+    reason: execution.reason ?? undefined,
+    sourceDocumentIds: execution.sourceDocumentIds,
+  }
+}
 
 function normalizeRequestedStages(value: unknown): string[] {
   if (!Array.isArray(value)) {

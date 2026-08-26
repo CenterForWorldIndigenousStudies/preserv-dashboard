@@ -26,6 +26,7 @@ vi.mock('@lib/processBatches', () => ({
 }))
 
 vi.mock('@lib/pipelineTriggers', () => ({
+  getPipelineContinuationContext: () => undefined,
   shouldTriggerRightsDeterminator: mockShouldTriggerRightsDeterminator,
   triggerRightsDeterminator: mockTriggerRightsDeterminator,
   finalizePipelineReadinessIfDue: mockFinalizePipelineReadinessIfDue,

@@ -40,7 +40,11 @@ describe('rights-determinator callback route', () => {
     vi.setSystemTime(new Date('2026-07-02T21:00:00.000Z'))
     mockRecordRightsDeterminatorCompletion.mockResolvedValue(undefined)
     mockMarkProcessStageCallbackReceived.mockResolvedValue(undefined)
-    mockGetProcessBatchStatus.mockResolvedValue(null)
+    mockGetProcessBatchStatus.mockResolvedValue({
+      batchId: 'batch-1',
+      batchName: 'Batch 1',
+      startedBy: 'archivist@example.org',
+    })
 
     const request = new NextRequest(`http://localhost${RIGHTS_DETERMINATOR_CALLBACK_PATH}`, {
       method: 'POST',

@@ -23,6 +23,10 @@ vi.mock('@actions/ready-for-library', () => ({
   getReadyForLibraryAction: vi.fn(),
 }))
 
+vi.mock('@molecules/DocumentReprocessingActions', () => ({
+  DocumentReprocessingActions: () => null,
+}))
+
 vi.mock('@organisms/DocumentTable/DocumentTable', () => ({
   DocumentTable: ({
     config,

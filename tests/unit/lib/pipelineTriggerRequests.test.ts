@@ -19,6 +19,7 @@ import {
   METADATA_VALIDATOR_CALLBACK_PATH,
   RIGHTS_DETERMINATOR_CALLBACK_PATH,
 } from '@constants/paths'
+import { PIPELINE_EXECUTION_MODES } from '@constants/pipelineExecutionModes'
 
 function buildBatchStatus(overrides: Partial<ProcessBatchStatus> = {}): ProcessBatchStatus {
   return {
@@ -151,6 +152,80 @@ describe('pipelineTriggerRequests', () => {
     expect(payload.callback).toEqual({
       url: `http://localhost:3000${RIGHTS_DETERMINATOR_CALLBACK_PATH}`,
       token: 'pipeline-callback-token',
+    })
+  })
+
+  it('serializes an explicit retry execution context', async () => {
+    let receivedBody: string | null = null
+    vi.mocked(fetch).mockImplementation((_input, init) => {
+      receivedBody = typeof init?.body === 'string' ? init.body : null
+      return Promise.resolve(
+        buildJsonResponse({
+          batchId: 'batch-1',
+          status: 'queued',
+          service: 'metadata_validator',
+          pass: null,
+        }),
+      )
+    })
+
+    await triggerMetadataValidator(buildBatchStatus(), {
+      executionMode: PIPELINE_EXECUTION_MODES.RETRY,
+      operationId: 'operation-1',
+      idempotencyKey: 'idempotency-1',
+      reason: 'Retry failed metadata validation',
+    })
+
+    if (receivedBody === null) {
+      throw new Error('Expected dashboard to send a JSON string body to metadata-validator.')
+    }
+
+    expect(JSON.parse(receivedBody)).toMatchObject({
+      execution_mode: 'retry',
+      operation_id: 'operation-1',
+      idempotency_key: 'idempotency-1',
+      reason: 'Retry failed metadata validation',
+      source_document_ids: [],
+      source_batch_id: null,
+      new_batch_name: null,
+    })
+  })
+
+  it('serializes the selected rerun pipeline configuration', async () => {
+    let receivedBody: string | null = null
+    vi.mocked(fetch).mockImplementation((_input, init) => {
+      receivedBody = typeof init?.body === 'string' ? init.body : null
+      return Promise.resolve(
+        buildJsonResponse({
+          batchId: 'batch-1',
+          status: 'queued',
+          service: 'metadata_validator',
+          pass: null,
+        }),
+      )
+    })
+
+    const pipelineConfig = {
+      profileId: 'custom' as const,
+      mode: 'custom' as const,
+      metadataExtraction: { mode: 'openai_batch' as const },
+      executionPlan: [],
+    }
+    await triggerMetadataValidator(buildBatchStatus(), {
+      executionMode: PIPELINE_EXECUTION_MODES.RERUN,
+      operationId: 'operation-rerun-1',
+      idempotencyKey: 'idempotency-rerun-1',
+      reason: 'Run the selected configuration again',
+      pipelineConfig,
+    })
+
+    if (receivedBody === null) {
+      throw new Error('Expected dashboard to send a JSON string body to metadata-validator.')
+    }
+
+    expect(JSON.parse(receivedBody)).toMatchObject({
+      execution_mode: 'rerun',
+      pipeline_config: pipelineConfig,
     })
   })
 })

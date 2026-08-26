@@ -1,15 +1,16 @@
 'use client'
 
-import { useEffect, useMemo, type ReactElement } from 'react'
+import { useEffect, useMemo, useState, type ReactElement } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import type { MRT_ColumnDef } from 'material-react-table'
+import type { MRT_ColumnDef, MRT_RowSelectionState } from 'material-react-table'
 
 import { getLibraryDocumentsAction } from '@actions/library'
 import { DateAtom } from '@atoms/Date'
 import { getBatchDetailPath, getDocumentDetailPath, COLLECTIONS_PATH } from '@constants/paths'
 import { PAGE_LABELS } from '@constants/pageLabels'
 import { EntityNameBlock } from '@molecules/EntityNameBlock'
+import { DocumentReprocessingActions } from '@molecules/DocumentReprocessingActions'
 import { DocumentTable } from '@organisms/DocumentTable/DocumentTable'
 import type { DocumentTableConfig, DocumentTableFetchResult, DocumentTableQuery } from '@organisms/DocumentTable/types'
 import { useDocumentTableController } from '@organisms/DocumentTable/useDocumentTableController'
@@ -61,6 +62,10 @@ export function LibraryTable({ filterOptions, initialQuery, initialData }: Libra
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const controller = useDocumentTableController<AdvancedSearchFilters>({ initialQuery })
+  const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({})
+  const selectedDocumentIds = Object.entries(rowSelection)
+    .filter(([, selected]) => selected)
+    .map(([documentId]) => documentId)
 
   useEffect(() => {
     const nextParams = new URLSearchParams(searchParams.toString())
@@ -204,6 +209,11 @@ export function LibraryTable({ filterOptions, initialQuery, initialData }: Libra
       filterOptions,
       onApply: controller.setFilters,
     },
+    trailingToolbarSlot: <DocumentReprocessingActions documentIds={selectedDocumentIds} />,
+    rowSelection,
+    onRowSelectionChange: setRowSelection,
+    enableRowSelection: true,
+    getRowId: (row) => row.id,
   }
 
   return (

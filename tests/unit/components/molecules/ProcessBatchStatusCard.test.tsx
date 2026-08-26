@@ -32,6 +32,37 @@ function buildBatchStatus(overrides: Partial<ProcessBatchStatus> = {}): ProcessB
 }
 
 describe('ProcessBatchStatusCard', () => {
+  it('links the batch heading to its detail page', () => {
+    const markup = renderToStaticMarkup(
+      <ThemeProvider>
+        <ProcessBatchStatusCard batch={buildBatchStatus()} />
+      </ThemeProvider>,
+    )
+
+    expect(markup).toContain('href="/batches/batch-1"')
+  })
+
+  it('labels the active execution as a rerun', () => {
+    const markup = renderToStaticMarkup(
+      <ThemeProvider>
+        <ProcessBatchStatusCard
+          batch={buildBatchStatus({
+            currentExecution: {
+              executionMode: 'rerun',
+              operationId: 'operation-1',
+              idempotencyKey: 'idempotency-1',
+              stage: 'document_splitter',
+              reason: 'Run clean candidates',
+              sourceDocumentIds: ['document-1'],
+            },
+          })}
+        />
+      </ThemeProvider>,
+    )
+
+    expect(markup).toContain('Execution:</span> Rerun from document_splitter')
+  })
+
   it('explains when a post-start Dashboard edit blocks rollback', () => {
     const markup = renderToStaticMarkup(
       <ThemeProvider>

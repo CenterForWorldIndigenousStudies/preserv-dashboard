@@ -21,6 +21,7 @@ vi.mock('@lib/pipelineTriggerRequests', () => ({
 }))
 
 import {
+  getPipelineContinuationContext,
   triggerMetadataExtractor,
   triggerMetadataValidator,
   triggerRightsDeterminator,
@@ -48,6 +49,32 @@ function buildBatchStatus(overrides: Partial<ProcessBatchStatus> = {}): ProcessB
 }
 
 describe('pipelineTriggers', () => {
+  it('preserves rerun execution context for downstream callbacks', () => {
+    const batch = buildBatchStatus({
+      currentExecution: {
+        executionMode: 'rerun',
+        operationId: 'operation-1',
+        idempotencyKey: 'idempotency-1',
+        stage: 'metadata_extractor',
+        reason: 'Use the updated extractor.',
+        sourceDocumentIds: ['document-1'],
+      },
+    })
+
+    const context = getPipelineContinuationContext(batch)
+    expect(context).toMatchObject({
+      executionMode: 'rerun',
+      operationId: 'operation-1',
+      reason: 'Use the updated extractor.',
+      sourceDocumentIds: ['document-1'],
+    })
+    expect(typeof context?.idempotencyKey).toBe('string')
+  })
+
+  it('does not add execution context to normal downstream callbacks', () => {
+    expect(getPipelineContinuationContext(buildBatchStatus())).toBeUndefined()
+  })
+
   it('delegates metadata extractor triggers to pipelineTriggerRequests', async () => {
     const batch = buildBatchStatus()
     mockTriggerMetadataExtractor.mockResolvedValue(undefined)

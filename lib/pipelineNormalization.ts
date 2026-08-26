@@ -3,11 +3,13 @@ import type {
   CallbackStageKey,
   NormalizedDocumentFailure,
   NormalizedOpenAIBatchWaveStatus,
+  NormalizedPipelineExecution,
   NormalizedProcessBatchDetails,
   NormalizedProcessStageStatus,
   PassStagePrefix,
   RawOpenAIBatchWaveDetails,
   RawProcessBatchDetails,
+  RawProcessPipelineDetails,
   RawProcessStageDetails,
 } from 'types/pipelineContracts'
 
@@ -19,9 +21,9 @@ function parseNumber(value: unknown): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : 0
 }
 
-function normalizeText(value: string | null | undefined): string | null {
+function normalizeText(value: unknown): string | null {
   if (typeof value !== 'string') {
-    return value ?? null
+    return null
   }
 
   const normalized = value.trim()
@@ -204,6 +206,9 @@ export function normalizeStage(stage: RawProcessStageDetails | null | undefined)
     status: normalizeText(stage.status),
     mode: normalizeText(stage.mode),
     requestId: normalizeText(stage.request_id ?? null),
+    operationId: normalizeText(stage.operation_id ?? null),
+    idempotencyKey: normalizeText(stage.idempotency_key ?? null),
+    executionMode: normalizeText(stage.execution_mode ?? null),
     requestedByApp: normalizeText(stage.requested_by_app ?? null),
     initiatedAt: parseTimestamp(stage.initiated_at ?? null),
     startedAt: parseTimestamp(stage.started_at ?? null),
@@ -219,6 +224,23 @@ export function normalizeStage(stage: RawProcessStageDetails | null | undefined)
     ...parseStageCollectionFields(stage),
     openaiBatchWave1: parseOpenAIBatchWave(stage.openai_batch?.wave_1),
     openaiBatchWave2: parseOpenAIBatchWave(stage.openai_batch?.wave_2),
+  }
+}
+
+function normalizePipelineExecution(
+  execution: RawProcessPipelineDetails['current_execution'],
+): NormalizedPipelineExecution | null {
+  if (!execution || typeof execution !== 'object') {
+    return null
+  }
+
+  return {
+    executionMode: normalizeText(execution.execution_mode),
+    operationId: normalizeText(execution.operation_id),
+    idempotencyKey: normalizeText(execution.idempotency_key),
+    stage: normalizeText(execution.stage),
+    reason: normalizeText(execution.reason),
+    sourceDocumentIds: parseStringArray(execution.source_document_ids),
   }
 }
 
@@ -293,6 +315,7 @@ export function normalizeProcessBatchDetails(details: RawProcessBatchDetails): N
   return {
     pipelineRequestedStages: parseStringArray(details.pipeline?.requested_stages),
     pipelineConfig: parsePipelineConfig(details.pipeline?.config),
+    currentExecution: normalizePipelineExecution(details.pipeline?.current_execution),
     ingester: normalizeStage(details.data_ingester ?? details.ingester),
     documentSplitter: normalizePassStage(details, 'document_splitter'),
     pageRotator: normalizePassStage(details, 'page_rotator'),

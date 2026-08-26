@@ -5,6 +5,11 @@ export interface ParsedPipelineCallbackBody {
   requestId: string
   status: string
   errorMessage: string
+  operationId: string
+  idempotencyKey: string
+  executionMode: string
+  queueItemId: string
+  stage: string
 }
 
 export function parseBearerToken(authorization: string | null): string {
@@ -17,5 +22,10 @@ export function parsePipelineCallbackBody(body: PipelineCallbackBody): ParsedPip
     requestId: typeof body.request_id === 'string' ? body.request_id.trim() : '',
     status: typeof body.status === 'string' ? body.status.trim() : '',
     errorMessage: typeof body.error === 'string' ? body.error.trim() : '',
+    operationId: typeof body.operation_id === 'string' ? body.operation_id.trim() : '',
+    idempotencyKey: typeof body.idempotency_key === 'string' ? body.idempotency_key.trim() : '',
+    executionMode: typeof body.execution_mode === 'string' ? body.execution_mode.trim() : '',
+    queueItemId: typeof body.queue_item_id === 'string' ? body.queue_item_id.trim() : '',
+    stage: typeof body.stage === 'string' ? body.stage.trim() : '',
   }
 }

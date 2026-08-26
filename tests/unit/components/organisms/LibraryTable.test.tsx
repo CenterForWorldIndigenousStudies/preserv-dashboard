@@ -20,6 +20,10 @@ vi.mock('@actions/library', () => ({
   getLibraryDocumentsAction: mockGetLibraryDocumentsAction,
 }))
 
+vi.mock('@molecules/DocumentReprocessingActions', () => ({
+  DocumentReprocessingActions: () => null,
+}))
+
 vi.mock('@organisms/DocumentTable/DocumentTable', () => ({
   DocumentTable: ({ config }: { config: Record<string, unknown> }) => {
     mocks.documentTableProps = { config }

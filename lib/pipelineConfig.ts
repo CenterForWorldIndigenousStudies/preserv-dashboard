@@ -418,6 +418,50 @@ export function draftToPipelineConfig(draft: PipelineSelectionDraft): PipelineCo
   }
 }
 
+export function pipelineConfigToDraft(config: PipelineConfig): PipelineSelectionDraft {
+  const passOneSteps = config.executionPlan.filter(
+    (step) => step.stepId === 'normalize-pass-1' && step.enabled,
+  )
+  const passTwoSteps = config.executionPlan.filter(
+    (step) => step.stepId === 'normalize-pass-2' && step.enabled,
+  )
+  const hasService = (service: PipelineServiceId): boolean =>
+    config.executionPlan.some((step) => step.service === service && step.enabled)
+  const profileId = PIPELINE_PROFILES.some((profile) => profile.id === config.profileId)
+    ? config.profileId
+    : 'custom'
+
+  return {
+    profileId,
+    mode: config.mode,
+    metadataExtraction: { ...config.metadataExtraction },
+    steps: {
+      ingester: true,
+      normalizePass1: {
+        enabled: passOneSteps.length > 0,
+        advancedOpen: false,
+        subSelection: {
+          split: passOneSteps.some((step) => step.service === DOCUMENT_SPLITTER_STAGE),
+          rotate: passOneSteps.some((step) => step.service === PAGE_ROTATOR_STAGE),
+        },
+      },
+      normalizePass2: {
+        enabled: passTwoSteps.length > 0,
+        advancedOpen: false,
+        subSelection: {
+          split: passTwoSteps.some((step) => step.service === DOCUMENT_SPLITTER_STAGE),
+          rotate: passTwoSteps.some((step) => step.service === PAGE_ROTATOR_STAGE),
+        },
+      },
+      ocrProcessor: hasService(OCR_PROCESSOR_STAGE),
+      contentDedup: hasService(CONTENT_DEDUP_STAGE),
+      metadataExtraction: hasService(METADATA_EXTRACTOR_STAGE),
+      metadataValidation: hasService(METADATA_VALIDATOR_STAGE),
+      rightsDeterminator: hasService('rights-determinator'),
+    },
+  }
+}
+
 export function createDefaultDraft(): PipelineSelectionDraft {
   return expandPresetToDraft('custom')
 }

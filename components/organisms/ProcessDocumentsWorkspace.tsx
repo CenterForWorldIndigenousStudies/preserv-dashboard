@@ -5,13 +5,12 @@ import { useEffect, useMemo, useState, useTransition, type ReactElement } from '
 import { useRouter } from 'next/navigation'
 import { Box, Button, Card, CardContent, Stack, Typography } from '@mui/material'
 
-import { BATCHES_PATH, PROCESS_EVENTS_PATH, PROCESS_FOLDERS_PATH, PROCESS_START_PATH } from '@constants/paths'
+import { BATCHES_PATH, PROCESS_FOLDERS_PATH, PROCESS_START_PATH } from '@constants/paths'
 import type { ProfileId } from '@constants/pipeline'
 import type { DriveFolderOption } from '@lib/googleDrive'
 import { useBatchSearch } from '@lib/hooks/useBatchSearch'
 import {
   buildAcceptedBatchStatus,
-  getLiveBatchIds,
   normalizeAcceptedProcessStartResponse,
   upsertBatchStatus,
 } from '@lib/processDocuments'
@@ -22,7 +21,6 @@ import {
   pipelineConfigToRequestedStages,
   type PipelineSelectionDraft,
 } from '@lib/pipelineConfig'
-import { isPipelineBatchTerminal } from '@lib/pipelineExecution'
 import { ProcessBatchCreationWorkspace } from '@organisms/ProcessBatchCreationWorkspace'
 import { ProcessBatchMonitor } from '@organisms/ProcessBatchMonitor'
 import type { ProcessBatchStatus } from 'types/pipelineContracts'
@@ -62,9 +60,6 @@ export function ProcessDocumentsWorkspace({ initialBatches }: ProcessDocumentsWo
     setRecentBatches(initialBatches)
   }, [initialBatches])
 
-  const liveBatchIds = useMemo(() => getLiveBatchIds(recentBatches), [recentBatches])
-  const liveBatchIdsKey = liveBatchIds.join('|')
-
   useEffect(() => {
     void (async () => {
       try {
@@ -80,50 +75,6 @@ export function ProcessDocumentsWorkspace({ initialBatches }: ProcessDocumentsWo
       }
     })()
   }, [])
-
-  useEffect(() => {
-    const monitoredBatchIds = liveBatchIdsKey ? liveBatchIdsKey.split('|') : []
-
-    if (monitoredBatchIds.length === 0) {
-      return undefined
-    }
-
-    const terminalBatchIds = new Set<string>()
-    const eventSources = monitoredBatchIds.map((batchId) => {
-      const eventSource = new EventSource(`${PROCESS_EVENTS_PATH}?batchId=${encodeURIComponent(batchId)}`)
-
-      eventSource.addEventListener('batch_status', (event) => {
-        const message = event as MessageEvent<string>
-        const batch = JSON.parse(message.data) as ProcessBatchStatus
-        setRecentBatches((current) => upsertBatchStatus(current, batch))
-        if (isPipelineBatchTerminal(batch)) {
-          terminalBatchIds.add(batchId)
-          eventSource.close()
-        }
-      })
-
-      eventSource.addEventListener('batch_missing', () => {
-        setSubmitError('Live updates stopped because the batch could not be found.')
-        eventSource.close()
-      })
-
-      eventSource.onerror = () => {
-        if (terminalBatchIds.has(batchId)) {
-          return
-        }
-        setSubmitError('Live updates disconnected. Use Refresh Status to reload the latest batch state.')
-        eventSource.close()
-      }
-
-      return eventSource
-    })
-
-    return () => {
-      for (const eventSource of eventSources) {
-        eventSource.close()
-      }
-    }
-  }, [liveBatchIdsKey])
 
   const selectedFolderList = useMemo(() => Object.values(selectedFolders), [selectedFolders])
   const batchNameExists = Boolean(batchName.trim()) && batchSearch.exactMatch !== null

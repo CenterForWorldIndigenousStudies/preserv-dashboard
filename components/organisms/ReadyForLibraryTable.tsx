@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useMemo, type ReactElement } from 'react'
-import type { MRT_ColumnDef } from 'material-react-table'
+import { useEffect, useMemo, useState, type ReactElement } from 'react'
+import type { MRT_ColumnDef, MRT_RowSelectionState } from 'material-react-table'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
@@ -9,6 +9,7 @@ import { getReadyForLibraryAction } from '@actions/ready-for-library'
 import { getDocumentDetailPath } from '@constants/paths'
 import { PAGE_LABELS } from '@constants/pageLabels'
 import { DateAtom } from '@atoms/Date'
+import { DocumentReprocessingActions } from '@molecules/DocumentReprocessingActions'
 import { DocumentTable } from '@organisms/DocumentTable/DocumentTable'
 import { useDocumentTableController } from '@organisms/DocumentTable/useDocumentTableController'
 import type { DocumentTableConfig, DocumentTableFetchResult, DocumentTableQuery } from '@organisms/DocumentTable/types'
@@ -84,6 +85,10 @@ export function ReadyForLibraryTable({
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const controller = useDocumentTableController<AdvancedSearchFilters>({ initialQuery })
+  const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({})
+  const selectedDocumentIds = Object.entries(rowSelection)
+    .filter(([, selected]) => selected)
+    .map(([documentId]) => documentId)
 
   useEffect(() => {
     const nextParams = new URLSearchParams(searchParams.toString())
@@ -217,6 +222,11 @@ export function ReadyForLibraryTable({
       filterOptions,
       onApply: controller.setFilters,
     },
+    trailingToolbarSlot: <DocumentReprocessingActions documentIds={selectedDocumentIds} />,
+    rowSelection,
+    onRowSelectionChange: setRowSelection,
+    enableRowSelection: true,
+    getRowId: (row) => row.id,
   }
 
   return (

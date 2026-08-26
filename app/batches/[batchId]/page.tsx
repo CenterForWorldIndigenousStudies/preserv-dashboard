@@ -8,9 +8,11 @@ import { PAGE_LABELS } from '@constants/pageLabels'
 import { BATCHES_PATH } from '@constants/paths'
 import { DetailFieldGrid } from '@molecules/DetailFieldGrid'
 import { BatchProcessingDetails } from '@organisms/BatchProcessingDetails'
+import { ProcessBatchLiveProgress } from '@organisms/ProcessBatchLiveProgress'
 import { DetailPageSection } from '@organisms/DetailPageSection'
 import { PageHeader } from '@organisms/PageHeader'
 import { getBatchDetail } from '@lib/queries/batchQueries'
+import { getPipelineExecutionSnapshot } from '@lib/queries/pipelineExecutionQueries'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,7 +42,10 @@ export default async function BatchDetailPage({ params, searchParams }: BatchDet
   }
 
   const resolvedSearchParams = await searchParams
-  const detail = await getBatchDetail(batchId)
+  const [detail, executionSnapshot] = await Promise.all([
+    getBatchDetail(batchId),
+    getPipelineExecutionSnapshot(batchId),
+  ])
   if (!detail) {
     notFound()
   }
@@ -68,9 +73,19 @@ export default async function BatchDetailPage({ params, searchParams }: BatchDet
         />
       </DetailPageSection>
 
+      {executionSnapshot.batch ? (
+        <DetailPageSection title={'Pipeline Progress'}>
+          <ProcessBatchLiveProgress
+            initialBatch={executionSnapshot.batch}
+            queueAttempts={executionSnapshot.queueAttempts}
+          />
+        </DetailPageSection>
+      ) : null}
+
       <DetailPageSection title={'Processing Details'}>
         <BatchProcessingDetails properties={detail.properties} />
       </DetailPageSection>
+
     </Stack>
   )
 }

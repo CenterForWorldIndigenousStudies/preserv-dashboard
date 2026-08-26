@@ -27,6 +27,7 @@ vi.mock('@lib/processBatches', () => ({
 }))
 
 vi.mock('@lib/pipelineTriggers', () => ({
+  getPipelineContinuationContext: () => undefined,
   shouldTriggerContentDedup: mockShouldTriggerContentDedup,
   shouldTriggerMetadataExtractor: mockShouldTriggerMetadataExtractor,
   triggerContentDedup: mockTriggerContentDedup,

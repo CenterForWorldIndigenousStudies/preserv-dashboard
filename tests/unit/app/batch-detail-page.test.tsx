@@ -1,8 +1,9 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { mockGetBatchDetail, mockNotFound } = vi.hoisted(() => ({
+const { mockGetBatchDetail, mockGetPipelineExecutionSnapshot, mockNotFound } = vi.hoisted(() => ({
   mockGetBatchDetail: vi.fn(),
+  mockGetPipelineExecutionSnapshot: vi.fn(),
   mockNotFound: vi.fn(() => {
     throw new Error('NEXT_NOT_FOUND')
   }),
@@ -10,6 +11,14 @@ const { mockGetBatchDetail, mockNotFound } = vi.hoisted(() => ({
 
 vi.mock('@lib/queries/batchQueries', () => ({
   getBatchDetail: mockGetBatchDetail,
+}))
+
+vi.mock('@lib/queries/pipelineExecutionQueries', () => ({
+  getPipelineExecutionSnapshot: mockGetPipelineExecutionSnapshot,
+}))
+
+vi.mock('@organisms/ProcessBatchLiveProgress', () => ({
+  ProcessBatchLiveProgress: () => <div>Pipeline progress stub</div>,
 }))
 
 vi.mock('next/navigation', () => ({
@@ -38,6 +47,12 @@ describe('BatchDetailPage', () => {
 
   it('renders the batch identity, processing properties, and return link', async () => {
     mockGetBatchDetail.mockResolvedValue(detail)
+    mockGetPipelineExecutionSnapshot.mockResolvedValue({
+      batch: { batchId: 'batch-1' },
+      currentExecution: null,
+      queueAttempts: [],
+      batchNameConflict: false,
+    })
 
     const markup = renderToStaticMarkup(
       await BatchDetailPage({
@@ -53,12 +68,20 @@ describe('BatchDetailPage', () => {
     expect(markup).toContain('mary@example.org')
     expect(markup).toContain('total_documents')
     expect(markup).toContain('documents/second')
+    expect(markup).toContain('Pipeline progress stub')
     expect(markup).toContain('Return to Batches')
     expect(mockGetBatchDetail).toHaveBeenCalledWith('batch-1')
+    expect(mockGetPipelineExecutionSnapshot).toHaveBeenCalledWith('batch-1')
   })
 
   it('uses standard not-found behavior for an unknown batch', async () => {
     mockGetBatchDetail.mockResolvedValue(null)
+    mockGetPipelineExecutionSnapshot.mockResolvedValue({
+      batch: null,
+      currentExecution: null,
+      queueAttempts: [],
+      batchNameConflict: false,
+    })
 
     await expect(
       BatchDetailPage({
@@ -72,6 +95,12 @@ describe('BatchDetailPage', () => {
 
   it('omits Started By when the batch has no starter', async () => {
     mockGetBatchDetail.mockResolvedValue({ ...detail, startedBy: null })
+    mockGetPipelineExecutionSnapshot.mockResolvedValue({
+      batch: null,
+      currentExecution: null,
+      queueAttempts: [],
+      batchNameConflict: false,
+    })
 
     const markup = renderToStaticMarkup(
       await BatchDetailPage({

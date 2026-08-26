@@ -1,9 +1,20 @@
 import { renderToStaticMarkup } from 'react-dom/server'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import ThemeProvider from '@components/ThemeProvider'
 import { ProcessBatchMonitor } from '@organisms/ProcessBatchMonitor'
 import type { ProcessBatchStatus } from 'types/pipelineContracts'
+
+vi.mock('@organisms/ProcessBatchLiveProgress', () => ({
+  ProcessBatchLiveProgress: ({ initialBatch }: { initialBatch: ProcessBatchStatus }) => (
+    <div>
+      {initialBatch.batchName}
+      {'Requested Stages'}
+      {initialBatch.pipelineRequestedStages.join(', ')}
+      {'Metadata Extractor'}
+    </div>
+  ),
+}))
 
 function buildBatchStatus(): ProcessBatchStatus {
   return {

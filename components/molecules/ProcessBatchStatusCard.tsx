@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react'
+import type { ReactElement, ReactNode } from 'react'
 import { Box, Paper, Stack, Typography } from '@mui/material'
 
 import { PipelineStageStatusBadge } from '@atoms/Badges/PipelineStageStatusBadge'
@@ -14,6 +14,7 @@ import type { ProcessBatchStatus, ProcessStageStatus } from 'types/pipelineContr
 interface ProcessBatchStatusCardProps {
   batch: ProcessBatchStatus
   onRollbackRequested?: () => void
+  executionActions?: ReactNode
 }
 
 function buildPendingStage(): ProcessStageStatus {
@@ -139,6 +140,22 @@ function formatReviewWarning(count: number): string | null {
   return count === 1 ? '1 document needs review' : `${count} documents need review`
 }
 
+function formatExecutionLabel(batch: ProcessBatchStatus): string | null {
+  const execution = batch.currentExecution
+  if (!execution?.executionMode) {
+    return null
+  }
+
+  const labels: Record<string, string> = {
+    normal: 'Initial run',
+    retry: 'Retry',
+    rerun: 'Rerun',
+    reprocess: 'Reprocess',
+  }
+  const label = labels[execution.executionMode] ?? execution.executionMode
+  return execution.stage ? `${label} from ${execution.stage}` : label
+}
+
 function DetailRow({ label, value }: { label: string; value: string }): ReactElement {
   return (
     <Typography variant={'body2'} sx={{ color: 'text.secondary' }}>
@@ -237,7 +254,11 @@ function MetadataExtractorStageCard({
   )
 }
 
-export function ProcessBatchStatusCard({ batch, onRollbackRequested }: ProcessBatchStatusCardProps): ReactElement {
+export function ProcessBatchStatusCard({
+  batch,
+  onRollbackRequested,
+  executionActions,
+}: ProcessBatchStatusCardProps): ReactElement {
   const ocrProcessorStage = batch.ocrProcessor ?? (shouldShowPendingOcrProcessor(batch) ? buildPendingStage() : null)
   const metadataExtractorStage =
     batch.metadataExtractor ?? (shouldShowPendingMetadataExtractor(batch) ? buildPendingStage() : null)
@@ -245,6 +266,7 @@ export function ProcessBatchStatusCard({ batch, onRollbackRequested }: ProcessBa
     batch.metadataValidator ?? (shouldShowPendingMetadataValidator(batch) ? buildPendingStage() : null)
   const rightsDeterminatorStage =
     batch.rightsDeterminator ?? (shouldShowPendingRightsDeterminator(batch) ? buildPendingStage() : null)
+  const executionLabel = formatExecutionLabel(batch)
   return (
     <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, p: 3 }}>
       <Stack spacing={2.5}>
@@ -259,6 +281,7 @@ export function ProcessBatchStatusCard({ batch, onRollbackRequested }: ProcessBa
           label={'Requested Stages'}
           value={batch.pipelineRequestedStages.length > 0 ? batch.pipelineRequestedStages.join(', ') : 'Ingest only'}
         />
+        {executionLabel ? <DetailRow label={'Execution'} value={executionLabel} /> : null}
         <DetailRow label={'Lifecycle'} value={batch.lifecycleStatus ?? 'unknown'} />
         <DetailRow label={'Publication'} value={batch.publicationStatus ?? 'unknown'} />
         {batch.rollbackStatus ? (
@@ -283,6 +306,7 @@ export function ProcessBatchStatusCard({ batch, onRollbackRequested }: ProcessBa
           rollbackStatus={batch.rollbackStatus}
           onRollbackRequested={onRollbackRequested}
         />
+        {executionActions}
 
         <PipelineTimelineCard batch={batch} />
 
