@@ -1,9 +1,13 @@
 'use client'
 
-import { type ReactElement } from 'react'
-import { Box, Paper, Typography } from '@mui/material'
+import { useEffect, useState, type ReactElement } from 'react'
+import { Box, Stack, Typography } from '@mui/material'
 
+import { StatusDot } from '@atoms/StatusDot'
+import { AccordionPanel } from '@molecules/AccordionPanel'
 import { PipelineTimelineGroup, type TimelineStep } from '@molecules/PipelineTimelineGroup'
+import { formatDateTime } from '@lib/dateTime'
+import { formatReviewWarning } from '@lib/pipelineFormatting'
 import {
   getExecutionStepRuntimeStatus,
   getExecutionStepReviewWarningCount,
@@ -15,6 +19,15 @@ import type { ProcessBatchStatus } from 'types/pipelineContracts'
 
 interface PipelineTimelineCardProps {
   batch: ProcessBatchStatus
+}
+
+type PipelineTimelineStatus = Extract<PipelineStepRuntimeStatus, 'pending' | 'running' | 'completed' | 'failed'>
+
+const timelineStatusLabelMap: Record<PipelineTimelineStatus, string> = {
+  pending: 'Waiting',
+  running: 'Running',
+  completed: 'Completed',
+  failed: 'Failed',
 }
 
 function getGroupStatus(
@@ -38,12 +51,17 @@ function getGroupStatus(
   return 'pending'
 }
 
-function formatReviewWarning(count: number): string | null {
-  if (count <= 0) {
-    return null
+function getTimelineStatus(steps: TimelineStep[]): PipelineTimelineStatus {
+  if (steps.some((step) => step.status === 'failed' || step.status === 'review_needed')) {
+    return 'failed'
   }
-
-  return count === 1 ? '1 document needs review' : `${count} documents need review`
+  if (steps.length > 0 && steps.every((step) => step.status === 'completed')) {
+    return 'completed'
+  }
+  if (steps.some((step) => step.status === 'running' || step.status === 'queued')) {
+    return 'running'
+  }
+  return 'pending'
 }
 
 function buildTimelineSteps(batch: ProcessBatchStatus): TimelineStep[] {
@@ -121,49 +139,67 @@ function buildTimelineSteps(batch: ProcessBatchStatus): TimelineStep[] {
 
 export function PipelineTimelineCard({ batch }: PipelineTimelineCardProps): ReactElement {
   const timelineSteps = buildTimelineSteps(batch)
+  const timelineStatus = getTimelineStatus(timelineSteps)
+  const createdAt = formatDateTime(batch.createdAt)
+  const [expanded, setExpanded] = useState(() => timelineStatus !== 'completed')
+
+  useEffect(() => {
+    if (timelineStatus === 'completed') {
+      setExpanded(false)
+    }
+  }, [timelineStatus])
 
   return (
-    <Paper
-      elevation={0}
-      sx={{
-        border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: 4,
-        p: 3,
-        overflow: 'hidden',
+    <AccordionPanel
+      expanded={expanded}
+      onChange={(_event, isExpanded) => {
+        setExpanded(isExpanded)
       }}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
-        <Box>
-          <Typography component={'h3'} variant={'h6'} sx={{ fontWeight: 700 }}>
-            Pipeline Timeline
-          </Typography>
-          {batch.createdAt && (
-            <Typography variant={'caption'} sx={{ color: 'text.secondary' }}>
-              {`Created ${new Date(batch.createdAt).toLocaleString()}`}
+      summary={
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+            <Box aria-hidden={'true'} sx={{ display: 'flex', flexShrink: 0 }}>
+              <StatusDot status={timelineStatus} />
+            </Box>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant={'h6'} sx={{ fontWeight: 700 }}>
+                {'Pipeline Timeline'}
+              </Typography>
+              {createdAt ? (
+                <Typography variant={'caption'} sx={{ color: 'text.secondary' }}>
+                  {`Created ${createdAt}`}
+                </Typography>
+              ) : null}
+            </Box>
+          </Box>
+          <Stack direction={'row'} spacing={1} sx={{ alignItems: 'center', flexShrink: 0 }}>
+            <Typography variant={'caption'} sx={{ color: 'text.secondary', fontWeight: 600 }}>
+              {timelineStatusLabelMap[timelineStatus]}
             </Typography>
-          )}
+            <Typography
+              variant={'caption'}
+              sx={{
+                px: 1.5,
+                py: 0.5,
+                borderRadius: 1,
+                bgcolor: 'secondary.main',
+                color: 'text.primary',
+                fontWeight: 500,
+              }}
+            >
+              {`${timelineSteps.length} steps`}
+            </Typography>
+          </Stack>
         </Box>
-        <Typography
-          variant={'caption'}
-          sx={{
-            px: 1.5,
-            py: 0.5,
-            borderRadius: 1,
-            bgcolor: 'secondary.main',
-            color: 'text.primary',
-            fontWeight: 500,
-          }}
-        >
-          {`${timelineSteps.length} steps`}
-        </Typography>
-      </Box>
-
+      }
+      summarySx={{ px: 3, py: 1.5 }}
+      detailsSx={{ px: 3, pt: 0, pb: 3 }}
+    >
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
         {timelineSteps.map((step, index) => (
           <PipelineTimelineGroup key={step.label} step={step} isLast={index === timelineSteps.length - 1} />
         ))}
       </Box>
-    </Paper>
+    </AccordionPanel>
   )
 }

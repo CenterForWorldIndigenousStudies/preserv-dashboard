@@ -54,11 +54,17 @@ export function BatchExecutionActions({
 
   if (!batch) return null
   const published = ['published', 'publication_locked', 'unknown'].includes(batch.publicationStatus ?? '')
-  const rerunDisabled = published
+  const reverted = batch.lifecycleStatus === 'reverted'
+  const rerunDisabled = published || reverted
 
   return (
     <Stack spacing={1.5} sx={{ alignItems: 'flex-start' }}>
       {published ? <Alert severity={'info'}>{'This batch has been published. Reprocess its documents into a new batch instead of rerunning it in place.'}</Alert> : null}
+      {reverted ? (
+        <Alert severity={'info'}>
+          {'This batch was rolled back successfully. Rerun from stage is unavailable; start a new batch from the original source instead.'}
+        </Alert>
+      ) : null}
       {currentExecution?.operationId ? (
         <Alert severity={'info'}>
           {`Current ${currentExecution.executionMode ?? 'pipeline'} operation: ${currentExecution.operationId}${currentExecution.stage ? ` (${currentExecution.stage})` : ''}.`}

@@ -1,34 +1,12 @@
 import type { ReactElement } from 'react'
 import { Box, List, ListItem, Typography } from '@mui/material'
 
+import { formatDateTime } from '@lib/dateTime'
+import { ProcessDetailRow } from '@molecules/ProcessDetailRow'
 import type { ProcessStageStatus } from 'types/pipelineContracts'
 
 interface ProcessStageDetailListProps {
   stage: ProcessStageStatus
-}
-
-function formatDateTime(value: string | null): string {
-  if (!value) {
-    return '—'
-  }
-
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) {
-    return value
-  }
-
-  return date.toLocaleString()
-}
-
-function DetailRow({ label, value }: { label: string; value: string }): ReactElement {
-  return (
-    <Typography variant={'body2'} sx={{ color: 'text.secondary' }}>
-      <Box component={'span'} sx={{ color: 'text.primary', fontWeight: 600 }}>
-        {label}:
-      </Box>{' '}
-      {value}
-    </Typography>
-  )
 }
 
 export function ProcessStageDetailList({ stage }: ProcessStageDetailListProps): ReactElement {
@@ -53,21 +31,21 @@ export function ProcessStageDetailList({ stage }: ProcessStageDetailListProps): 
           },
         }}
       >
-        <DetailRow label={'Initiated'} value={formatDateTime(stage.initiatedAt)} />
-        <DetailRow label={'Started'} value={formatDateTime(stage.startedAt)} />
-        <DetailRow label={'Completed'} value={formatDateTime(stage.completedAt)} />
-        <DetailRow label={'Last Transition'} value={formatDateTime(stage.lastTransitionAt)} />
-        <DetailRow label={'Pass'} value={`${stage.currentPass} / ${stage.maxPasses}`} />
-        <DetailRow label={'Mode'} value={modeLabel} />
-        <DetailRow label={'Callback Delivery'} value={stage.callbackDeliveryStatus ?? '—'} />
-        <DetailRow label={'Callback Received'} value={formatDateTime(stage.callbackReceivedAt)} />
-        {stage.mode === 'openai_batch' ? <DetailRow label={'Wave 1'} value={waveOneLabel} /> : null}
-        {stage.mode === 'openai_batch' ? <DetailRow label={'Wave 2'} value={waveTwoLabel} /> : null}
+        <ProcessDetailRow label={'Initiated'} value={formatDateTime(stage.initiatedAt) ?? '—'} />
+        <ProcessDetailRow label={'Started'} value={formatDateTime(stage.startedAt) ?? '—'} />
+        <ProcessDetailRow label={'Completed'} value={formatDateTime(stage.completedAt) ?? '—'} />
+        <ProcessDetailRow label={'Last Transition'} value={formatDateTime(stage.lastTransitionAt) ?? '—'} />
+        <ProcessDetailRow label={'Pass'} value={`${stage.currentPass} / ${stage.maxPasses}`} />
+        <ProcessDetailRow label={'Mode'} value={modeLabel} />
+        <ProcessDetailRow label={'Callback Delivery'} value={stage.callbackDeliveryStatus ?? '—'} />
+        <ProcessDetailRow label={'Callback Received'} value={formatDateTime(stage.callbackReceivedAt) ?? '—'} />
+        {stage.mode === 'openai_batch' ? <ProcessDetailRow label={'Wave 1'} value={waveOneLabel} /> : null}
+        {stage.mode === 'openai_batch' ? <ProcessDetailRow label={'Wave 2'} value={waveTwoLabel} /> : null}
       </Box>
 
       {stage.collectionName ? (
         <Box sx={{ mt: 2 }}>
-          <DetailRow
+          <ProcessDetailRow
             label={'Collection'}
             value={stage.collectionNotes ? `${stage.collectionName} — ${stage.collectionNotes}` : stage.collectionName}
           />

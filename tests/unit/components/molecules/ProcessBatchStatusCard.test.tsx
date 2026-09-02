@@ -106,6 +106,24 @@ describe('ProcessBatchStatusCard', () => {
     expect(markup).toContain('Retry rollback')
   })
 
+  it('explains that a successful rollback removed or quarantined its artifacts', () => {
+    const markup = renderToStaticMarkup(
+      <ThemeProvider>
+        <ProcessBatchStatusCard
+          batch={buildBatchStatus({
+            lifecycleStatus: 'reverted',
+            publicationStatus: 'not_started',
+            rollbackStatus: 'reverted',
+          })}
+        />
+      </ThemeProvider>,
+    )
+
+    expect(markup).toContain('This batch was rolled back successfully.')
+    expect(markup).toContain('generated database artifacts were removed')
+    expect(markup).toContain('Google Drive artifacts were moved to the administrator delete folder')
+  })
+
   it('shows ocr processor service details when ocr was requested but has not started yet', () => {
     const markup = renderToStaticMarkup(
       <ThemeProvider>
