@@ -5,13 +5,20 @@ import ThemeProvider from '@components/ThemeProvider'
 import { ProcessBatchMonitor } from '@organisms/ProcessBatchMonitor'
 import type { ProcessBatchStatus } from 'types/pipelineContracts'
 
-vi.mock('@organisms/ProcessBatchLiveProgress', () => ({
-  ProcessBatchLiveProgress: ({ initialBatch }: { initialBatch: ProcessBatchStatus }) => (
+vi.mock('@organisms/ProcessBatchProgress', () => ({
+  ProcessBatchProgress: ({
+    initialBatch,
+    processingDetails = [],
+  }: {
+    initialBatch: ProcessBatchStatus
+    processingDetails?: readonly { key: string; value: unknown }[]
+  }) => (
     <div>
       {initialBatch.batchName}
       {'Requested Stages'}
       {initialBatch.pipelineRequestedStages.join(', ')}
       {'Metadata Extractor'}
+      {processingDetails.map((property) => `${property.key}:${String(property.value)}`)}
     </div>
   ),
 }))
@@ -24,6 +31,7 @@ function buildBatchStatus(): ProcessBatchStatus {
     createdAt: '2026-05-29T00:00:00.000Z',
     pipelineRequestedStages: ['document-splitter', 'page-rotator', 'metadata-extraction'],
     pipelineConfig: null,
+    processingProperties: [{ key: 'total_documents', value: 5 }],
     ingester: null,
     documentSplitter: null,
     pageRotator: null,
@@ -91,5 +99,6 @@ describe('ProcessBatchMonitor', () => {
     expect(markup).toContain('Requested Stages')
     expect(markup).toContain('document-splitter, page-rotator, metadata-extraction')
     expect(markup).toContain('Metadata Extractor')
+    expect(markup).toContain('total_documents:5')
   })
 })

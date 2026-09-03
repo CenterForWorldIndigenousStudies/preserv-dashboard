@@ -1,4 +1,5 @@
 import { db } from '@lib/db'
+import { toBatchProperties } from '@lib/batchProperties'
 import { isPipelineBatchTerminal } from '@lib/pipelineExecution'
 import { normalizeProcessBatchDetails, parseProcessingDetails, resolveStageDetailKey } from '@lib/pipelineNormalization'
 import { parsePipelineConfig, pipelineConfigToRequestedStages, type PipelineConfig } from '@lib/pipelineConfig'
@@ -66,11 +67,9 @@ async function toProcessBatchStatus(batch: SelectedBatchFields): Promise<Process
   return buildProcessBatchStatus(batch, manualEditAfterStart)
 }
 
-function buildProcessBatchStatus(
-  batch: SelectedBatchFields,
-  manualEditAfterStart: boolean,
-): ProcessBatchStatus {
-  const details = normalizeProcessBatchDetails(parseProcessingDetails(batch.processing_details))
+function buildProcessBatchStatus(batch: SelectedBatchFields, manualEditAfterStart: boolean): ProcessBatchStatus {
+  const rawDetails = parseProcessingDetails(batch.processing_details)
+  const details = normalizeProcessBatchDetails(rawDetails)
   const rollback = batch.batch_rollbacks
 
   return {
@@ -93,6 +92,7 @@ function buildProcessBatchStatus(
           failed: rollback.failed_count,
         }
       : null,
+    processingProperties: toBatchProperties(rawDetails),
     ...details,
   }
 }
@@ -329,14 +329,7 @@ export interface ProcessStageFailureArgs {
 export async function recordProcessStageFailure(
   batchId: string,
   stageKey: CallbackStageKey,
-  {
-    requestId,
-    operationId,
-    executionMode,
-    errorType,
-    errorMessage,
-    receivedAt,
-  }: ProcessStageFailureArgs,
+  { requestId, operationId, executionMode, errorType, errorMessage, receivedAt }: ProcessStageFailureArgs,
 ): Promise<void> {
   const batch = await db.batches.findUnique({
     where: { id: batchId },

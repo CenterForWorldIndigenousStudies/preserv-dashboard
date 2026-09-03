@@ -5,9 +5,9 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { createProcessBatch } from '@molecules/processStoryFixtures'
-import { ProcessBatchLiveProgress } from '@organisms/ProcessBatchLiveProgress'
+import { ProcessBatchProgress } from '@organisms/ProcessBatchProgress'
+import type { BatchProperty } from 'types/batches'
 import type { ProcessBatchStatus } from 'types/pipelineContracts'
-
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 class FakeEventSource {
@@ -37,10 +37,24 @@ class FakeEventSource {
 vi.stubGlobal('EventSource', FakeEventSource)
 
 vi.mock('@molecules/ProcessBatchStatusCard', () => ({
-  ProcessBatchStatusCard: ({ batch, executionActions }: { batch: ProcessBatchStatus; executionActions?: ReactElement }) => (
+  ProcessBatchStatusCard: ({
+    batch,
+    executionActions,
+  }: {
+    batch: ProcessBatchStatus
+    executionActions?: ReactElement
+  }) => (
     <div data-testid={'batch-progress'}>
       {batch.lifecycleStatus}
       {executionActions}
+    </div>
+  ),
+}))
+
+vi.mock('@organisms/BatchProcessingDetails', () => ({
+  BatchProcessingDetails: ({ properties }: { properties: readonly BatchProperty[] }) => (
+    <div data-testid={'processing-details'}>
+      {properties.map((property) => `${property.key}:${String(property.value)}`)}
     </div>
   ),
 }))
@@ -55,17 +69,17 @@ vi.mock('@organisms/BatchExecutionActions', () => ({
 
 let mountedRoot: Root | undefined
 
-function renderProgress(batch: ProcessBatchStatus): HTMLElement {
+function renderProgress(batch: ProcessBatchStatus, processingDetails?: readonly BatchProperty[]): HTMLElement {
   const container = document.createElement('div')
   document.body.appendChild(container)
   mountedRoot = createRoot(container)
   act(() => {
-    mountedRoot?.render(<ProcessBatchLiveProgress initialBatch={batch} />)
+    mountedRoot?.render(<ProcessBatchProgress initialBatch={batch} processingDetails={processingDetails} />)
   })
   return container
 }
 
-describe('ProcessBatchLiveProgress', () => {
+describe('ProcessBatchProgress', () => {
   afterEach(() => {
     act(() => {
       mountedRoot?.unmount()
@@ -91,6 +105,12 @@ describe('ProcessBatchLiveProgress', () => {
 
     expect(container.querySelector('[data-testid="batch-progress"]')?.textContent).toContain('completed')
     expect(FakeEventSource.instances[0]?.closed).toBe(true)
+  })
+
+  it('renders batch processing details inside the batch progress organism', () => {
+    const container = renderProgress(createProcessBatch(), [{ key: 'total_documents', value: 5 }])
+
+    expect(container.querySelector('[data-testid="processing-details"]')?.textContent).toContain('total_documents:5')
   })
 
   it('reconnects after a rerun is queued after the previous stream completed', () => {

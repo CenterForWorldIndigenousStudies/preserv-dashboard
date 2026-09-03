@@ -7,8 +7,7 @@ import { ReturnToPreviousPage } from '@atoms/ReturnToPreviousPage'
 import { PAGE_LABELS } from '@constants/pageLabels'
 import { BATCHES_PATH } from '@constants/paths'
 import { DetailFieldGrid } from '@molecules/DetailFieldGrid'
-import { BatchProcessingDetails } from '@organisms/BatchProcessingDetails'
-import { ProcessBatchLiveProgress } from '@organisms/ProcessBatchLiveProgress'
+import { ProcessBatchProgress } from '@organisms/ProcessBatchProgress'
 import { DetailPageSection } from '@organisms/DetailPageSection'
 import { PageHeader } from '@organisms/PageHeader'
 import { getBatchDetail } from '@lib/queries/batchQueries'
@@ -75,17 +74,13 @@ export default async function BatchDetailPage({ params, searchParams }: BatchDet
 
       {executionSnapshot.batch ? (
         <DetailPageSection title={'Pipeline Progress'}>
-          <ProcessBatchLiveProgress
+          <ProcessBatchProgress
             initialBatch={executionSnapshot.batch}
             queueAttempts={executionSnapshot.queueAttempts}
+            processingDetails={detail.properties}
           />
         </DetailPageSection>
       ) : null}
-
-      <DetailPageSection title={'Processing Details'}>
-        <BatchProcessingDetails properties={detail.properties} />
-      </DetailPageSection>
-
     </Stack>
   )
 }

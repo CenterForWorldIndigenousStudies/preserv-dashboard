@@ -5,6 +5,9 @@ import {
 } from '@lib/prisma/generated/client'
 
 import { db } from '@lib/db'
+import { toBatchProperties } from '@lib/batchProperties'
+import { calculateTotalProcessingCost } from '@lib/processingCost'
+import { calculateCurrentProcessingTime } from '@lib/processingTime'
 import { resolveBatchSearchIds, resolveTagSearchIds } from '@lib/queries/searchResolvers'
 import {
   normalizeAccessLevel,
@@ -127,15 +130,15 @@ function getBatchStatistics(value: unknown): Record<string, unknown> {
   return {}
 }
 
-function getTotalCost(rows: BatchDatabaseRow['document_to_batches']): string {
-  const total = rows.reduce((sum, row) => sum + Number(row.cost ?? 0), 0)
-  return `$${total.toFixed(2)}`
-}
-
 function getTotalProcessingTime(
   row: Pick<BatchDatabaseRow, 'document_to_batches' | 'processing_details'>,
 ): number | string {
   const details = parseProcessingDetails(row.processing_details)
+  const currentProcessingTime = calculateCurrentProcessingTime(details)
+  if (currentProcessingTime !== null) {
+    return currentProcessingTime
+  }
+
   const statistics = getBatchStatistics(details.batch_statistics)
   const speed = Number(statistics.speed)
 
@@ -165,16 +168,16 @@ function mapBatchListItem(row: BatchDatabaseRow): BatchListItem {
     name: row.name,
     startedAt: row.started_at,
     documentCount: getDocumentCount(row, details),
-    totalCost: getTotalCost(row.document_to_batches),
+    totalCost: calculateTotalProcessingCost(details, row.document_to_batches),
     processingTime: getTotalProcessingTime(row),
   }
 }
 
 function mapBatchDetail(row: BatchDatabaseRow): BatchDetail {
   const details = parseProcessingDetails(row.processing_details)
-  const properties: BatchProperty[] = Object.entries(details).map(([key, value]) => ({ key, value }))
+  const properties: BatchProperty[] = toBatchProperties(details)
 
-  properties.push({ key: 'Total Cost', value: getTotalCost(row.document_to_batches) })
+  properties.push({ key: 'Total Cost', value: calculateTotalProcessingCost(details, row.document_to_batches) })
   properties.push({ key: 'Processing Time (seconds)', value: getTotalProcessingTime(row) })
 
   return {

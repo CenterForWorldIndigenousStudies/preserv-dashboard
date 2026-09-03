@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react'
 import { Box, Stack, Typography } from '@mui/material'
 
-import { ProcessBatchLiveProgress } from '@organisms/ProcessBatchLiveProgress'
+import { ProcessBatchProgress } from '@organisms/ProcessBatchProgress'
 import type { ProcessBatchStatus } from 'types/pipelineContracts'
 
 interface ProcessBatchMonitorProps {
@@ -27,11 +27,12 @@ export function ProcessBatchMonitor({
         }}
       >
         <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, color: 'text.primary' }}>
-          No recent batches are available yet.
+          {'No recent batches are available yet.'}
         </Typography>
         <Typography sx={{ mt: 1, fontSize: '0.875rem', lineHeight: 1.6, color: 'text.secondary' }}>
-          Launch a batch from Process to start activity here, then use Batches for deeper monitoring once work is
-          underway.
+          {
+            'Launch a batch from Process to start activity here, then use Batches for deeper monitoring once work is underway.'
+          }
         </Typography>
       </Box>
     )
@@ -40,9 +41,10 @@ export function ProcessBatchMonitor({
   return (
     <Stack spacing={3}>
       {batches.map((batch) => (
-        <ProcessBatchLiveProgress
+        <ProcessBatchProgress
           key={batch.batchId}
           initialBatch={batch}
+          processingDetails={batch.processingProperties}
           onRollbackRequested={onRollbackRequested}
           showExecutionActions={showExecutionActions}
         />

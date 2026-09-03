@@ -1,28 +1,32 @@
 'use client'
 
 import { useEffect, useState, type ReactElement } from 'react'
-import { Alert } from '@mui/material'
+import { Alert, Stack } from '@mui/material'
 
 import { PROCESS_EVENTS_PATH } from '@constants/paths'
 import { isPipelineBatchTerminal } from '@lib/pipelineExecution'
 import { BatchExecutionActions } from '@organisms/BatchExecutionActions'
+import { BatchProcessingDetails } from '@organisms/BatchProcessingDetails'
 import { ProcessBatchStatusCard } from '@molecules/ProcessBatchStatusCard'
+import type { BatchProperty } from 'types/batches'
 import type { PipelineQueueAttemptSummary } from 'types/pipelineExecution'
 import type { ProcessBatchStatus } from 'types/pipelineContracts'
 
-interface ProcessBatchLiveProgressProps {
+interface ProcessBatchProgressProps {
   initialBatch: ProcessBatchStatus
   queueAttempts?: PipelineQueueAttemptSummary[]
+  processingDetails?: readonly BatchProperty[]
   onRollbackRequested?: () => void
   showExecutionActions?: boolean
 }
 
-export function ProcessBatchLiveProgress({
+export function ProcessBatchProgress({
   initialBatch,
   queueAttempts = [],
+  processingDetails,
   onRollbackRequested,
   showExecutionActions = true,
-}: ProcessBatchLiveProgressProps): ReactElement {
+}: ProcessBatchProgressProps): ReactElement {
   const [batch, setBatch] = useState(initialBatch)
   const [streamVersion, setStreamVersion] = useState(0)
   const [streamError, setStreamError] = useState<string | null>(null)
@@ -80,13 +84,14 @@ export function ProcessBatchLiveProgress({
   ) : null
 
   return (
-    <>
+    <Stack spacing={2.5}>
       {streamError ? <Alert severity={'warning'}>{streamError}</Alert> : null}
       <ProcessBatchStatusCard
         batch={batch}
         onRollbackRequested={onRollbackRequested}
         executionActions={executionActions}
       />
-    </>
+      {processingDetails ? <BatchProcessingDetails properties={processingDetails} /> : null}
+    </Stack>
   )
 }

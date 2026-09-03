@@ -21,7 +21,7 @@ export function ProcessBatchSummaryHeader({
         variant={'caption'}
         sx={{ color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.16em' }}
       >
-        Batch
+        {'Batch'}
       </Typography>
       <Typography component={'h2'} variant={'h5'} sx={{ mt: 1 }}>
         <Box

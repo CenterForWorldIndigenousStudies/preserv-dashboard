@@ -1,4 +1,5 @@
 import type { PipelineConfig } from '@lib/pipelineConfig'
+import type { BatchProperty } from 'types/batches'
 
 export interface RawProcessStageCollectionDetails {
   name?: string | null
@@ -247,6 +248,7 @@ export interface ProcessBatchStatus extends NormalizedProcessBatchDetails {
     conflicts: number
     failed: number
   } | null
+  processingProperties?: readonly BatchProperty[]
 }
 
 export type PassStagePrefix = 'document_splitter' | 'page_rotator'

@@ -17,8 +17,18 @@ vi.mock('@lib/queries/pipelineExecutionQueries', () => ({
   getPipelineExecutionSnapshot: mockGetPipelineExecutionSnapshot,
 }))
 
-vi.mock('@organisms/ProcessBatchLiveProgress', () => ({
-  ProcessBatchLiveProgress: () => <div>Pipeline progress stub</div>,
+vi.mock('@organisms/ProcessBatchProgress', () => ({
+  ProcessBatchProgress: ({
+    processingDetails = [],
+  }: {
+    processingDetails?: readonly { key: string; value: unknown }[]
+  }) => (
+    <div>
+      {'Pipeline progress stub'}
+      {'Processing Details'}
+      {processingDetails.map((property) => `${property.key}:${JSON.stringify(property.value)}`)}
+    </div>
+  ),
 }))
 
 vi.mock('next/navigation', () => ({
@@ -69,6 +79,7 @@ describe('BatchDetailPage', () => {
     expect(markup).toContain('total_documents')
     expect(markup).toContain('documents/second')
     expect(markup).toContain('Pipeline progress stub')
+    expect(markup.match(/Processing Details/g)).toHaveLength(1)
     expect(markup).toContain('Return to Batches')
     expect(mockGetBatchDetail).toHaveBeenCalledWith('batch-1')
     expect(mockGetPipelineExecutionSnapshot).toHaveBeenCalledWith('batch-1')

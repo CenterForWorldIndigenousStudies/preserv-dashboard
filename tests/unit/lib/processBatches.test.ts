@@ -153,6 +153,17 @@ describe('processBatches', () => {
     expect(batch?.ingester?.processedCount).toBe(12)
   })
 
+  it('exposes batch processing properties for progress surfaces', async () => {
+    mockFindUnique.mockResolvedValue(buildBatchRow({ total_documents: 12, batch_statistics: { speed: 42 } }))
+
+    const batch = await getProcessBatchStatus('batch-1')
+
+    expect(batch?.processingProperties).toEqual([
+      { key: 'total_documents', value: 12 },
+      { key: 'batch_statistics', value: { speed: 42 } },
+    ])
+  })
+
   it('parses pass-specific splitter and rotator details from the latest pass keys', async () => {
     queueCurrentBatchRow()
     const batch = await getProcessBatchStatus('batch-1')

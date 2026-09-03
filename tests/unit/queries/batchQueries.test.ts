@@ -117,28 +117,34 @@ describe('batch query contracts', () => {
       document_to_batches: { some: { documents: Prisma.documentsWhereInput } }
     }
     const documentsWhere = batchDocumentCondition.document_to_batches.some.documents
-    const documentConditions = (documentsWhere as Prisma.documentsWhereInput & {
-      AND: Prisma.documentsWhereInput[]
-    }).AND
+    const documentConditions = (
+      documentsWhere as Prisma.documentsWhereInput & {
+        AND: Prisma.documentsWhereInput[]
+      }
+    ).AND
 
     expect(documentConditions).toHaveLength(6)
     expect(documentConditions).toContainEqual({ document_quality: { validation_status: { in: ['APPROVED'] } } })
     const conditionKeys = (documentConditions as unknown as Record<string, unknown>[])
       .map((condition) => Object.keys(condition)[0] ?? '')
       .sort()
-    expect(conditionKeys).toEqual([
-      'created_at',
-      'document_access',
-      'document_to_authors',
-      'document_to_tags',
-      'document_quality',
-      'document_to_tags',
-    ].sort())
+    expect(conditionKeys).toEqual(
+      [
+        'created_at',
+        'document_access',
+        'document_to_authors',
+        'document_to_tags',
+        'document_quality',
+        'document_to_tags',
+      ].sort(),
+    )
     expect(batchDocumentCondition.document_to_batches).toEqual({ some: { documents: documentsWhere } })
   })
 
   it('limits batches to fuzzy batch matches', async () => {
-    mockBatchesFindMany.mockResolvedValueOnce([{ id: 'batch-1', name: 'Special RCR Writings' }]).mockResolvedValueOnce([])
+    mockBatchesFindMany
+      .mockResolvedValueOnce([{ id: 'batch-1', name: 'Special RCR Writings' }])
+      .mockResolvedValueOnce([])
     mockBatchesCount.mockResolvedValue(0)
 
     await getBatches({
@@ -191,9 +197,10 @@ describe('batch query contracts', () => {
     ])
     mockBatchesCount.mockResolvedValue(1)
 
-    await expect(
-      getBatchOverviewMetrics({ page: 1, pageSize: 25, filters: { author: 'Ada' } }),
-    ).resolves.toEqual({ totalBatches: 1, totalDocuments: 3 })
+    await expect(getBatchOverviewMetrics({ page: 1, pageSize: 25, filters: { author: 'Ada' } })).resolves.toEqual({
+      totalBatches: 1,
+      totalDocuments: 3,
+    })
   })
 
   it('maps a batch to a display-ready list item', async () => {
@@ -280,6 +287,46 @@ describe('batch query contracts', () => {
     }
 
     expect(result).toEqual(expected)
+  })
+
+  it('calculates total cost from current processing details before legacy link costs', async () => {
+    mockBatchesFindUnique.mockResolvedValue({
+      id: 'batch-1',
+      name: 'Batch One',
+      id_legacy: null,
+      started_by: 'mary@example.org',
+      started_at: new Date('2026-07-09T00:00:00.000Z'),
+      processing_details: JSON.stringify({
+        document_splitter_pass_1: { ai_cost_usd: 0.123456 },
+        document_splitter_pass_2: { ai_cost_usd: 0.000001 },
+        metadata_extractor: { ai_usage: { estimated_cost_usd: 0.004321 } },
+      }),
+      document_to_batches: [{ cost: 12.5, processing_time_seconds: 42 }],
+    })
+
+    const result = await getBatchDetail('batch-1')
+
+    expect(result?.properties).toContainEqual({ key: 'Total Cost', value: '$0.127778' })
+  })
+
+  it('calculates total processing time from current stage durations before legacy timings', async () => {
+    mockBatchesFindUnique.mockResolvedValue({
+      id: 'batch-1',
+      name: 'Batch One',
+      id_legacy: null,
+      started_by: 'mary@example.org',
+      started_at: new Date('2026-07-09T00:00:00.000Z'),
+      processing_details: JSON.stringify({
+        data_ingester: { duration_ms: 1200 },
+        document_splitter_pass_1: { duration_ms: 2300 },
+        metadata_extractor: { duration_ms: 500 },
+      }),
+      document_to_batches: [{ cost: 12.5, processing_time_seconds: 42 }],
+    })
+
+    const result = await getBatchDetail('batch-1')
+
+    expect(result?.properties).toContainEqual({ key: 'Processing Time (seconds)', value: 4 })
   })
 
   it('returns no properties for malformed processing details', async () => {

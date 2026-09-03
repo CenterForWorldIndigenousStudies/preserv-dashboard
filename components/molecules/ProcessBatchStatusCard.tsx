@@ -29,10 +29,9 @@ export function ProcessBatchStatusCard({
   onRollbackRequested,
   executionActions,
 }: ProcessBatchStatusCardProps): ReactElement {
-  const ocrProcessorStage = batch.ocrProcessor ??
-    (shouldShowPendingProcessStage(batch, batch.ocrProcessor, OCR_PROCESSOR_STAGE)
-      ? createPendingProcessStage()
-      : null)
+  const ocrProcessorStage =
+    batch.ocrProcessor ??
+    (shouldShowPendingProcessStage(batch, batch.ocrProcessor, OCR_PROCESSOR_STAGE) ? createPendingProcessStage() : null)
   const metadataExtractorStage =
     batch.metadataExtractor ??
     (shouldShowPendingProcessStage(batch, batch.metadataExtractor, METADATA_EXTRACTOR_STAGE)
@@ -82,7 +81,9 @@ export function ProcessBatchStatusCard({
         {batch.rollbackFailure ? <ProcessDetailRow label={'Rollback failure'} value={batch.rollbackFailure} /> : null}
         {batch.rollbackStatus === 'reverted' ? (
           <Alert severity={'success'}>
-            {'This batch was rolled back successfully. Its generated database artifacts were removed, and its Google Drive artifacts were moved to the administrator delete folder.'}
+            {
+              'This batch was rolled back successfully. Its generated database artifacts were removed, and its Google Drive artifacts were moved to the administrator delete folder.'
+            }
           </Alert>
         ) : null}
         <BatchRollbackControl
