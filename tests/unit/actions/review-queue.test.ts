@@ -1,16 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-const {
-  mockApplyReviewQueueDecision,
-  mockGetDashboardSession,
-  mockRevalidatePath,
-  mockUpdateReviewQueueChecklist,
-} = vi.hoisted(() => ({
-  mockApplyReviewQueueDecision: vi.fn(),
-  mockGetDashboardSession: vi.fn(),
-  mockRevalidatePath: vi.fn(),
-  mockUpdateReviewQueueChecklist: vi.fn(),
-}))
+const { mockApplyReviewQueueDecision, mockGetDashboardSession, mockRevalidatePath, mockUpdateReviewQueueChecklist } =
+  vi.hoisted(() => ({
+    mockApplyReviewQueueDecision: vi.fn(),
+    mockGetDashboardSession: vi.fn(),
+    mockRevalidatePath: vi.fn(),
+    mockUpdateReviewQueueChecklist: vi.fn(),
+  }))
 
 vi.mock('@lib/queries/queries', () => ({
   applyReviewQueueDecision: mockApplyReviewQueueDecision,
@@ -27,7 +23,11 @@ vi.mock('@root/auth', () => ({
   getDashboardSession: mockGetDashboardSession,
 }))
 
-import { applyReviewQueueBatchApproveAction, updateReviewQueueChecklistAction } from '@actions/review-queue'
+import {
+  applyReviewQueueBatchApproveAction,
+  applyReviewQueueBatchDecisionAction,
+  updateReviewQueueChecklistAction,
+} from '@actions/review-queue'
 import { LIBRARY_PATH, READY_FOR_LIBRARY_PATH, REVIEW_QUEUE_PATH } from '@constants/paths'
 
 describe('applyReviewQueueBatchApproveAction', () => {
@@ -86,6 +86,29 @@ describe('applyReviewQueueBatchApproveAction', () => {
     expect(mockApplyReviewQueueDecision).not.toHaveBeenCalled()
     expect(mockRevalidatePath).not.toHaveBeenCalled()
     expect(mockGetDashboardSession).not.toHaveBeenCalled()
+  })
+})
+
+describe('applyReviewQueueBatchDecisionAction', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+    vi.restoreAllMocks()
+  })
+
+  it('applies a rejection to each selected document and reports partial failures', async () => {
+    mockGetDashboardSession.mockResolvedValue({ user: { name: 'Maria Reviewer' } })
+    mockApplyReviewQueueDecision.mockImplementation(({ documentId }: { documentId: string }) => {
+      if (documentId === 'doc-2') {
+        throw new Error('Document 2 could not be rejected.')
+      }
+    })
+
+    await expect(applyReviewQueueBatchDecisionAction(['doc-1', 'doc-2'], 'REJECTED')).resolves.toEqual({
+      ok: true,
+      processedIds: ['doc-1'],
+      failed: [{ documentId: 'doc-2', error: 'Document 2 could not be rejected.' }],
+      message: '1 documents rejected. 1 failed.',
+    })
   })
 })
 

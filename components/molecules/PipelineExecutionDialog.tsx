@@ -19,6 +19,7 @@ import {
 
 import { requestPipelineExecution } from '@actions/pipelineExecution'
 import { getPipelineConfigForBatch } from '@lib/pipelineExecution'
+import { REPROCESSING_EXECUTION_STAGE_ORDER } from '@lib/reprocessingDrafts'
 import {
   createDefaultDraft,
   draftToPipelineConfig,
@@ -54,17 +55,6 @@ const STAGE_LABELS: Record<CallbackStageKey, string> = {
   fedora_ingester: 'Fedora Ingester',
 }
 
-const STAGES: CallbackStageKey[] = [
-  'document_splitter',
-  'page_rotator',
-  'ocr_processor',
-  'content_dedup',
-  'metadata_extractor',
-  'metadata_validator',
-  'rights_determinator',
-  'fedora_ingester',
-]
-
 const STAGE_PROPERTIES: Record<CallbackStageKey, keyof ProcessBatchStatus> = {
   ingester: 'ingester',
   document_splitter: 'documentSplitter',
@@ -86,7 +76,7 @@ function availableStages(
     ? new Set(pipelineConfig.executionPlan.filter((step) => step.enabled).map((step) => step.service))
     : null
 
-  return STAGES.filter((stage) => {
+  return REPROCESSING_EXECUTION_STAGE_ORDER.filter((stage) => {
     if (mode === 'reprocess' && stage === 'fedora_ingester') {
       return false
     }

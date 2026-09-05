@@ -404,7 +404,9 @@ erDiagram
 - `pipeline_queue_items.payload` stores the original accepted trigger payload used by the worker.
 - `pipeline_queue_items.callback_delivery` stores the callback delivery result recorded after worker completion.
 - `batches.lifecycle_status` is the durable batch workflow state.
-  The rollback-eligible states are pre-publication states; `publication_locked`, `published`, and `unknown` are not rollback eligible.
+  Current values are `draft`, `queued`, `running`, `failed`, `publication_locked`, `complete`, `archive`, `rollback_requested`, `draining`, `reverting`, `rollback_failed`, and `reverted`.
+  Drafts are editable cart batches, `failed` is rerunnable before manual edits, `complete` is reserved for verified Fedora publication, and `publication_locked` prevents rerun after an edit or uncertain/irreversible publication.
+  The rollback-eligible states are pre-publication states; `publication_locked`, `complete`, and `unknown` publication outcomes are not rollback eligible.
 - `batches.publication_status` records the provider boundary independently from the workflow state.
   `publication_target` identifies the configured provider, currently `fedora`.
 - `batch_rollbacks` retains the requested rollback, operator information, progress counts, failures, retries, and explicit resolutions.
@@ -783,7 +785,7 @@ Core batch/process-run records.
 | `completed_at` | `DATETIME` | Batch completion time. |
 | `last_processed` | `DATETIME` | Last processing datetime. |
 | `started_by` | `VARCHAR(255)` | Initiator name/process label. |
-| `lifecycle_status` | `VARCHAR(32)` | Durable workflow state, including `running`, `reverting`, `reverted`, and `completed`. |
+| `lifecycle_status` | `VARCHAR(32)` | Durable workflow state: `draft`, `queued`, `running`, `failed`, `publication_locked`, `complete`, `archive`, and rollback states. |
 | `publication_status` | `VARCHAR(32)` | Publication boundary state: `not_started`, `publication_locked`, `published`, or `unknown`. |
 | `publication_target` | `VARCHAR(64)` | Provider identifier for the publication endpoint; currently `fedora`. |
 

@@ -43,6 +43,8 @@ interface BatchDatabaseRow {
   name: string | null
   started_by: string | null
   started_at: Date | string | null
+  lifecycle_status: string | null
+  publication_status: string | null
   processing_details: string | null
   document_to_batches: Array<{
     cost: Prisma.Decimal | number | string | null
@@ -80,6 +82,8 @@ export function parseBatchQueryParams(params: Record<string, string | string[] |
     author: normalizeTextFilter(firstSearchParam(params.author)),
     tag: normalizeTextFilter(firstSearchParam(params.tag)),
     statuses: parseStatusesParam(params.statuses),
+    lifecycleStatuses: parseStatusesParam(params.lifecycleStatuses),
+    publicationStatuses: parseStatusesParam(params.publicationStatuses),
     documentType: normalizeDocumentType(firstSearchParam(params.documentType)),
     batch: normalizeTextFilter(firstSearchParam(params.batch)),
     createdFrom: normalizeDateFilter(firstSearchParam(params.createdFrom)),
@@ -170,6 +174,8 @@ function mapBatchListItem(row: BatchDatabaseRow): BatchListItem {
     documentCount: getDocumentCount(row, details),
     totalCost: calculateTotalProcessingCost(details, row.document_to_batches),
     processingTime: getTotalProcessingTime(row),
+    lifecycleStatus: row.lifecycle_status,
+    publicationStatus: row.publication_status,
   }
 }
 
@@ -186,6 +192,8 @@ function mapBatchDetail(row: BatchDatabaseRow): BatchDetail {
     startedBy: row.started_by ?? null,
     startedAt: row.started_at,
     properties,
+    lifecycleStatus: row.lifecycle_status,
+    publicationStatus: row.publication_status,
   }
 }
 
@@ -258,6 +266,8 @@ const batchSelect = {
   name: true,
   started_by: true,
   started_at: true,
+  lifecycle_status: true,
+  publication_status: true,
   processing_details: true,
   document_to_batches: {
     select: {
@@ -368,6 +378,14 @@ function buildBatchWhere(
 
   if (batchIds) {
     advancedConditions.push({ id: { in: batchIds } })
+  }
+
+  if (filters.lifecycleStatuses?.length) {
+    advancedConditions.push({ lifecycle_status: { in: filters.lifecycleStatuses } })
+  }
+
+  if (filters.publicationStatuses?.length) {
+    advancedConditions.push({ publication_status: { in: filters.publicationStatuses } })
   }
 
   if (documentWhere) {

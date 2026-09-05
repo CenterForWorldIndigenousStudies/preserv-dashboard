@@ -4,6 +4,11 @@ import {
 } from '@constants/pipelineExecutionModes'
 import type { PipelineConfig } from '@lib/pipelineConfig'
 
+export interface PipelineExecutionCollection {
+  name: string
+  notes: string | null
+}
+
 export interface PipelineExecutionContext {
   executionMode: PipelineExecutionMode
   operationId: string
@@ -12,6 +17,8 @@ export interface PipelineExecutionContext {
   sourceDocumentIds?: string[]
   sourceBatchId?: string
   newBatchName?: string
+  draftBatchId?: string
+  collection?: PipelineExecutionCollection
   pipelineConfig?: PipelineConfig
 }
 
@@ -38,6 +45,45 @@ function normalizeDocumentIds(values: string[] | undefined): string[] {
   return [...new Set(values.map((value) => value.trim()).filter(Boolean))]
 }
 
+function normalizeCollection(value: PipelineExecutionCollection | undefined): PipelineExecutionCollection | undefined {
+  if (!value) return undefined
+
+  const name = normalizeOptionalText(value.name, 'collection.name')
+  if (!name) return undefined
+  const notes = value.notes === null ? null : normalizeOptionalText(value.notes, 'collection.notes') ?? null
+  return { name, notes }
+}
+
+function validateExecutionScope(
+  executionMode: PipelineExecutionMode,
+  sourceDocumentIds: string[],
+  newBatchName: string | undefined,
+  draftBatchId: string | undefined,
+): void {
+  if (executionMode === PIPELINE_EXECUTION_MODES.REPROCESS) {
+    if (draftBatchId) {
+      if (newBatchName) {
+        throw new Error('draft reprocess execution cannot specify newBatchName.')
+      }
+      return
+    }
+    if (sourceDocumentIds.length === 0) {
+      throw new Error('reprocess execution requires sourceDocumentIds.')
+    }
+    if (!newBatchName) {
+      throw new Error('reprocess execution requires newBatchName.')
+    }
+    return
+  }
+
+  if (newBatchName) {
+    throw new Error(`${executionMode} execution cannot specify newBatchName.`)
+  }
+  if (draftBatchId) {
+    throw new Error(`${executionMode} execution cannot specify draftBatchId.`)
+  }
+}
+
 export function normalizePipelineExecutionContext(
   requestId: string,
   input: PipelineExecutionContextInput = {},
@@ -55,6 +101,8 @@ export function normalizePipelineExecutionContext(
   const sourceDocumentIds = normalizeDocumentIds(input.sourceDocumentIds)
   const sourceBatchId = normalizeOptionalText(input.sourceBatchId, 'sourceBatchId')
   const newBatchName = normalizeOptionalText(input.newBatchName, 'newBatchName')
+  const draftBatchId = normalizeOptionalText(input.draftBatchId, 'draftBatchId')
+  const collection = normalizeCollection(input.collection)
 
   if (!operationId) {
     throw new Error(`${executionMode} execution requires operationId.`)
@@ -62,16 +110,7 @@ export function normalizePipelineExecutionContext(
   if (!idempotencyKey) {
     throw new Error(`${executionMode} execution requires idempotencyKey.`)
   }
-  if (executionMode === PIPELINE_EXECUTION_MODES.REPROCESS) {
-    if (sourceDocumentIds.length === 0) {
-      throw new Error('reprocess execution requires sourceDocumentIds.')
-    }
-    if (!newBatchName) {
-      throw new Error('reprocess execution requires newBatchName.')
-    }
-  } else if (newBatchName) {
-    throw new Error(`${executionMode} execution cannot specify newBatchName.`)
-  }
+  validateExecutionScope(executionMode, sourceDocumentIds, newBatchName, draftBatchId)
   if (
     input.pipelineConfig &&
     executionMode !== PIPELINE_EXECUTION_MODES.NORMAL &&
@@ -88,6 +127,8 @@ export function normalizePipelineExecutionContext(
     sourceDocumentIds,
     ...(sourceBatchId ? { sourceBatchId } : {}),
     ...(newBatchName ? { newBatchName } : {}),
+    ...(draftBatchId ? { draftBatchId } : {}),
+    ...(collection ? { collection } : {}),
     ...(input.pipelineConfig ? { pipelineConfig: input.pipelineConfig } : {}),
   }
 }

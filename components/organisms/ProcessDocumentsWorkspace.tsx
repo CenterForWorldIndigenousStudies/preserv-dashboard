@@ -24,9 +24,12 @@ import {
 import { ProcessBatchCreationWorkspace } from '@organisms/ProcessBatchCreationWorkspace'
 import { ProcessBatchMonitor } from '@organisms/ProcessBatchMonitor'
 import type { ProcessBatchStatus } from 'types/pipelineContracts'
+import type { ReprocessingDraftDetail } from 'types/reprocessingDrafts'
+import { ReprocessingDraftWorkspace } from '@organisms/ReprocessingDraftWorkspace'
 
 interface ProcessDocumentsWorkspaceProps {
   initialBatches: ProcessBatchStatus[]
+  initialDraft?: ReprocessingDraftDetail | null
 }
 
 interface ProcessAcceptedResponse {
@@ -37,7 +40,7 @@ interface ProcessAcceptedResponse {
   error?: string
 }
 
-export function ProcessDocumentsWorkspace({ initialBatches }: ProcessDocumentsWorkspaceProps): ReactElement {
+export function ProcessDocumentsWorkspace({ initialBatches, initialDraft = null }: ProcessDocumentsWorkspaceProps): ReactElement {
   const router = useRouter()
   const [isSubmitting, startSubmitTransition] = useTransition()
   const [isRefreshing, startRefreshTransition] = useTransition()
@@ -208,6 +211,7 @@ export function ProcessDocumentsWorkspace({ initialBatches }: ProcessDocumentsWo
 
   return (
     <Stack spacing={4}>
+      {initialDraft ? <ReprocessingDraftWorkspace initialDraft={initialDraft} /> : null}
       <ProcessBatchCreationWorkspace
         batchName={batchName}
         collectionName={collectionName}

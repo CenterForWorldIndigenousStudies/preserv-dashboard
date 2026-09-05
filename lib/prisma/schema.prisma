@@ -156,7 +156,7 @@ model batches {
   completed_at              DateTime?                   @db.DateTime(0)
   last_processed            DateTime?                   @db.DateTime(0)
   started_by                String?                     @db.VarChar(255)
-  lifecycle_status          String                      @default("created") @db.VarChar(32)
+  lifecycle_status          String                      @default("queued") @db.VarChar(32)
   publication_status        String                      @default("not_started") @db.VarChar(32)
   publication_target        String                      @default("fedora") @db.VarChar(64)
   batch_external_operations batch_external_operations[]

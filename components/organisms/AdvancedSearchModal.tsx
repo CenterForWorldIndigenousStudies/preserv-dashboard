@@ -39,10 +39,27 @@ interface AdvancedSearchModalProps {
   onApply: (filters: AdvancedSearchFilters) => void
 }
 
+interface StatusFilterGroupProps {
+  title: string
+  options: StatusOption[]
+  selected: StatusOption[]
+  onToggle: (status: StatusOption) => void
+}
+
+interface StatusFilterGroupsProps {
+  filterOptions: FilterOptions
+  draftFilters: AdvancedSearchFilters
+  onToggleDocumentStatus: (status: StatusOption) => void
+  onToggleStatus: (field: 'lifecycleStatuses' | 'publicationStatuses', status: StatusOption) => void
+}
+
 function formatFilterLabel(value: string): string {
   return value
     .split('_')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .map((part) => {
+      const normalizedPart = part.toLowerCase()
+      return normalizedPart.charAt(0).toUpperCase() + normalizedPart.slice(1)
+    })
     .join(' ')
 }
 
@@ -69,6 +86,78 @@ function renderBatchOption(option: BatchSearchSuggestion): ReactNode {
   )
 }
 
+function StatusFilterGroup({ title, options, selected, onToggle }: StatusFilterGroupProps): ReactElement {
+  return (
+    <Box>
+      <Typography variant={'subtitle2'} sx={{ mb: 1.25 }}>
+        {title}
+      </Typography>
+      <Stack direction={'row'} spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
+        {options.map((status) => {
+          const isSelected = selected.includes(status)
+          return (
+            <Chip
+              key={status}
+              onClick={() => onToggle(status)}
+              clickable
+              label={formatFilterLabel(status)}
+              sx={(theme: Theme) => ({
+                borderRadius: '999px',
+                border: `1px solid ${isSelected ? theme.palette.primary.main : alpha(theme.palette.text.primary, 0.08)}`,
+                backgroundColor: isSelected ? theme.palette.primary.main : theme.palette.background.default,
+                color: isSelected ? theme.palette.primary.contrastText : theme.palette.text.primary,
+                '&:hover': {
+                  backgroundColor: isSelected ? theme.palette.primary.main : theme.palette.action.hover,
+                },
+                '& .MuiChip-label': {
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                },
+              })}
+            />
+          )
+        })}
+      </Stack>
+    </Box>
+  )
+}
+
+function StatusFilterGroups({
+  filterOptions,
+  draftFilters,
+  onToggleDocumentStatus,
+  onToggleStatus,
+}: StatusFilterGroupsProps): ReactElement {
+  return (
+    <>
+      <StatusFilterGroup
+        title={'Document status'}
+        options={filterOptions.statuses}
+        selected={draftFilters.statuses ?? []}
+        onToggle={onToggleDocumentStatus}
+      />
+
+      {filterOptions.lifecycleStatuses?.length ? (
+        <StatusFilterGroup
+          title={'Batch lifecycle status'}
+          options={filterOptions.lifecycleStatuses}
+          selected={draftFilters.lifecycleStatuses ?? []}
+          onToggle={(status) => onToggleStatus('lifecycleStatuses', status)}
+        />
+      ) : null}
+
+      {filterOptions.publicationStatuses?.length ? (
+        <StatusFilterGroup
+          title={'Publication status'}
+          options={filterOptions.publicationStatuses}
+          selected={draftFilters.publicationStatuses ?? []}
+          onToggle={(status) => onToggleStatus('publicationStatuses', status)}
+        />
+      ) : null}
+    </>
+  )
+}
+
 export function AdvancedSearchModal({ filters, filterOptions, onApply }: AdvancedSearchModalProps): ReactElement {
   const [isOpen, setIsOpen] = useState(false)
   const [draftFilters, setDraftFilters] = useState<AdvancedSearchFilters>(filters)
@@ -86,6 +175,8 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
     if (filters.author) count += 1
     if (filters.tag) count += 1
     if (filters.statuses?.length) count += 1
+    if (filters.lifecycleStatuses?.length) count += 1
+    if (filters.publicationStatuses?.length) count += 1
     if (filters.documentType && filters.documentType !== 'all') count += 1
     if (filters.batch) count += 1
     if (filters.createdFrom || filters.createdTo) count += 1
@@ -108,6 +199,8 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
       author: draftFilters.author?.trim() || undefined,
       tag: draftFilters.tag?.trim() || undefined,
       statuses: draftFilters.statuses?.length ? draftFilters.statuses : undefined,
+      lifecycleStatuses: draftFilters.lifecycleStatuses?.length ? draftFilters.lifecycleStatuses : undefined,
+      publicationStatuses: draftFilters.publicationStatuses?.length ? draftFilters.publicationStatuses : undefined,
       documentType: draftFilters.documentType ?? 'all',
       batch: draftFilters.batch?.trim() || undefined,
       createdFrom: draftFilters.createdFrom || undefined,
@@ -137,6 +230,20 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
       return {
         ...previousFilters,
         statuses: nextStatuses,
+      }
+    })
+  }, [])
+
+  const toggleStatusFilter = useCallback((field: 'lifecycleStatuses' | 'publicationStatuses', status: StatusOption) => {
+    setDraftFilters((previousFilters) => {
+      const currentStatuses = previousFilters[field] ?? []
+      const nextStatuses = currentStatuses.includes(status)
+        ? currentStatuses.filter((value) => value !== status)
+        : [...currentStatuses, status]
+
+      return {
+        ...previousFilters,
+        [field]: nextStatuses,
       }
     })
   }, [])
@@ -323,46 +430,12 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
             </TextField>
           </Box>
 
-          <Box>
-            <Typography variant={'subtitle2'} sx={{ mb: 1.25 }}>
-              {'Status'}
-            </Typography>
-            <Stack
-              direction={'row'}
-              spacing={1}
-              useFlexGap
-              sx={{
-                flexWrap: 'wrap',
-              }}
-            >
-              {filterOptions.statuses.map((status) => {
-                const isSelected = draftFilters.statuses?.includes(status) ?? false
-                return (
-                  <Chip
-                    key={status}
-                    onClick={() => {
-                      toggleStatus(status)
-                    }}
-                    clickable
-                    label={formatFilterLabel(status)}
-                    sx={(theme: Theme) => ({
-                      borderRadius: '999px',
-                      border: `1px solid ${isSelected ? theme.palette.primary.main : alpha(theme.palette.text.primary, 0.08)}`,
-                      backgroundColor: isSelected ? theme.palette.primary.main : theme.palette.background.default,
-                      color: isSelected ? theme.palette.primary.contrastText : theme.palette.text.primary,
-                      '&:hover': {
-                        backgroundColor: isSelected ? theme.palette.primary.main : theme.palette.action.hover,
-                      },
-                      '& .MuiChip-label': {
-                        fontSize: '0.875rem',
-                        fontWeight: 500,
-                      },
-                    })}
-                  />
-                )
-              })}
-            </Stack>
-          </Box>
+          <StatusFilterGroups
+            filterOptions={filterOptions}
+            draftFilters={draftFilters}
+            onToggleDocumentStatus={toggleStatus}
+            onToggleStatus={toggleStatusFilter}
+          />
 
           <FormControl>
             <FormLabel

@@ -1,6 +1,9 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { BATCH_LIFECYCLE_STATUSES } from '@constants/batchLifecycleStatuses'
+import { BATCH_PUBLICATION_STATUSES } from '@constants/batchPublicationStatuses'
+
 const {
   mockGetBatchOverviewMetrics,
   mockGetBatches,
@@ -65,7 +68,13 @@ const initialData = {
   },
 }
 
-const filterOptions = { collections: ['Collection A'], accessLevels: ['public'], statuses: ['APPROVED'] }
+const filterOptions = {
+  collections: ['Collection A'],
+  accessLevels: ['public'],
+  statuses: ['APPROVED'],
+  lifecycleStatuses: Object.values(BATCH_LIFECYCLE_STATUSES),
+  publicationStatuses: Object.values(BATCH_PUBLICATION_STATUSES),
+}
 
 describe('BatchesPage', () => {
   afterEach(() => {
@@ -87,6 +96,8 @@ describe('BatchesPage', () => {
     expect(markup).toContain(PROCESS_DOCUMENTS_PATH)
     expect(markup).toContain('Total Batches')
     expect(markup).toContain('Total Documents')
+    expect(markup).toContain('Reprocessing cart')
+    expect(markup).not.toContain('Draft reprocessing batches')
   })
 
   it('loads the parsed list query and passes the result to BatchesTable', async () => {
@@ -105,3 +116,6 @@ describe('BatchesPage', () => {
     expect(mocks.batchesTableProps).toEqual({ initialData, initialQuery, filterOptions })
   })
 })
+vi.mock('@lib/queries/reprocessingDraftQueries', () => ({
+  getReprocessingDrafts: vi.fn().mockResolvedValue([]),
+}))

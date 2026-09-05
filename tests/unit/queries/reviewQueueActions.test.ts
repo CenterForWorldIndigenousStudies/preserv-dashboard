@@ -8,6 +8,10 @@ const { mockCreateEditHistoryEntry } = vi.hoisted(() => ({
   mockCreateEditHistoryEntry: vi.fn(),
 }))
 
+const { mockMarkDocumentBatchesPublicationLocked } = vi.hoisted(() => ({
+  mockMarkDocumentBatchesPublicationLocked: vi.fn(),
+}))
+
 vi.mock('@lib/db', () => ({
   db: {
     $transaction: mockTransaction,
@@ -16,6 +20,7 @@ vi.mock('@lib/db', () => ({
 
 vi.mock('@lib/editHistory', () => ({
   createEditHistoryEntry: mockCreateEditHistoryEntry,
+  markDocumentBatchesPublicationLocked: mockMarkDocumentBatchesPublicationLocked,
 }))
 
 import {
@@ -45,6 +50,7 @@ interface MockTransactionClient {
   }
   document_to_batches: {
     findMany: ReturnType<typeof vi.fn>
+    delete: ReturnType<typeof vi.fn>
   }
   state_history: {
     findFirst: ReturnType<typeof vi.fn>
@@ -104,6 +110,7 @@ function createTransactionClient(): MockTransactionClient {
     },
     document_to_batches: {
       findMany: vi.fn(),
+      delete: vi.fn(),
     },
     state_history: {
       findFirst: vi.fn(),
@@ -157,7 +164,10 @@ describe('applyReviewQueueDecision', () => {
       { document_id: 'doc-1', value: JSON.stringify({ value: 'Indigenous peoples' }), metadata: { name: 'dc_subject_unesco' } },
     ])
     tx.document_access.findMany.mockResolvedValue([{ access_levels: { level_name: 'public' } }])
-    tx.document_to_batches.findMany.mockResolvedValue([{ document_id: 'doc-1', processing_details: '{}' }])
+    tx.document_to_batches.findMany.mockImplementation(
+      ({ where }: { where: { batches?: { lifecycle_status?: unknown } } }) =>
+        where.batches?.lifecycle_status === 'draft' ? [] : [{ document_id: 'doc-1', processing_details: '{}' }],
+    )
     tx.metadata.findFirst.mockResolvedValue({ id: 'meta-history' })
     tx.document_to_metadata.upsert.mockResolvedValue({ id: 'history-link-1' })
     tx.document_to_metadata.delete.mockResolvedValue({ id: 'active-review-1' })
@@ -231,6 +241,20 @@ describe('applyReviewQueueDecision', () => {
     tx.metadata.create.mockResolvedValue({ id: 'meta-history-2' })
     tx.document_to_metadata.upsert.mockResolvedValue({ id: 'history-link-2' })
     tx.document_to_metadata.delete.mockResolvedValue({ id: 'active-review-2' })
+    tx.document_to_batches.findMany.mockImplementation(
+      ({ where }: { where: { batches?: { lifecycle_status?: unknown } } }) =>
+        where.batches?.lifecycle_status === 'draft'
+          ? [
+              {
+                id: 'draft-membership-2',
+                batch_id: 'draft-2',
+                document_id: 'doc-2',
+                batch_origin: 'reprocessing_draft',
+                processing_details: '{}',
+              },
+            ]
+          : [],
+    )
     mockTransaction.mockImplementation(async (callback: (client: MockTransactionClient) => Promise<unknown>) =>
       callback(tx),
     )
@@ -266,6 +290,7 @@ describe('applyReviewQueueDecision', () => {
     expect(typeof metadataCreateArgs?.data?.id).toBe('string')
     expect(typeof metadataCreateArgs?.data?.notes).toBe('string')
     expect(tx.document_to_metadata.delete).not.toHaveBeenCalled()
+    expect(tx.document_to_batches.delete).toHaveBeenCalledWith({ where: { id: 'draft-membership-2' } })
     const metadataWriteArgs = tx.document_to_metadata.upsert.mock.calls[0]?.[0] as MetadataWriteArgs | undefined
     const historyValue = parseReviewHistory(metadataWriteArgs?.create?.value)
     expect(historyValue.episodes[0]).toMatchObject({

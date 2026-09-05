@@ -78,42 +78,28 @@ describe('ReviewQueueTable adapter', () => {
         render?: (params: { row: Document }) => ReactNode
       }>
       enableRowSelection?: boolean
+      getRowProps?: (row: Document) => Record<string, unknown>
+      getSelectCheckboxProps?: (row: Document) => Record<string, unknown>
+      trailingToolbarSlot?: ReactNode
     }
 
     expect(config.definition.tableId).toBe('review-queue-documents')
-    expect(config.rowActions?.map(({ id }) => id)).toEqual(['review-decisions'])
+    expect(config.rowActions).toBeUndefined()
     expect(config.enableRowSelection).toBe(true)
+    expect(config.getRowProps?.({ id: 'doc-1', open_reprocessing_draft: null } as Document)).toEqual({})
+    const draftRowProps = config.getRowProps?.({
+      id: 'doc-1',
+      open_reprocessing_draft: { id: 'draft-1', name: 'Retry' },
+    } as Document)
+    const draftCheckboxProps = config.getSelectCheckboxProps?.({
+      id: 'doc-1',
+      open_reprocessing_draft: { id: 'draft-1', name: 'Retry' },
+    } as Document)
+    expect(typeof draftRowProps?.sx).toBe('function')
+    expect(typeof draftCheckboxProps?.sx).toBe('function')
+    const actionMarkup = renderToStaticMarkup(<>{config.trailingToolbarSlot}</>)
+    expect(actionMarkup).toContain('Actions (0)')
     expect(config.definition.columns.map(({ header }) => header)).not.toContain('Review Reasons')
-
-    const reviewAction = config.rowActions?.[0]
-    expect(reviewAction?.render).toBeDefined()
-    const blockedActionMarkup = renderToStaticMarkup(
-      <>
-        {reviewAction?.render?.({
-          row: {
-            id: 'doc-1',
-            name: 'Needs review document',
-            id_legacy: null,
-            filesize: null,
-            hash_binary: null,
-            hash_content: null,
-            validation_status: 'NEEDS_REVIEW',
-            created_at: null,
-            updated_at: null,
-            needs_review_reasons: [
-              {
-                serviceKey: 'readiness',
-                serviceLabel: 'Readiness',
-                reasons: ['Missing required metadata: dc_subject.'],
-              },
-            ],
-          } satisfies Document,
-        })}
-      </>,
-    )
-    expect(blockedActionMarkup).toContain('aria-disabled="true"')
-    expect(blockedActionMarkup).toContain('View unmet approval requirements for document doc-1')
-    expect(blockedActionMarkup).toContain('Approve')
 
     const validationStatusCell = config.definition.columns.find(
       ({ accessorKey }) => accessorKey === 'validation_status',

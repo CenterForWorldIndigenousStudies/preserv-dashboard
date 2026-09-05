@@ -1,0 +1,14 @@
+{
+  "DRAFT": "draft",
+  "QUEUED": "queued",
+  "RUNNING": "running",
+  "FAILED": "failed",
+  "PUBLICATION_LOCKED": "publication_locked",
+  "COMPLETE": "complete",
+  "ARCHIVE": "archive",
+  "ROLLBACK_REQUESTED": "rollback_requested",
+  "DRAINING": "draining",
+  "REVERTING": "reverting",
+  "ROLLBACK_FAILED": "rollback_failed",
+  "REVERTED": "reverted"
+}

@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { Alert, Button, Stack, TextField, Typography } from '@mui/material'
 
 import { requestBatchRollback, retryBatchRollback } from '@lib/batchRollback'
+import { BATCH_LIFECYCLE_STATUSES } from '@constants/batchLifecycleStatuses'
+import { BATCH_PUBLICATION_STATUSES } from '@constants/batchPublicationStatuses'
 
 interface BatchRollbackControlProps {
   batchId: string
@@ -24,8 +26,8 @@ function isRollbackRequestEligible({
   'publicationStatus' | 'lifecycleStatus' | 'manualEditAfterStart' | 'rollbackStatus'
 >): boolean {
   return (
-    publicationStatus === 'not_started' &&
-    ['created', 'queued', 'running', 'completed'].includes(lifecycleStatus ?? '') &&
+    publicationStatus === BATCH_PUBLICATION_STATUSES.NOT_STARTED &&
+    new Set<string>([BATCH_LIFECYCLE_STATUSES.QUEUED, BATCH_LIFECYCLE_STATUSES.RUNNING, BATCH_LIFECYCLE_STATUSES.FAILED]).has(lifecycleStatus ?? '') &&
     !manualEditAfterStart &&
     !rollbackStatus
   )
@@ -41,8 +43,8 @@ function isRollbackRetryEligible({
   'publicationStatus' | 'lifecycleStatus' | 'manualEditAfterStart' | 'rollbackStatus'
 >): boolean {
   return (
-    publicationStatus === 'not_started' &&
-    lifecycleStatus === 'rollback_failed' &&
+    publicationStatus === BATCH_PUBLICATION_STATUSES.NOT_STARTED &&
+    lifecycleStatus === BATCH_LIFECYCLE_STATUSES.ROLLBACK_FAILED &&
     rollbackStatus === 'failed' &&
     !manualEditAfterStart
   )

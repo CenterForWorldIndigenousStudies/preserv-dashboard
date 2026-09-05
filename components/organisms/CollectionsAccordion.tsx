@@ -38,6 +38,17 @@ interface CollectionManagerState {
 
 const COLLECTION_EXPANDED_PARAM = 'expanded'
 
+type CollectionFilterKey =
+  | 'author'
+  | 'tag'
+  | 'statuses'
+  | 'documentType'
+  | 'batch'
+  | 'createdFrom'
+  | 'createdTo'
+  | 'collection'
+  | 'accessLevel'
+
 function buildCollectionQueryParamKey(
   collectionId: string,
   key:
@@ -158,7 +169,7 @@ function serializeCollectionsState(
     if (query.search) {
       nextParams.set(buildCollectionQueryParamKey(collectionId, 'search'), query.search)
     }
-    const filterParams: Array<[keyof AdvancedSearchFilters, string | undefined]> = [
+    const filterParams: Array<[CollectionFilterKey, string | undefined]> = [
       ['author', query.filters.author],
       ['tag', query.filters.tag],
       ['statuses', serializeStatusesParam(query.filters.statuses)],

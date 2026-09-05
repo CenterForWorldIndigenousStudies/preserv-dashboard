@@ -72,6 +72,7 @@ export const METADATA_EXTRACTOR_OPENAI_BATCH_STATUS_PATH =
 export const METADATA_EXTRACTOR_RUN_WAVE_TWO_PATH = `${PROCESS_PATH}/metadata-extractor/run-wave-two` as const
 
 export const PROCESS_DOCUMENTS_PATH = `/process-documents` as const
+export const REPROCESSING_CART_PATH = PROCESS_DOCUMENTS_PATH
 
 export const READY_FOR_LIBRARY_PATH = '/ready-for-library' as const
 

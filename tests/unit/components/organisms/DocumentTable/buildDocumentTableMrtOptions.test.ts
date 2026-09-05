@@ -34,4 +34,22 @@ describe('buildDocumentTableMrtOptions', () => {
       backgroundColor: 'background.paper',
     })
   })
+
+  it('passes per-row styling to the body row and selection checkbox', () => {
+    const options = buildDocumentTableMrtOptions({
+      columns: [],
+      data: [],
+      emptyMessage: 'No documents found.',
+      getRowProps: (row: { id: string }) => ({ sx: { color: row.id } }),
+      getSelectCheckboxProps: (row: { id: string }) => ({ sx: { color: row.id } }),
+    })
+
+    const rowProps = options.muiTableBodyRowProps as (props: { row: { original: { id: string } } }) => Record<string, unknown>
+    const checkboxProps = options.muiSelectCheckboxProps as (props: {
+      row: { original: { id: string } }
+    }) => Record<string, unknown>
+
+    expect(rowProps({ row: { original: { id: 'draft-1' } } })).toEqual({ sx: { color: 'draft-1' } })
+    expect(checkboxProps({ row: { original: { id: 'draft-1' } } })).toEqual({ sx: { color: 'draft-1' } })
+  })
 })

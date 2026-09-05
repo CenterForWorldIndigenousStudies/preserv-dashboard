@@ -1,8 +1,10 @@
 import type { StoryObj } from '@storybook/nextjs-vite'
+import { IconBatchReprocessing } from '@atoms/icons/IconBatchReprocessing'
 import { IconGoogle } from '@atoms/icons/IconGoogle'
 import { IconPlus } from '@atoms/icons/IconPlus'
 import { IconSpinner } from '@atoms/icons/IconSpinner'
 import { IconX } from '@atoms/icons/IconX'
+import { IconBatch } from './IconBatch'
 
 const meta = {
   title: 'Atoms/Icons',
@@ -12,8 +14,7 @@ const meta = {
   },
   argTypes: {
     size: {
-      control: 'select',
-      options: [12, 16, 20, 24, 32],
+      control: 'text',
       description: 'Icon size in pixels',
     },
     className: {
@@ -28,6 +29,44 @@ const meta = {
 
 export default meta
 type Story = StoryObj<typeof meta>
+
+export const Batch: Story = {
+  name: 'Batch Icon',
+  args: {
+    color: 'currentColor',
+    size: 24,
+  },
+  argTypes: {
+    color: {
+      control: 'color',
+      description: 'SVG stroke color',
+    },
+  },
+  render: (args) => <IconBatch {...args} />,
+}
+
+export const BatchReprocessing: Story = {
+  name: 'Batch Reprocessing Icon',
+  args: {
+    color: 'currentColor',
+    size: 24,
+  },
+  argTypes: {
+    color: {
+      control: 'color',
+      description: 'SVG stroke color',
+    },
+  },
+  render: (args) => <IconBatchReprocessing {...args} />,
+}
+
+export const Google: Story = {
+  name: 'Google Icon',
+  args: {
+    size: 20,
+  },
+  render: (args) => <IconGoogle {...args} />,
+}
 
 export const Plus: Story = {
   name: 'Plus Icon',
@@ -52,12 +91,4 @@ export const X: Story = {
     size: 20,
   },
   render: (args) => <IconX {...args} />,
-}
-
-export const Google: Story = {
-  name: 'Google Icon',
-  args: {
-    size: 20,
-  },
-  render: (args) => <IconGoogle {...args} />,
 }

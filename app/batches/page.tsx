@@ -2,11 +2,15 @@ import type { ReactElement } from 'react'
 import { Box, Button, Card, CardContent, Stack, Typography } from '@mui/material'
 
 import { PROCESS_DOCUMENTS_PATH } from '@constants/paths'
+import { BATCH_LIFECYCLE_STATUSES } from '@constants/batchLifecycleStatuses'
+import { BATCH_PUBLICATION_STATUSES } from '@constants/batchPublicationStatuses'
 import { PAGE_LABELS } from '@constants/pageLabels'
 import { BatchesTable } from '@organisms/BatchesTable'
 import { PageHeader } from '@organisms/PageHeader'
 import { getBatchOverviewMetrics, getBatches, parseBatchQueryParams } from '@lib/queries/batchQueries'
 import { getDocumentFilterOptions } from '@lib/queries/queries'
+import { getReprocessingDrafts } from '@lib/queries/reprocessingDraftQueries'
+import { ReprocessingCart } from '@molecules/ReprocessingCart'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,11 +54,17 @@ interface BatchesPageProps {
 export default async function BatchesPage({ searchParams }: BatchesPageProps): Promise<ReactElement> {
   const resolvedSearchParams = await searchParams
   const initialQuery = parseBatchQueryParams(resolvedSearchParams)
-  const [initialData, overview, filterOptions] = await Promise.all([
+  const [initialData, overview, filterOptions, drafts] = await Promise.all([
     getBatches(initialQuery),
     getBatchOverviewMetrics(initialQuery),
     getDocumentFilterOptions(),
+    getReprocessingDrafts(),
   ])
+  const batchFilterOptions = {
+    ...filterOptions,
+    lifecycleStatuses: Object.values(BATCH_LIFECYCLE_STATUSES),
+    publicationStatuses: Object.values(BATCH_PUBLICATION_STATUSES),
+  }
 
   return (
     <Stack spacing={4} sx={{ width: '100%' }}>
@@ -109,7 +119,8 @@ export default async function BatchesPage({ searchParams }: BatchesPageProps): P
       </Card>
 
       <SummaryCard totalBatches={overview.totalBatches} totalDocuments={overview.totalDocuments} />
-      <BatchesTable initialData={initialData} initialQuery={initialQuery} filterOptions={filterOptions} />
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}><ReprocessingCart drafts={drafts} /></Box>
+      <BatchesTable initialData={initialData} initialQuery={initialQuery} filterOptions={batchFilterOptions} />
     </Stack>
   )
 }

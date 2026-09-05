@@ -1,6 +1,7 @@
 import { db } from '@lib/db'
+import { BATCH_LIFECYCLE_STATUSES } from '@constants/batchLifecycleStatuses'
+import { BATCH_PUBLICATION_STATUSES } from '@constants/batchPublicationStatuses'
 import { toBatchProperties } from '@lib/batchProperties'
-import { isPipelineBatchTerminal } from '@lib/pipelineExecution'
 import { normalizeProcessBatchDetails, parseProcessingDetails, resolveStageDetailKey } from '@lib/pipelineNormalization'
 import { parsePipelineConfig, pipelineConfigToRequestedStages, type PipelineConfig } from '@lib/pipelineConfig'
 import type {
@@ -155,44 +156,6 @@ export async function getProcessBatchStatus(batchId: string): Promise<ProcessBat
   return batch ? await toProcessBatchStatus(batch) : null
 }
 
-function parseCompletionDate(value: string | number | null | undefined): Date | null {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return new Date(value * 1000)
-  }
-
-  if (typeof value !== 'string') {
-    return null
-  }
-
-  const normalized = value.trim()
-  if (!normalized) {
-    return null
-  }
-
-  if (/^\d+$/.test(normalized)) {
-    return new Date(Number(normalized) * 1000)
-  }
-
-  const parsed = new Date(normalized)
-  return Number.isNaN(parsed.getTime()) ? null : parsed
-}
-
-const stageCompletedAtGetters = {
-  ingester: (batch: ProcessBatchStatus) => batch.ingester?.completedAt ?? null,
-  document_splitter: (batch: ProcessBatchStatus) => batch.documentSplitter?.completedAt ?? null,
-  page_rotator: (batch: ProcessBatchStatus) => batch.pageRotator?.completedAt ?? null,
-  ocr_processor: (batch: ProcessBatchStatus) => batch.ocrProcessor?.completedAt ?? null,
-  content_dedup: (batch: ProcessBatchStatus) => batch.contentDedup?.completedAt ?? null,
-  metadata_extractor: (batch: ProcessBatchStatus) => batch.metadataExtractor?.completedAt ?? null,
-  metadata_validator: (batch: ProcessBatchStatus) => batch.metadataValidator?.completedAt ?? null,
-  rights_determinator: (batch: ProcessBatchStatus) => batch.rightsDeterminator?.completedAt ?? null,
-  fedora_ingester: (batch: ProcessBatchStatus) => batch.fedoraIngester?.completedAt ?? null,
-} satisfies Record<CallbackStageKey, (batch: ProcessBatchStatus) => string | null>
-
-function getStageCompletedAt(batch: ProcessBatchStatus, stageKey: CallbackStageKey): string | null {
-  return stageCompletedAtGetters[stageKey](batch)
-}
-
 function withRequestedStages(details: RawProcessBatchDetails, requestedStages: string[]): RawProcessBatchDetails {
   return {
     ...details,
@@ -279,33 +242,9 @@ async function updateProcessStageCallbackReceived(
   }
 
   const serializedDetails = JSON.stringify(nextDetails)
-  const nextBatch = buildProcessBatchStatus(
-    {
-      ...batch,
-      processing_details: serializedDetails,
-    },
-    false,
-  )
-  const terminalCompletedAt =
-    parseCompletionDate(getStageCompletedAt(nextBatch, stageKey)) ?? parseCompletionDate(receivedAt)
-  const updateData: {
-    processing_details: string
-    lifecycle_status?: string
-    completed_at?: Date
-  } = {
-    processing_details: serializedDetails,
-  }
-
-  if (batch.lifecycle_status !== 'completed' && isPipelineBatchTerminal(nextBatch)) {
-    updateData.lifecycle_status = 'completed'
-    if (terminalCompletedAt) {
-      updateData.completed_at = terminalCompletedAt
-    }
-  }
-
   await db.batches.update({
     where: { id: batchId },
-    data: updateData,
+    data: { processing_details: serializedDetails },
   })
 }
 
@@ -371,7 +310,18 @@ export async function recordProcessStageFailure(
 
   await db.batches.update({
     where: { id: batchId },
-    data: { processing_details: JSON.stringify(nextDetails) },
+    data: {
+      processing_details: JSON.stringify(nextDetails),
+      ...(batch.publication_status === BATCH_PUBLICATION_STATUSES.NOT_STARTED &&
+      !new Set<string>([
+        BATCH_LIFECYCLE_STATUSES.ROLLBACK_REQUESTED,
+        BATCH_LIFECYCLE_STATUSES.DRAINING,
+        BATCH_LIFECYCLE_STATUSES.REVERTING,
+        BATCH_LIFECYCLE_STATUSES.ROLLBACK_FAILED,
+      ]).has(batch.lifecycle_status)
+        ? { lifecycle_status: BATCH_LIFECYCLE_STATUSES.FAILED }
+        : {}),
+    },
   })
 }
 
@@ -405,36 +355,12 @@ interface RightsDeterminatorCompletionArgs {
 }
 
 function buildCompletionUpdateData(
-  batch: SelectedBatchFields,
   nextDetails: RawProcessBatchDetails,
-  completedAt: string,
 ): {
   processing_details: string
-  lifecycle_status?: string
-  completed_at?: Date
 } {
   const serializedDetails = JSON.stringify(nextDetails)
-  const nextBatch = buildProcessBatchStatus(
-    {
-      ...batch,
-      processing_details: serializedDetails,
-    },
-    false,
-  )
-  const updateData: {
-    processing_details: string
-    lifecycle_status?: string
-    completed_at?: Date
-  } = {
-    processing_details: serializedDetails,
-  }
-
-  if (batch.lifecycle_status !== 'completed' && isPipelineBatchTerminal(nextBatch)) {
-    updateData.lifecycle_status = 'completed'
-    updateData.completed_at = new Date(completedAt)
-  }
-
-  return updateData
+  return { processing_details: serializedDetails }
 }
 
 export async function recordMetadataExtractorCompletion(
@@ -477,7 +403,7 @@ export async function recordMetadataExtractorCompletion(
   await db.batches.update({
     where: { id: batchId },
     data: {
-      ...buildCompletionUpdateData(batch, nextDetails, completedAt),
+      ...buildCompletionUpdateData(nextDetails),
     },
   })
 }
@@ -531,7 +457,7 @@ export async function recordMetadataValidatorCompletion(
   await db.batches.update({
     where: { id: batchId },
     data: {
-      ...buildCompletionUpdateData(batch, nextDetails, completedAt),
+      ...buildCompletionUpdateData(nextDetails),
     },
   })
 }
@@ -585,7 +511,7 @@ export async function recordRightsDeterminatorCompletion(
   await db.batches.update({
     where: { id: batchId },
     data: {
-      ...buildCompletionUpdateData(batch, nextDetails, completedAt),
+      ...buildCompletionUpdateData(nextDetails),
     },
   })
 }

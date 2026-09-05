@@ -91,7 +91,7 @@ function createAsyncCallbackPayload(
   return {
     app: 'preserv-dashboard',
     request_id: requestId,
-    batch_id: context.executionMode === 'reprocess' ? null : batch.batchId,
+    batch_id: context.executionMode === 'reprocess' && !context.draftBatchId ? null : batch.batchId,
     started_by: batch.startedBy,
     initiated_at: initiatedAt,
     execution_mode: context.executionMode,
@@ -101,6 +101,8 @@ function createAsyncCallbackPayload(
     source_document_ids: context.sourceDocumentIds ?? [],
     source_batch_id: context.sourceBatchId ?? null,
     new_batch_name: context.newBatchName ?? null,
+    draft_batch_id: context.draftBatchId ?? null,
+    collection: context.collection ?? null,
     pipeline_config: context.pipelineConfig ?? null,
     callback: {
       url: callbackUrl,

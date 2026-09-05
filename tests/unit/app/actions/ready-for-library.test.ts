@@ -58,7 +58,7 @@ describe('triggerReadyForLibraryAction', () => {
     mockGetProcessBatchStatus.mockImplementation((batchId: string) => ({
       batchId,
       startedBy: 'original@example.org',
-      lifecycleStatus: 'completed',
+      lifecycleStatus: 'complete',
       publicationStatus: 'not_started',
       fedoraIngester: batchId === 'batch-2' ? { status: 'queued' } : null,
     }))

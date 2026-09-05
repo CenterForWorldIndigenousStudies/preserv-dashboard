@@ -9,6 +9,9 @@ import {
   type MRT_RowSelectionState,
   type MRT_Updater,
 } from 'material-react-table'
+import type { CheckboxProps } from '@mui/material/Checkbox'
+import type { RadioProps } from '@mui/material/Radio'
+import type { TableRowProps } from '@mui/material/TableRow'
 
 import { DocumentTableCursorPager } from '@molecules/DocumentTableCursorPager'
 import { DocumentTableToolbar } from '@molecules/DocumentTableToolbar'
@@ -37,6 +40,8 @@ interface DocumentDataTableProps<TData extends MRT_RowData & { id: string }, TFi
   enableRowSelection?: boolean
   enableSorting?: boolean
   getRowId?: (row: TData) => string
+  getRowProps?: (row: TData) => TableRowProps
+  getSelectCheckboxProps?: (row: TData) => CheckboxProps | RadioProps
   excludedRowIds?: readonly string[]
   showToolbar?: boolean
   showPager?: boolean
@@ -67,6 +72,8 @@ export function DocumentDataTable<TData extends MRT_RowData & { id: string }, TF
   enableRowSelection = false,
   enableSorting = true,
   getRowId,
+  getRowProps,
+  getSelectCheckboxProps,
   excludedRowIds,
   showToolbar = true,
   showPager = true,
@@ -154,6 +161,8 @@ export function DocumentDataTable<TData extends MRT_RowData & { id: string }, TF
       data: visibleData,
       emptyMessage,
       styleVariant,
+      getRowProps,
+      getSelectCheckboxProps,
     }),
     enableSorting,
     enableRowSelection,

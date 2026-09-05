@@ -188,6 +188,34 @@ describe('pipelineTriggerRequests', () => {
       source_document_ids: [],
       source_batch_id: null,
       new_batch_name: null,
+      draft_batch_id: null,
+    })
+  })
+
+  it('serializes an existing draft batch reprocessing context', async () => {
+    let receivedBody: string | null = null
+    vi.mocked(fetch).mockImplementation((_input, init) => {
+      receivedBody = typeof init?.body === 'string' ? init.body : null
+      return Promise.resolve(buildJsonResponse({ batchId: 'batch-1', status: 'queued', service: 'metadata_validator', pass: null }))
+    })
+
+    await triggerMetadataValidator(buildBatchStatus(), {
+      executionMode: PIPELINE_EXECUTION_MODES.REPROCESS,
+      operationId: 'operation-1',
+      idempotencyKey: 'idempotency-1',
+      draftBatchId: 'draft-1',
+      reason: 'Retry selected documents',
+    })
+
+    if (receivedBody === null) {
+      throw new Error('Expected dashboard to send a JSON string body to metadata-validator.')
+    }
+
+    expect(JSON.parse(receivedBody)).toMatchObject({
+      batch_id: 'batch-1',
+      execution_mode: 'reprocess',
+      draft_batch_id: 'draft-1',
+      new_batch_name: null,
     })
   })
 

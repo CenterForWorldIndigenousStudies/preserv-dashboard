@@ -33,6 +33,20 @@ export type ReviewQueueBatchApproveActionResult =
       error: string
     }
 
+export type ReviewQueueBatchDecisionActionResult =
+  | {
+      ok: true
+      processedIds: string[]
+      failed: ReviewQueueBatchApproveFailure[]
+      message: string
+    }
+  | {
+      ok: false
+      processedIds: string[]
+      failed: ReviewQueueBatchApproveFailure[]
+      error: string
+    }
+
 export async function getReviewQueueAction(params: ReviewQueueDocumentsQueryParams = {}) {
   return getReviewQueueDocuments(params)
 }
@@ -106,54 +120,77 @@ export async function applyReviewQueueDecisionAction(
 export async function applyReviewQueueBatchApproveAction(
   documentIds: string[],
 ): Promise<ReviewQueueBatchApproveActionResult> {
+  const result = await applyReviewQueueBatchDecisionAction(documentIds, 'APPROVED')
+  if (result.ok) {
+    return {
+      ok: true,
+      approvedIds: result.processedIds,
+      failed: result.failed,
+      message: result.message,
+    }
+  }
+
+  return {
+    ok: false,
+    approvedIds: result.processedIds,
+    failed: result.failed,
+    error: result.error,
+  }
+}
+
+export async function applyReviewQueueBatchDecisionAction(
+  documentIds: string[],
+  decision: ReviewQueueDecision,
+): Promise<ReviewQueueBatchDecisionActionResult> {
   const normalizedDocumentIds = [...new Set(documentIds.map((documentId) => documentId.trim()).filter(Boolean))]
 
   if (normalizedDocumentIds.length === 0) {
     return {
       ok: false,
-      approvedIds: [],
+      processedIds: [],
       failed: [],
-      error: 'Select at least one document to approve.',
+      error: `Select at least one document to ${decision === 'APPROVED' ? 'approve' : 'reject'}.`,
     }
   }
 
   const results = await Promise.all(
     normalizedDocumentIds.map(async (documentId) => ({
       documentId,
-      result: await applyReviewQueueDecisionAction(documentId, 'APPROVED'),
+      result: await applyReviewQueueDecisionAction(documentId, decision),
     })),
   )
 
-  const approvedIds = results.filter((entry) => entry.result.ok).map((entry) => entry.documentId)
+  const processedIds = results.filter((entry) => entry.result.ok).map((entry) => entry.documentId)
   const failed = results.flatMap<ReviewQueueBatchApproveFailure>((entry) =>
     entry.result.ok ? [] : [{ documentId: entry.documentId, error: entry.result.error }],
   )
 
-  if (approvedIds.length === 0) {
+  const verb = decision === 'APPROVED' ? 'approved' : 'rejected'
+  if (processedIds.length === 0) {
     return {
       ok: false,
-      approvedIds: [],
+      processedIds: [],
       failed,
       error:
         failed.length === 1
-          ? (failed[0]?.error ?? 'No selected documents could be approved.')
-          : 'No selected documents could be approved.',
+          ? (failed[0]?.error ?? `No selected documents could be ${verb}.`)
+          : `No selected documents could be ${verb}.`,
     }
   }
 
   if (failed.length > 0) {
     return {
       ok: true,
-      approvedIds,
+      processedIds,
       failed,
-      message: `${approvedIds.length} documents approved. ${failed.length} failed.`,
+      message: `${processedIds.length} documents ${verb}. ${failed.length} failed.`,
     }
   }
 
   return {
     ok: true,
-    approvedIds,
+    processedIds,
     failed: [],
-    message: `${approvedIds.length} documents approved.`,
+    message: `${processedIds.length} documents ${verb}.`,
   }
 }

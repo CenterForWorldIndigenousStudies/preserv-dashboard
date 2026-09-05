@@ -9,6 +9,11 @@ vi.mock('@lib/processBatches', () => ({
   getProcessBatchStatuses: mockGetProcessBatchStatuses,
 }))
 
+vi.mock('@lib/queries/reprocessingDraftQueries', () => ({
+  getReprocessingDrafts: vi.fn().mockResolvedValue([]),
+  getReprocessingDraft: vi.fn().mockResolvedValue(null),
+}))
+
 vi.mock('@organisms/ProcessDocumentsWorkspace', () => ({
   ProcessDocumentsWorkspace: () => <div>Process workspace stub</div>,
 }))
@@ -23,7 +28,7 @@ describe('ProcessDocumentsPage', () => {
   it('frames Process as launch and points users to Batches for deeper monitoring', async () => {
     mockGetProcessBatchStatuses.mockResolvedValue([])
 
-    const markup = renderToStaticMarkup(await ProcessDocumentsPage())
+    const markup = renderToStaticMarkup(await ProcessDocumentsPage({ searchParams: Promise.resolve({}) }))
 
     expect(markup).toContain('Use this route for launch and orchestration, then move to Batches for deeper monitoring.')
     expect(markup).toContain('Process owns setup, launch, and early confirmation.')

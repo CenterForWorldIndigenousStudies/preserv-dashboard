@@ -68,7 +68,7 @@ describe('ProcessBatchStatusCard', () => {
       <ThemeProvider>
         <ProcessBatchStatusCard
           batch={buildBatchStatus({
-            lifecycleStatus: 'completed',
+            lifecycleStatus: 'complete',
             publicationStatus: 'not_started',
             manualEditAfterStart: true,
           })}

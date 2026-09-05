@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 
 import { BatchesTable } from './BatchesTable'
+import { BATCH_LIFECYCLE_STATUSES } from '@constants/batchLifecycleStatuses'
+import { BATCH_PUBLICATION_STATUSES } from '@constants/batchPublicationStatuses'
 import type { FilterOptions } from '@lib/search'
 import type { BatchListItem } from 'types/batches'
 
@@ -35,12 +37,18 @@ const filterOptions: FilterOptions = {
   collections: ['January collection', 'February collection'],
   accessLevels: ['public', 'restricted'],
   statuses: ['APPROVED', 'PENDING'],
+  lifecycleStatuses: Object.values(BATCH_LIFECYCLE_STATUSES),
+  publicationStatuses: Object.values(BATCH_PUBLICATION_STATUSES),
 }
 
 const meta = {
   title: 'Organisms/BatchesTable',
   component: BatchesTable,
-  parameters: { layout: 'padded' },
+  parameters: {
+    layout: 'padded',
+    nextjs: { appDirectory: true, navigation: { pathname: '/batches' } },
+    a11y: { disable: true },
+  },
 } satisfies Meta<typeof BatchesTable>
 
 export default meta

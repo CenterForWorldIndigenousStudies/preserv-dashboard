@@ -21,6 +21,10 @@ interface ProcessBatchFormPanelProps {
   onCollectionNotesChange: (value: string) => void
   onSubmit: () => void
   onRefresh: () => void
+  title?: string
+  description?: string
+  submitLabel?: string
+  showRefresh?: boolean
 }
 
 function handleTextChange(callback: (value: string) => void): (event: ChangeEvent<HTMLInputElement>) => void {
@@ -45,6 +49,10 @@ export function ProcessBatchFormPanel({
   onCollectionNotesChange,
   onSubmit,
   onRefresh,
+  title = 'Create a new batch',
+  description = 'Choose source folders, add an optional collection, and start the document-processing pipeline.',
+  submitLabel = 'Ingest',
+  showRefresh = true,
 }: ProcessBatchFormPanelProps): ReactElement {
   return (
     <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, p: 3 }}>
@@ -57,10 +65,10 @@ export function ProcessBatchFormPanel({
             {'Batch Details'}
           </Typography>
           <Typography component={'h2'} variant={'h5'} sx={{ mt: 1 }}>
-            {'Create a new batch'}
+            {title}
           </Typography>
           <Typography variant={'body2'} sx={{ mt: 1, color: 'text.secondary' }}>
-            {'Choose source folders, add an optional collection, and start the document-processing pipeline.'}
+            {description}
           </Typography>
         </div>
 
@@ -94,13 +102,15 @@ export function ProcessBatchFormPanel({
           />
         </Stack>
 
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
           <Button type={'button'} onClick={onSubmit} disabled={!canSubmit} loading={isSubmitting}>
-            {'Ingest'}
+            {submitLabel}
           </Button>
-          <Button type={'button'} variant={'secondary'} onClick={onRefresh} loading={isRefreshing}>
-            {'Refresh Status'}
-          </Button>
+          {showRefresh ? (
+            <Button type={'button'} variant={'secondary'} onClick={onRefresh} loading={isRefreshing}>
+              {'Refresh Status'}
+            </Button>
+          ) : null}
         </Stack>
 
         {submitError ? <Alert severity={'error'}>{submitError}</Alert> : null}

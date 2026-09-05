@@ -75,7 +75,7 @@ describe('processBatches', () => {
     mockFindUnique.mockResolvedValue({
       ...buildBatchRow({ data_ingester: { status: 'completed' } }),
       started_at: startedAt,
-      lifecycle_status: 'completed',
+      lifecycle_status: 'complete',
       publication_status: 'not_started',
       publication_target: 'fedora',
       batch_rollbacks: null,
@@ -603,13 +603,9 @@ describe('processBatches', () => {
       },
     })
     expect(mockUpdate).toHaveBeenCalledTimes(1)
-    expect(mockUpdate.mock.calls[0]?.[0]).toMatchObject({
-      where: { id: 'batch-4' },
-      data: {
-        lifecycle_status: 'completed',
-        completed_at: new Date('2026-05-29T04:40:05.000Z'),
-      },
-    })
+    const updateCall = mockUpdate.mock.calls[0]?.[0] as { where?: { id?: string }; data?: { processing_details?: unknown } }
+    expect(updateCall.where).toEqual({ id: 'batch-4' })
+    expect(typeof updateCall.data?.processing_details).toBe('string')
   })
 
   it('records metadata validator completion on batch processing details', async () => {

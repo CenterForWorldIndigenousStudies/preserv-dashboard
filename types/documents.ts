@@ -20,6 +20,7 @@ export interface Document {
   is_duplicate?: boolean
   needs_review_reasons?: NeedsReviewReasonGroup[]
   review_checklist?: ReviewQueueChecklistState | null
+  open_reprocessing_draft?: { id: string; name: string | null } | null
 }
 
 export interface DocumentReadiness {

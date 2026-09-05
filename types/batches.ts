@@ -13,6 +13,8 @@ export interface BatchListItem {
   documentCount: number
   totalCost: string
   processingTime: number | string | null
+  lifecycleStatus?: string | null
+  publicationStatus?: string | null
 }
 
 export interface BatchListPageResult {
@@ -37,6 +39,8 @@ export interface BatchDetail {
   startedBy: string | null
   startedAt: string | Date | null
   properties: BatchProperty[]
+  lifecycleStatus?: string | null
+  publicationStatus?: string | null
 }
 
 export interface BatchSearchSuggestion {

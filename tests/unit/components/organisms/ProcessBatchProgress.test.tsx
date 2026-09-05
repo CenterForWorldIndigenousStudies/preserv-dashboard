@@ -99,11 +99,11 @@ describe('ProcessBatchProgress', () => {
     act(() => {
       FakeEventSource.instances[0]?.emit('batch_status', {
         ...initialBatch,
-        lifecycleStatus: 'completed',
+        lifecycleStatus: 'complete',
       })
     })
 
-    expect(container.querySelector('[data-testid="batch-progress"]')?.textContent).toContain('completed')
+    expect(container.querySelector('[data-testid="batch-progress"]')?.textContent).toContain('complete')
     expect(FakeEventSource.instances[0]?.closed).toBe(true)
   })
 
@@ -114,7 +114,7 @@ describe('ProcessBatchProgress', () => {
   })
 
   it('reconnects after a rerun is queued after the previous stream completed', () => {
-    const initialBatch = createProcessBatch({ lifecycleStatus: 'completed' })
+    const initialBatch = createProcessBatch({ lifecycleStatus: 'complete' })
     const container = renderProgress(initialBatch)
     const completedStream = FakeEventSource.instances[0]
 

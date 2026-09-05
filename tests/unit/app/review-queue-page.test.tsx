@@ -25,7 +25,7 @@ describe('ReviewQueuePage', () => {
     vi.clearAllMocks()
   })
 
-  it('renders the stable page header copy', () => {
+  it('renders the stable page header copy', async () => {
     mockGetNeedsReviewDocuments.mockResolvedValue({
       items: [],
       total: 0,
@@ -37,7 +37,7 @@ describe('ReviewQueuePage', () => {
         startCursor: null,
       },
     })
-    const markup = renderToStaticMarkup(ReviewQueuePage({ searchParams: Promise.resolve({}) }))
+    const markup = renderToStaticMarkup(await ReviewQueuePage({ searchParams: Promise.resolve({}) }))
 
     expect(markup).toContain('Review Queue')
     expect(markup).toContain('Documents needing review.')
@@ -49,7 +49,16 @@ describe('ReviewQueuePage', () => {
     expect(markup).not.toContain('Review decisions and next step')
     expect(markup).not.toContain('Review Queue is where human judgment happens.')
 
+    const cartPosition = markup.indexOf('Open reprocessing cart with 0 draft batches')
+    const headerPosition = markup.indexOf('Documents needing review.')
+    expect(cartPosition).toBeGreaterThanOrEqual(0)
+    expect(headerPosition).toBeGreaterThanOrEqual(0)
+    expect(cartPosition).toBeGreaterThan(headerPosition)
+
     expect(mockGetNeedsReviewDocumentsCount).not.toHaveBeenCalled()
     expect(mockGetNeedsReviewDocuments).not.toHaveBeenCalled()
   })
 })
+vi.mock('@lib/queries/reprocessingDraftQueries', () => ({
+  getReprocessingDrafts: vi.fn().mockResolvedValue([]),
+}))

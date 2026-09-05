@@ -12,6 +12,8 @@ import { DetailPageSection } from '@organisms/DetailPageSection'
 import { PageHeader } from '@organisms/PageHeader'
 import { getBatchDetail } from '@lib/queries/batchQueries'
 import { getPipelineExecutionSnapshot } from '@lib/queries/pipelineExecutionQueries'
+import { getReprocessingDraft } from '@lib/queries/reprocessingDraftQueries'
+import { ReprocessingDraftWorkspace } from '@organisms/ReprocessingDraftWorkspace'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,9 +43,10 @@ export default async function BatchDetailPage({ params, searchParams }: BatchDet
   }
 
   const resolvedSearchParams = await searchParams
-  const [detail, executionSnapshot] = await Promise.all([
+  const [detail, executionSnapshot, draft] = await Promise.all([
     getBatchDetail(batchId),
     getPipelineExecutionSnapshot(batchId),
+    getReprocessingDraft(batchId),
   ])
   if (!detail) {
     notFound()
@@ -68,11 +71,15 @@ export default async function BatchDetailPage({ params, searchParams }: BatchDet
             { key: 'name', label: 'Name', value: detail.name ?? '—' },
             { key: 'startedAt', label: 'Started At', value: <DateAtom value={detail.startedAt} /> },
             ...(detail.startedBy?.trim() ? [{ key: 'startedBy', label: 'Started By', value: detail.startedBy }] : []),
+            { key: 'lifecycleStatus', label: 'Lifecycle Status', value: detail.lifecycleStatus ?? 'Unknown' },
+            { key: 'publicationStatus', label: 'Publication Status', value: detail.publicationStatus ?? 'Unknown' },
           ]}
         />
       </DetailPageSection>
 
-      {executionSnapshot.batch ? (
+      {draft ? <ReprocessingDraftWorkspace initialDraft={draft} /> : null}
+
+      {!draft && executionSnapshot.batch ? (
         <DetailPageSection title={'Pipeline Progress'}>
           <ProcessBatchProgress
             initialBatch={executionSnapshot.batch}

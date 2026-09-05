@@ -1,0 +1,6 @@
+{
+  "NOT_STARTED": "not_started",
+  "PUBLICATION_LOCKED": "publication_locked",
+  "PUBLISHED": "published",
+  "UNKNOWN": "unknown"
+}

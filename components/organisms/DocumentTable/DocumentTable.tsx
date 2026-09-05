@@ -74,6 +74,8 @@ export function DocumentTable<TData extends MRT_RowData & { id: string }, TFilte
       enableRowSelection={config.enableRowSelection}
       enableSorting={config.enableSorting}
       getRowId={config.getRowId}
+      getRowProps={config.getRowProps}
+      getSelectCheckboxProps={config.getSelectCheckboxProps}
       excludedRowIds={config.excludedRowIds}
       showToolbar={config.showToolbar}
       showPager={config.showPager}

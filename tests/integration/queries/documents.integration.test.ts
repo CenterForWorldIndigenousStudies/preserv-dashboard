@@ -5,6 +5,7 @@ import type { ReviewHistoryValue } from 'types/reviewHistory'
 
 vi.mock('@lib/editHistory', () => ({
   createEditHistoryEntry: vi.fn(),
+  markDocumentBatchesPublicationLocked: vi.fn(),
 }))
 
 import {

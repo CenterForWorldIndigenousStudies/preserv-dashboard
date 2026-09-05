@@ -12,6 +12,7 @@ import {
   type StatusOption,
 } from '@lib/search'
 import { REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES, REVIEW_QUEUE_SORT_FIELDS } from '@constants/reviewQueue'
+import { BATCH_LIFECYCLE_STATUSES } from '@constants/batchLifecycleStatuses'
 import { DOCUMENT_STATES } from '@constants/documentStates'
 import {
   isReviewQueueChecklistItemKey,
@@ -26,12 +27,13 @@ import {
   NEEDS_REVIEW_METADATA_NAME,
 } from '@constants/documentMetadata'
 import { db } from '@lib/db'
-import { createEditHistoryEntry } from '@lib/editHistory'
+import { createEditHistoryEntry, markDocumentBatchesPublicationLocked } from '@lib/editHistory'
 import { buildNameHash } from '@lib/tagHash'
 import { composeReviewQueueReasons } from '@lib/needsReview'
 import { evaluateDocumentReadiness } from '@lib/pipelineReadiness'
 import { appendReviewHistoryEpisode } from '@lib/reviewHistory'
 import { parseMetadataValue } from '@lib/metadata'
+import { removeOpenDraftMemberships } from '@lib/queries/reprocessingDraftQueries'
 import {
   resolveBatchSearchIds,
   resolveTagSearchIds,
@@ -273,22 +275,35 @@ async function hydrateNeedsReviewReasons(documents: Document[], client: QueryDbC
     return documents
   }
 
-  const metadataRows = await client.document_to_metadata.findMany({
-    where: {
-      document_id: { in: documents.map((document) => document.id) },
-      metadata: { name: 'needs_review' },
-    },
-    select: { document_id: true, value: true },
-  })
+  const documentIds = documents.map((document) => document.id)
+  const [metadataRows, draftRows] = await Promise.all([
+    client.document_to_metadata.findMany({
+      where: {
+        document_id: { in: documentIds },
+        metadata: { name: 'needs_review' },
+      },
+      select: { document_id: true, value: true },
+    }),
+    client.document_to_batches?.findMany({
+      where: { document_id: { in: documentIds }, batches: { lifecycle_status: BATCH_LIFECYCLE_STATUSES.DRAFT } },
+      select: { document_id: true, batches: { select: { id: true, name: true } } },
+    }),
+  ])
   const metadataValueByDocumentId = new Map<string, unknown>()
 
   for (const metadataRow of metadataRows) {
     metadataValueByDocumentId.set(metadataRow.document_id, metadataRow.value)
   }
 
+  const draftByDocumentId = new Map((draftRows ?? []).map((row) => [row.document_id, row.batches]))
+
   return documents.map((document) => {
     const reasons = composeReviewQueueReasons(metadataValueByDocumentId.get(document.id), document.validation_status)
-    return reasons.length > 0 ? { ...document, needs_review_reasons: reasons } : document
+    const draft = draftByDocumentId.get(document.id)
+    return {
+      ...(reasons.length > 0 ? { ...document, needs_review_reasons: reasons } : document),
+      open_reprocessing_draft: draft ?? null,
+    }
   })
 }
 
@@ -769,6 +784,7 @@ export async function updateReviewQueueChecklist(
       newValue: { review_checklist: nextChecklist },
       editSummary: `Updated review checklist item "${checklistLabel}" for document "${documentId}"`,
     })
+    await markDocumentBatchesPublicationLocked(tx, documentId)
 
     return nextChecklist
   })
@@ -807,6 +823,8 @@ export async function applyReviewQueueDecisionInTransaction(
       throw new ReviewQueueApprovalBlockedError(readiness.evaluation.unmetRequirements)
     }
   }
+
+  await removeOpenDraftMemberships(tx, [documentId])
 
   const [activeReviewMetadata, reviewHistoryMetadata, latestState] = await Promise.all([
     tx.document_to_metadata.findFirst({
@@ -917,6 +935,7 @@ export async function applyReviewQueueDecisionInTransaction(
       review_checklist: null,
     },
   })
+  await markDocumentBatchesPublicationLocked(tx, documentId)
 }
 
 export async function applyReviewQueueDecision(params: ReviewQueueDecisionParams): Promise<void> {
@@ -1854,6 +1873,7 @@ export async function addDocumentsToCollection(collectionId: string, documentIds
         }),
       ),
     )
+    await Promise.all(upsertResults.map((result) => markDocumentBatchesPublicationLocked(tx, result.document_id)))
   })
 }
 
@@ -1909,6 +1929,7 @@ export async function removeDocumentsFromCollection(collectionId: string, docume
         }),
       ),
     )
+    await Promise.all(rowsToDelete.map((row) => markDocumentBatchesPublicationLocked(tx, row.document_id)))
   })
 }
 

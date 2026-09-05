@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Prisma } from '@lib/prisma/generated/client'
-import { createEditHistoryEntry } from '@lib/editHistory'
+import { createEditHistoryEntry, markDocumentBatchesPublicationLocked } from '@lib/editHistory'
 import { db } from '@lib/db'
 import { buildNameHash } from '@lib/tagHash'
 import { getProtectedTagDeletionMessage, isProtectedTagName, normalizeTagName } from '@lib/tagUtils'
@@ -106,6 +106,7 @@ export async function POST(request: NextRequest, context: RouteContext): Promise
         newValue: createdLink,
         editSummary: `Added tag "${tag.name}" to document`,
       })
+      await markDocumentBatchesPublicationLocked(tx, documentId)
 
       return {
         documentTag: createdLink,
@@ -167,6 +168,7 @@ export async function DELETE(request: NextRequest, context: RouteContext): Promi
         newValue: null,
         editSummary: `Removed tag "${documentTag.tags.name}" from document`,
       })
+      await markDocumentBatchesPublicationLocked(tx, documentId)
 
       let deletedTag = false
       if (deleteTagFromSystem) {

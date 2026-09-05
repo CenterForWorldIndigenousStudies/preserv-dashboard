@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { Stack } from '@mui/material'
+import { Box, Stack } from '@mui/material'
 import { REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES } from '@constants/reviewQueue'
 import { ReviewQueueTable } from '@organisms/ReviewQueueTable'
 import { PageHeader } from '@organisms/PageHeader'
@@ -14,6 +14,8 @@ import {
   type StatusOption,
 } from '@lib/search'
 import { getNeedsReviewDocuments, type DocumentsQueryParams } from '@lib/queries/queries'
+import { getReprocessingDrafts } from '@lib/queries/reprocessingDraftQueries'
+import { ReprocessingCart } from '@molecules/ReprocessingCart'
 import { PAGE_LABELS } from '@constants/pageLabels'
 
 import { ReviewQueueWorkspace } from './ReviewQueueWorkspace'
@@ -80,7 +82,10 @@ function parseReviewQueueQueryParams(params: Record<string, string | string[] | 
   }
 }
 
-async function ReviewQueueContent({ searchParams }: ReviewQueuePageProps) {
+async function ReviewQueueContent({
+  searchParams,
+  initialDrafts,
+}: ReviewQueuePageProps & { initialDrafts: Awaited<ReturnType<typeof getReprocessingDrafts>> }) {
   const resolvedSearchParams = await searchParams
   const initialQuery = parseReviewQueueQueryParams(resolvedSearchParams)
   const initialData = await getNeedsReviewDocuments(initialQuery)
@@ -92,11 +97,14 @@ async function ReviewQueueContent({ searchParams }: ReviewQueuePageProps) {
       initialData={initialData}
       initialQuery={initialQuery}
       filterOptions={REVIEW_QUEUE_FILTER_OPTIONS}
+      initialDrafts={initialDrafts}
     />
   )
 }
 
-export default function ReviewQueuePage({ searchParams }: ReviewQueuePageProps) {
+export default async function ReviewQueuePage({ searchParams }: ReviewQueuePageProps) {
+  const drafts = await getReprocessingDrafts()
+
   return (
     <Stack spacing={4} sx={{ width: '100%' }}>
       <PageHeader
@@ -107,8 +115,13 @@ export default function ReviewQueuePage({ searchParams }: ReviewQueuePageProps) 
         }
       />
 
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <ReprocessingCart drafts={drafts} />
+      </Box>
       <Suspense fallback={null}>
-        <ReviewQueueWorkspace needsReviewPanel={<ReviewQueueContent searchParams={searchParams} />} />
+        <ReviewQueueWorkspace
+          needsReviewPanel={<ReviewQueueContent searchParams={searchParams} initialDrafts={drafts} />}
+        />
       </Suspense>
     </Stack>
   )

@@ -55,6 +55,8 @@ describe('batch query contracts', () => {
         author: undefined,
         tag: undefined,
         statuses: undefined,
+        lifecycleStatuses: undefined,
+        publicationStatuses: undefined,
         documentType: undefined,
         batch: undefined,
         createdFrom: undefined,
@@ -71,6 +73,8 @@ describe('batch query contracts', () => {
         author: ' Ada ',
         tag: ' refuge ',
         statuses: 'APPROVED,REJECTED',
+        lifecycleStatuses: 'DRAFT,FAILED',
+        publicationStatuses: 'NOT_STARTED',
         documentType: 'duplicate',
         batch: 'Special_RCR',
         createdFrom: '2026-01-01',
@@ -82,6 +86,8 @@ describe('batch query contracts', () => {
       author: 'Ada',
       tag: 'refuge',
       statuses: ['APPROVED', 'REJECTED'],
+      lifecycleStatuses: ['DRAFT', 'FAILED'],
+      publicationStatuses: ['NOT_STARTED'],
       documentType: 'duplicate',
       batch: 'Special_RCR',
       createdFrom: '2026-01-01',
@@ -139,6 +145,30 @@ describe('batch query contracts', () => {
       ].sort(),
     )
     expect(batchDocumentCondition.document_to_batches).toEqual({ some: { documents: documentsWhere } })
+  })
+
+  it('filters batches by lifecycle and publication status', async () => {
+    mockBatchesFindMany.mockResolvedValue([])
+    mockBatchesCount.mockResolvedValue(0)
+
+    await getBatches({
+      page: 1,
+      pageSize: 25,
+      filters: {
+        lifecycleStatuses: ['DRAFT', 'FAILED'],
+        publicationStatuses: ['NOT_STARTED'],
+      },
+    })
+
+    const findManyCall = mockBatchesFindMany.mock.calls[0]?.[0] as unknown as {
+      where: Prisma.batchesWhereInput
+    }
+    expect(findManyCall.where).toEqual({
+      AND: [
+        { lifecycle_status: { in: ['DRAFT', 'FAILED'] } },
+        { publication_status: { in: ['NOT_STARTED'] } },
+      ],
+    })
   })
 
   it('limits batches to fuzzy batch matches', async () => {

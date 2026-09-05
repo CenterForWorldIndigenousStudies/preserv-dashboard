@@ -6,6 +6,7 @@ import type { MRT_ColumnDef } from 'material-react-table'
 
 import { getBatchesAction } from '@actions/batches'
 import { DateAtom } from '@atoms/Date'
+import { Badge } from '@atoms/Badges/Badge'
 import { getBatchDetailPath } from '@constants/paths'
 import { PAGE_LABELS } from '@constants/pageLabels'
 import { DocumentTable } from '@organisms/DocumentTable/DocumentTable'
@@ -50,6 +51,8 @@ export function BatchesTable({ initialData, initialQuery, filterOptions }: Batch
     syncSearchParam(nextParams, 'author', controller.query.filters.author)
     syncSearchParam(nextParams, 'tag', controller.query.filters.tag)
     syncSearchParam(nextParams, 'statuses', serializeStatusesParam(controller.query.filters.statuses))
+    syncSearchParam(nextParams, 'lifecycleStatuses', serializeStatusesParam(controller.query.filters.lifecycleStatuses))
+    syncSearchParam(nextParams, 'publicationStatuses', serializeStatusesParam(controller.query.filters.publicationStatuses))
     syncSearchParam(
       nextParams,
       'documentType',
@@ -90,6 +93,13 @@ export function BatchesTable({ initialData, initialQuery, filterOptions }: Batch
             href={getBatchDetailPath(row.original.id, currentBatchListHref, PAGE_LABELS.batches)}
           />
         ),
+      },
+      {
+        accessorKey: 'lifecycleStatus',
+        header: 'Status',
+        size: 170,
+        enableSorting: false,
+        Cell: ({ row }) => <Badge variant={row.original.lifecycleStatus === 'failed' ? 'danger' : row.original.lifecycleStatus === 'complete' ? 'success' : 'neutral'}>{row.original.lifecycleStatus ?? 'Unknown'}</Badge>,
       },
       {
         accessorKey: 'startedAt',

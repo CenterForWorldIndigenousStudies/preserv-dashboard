@@ -3,14 +3,27 @@ import { Box, Button, Card, CardContent, Stack, Typography } from '@mui/material
 
 import { BATCHES_PATH } from '@constants/paths'
 import { getProcessBatchStatuses } from '@lib/processBatches'
+import { getReprocessingDraft, getReprocessingDrafts } from '@lib/queries/reprocessingDraftQueries'
+import { ReprocessingCart } from '@molecules/ReprocessingCart'
 import { ProcessDocumentsWorkspace } from '@organisms/ProcessDocumentsWorkspace'
 import { PageHeader } from '@organisms/PageHeader'
 import { PAGE_LABELS } from '@constants/pageLabels'
 
 export const dynamic = 'force-dynamic'
 
-export default async function ProcessDocumentsPage(): Promise<ReactElement> {
-  const batches = await getProcessBatchStatuses()
+interface ProcessDocumentsPageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}
+
+export default async function ProcessDocumentsPage({ searchParams }: ProcessDocumentsPageProps): Promise<ReactElement> {
+  const params = await searchParams
+  const draftIdValue = params.draftId
+  const draftId = (Array.isArray(draftIdValue) ? draftIdValue[0] : draftIdValue)?.trim()
+  const [batches, drafts, draft] = await Promise.all([
+    getProcessBatchStatuses(),
+    getReprocessingDrafts(),
+    draftId ? getReprocessingDraft(draftId) : Promise.resolve(null),
+  ])
 
   return (
     <Stack spacing={4}>
@@ -63,7 +76,8 @@ export default async function ProcessDocumentsPage(): Promise<ReactElement> {
           </Box>
         </CardContent>
       </Card>
-      <ProcessDocumentsWorkspace initialBatches={batches} />
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}><ReprocessingCart drafts={drafts} /></Box>
+      <ProcessDocumentsWorkspace initialBatches={batches} initialDraft={draft} />
     </Stack>
   )
 }

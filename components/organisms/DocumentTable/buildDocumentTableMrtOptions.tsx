@@ -1,11 +1,16 @@
 import type { MRT_ColumnDef, MRT_RowData, MRT_TableOptions } from 'material-react-table'
 import { alpha, type Theme } from '@mui/material/styles'
+import type { CheckboxProps } from '@mui/material/Checkbox'
+import type { RadioProps } from '@mui/material/Radio'
+import type { TableRowProps } from '@mui/material/TableRow'
 
 interface BuildDocumentTableMrtOptionsInput<TData extends MRT_RowData> {
   columns: MRT_ColumnDef<TData>[]
   data: TData[]
   emptyMessage: string
   styleVariant?: 'default' | 'reviewQueueDense'
+  getRowProps?: (row: TData) => TableRowProps
+  getSelectCheckboxProps?: (row: TData) => CheckboxProps | RadioProps
 }
 
 export function buildDocumentTableMrtOptions<TData extends MRT_RowData>({
@@ -13,6 +18,8 @@ export function buildDocumentTableMrtOptions<TData extends MRT_RowData>({
   data,
   emptyMessage,
   styleVariant = 'default',
+  getRowProps,
+  getSelectCheckboxProps,
 }: BuildDocumentTableMrtOptionsInput<TData>): Partial<MRT_TableOptions<TData>> {
   const isReviewQueueDense = styleVariant === 'reviewQueueDense'
 
@@ -72,6 +79,8 @@ export function buildDocumentTableMrtOptions<TData extends MRT_RowData>({
         }
       },
     },
+    muiTableBodyRowProps: getRowProps ? ({ row }) => getRowProps(row.original) : undefined,
+    muiSelectCheckboxProps: getSelectCheckboxProps ? ({ row }) => getSelectCheckboxProps(row.original) : undefined,
     muiTableContainerProps: {
       sx: (theme: Theme) => {
         return {

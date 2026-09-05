@@ -4,8 +4,11 @@ import { useMemo, useState } from 'react'
 import { Alert, Button, Stack } from '@mui/material'
 
 import { PipelineExecutionDialog } from '@molecules/PipelineExecutionDialog'
+import { REPROCESSING_EXECUTION_STAGE_ORDER } from '@lib/reprocessingDrafts'
 import type { PipelineExecutionMode, PipelineQueueAttemptSummary } from 'types/pipelineExecution'
 import type { CallbackStageKey, ProcessBatchStatus } from 'types/pipelineContracts'
+import { BATCH_LIFECYCLE_STATUSES } from '@constants/batchLifecycleStatuses'
+import { BATCH_PUBLICATION_STATUSES } from '@constants/batchPublicationStatuses'
 
 interface BatchExecutionActionsProps {
   batch: ProcessBatchStatus | null
@@ -26,17 +29,6 @@ const STAGE_PROPERTIES: Record<CallbackStageKey, keyof ProcessBatchStatus> = {
     fedora_ingester: 'fedoraIngester',
 }
 
-const STAGES: CallbackStageKey[] = [
-  'document_splitter',
-  'page_rotator',
-  'ocr_processor',
-  'content_dedup',
-  'metadata_extractor',
-  'metadata_validator',
-  'rights_determinator',
-  'fedora_ingester',
-]
-
 export function BatchExecutionActions({
   batch,
   currentExecution,
@@ -46,15 +38,22 @@ export function BatchExecutionActions({
   const [mode, setMode] = useState<PipelineExecutionMode | null>(null)
   const failedStage = useMemo(() => {
     if (!batch) return null
-    return STAGES.find((stage) => {
+    return REPROCESSING_EXECUTION_STAGE_ORDER.find((stage) => {
       const value = batch[STAGE_PROPERTIES[stage]]
       return value && typeof value === 'object' && 'status' in value && value.status === 'failed'
     }) ?? null
   }, [batch])
 
   if (!batch) return null
-  const published = ['published', 'publication_locked', 'unknown'].includes(batch.publicationStatus ?? '')
-  const reverted = batch.lifecycleStatus === 'reverted'
+  const published =
+    batch.lifecycleStatus === BATCH_LIFECYCLE_STATUSES.PUBLICATION_LOCKED ||
+    batch.lifecycleStatus === BATCH_LIFECYCLE_STATUSES.COMPLETE ||
+    new Set<string>([
+      BATCH_PUBLICATION_STATUSES.PUBLISHED,
+      BATCH_PUBLICATION_STATUSES.PUBLICATION_LOCKED,
+      BATCH_PUBLICATION_STATUSES.UNKNOWN,
+    ]).has(batch.publicationStatus ?? '')
+  const reverted = batch.lifecycleStatus === BATCH_LIFECYCLE_STATUSES.REVERTED
   const rerunDisabled = published || reverted
 
   return (

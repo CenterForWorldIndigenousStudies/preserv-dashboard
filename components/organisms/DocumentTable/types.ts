@@ -1,4 +1,7 @@
 import type { ReactNode } from 'react'
+import type { CheckboxProps } from '@mui/material/Checkbox'
+import type { RadioProps } from '@mui/material/Radio'
+import type { TableRowProps } from '@mui/material/TableRow'
 import type { MRT_ColumnDef, MRT_RowData, MRT_RowSelectionState, MRT_Updater } from 'material-react-table'
 
 import type { AdvancedSearchFilters, FilterOptions } from '@lib/search'
@@ -90,6 +93,8 @@ export interface DocumentTableConfig<TData extends MRT_RowData & { id: string },
   enableRowSelection?: boolean
   enableSorting?: boolean
   getRowId?: (row: TData) => string
+  getRowProps?: (row: TData) => TableRowProps
+  getSelectCheckboxProps?: (row: TData) => CheckboxProps | RadioProps
   excludedRowIds?: readonly string[]
   showToolbar?: boolean
   showPager?: boolean

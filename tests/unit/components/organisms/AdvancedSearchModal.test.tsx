@@ -173,4 +173,38 @@ describe('AdvancedSearchModal', () => {
 
     expect(onApply).toHaveBeenCalledWith(expect.objectContaining({ tag: 'close tag match', batch: 'partial batch' }))
   })
+
+  it('shows batch lifecycle and publication status filters when provided', () => {
+    mockUseTagSearch.mockReturnValue({ suggestions: [], isLoading: false, error: null })
+    mockUseBatchSearch.mockReturnValue({ suggestions: [], exactMatch: null, isLoading: false, error: null })
+    const onApply = vi.fn()
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    mountedRoot = createRoot(container)
+
+    act(() => {
+      mountedRoot?.render(
+        <AdvancedSearchModal
+          filters={defaultFilters}
+          filterOptions={{
+            ...filterOptions,
+            lifecycleStatuses: ['DRAFT', 'FAILED'],
+            publicationStatuses: ['NOT_STARTED', 'PUBLISHED'],
+          }}
+          onApply={onApply}
+        />,
+      )
+    })
+
+    act(() => {
+      container.querySelector<HTMLButtonElement>('button')?.click()
+    })
+
+    expect(document.body.textContent).toContain('Batch lifecycle status')
+    expect(document.body.textContent).toContain('Draft')
+    expect(document.body.textContent).toContain('Failed')
+    expect(document.body.textContent).toContain('Publication status')
+    expect(document.body.textContent).toContain('Not Started')
+    expect(document.body.textContent).toContain('Published')
+  })
 })

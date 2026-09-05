@@ -62,6 +62,8 @@ const initialQuery = {
     author: 'Ada',
     tag: 'Refugee',
     statuses: ['APPROVED'],
+    lifecycleStatuses: ['DRAFT', 'FAILED'],
+    publicationStatuses: ['NOT_STARTED'],
     documentType: 'duplicate' as const,
     batch: 'Special_RCR',
     createdFrom: '2026-01-01',
@@ -126,6 +128,7 @@ describe('BatchesTable', () => {
     expect(config.advancedSearch?.filterOptions).toEqual(filterOptions)
     expect(config.definition.columns.map((column) => column.header)).toEqual([
       'Batch',
+      'Status',
       'Started',
       'Documents',
       'Total Cost',
@@ -181,6 +184,8 @@ describe('BatchesTable', () => {
     expect(nextUrl).toContain('author=Ada')
     expect(nextUrl).toContain('tag=Refugee')
     expect(nextUrl).toContain('statuses=APPROVED')
+    expect(nextUrl).toContain('lifecycleStatuses=DRAFT%2CFAILED')
+    expect(nextUrl).toContain('publicationStatuses=NOT_STARTED')
     expect(nextUrl).toContain('documentType=duplicate')
     expect(nextUrl).toContain('batch=Special_RCR')
     expect(nextUrl).toContain('createdFrom=2026-01-01')

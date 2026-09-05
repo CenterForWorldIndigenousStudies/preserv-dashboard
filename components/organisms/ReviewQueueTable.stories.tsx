@@ -3,10 +3,11 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 
 import { VALIDATION_STATUS_OPTIONS } from '@constants/validationStatuses'
 import { REVIEW_QUEUE_PATH } from '@constants/paths'
-import { ReviewQueueTable } from '@organisms/ReviewQueueTable'
+import { ActionButton, ReviewQueueTable } from '@organisms/ReviewQueueTable'
 import type { FilterOptions } from '@lib/search'
 import type { Document } from 'types/documents'
 import type { DocumentsPageResult } from 'types/pagination'
+import { fn } from 'storybook/test'
 
 const filterOptions: FilterOptions = {
   collections: ['Plateau', 'Southwest', 'Pacific Northwest'],
@@ -111,4 +112,41 @@ export const Empty: Story = {
   args: {
     initialData: buildPageResult([]),
   },
+}
+
+export const DraftAssociatedRows: Story = {
+  args: {
+    initialData: buildPageResult([
+      { ...documents[0], open_reprocessing_draft: { id: 'draft-1', name: 'OCR retry set' } },
+      documents[1],
+    ]),
+  },
+}
+
+export const SelectedActions: Story = {
+  render: () => (
+    <ActionButton
+      batchActionPending={false}
+      selectedCount={2}
+      hasSelectedDraftDocuments={false}
+      onApprove={fn()}
+      onReject={fn()}
+      onReprocess={fn()}
+      onRemove={fn()}
+    />
+  ),
+}
+
+export const SelectedActionsWithDraft: Story = {
+  render: () => (
+    <ActionButton
+      batchActionPending={false}
+      selectedCount={2}
+      hasSelectedDraftDocuments
+      onApprove={fn()}
+      onReject={fn()}
+      onReprocess={fn()}
+      onRemove={fn()}
+    />
+  ),
 }

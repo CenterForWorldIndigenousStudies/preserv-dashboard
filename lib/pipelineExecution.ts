@@ -8,6 +8,8 @@ import {
   PAGE_ROTATOR_STAGE,
   RIGHTS_DETERMINATOR_STAGE,
 } from '@constants/pipeline'
+import { BATCH_LIFECYCLE_STATUSES } from '@constants/batchLifecycleStatuses'
+import { BATCH_PUBLICATION_STATUSES } from '@constants/batchPublicationStatuses'
 import {
   type PipelineConfig,
   type PipelineExecutionStep,
@@ -199,16 +201,21 @@ export function areExecutionStepDependenciesSatisfied(
 
 export function getNextEligibleExecutionStep(batch: ProcessBatchStatus): PipelineExecutionStep | null {
   if (
-    [
+    new Set<string>([
       'rollback_requested',
       'draining',
       'reverting',
-      'reverted',
-      'rollback_failed',
-      'publication_locked',
-      'completed',
-    ].includes(batch.lifecycleStatus ?? '') ||
-    ['publication_locked', 'published', 'unknown'].includes(batch.publicationStatus ?? '')
+      BATCH_LIFECYCLE_STATUSES.REVERTED,
+      BATCH_LIFECYCLE_STATUSES.ROLLBACK_FAILED,
+      BATCH_LIFECYCLE_STATUSES.PUBLICATION_LOCKED,
+      BATCH_LIFECYCLE_STATUSES.COMPLETE,
+      BATCH_LIFECYCLE_STATUSES.FAILED,
+    ]).has(batch.lifecycleStatus ?? '') ||
+    new Set<string>([
+      BATCH_PUBLICATION_STATUSES.PUBLICATION_LOCKED,
+      BATCH_PUBLICATION_STATUSES.PUBLISHED,
+      BATCH_PUBLICATION_STATUSES.UNKNOWN,
+    ]).has(batch.publicationStatus ?? '')
   ) {
     return null
   }
@@ -253,9 +260,11 @@ export function isPipelineBatchTerminal(batch: ProcessBatchStatus): boolean {
   }
 
   if (
-    ['reverted', 'completed', 'rollback_failed'].includes(batch.lifecycleStatus ?? '') ||
+    new Set<string>([BATCH_LIFECYCLE_STATUSES.REVERTED, BATCH_LIFECYCLE_STATUSES.COMPLETE, BATCH_LIFECYCLE_STATUSES.FAILED, BATCH_LIFECYCLE_STATUSES.ROLLBACK_FAILED]).has(
+      batch.lifecycleStatus ?? '',
+    ) ||
     batch.rollbackStatus === 'failed' ||
-    ['published', 'unknown'].includes(batch.publicationStatus ?? '')
+    new Set<string>([BATCH_PUBLICATION_STATUSES.PUBLISHED, BATCH_PUBLICATION_STATUSES.UNKNOWN]).has(batch.publicationStatus ?? '')
   ) {
     return true
   }

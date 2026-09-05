@@ -9,6 +9,10 @@ const { mockGetBatchDetail, mockGetPipelineExecutionSnapshot, mockNotFound } = v
   }),
 }))
 
+vi.mock('@lib/queries/reprocessingDraftQueries', () => ({
+  getReprocessingDraft: vi.fn().mockResolvedValue(null),
+}))
+
 vi.mock('@lib/queries/batchQueries', () => ({
   getBatchDetail: mockGetBatchDetail,
 }))
