@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import type { MRT_ColumnDef } from 'material-react-table'
 
 import { getBatchesAction } from '@actions/batches'
+import { Cost } from '@atoms/Cost'
 import { DateAtom } from '@atoms/Date'
 import { Badge } from '@atoms/Badges/Badge'
 import { getBatchDetailPath } from '@constants/paths'
@@ -52,7 +53,11 @@ export function BatchesTable({ initialData, initialQuery, filterOptions }: Batch
     syncSearchParam(nextParams, 'tag', controller.query.filters.tag)
     syncSearchParam(nextParams, 'statuses', serializeStatusesParam(controller.query.filters.statuses))
     syncSearchParam(nextParams, 'lifecycleStatuses', serializeStatusesParam(controller.query.filters.lifecycleStatuses))
-    syncSearchParam(nextParams, 'publicationStatuses', serializeStatusesParam(controller.query.filters.publicationStatuses))
+    syncSearchParam(
+      nextParams,
+      'publicationStatuses',
+      serializeStatusesParam(controller.query.filters.publicationStatuses),
+    )
     syncSearchParam(
       nextParams,
       'documentType',
@@ -99,7 +104,19 @@ export function BatchesTable({ initialData, initialQuery, filterOptions }: Batch
         header: 'Status',
         size: 170,
         enableSorting: false,
-        Cell: ({ row }) => <Badge variant={row.original.lifecycleStatus === 'failed' ? 'danger' : row.original.lifecycleStatus === 'complete' ? 'success' : 'neutral'}>{row.original.lifecycleStatus ?? 'Unknown'}</Badge>,
+        Cell: ({ row }) => (
+          <Badge
+            variant={
+              row.original.lifecycleStatus === 'failed'
+                ? 'danger'
+                : row.original.lifecycleStatus === 'complete'
+                  ? 'success'
+                  : 'neutral'
+            }
+          >
+            {row.original.lifecycleStatus ?? 'Unknown'}
+          </Badge>
+        ),
       },
       {
         accessorKey: 'startedAt',
@@ -116,6 +133,7 @@ export function BatchesTable({ initialData, initialQuery, filterOptions }: Batch
         accessorKey: 'totalCost',
         header: 'Total Cost',
         size: 140,
+        Cell: ({ row }) => <Cost value={row.original.totalCost} />,
       },
       {
         accessorKey: 'processingTime',

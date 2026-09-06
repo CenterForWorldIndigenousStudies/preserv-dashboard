@@ -21,6 +21,14 @@ describe('BatchProcessingDetails', () => {
     expect(markup).toContain('>5<')
   })
 
+  it('formats the total processing cost as a cost value', () => {
+    const markup = renderToStaticMarkup(
+      <BatchProcessingDetails properties={[{ key: 'Total Cost', value: 0.127778 }]} />,
+    )
+
+    expect(markup).toContain('$0.127778')
+  })
+
   it('renders structured properties through the nested renderer', () => {
     const markup = renderToStaticMarkup(
       <BatchProcessingDetails

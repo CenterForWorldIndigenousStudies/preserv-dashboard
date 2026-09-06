@@ -8,12 +8,12 @@ import {
   RIGHTS_DETERMINATOR_STAGE,
 } from '@constants/pipeline'
 import { BatchRollbackControl } from '@molecules/BatchRollbackControl'
+import { BatchOverviewFields } from '@molecules/BatchOverviewFields'
 import { MetadataExtractorStageCard } from '@molecules/MetadataExtractorStageCard'
 import { ProcessDetailRow } from '@molecules/ProcessDetailRow'
 import { ProcessStageCard } from '@molecules/ProcessStageCard'
 import { PipelineTimelineCard } from '@molecules/PipelineTimelineCard'
 import { ProcessBatchSummaryHeader } from '@molecules/ProcessBatchSummaryHeader'
-import { formatDateTime } from '@lib/dateTime'
 import { formatExecutionLabel } from '@lib/pipelineFormatting'
 import { createPendingProcessStage, shouldShowPendingProcessStage } from '@lib/processStageStatus'
 import type { ProcessBatchStatus } from 'types/pipelineContracts'
@@ -57,14 +57,14 @@ export function ProcessBatchStatusCard({
           startedBy={batch.startedBy}
         />
 
-        <ProcessDetailRow label={'Created'} value={formatDateTime(batch.createdAt) ?? '—'} />
-        <ProcessDetailRow
-          label={'Requested Stages'}
-          value={batch.pipelineRequestedStages.length > 0 ? batch.pipelineRequestedStages.join(', ') : 'Ingest only'}
+        <BatchOverviewFields
+          createdAt={batch.createdAt}
+          startedAt={batch.startedAt}
+          requestedStages={batch.pipelineRequestedStages}
+          lifecycleStatus={batch.lifecycleStatus}
+          publicationStatus={batch.publicationStatus}
         />
         {executionLabel ? <ProcessDetailRow label={'Execution'} value={executionLabel} /> : null}
-        <ProcessDetailRow label={'Lifecycle'} value={batch.lifecycleStatus ?? 'unknown'} />
-        <ProcessDetailRow label={'Publication'} value={batch.publicationStatus ?? 'unknown'} />
         {batch.rollbackStatus ? (
           <ProcessDetailRow
             label={'Rollback'}

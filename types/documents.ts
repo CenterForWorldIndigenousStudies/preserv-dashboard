@@ -1,4 +1,5 @@
 import type { DbDocumentQuality, DbDocumentVersion } from 'types/db'
+import type { MetadataField } from 'types/metadata'
 import type { NeedsReviewReasonGroup } from 'types/needsReview'
 import type { ReviewQueueChecklistState } from '@constants/reviewQueueChecklist'
 
@@ -30,8 +31,10 @@ export interface DocumentReadiness {
   reasonGroups: NeedsReviewReasonGroup[]
 }
 
-export interface DocumentQuality
-  extends Omit<DbDocumentQuality, 'validation_timestamp' | 'reprocess' | 'review_checklist'> {
+export interface DocumentQuality extends Omit<
+  DbDocumentQuality,
+  'validation_timestamp' | 'reprocess' | 'review_checklist'
+> {
   validation_timestamp: string | number | null
   review_checklist: ReviewQueueChecklistState | null
 }
@@ -52,11 +55,7 @@ export interface VersionFamily {
   documents: VersionFamilyDocument[]
 }
 
-export interface DocumentMetadataField {
-  name: string
-  value: string
-  value_type: string | null
-}
+export type DocumentMetadataField = MetadataField
 
 export interface DocumentToBatch {
   id: string
@@ -70,6 +69,7 @@ export interface DocumentToBatch {
   ocr_quality_medium: boolean | null
   batch_legacy_id: string | null
   batch_name: string | null
+  batch_status: string | null
 }
 
 export interface DocumentToAuthor {

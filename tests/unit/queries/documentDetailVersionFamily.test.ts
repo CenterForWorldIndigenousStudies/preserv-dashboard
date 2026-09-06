@@ -63,9 +63,33 @@ describe('getDocumentDetail version family mapping', () => {
     mockDocumentToMetadataFindMany.mockResolvedValue([])
     mockDocumentToBatchesFindMany.mockResolvedValue([])
     mockDocumentToAuthorsFindMany.mockResolvedValue([])
+    mockDocumentToTagsFindMany.mockResolvedValue([])
     mockDocumentAccessFindMany.mockResolvedValue([])
     mockVersionGroupsFindUnique.mockResolvedValue(null)
   }
+
+  it('maps metadata definition notes for document detail display', async () => {
+    mockBaseDocument()
+    mockDocumentVersionsFindMany.mockResolvedValue([])
+    mockDocumentToMetadataFindMany.mockResolvedValue([
+      {
+        value: JSON.stringify({ value: 'Document title' }),
+        value_type: 'string',
+        metadata: { name: 'title', notes: 'The document title.' },
+      },
+    ])
+
+    const result = await getDocumentDetail('canonical-1')
+
+    expect(result?.metadata).toEqual([
+      {
+        name: 'title',
+        value: JSON.stringify({ value: 'Document title' }),
+        value_type: 'string',
+        notes: 'The document title.',
+      },
+    ])
+  })
 
   it('deduplicates the canonical family row and forces canonical to display first as non-duplicate', async () => {
     mockBaseDocument()
@@ -321,5 +345,58 @@ describe('getDocumentDetail version family mapping', () => {
       },
     ])
     expect(result?.version_family).toBeNull()
+  })
+
+  it('calculates document batch costs from current details with legacy fallback', async () => {
+    mockBaseDocument()
+    mockDocumentVersionsFindMany.mockResolvedValue([])
+    mockDocumentToTagsFindMany.mockResolvedValue([])
+    mockDocumentToBatchesFindMany.mockResolvedValue([
+      {
+        id: 'membership-current',
+        document_id: 'canonical-1',
+        batch_id: 'batch-current',
+        added_at: null,
+        batch_origin: 'current pipeline',
+        cost: '9.99',
+        processing_time_seconds: 12,
+        processing_details: JSON.stringify({
+          pipeline: { stages: { ocr_processor: { ai_cost_usd: 0.42 } } },
+        }),
+        ocr_quality_low: null,
+        ocr_quality_medium: null,
+        batches: {
+          id_legacy: null,
+          name: 'Current batch',
+          lifecycle_status: 'running',
+          processing_details: JSON.stringify({ pipeline: { stages: { ocr_processor: { ai_cost_usd: 9.99 } } } }),
+        },
+      },
+      {
+        id: 'membership-legacy',
+        document_id: 'canonical-1',
+        batch_id: 'batch-legacy',
+        added_at: null,
+        batch_origin: 'legacy pipeline',
+        cost: '1.25',
+        processing_time_seconds: 8,
+        processing_details: JSON.stringify({}),
+        ocr_quality_low: null,
+        ocr_quality_medium: null,
+        batches: {
+          id_legacy: 'legacy-batch',
+          name: 'Legacy batch',
+          lifecycle_status: 'publication_locked',
+          processing_details: JSON.stringify({ pipeline: { stages: { ocr_processor: { ai_cost_usd: 8.88 } } } }),
+        },
+      },
+    ])
+
+    const result = await getDocumentDetail('canonical-1')
+
+    expect(result?.document_to_batches).toMatchObject([
+      { batch_id: 'batch-current', batch_status: 'running', cost: '$0.42' },
+      { batch_id: 'batch-legacy', batch_status: 'publication_locked', cost: '$1.25' },
+    ])
   })
 })

@@ -42,6 +42,7 @@ interface BatchDatabaseRow {
   id_legacy: string | null
   name: string | null
   started_by: string | null
+  created_at: Date | string | null
   started_at: Date | string | null
   lifecycle_status: string | null
   publication_status: string | null
@@ -49,6 +50,14 @@ interface BatchDatabaseRow {
   document_to_batches: Array<{
     cost: Prisma.Decimal | number | string | null
     processing_time_seconds: number | null
+  }>
+  batch_to_batches_metadata?: Array<{
+    value: string | null
+    value_type: string | null
+    batch_metadata: {
+      name: string
+      notes: string | null
+    }
   }>
 }
 
@@ -190,10 +199,17 @@ function mapBatchDetail(row: BatchDatabaseRow): BatchDetail {
     id: row.id,
     name: row.name,
     startedBy: row.started_by ?? null,
+    createdAt: row.created_at,
     startedAt: row.started_at,
     properties,
     lifecycleStatus: row.lifecycle_status,
     publicationStatus: row.publication_status,
+    metadata: (row.batch_to_batches_metadata ?? []).map((metadataLink) => ({
+      name: metadataLink.batch_metadata.name,
+      value: metadataLink.value ?? '',
+      value_type: metadataLink.value_type,
+      notes: metadataLink.batch_metadata.notes,
+    })),
   }
 }
 
@@ -265,6 +281,7 @@ const batchSelect = {
   id_legacy: true,
   name: true,
   started_by: true,
+  created_at: true,
   started_at: true,
   lifecycle_status: true,
   publication_status: true,
@@ -273,6 +290,22 @@ const batchSelect = {
     select: {
       cost: true,
       processing_time_seconds: true,
+    },
+  },
+} as const
+
+const batchDetailSelect = {
+  ...batchSelect,
+  batch_to_batches_metadata: {
+    select: {
+      value: true,
+      value_type: true,
+      batch_metadata: {
+        select: {
+          name: true,
+          notes: true,
+        },
+      },
     },
   },
 } as const
@@ -498,6 +531,6 @@ export async function getBatchOverviewMetrics(
 }
 
 export async function getBatchDetail(batchId: string, client: BatchQueryDbClient = db): Promise<BatchDetail | null> {
-  const row = await client.batches.findUnique({ where: { id: batchId }, select: batchSelect })
+  const row = await client.batches.findUnique({ where: { id: batchId }, select: batchDetailSelect })
   return row ? mapBatchDetail(row) : null
 }

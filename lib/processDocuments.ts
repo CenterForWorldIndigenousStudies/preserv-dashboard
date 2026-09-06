@@ -66,6 +66,7 @@ export function buildAcceptedBatchStatus({
     batchName,
     startedBy,
     createdAt: submittedAt,
+    startedAt: submittedAt,
     pipelineRequestedStages,
     pipelineConfig,
     ingester: {

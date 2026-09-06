@@ -1,5 +1,6 @@
-import { Box, List, ListItem, Paper, Stack, Typography } from '@mui/material'
+import { Box, List, ListItem, Paper, Typography } from '@mui/material'
 
+import { DetailFieldGrid } from '@molecules/DetailFieldGrid'
 import { NeedsReviewReasons } from '@molecules/NeedsReviewReasons'
 import type { DocumentReadiness } from 'types/documents'
 import type { NeedsReviewReasonGroup } from 'types/needsReview'
@@ -19,42 +20,43 @@ export function DocumentReadinessDiagnostics({
         {'Processing Diagnostics'}
       </Typography>
       <Typography variant={'body2'} color={'text.secondary'} sx={{ mt: 1 }}>
-        {'Readiness is evaluated on the preservation candidate itself. These diagnostics explain what still prevents approval.'}
+        {
+          'Readiness is evaluated on the preservation candidate itself. These diagnostics explain what still prevents approval.'
+        }
       </Typography>
 
       {readiness ? (
-        <Stack spacing={2} sx={{ mt: 3 }}>
-          <Box>
-            <Typography variant={'caption'} sx={{ fontWeight: 600, textTransform: 'uppercase' }}>
-              {'Readiness outcome'}
-            </Typography>
-            <Typography variant={'body1'} sx={{ mt: 0.5 }}>
-              {readiness.approved ? 'Ready for human approval' : 'Needs review'}
-            </Typography>
-          </Box>
-          <Box>
-            <Typography variant={'caption'} sx={{ fontWeight: 600, textTransform: 'uppercase' }}>
-              {'Preservation candidate'}
-            </Typography>
-            <Typography variant={'body1'} sx={{ mt: 0.5 }}>
-              {readiness.isPreservationCandidate ? 'Yes' : 'No'}
-            </Typography>
-          </Box>
-          {readiness.unmetRequirements.length > 0 ? (
-            <Box>
-              <Typography variant={'caption'} sx={{ fontWeight: 600, textTransform: 'uppercase' }}>
-                {'Unmet requirements'}
-              </Typography>
-              <List dense disablePadding sx={{ listStyleType: 'disc', pl: 2.5, mt: 0.5 }}>
-                {readiness.unmetRequirements.map((requirement) => (
-                  <ListItem key={requirement} disablePadding sx={{ display: 'list-item', py: 0.25 }}>
-                    <Typography variant={'body2'}>{requirement}</Typography>
-                  </ListItem>
-                ))}
-              </List>
-            </Box>
-          ) : null}
-        </Stack>
+        <DetailFieldGrid
+          fields={[
+            {
+              key: 'readiness-outcome',
+              label: 'Readiness outcome',
+              value: readiness.approved ? 'Ready for human approval' : 'Needs review',
+            },
+            {
+              key: 'preservation-candidate',
+              label: 'Preservation candidate',
+              value: readiness.isPreservationCandidate ? 'Yes' : 'No',
+            },
+            ...(readiness.unmetRequirements.length > 0
+              ? [
+                  {
+                    key: 'unmet-requirements',
+                    label: 'Unmet requirements',
+                    value: (
+                      <List dense disablePadding sx={{ listStyleType: 'disc', pl: 2.5 }}>
+                        {readiness.unmetRequirements.map((requirement) => (
+                          <ListItem key={requirement} disablePadding sx={{ display: 'list-item', py: 0.25 }}>
+                            <Typography variant={'body2'}>{requirement}</Typography>
+                          </ListItem>
+                        ))}
+                      </List>
+                    ),
+                  },
+                ]
+              : []),
+          ]}
+        />
       ) : (
         <Typography variant={'body2'} color={'text.secondary'} sx={{ mt: 3 }}>
           {'Readiness diagnostics are not available for this document.'}

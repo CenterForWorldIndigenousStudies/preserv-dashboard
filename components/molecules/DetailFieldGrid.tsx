@@ -1,9 +1,10 @@
 import type { ReactElement, ReactNode } from 'react'
-import { Box, Typography } from '@mui/material'
+import { Box, Tooltip, Typography } from '@mui/material'
 
 export interface DetailField {
   key: string
   label: string
+  description?: string
   value: ReactNode
 }
 
@@ -18,7 +19,14 @@ export function DetailFieldGrid({ fields }: DetailFieldGridProps): ReactElement 
       sx={{
         display: 'grid',
         gap: 2,
-        gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' },
+        gridTemplateColumns: {
+          xs: '1fr',
+          md: 'repeat(2, minmax(0, 1fr))',
+          xl: 'repeat(3, minmax(0, 1fr))',
+          '@media (min-width: 1800px)': {
+            gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+          },
+        },
         m: 0,
         mt: 1,
       }}
@@ -36,7 +44,20 @@ export function DetailFieldGrid({ fields }: DetailFieldGridProps): ReactElement 
               textTransform: 'uppercase',
             }}
           >
-            {field.label}
+            {field.description ? (
+              <Tooltip title={field.description} arrow enterDelay={400}>
+                <Box
+                  component={'span'}
+                  tabIndex={0}
+                  aria-label={`${field.label}: ${field.description}`}
+                  sx={{ cursor: 'help' }}
+                >
+                  {field.label}
+                </Box>
+              </Tooltip>
+            ) : (
+              field.label
+            )}
           </Typography>
           <Box component={'dd'} sx={{ color: 'text.primary', mt: 1, overflowWrap: 'anywhere', m: 0 }}>
             {field.value}

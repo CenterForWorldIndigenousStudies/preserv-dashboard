@@ -53,11 +53,11 @@ const detailWithLineage: DocumentDetail = {
     ],
   },
   metadata: [
-    { name: 'source_id', value: 'drive-file-123', value_type: 'string' },
-    { name: 'origin_source_id', value: 'drive-file-origin', value_type: 'string' },
-    { name: 'origin_parent_source_id', value: 'drive-folder-456', value_type: 'string' },
-    { name: 'source_updated_at', value: '2026-05-31T09:15:00Z', value_type: 'datetime' },
-    { name: 'unrelated_field', value: 'ignore me', value_type: 'string' },
+    { name: 'source_id', value: 'drive-file-123', value_type: 'string', notes: null },
+    { name: 'origin_source_id', value: 'drive-file-origin', value_type: 'string', notes: null },
+    { name: 'origin_parent_source_id', value: 'drive-folder-456', value_type: 'string', notes: null },
+    { name: 'source_updated_at', value: '2026-05-31T09:15:00Z', value_type: 'datetime', notes: null },
+    { name: 'unrelated_field', value: 'ignore me', value_type: 'string', notes: null },
   ],
   document_to_batches: [
     {
@@ -66,12 +66,13 @@ const detailWithLineage: DocumentDetail = {
       batch_id: 'batch-1',
       added_at: '2026-06-03T08:00:00Z',
       batch_origin: 'Drive ingest folder A',
-      cost: null,
+      cost: '$0.00',
       processing_time_seconds: 42,
       ocr_quality_low: false,
       ocr_quality_medium: true,
       batch_legacy_id: 'legacy-batch-1',
       batch_name: 'June 3 Ingest',
+      batch_status: 'complete',
     },
   ],
   document_to_authors: [],
@@ -96,7 +97,7 @@ const sparseDetail: DocumentDetail = {
   access_levels: [],
   versions: [],
   version_family: null,
-  metadata: [{ name: 'unrelated_field', value: 'still ignored', value_type: 'string' }],
+  metadata: [{ name: 'unrelated_field', value: 'still ignored', value_type: 'string', notes: null }],
   document_to_batches: [],
   document_to_authors: [],
   document_to_tags: [],
@@ -105,24 +106,30 @@ const sparseDetail: DocumentDetail = {
 }
 
 describe('DocumentLineageSection', () => {
-  it('renders related version family details, recorded source metadata, and batch links using existing signals only', () => {
-    const markup = renderToStaticMarkup(<DocumentLineageSection detail={detailWithLineage} />)
+  it('renders related version family details in a collapsed accordion without duplicating metadata or batches', () => {
+    const markup = renderToStaticMarkup(
+      <DocumentLineageSection detail={detailWithLineage} />,
+    )
 
     expect(markup).toContain('Lineage and Provenance')
+    expect(markup).toContain('aria-expanded="false"')
     expect(markup).toContain('Related version family')
     expect(markup).toContain('Canonical document ID')
+    expect(markup).toContain('grid-template-columns:repeat(4, minmax(0, 1fr))')
     expect(markup).toContain('doc-canonical')
     expect(markup).toContain('Current document status')
     expect(markup).toContain('Duplicate document')
-    expect(markup).toContain('Recorded source metadata')
-    expect(markup).toContain('source_id')
-    expect(markup).toContain('origin_source_id')
-    expect(markup).toContain('origin_parent_source_id')
+    expect(markup).not.toContain('Recorded source metadata')
+    expect(markup).not.toContain('source_id')
+    expect(markup).not.toContain('origin_source_id')
+    expect(markup).not.toContain('origin_parent_source_id')
     expect(markup).not.toContain('unrelated_field')
-    expect(markup).toContain('Batch links')
-    expect(markup).toContain('June 3 Ingest')
-    expect(markup).toContain('Drive ingest folder A')
-    expect(markup).toContain('2026-06-03 08:00 UTC')
+    expect(markup).not.toContain('Batches')
+    expect(markup).not.toContain('Batch links')
+    expect(markup).not.toContain('June 3 Ingest')
+    expect(markup).not.toContain('Drive ingest folder A')
+    expect(markup).not.toContain('Document Cost')
+    expect(markup).not.toContain('href="/batches/batch-1')
   })
 
   it('renders a sparse-data empty state when no supported lineage or provenance signals are available', () => {
@@ -131,6 +138,7 @@ describe('DocumentLineageSection', () => {
     expect(markup).toContain('Lineage and Provenance')
     expect(markup).toContain('No lineage or provenance details are available for this document.')
     expect(markup).not.toContain('Recorded source metadata')
+    expect(markup).not.toContain('Batches')
     expect(markup).not.toContain('Batch links')
     expect(markup).not.toContain('Related version family')
   })

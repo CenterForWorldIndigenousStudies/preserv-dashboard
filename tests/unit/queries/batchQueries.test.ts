@@ -164,10 +164,7 @@ describe('batch query contracts', () => {
       where: Prisma.batchesWhereInput
     }
     expect(findManyCall.where).toEqual({
-      AND: [
-        { lifecycle_status: { in: ['DRAFT', 'FAILED'] } },
-        { publication_status: { in: ['NOT_STARTED'] } },
-      ],
+      AND: [{ lifecycle_status: { in: ['DRAFT', 'FAILED'] } }, { publication_status: { in: ['NOT_STARTED'] } }],
     })
   })
 
@@ -291,6 +288,7 @@ describe('batch query contracts', () => {
       name: 'Batch One',
       id_legacy: null,
       started_by: 'mary@example.org',
+      created_at: new Date('2026-07-01T00:00:00.000Z'),
       started_at: new Date('2026-07-09T00:00:00.000Z'),
       processing_details: JSON.stringify({
         total_documents: 5,
@@ -298,6 +296,13 @@ describe('batch query contracts', () => {
         sources: ['drive-a', 'drive-b'],
       }),
       document_to_batches: [{ cost: 12.5, processing_time_seconds: 42 }],
+      batch_to_batches_metadata: [
+        {
+          value: 'Targeted reprocessing',
+          value_type: 'string',
+          batch_metadata: { name: 'batch-purpose', notes: 'Why this batch was created.' },
+        },
+      ],
     })
 
     const result = await getBatchDetail('batch-1')
@@ -306,6 +311,7 @@ describe('batch query contracts', () => {
       id: 'batch-1',
       name: 'Batch One',
       startedBy: 'mary@example.org',
+      createdAt: new Date('2026-07-01T00:00:00.000Z'),
       startedAt: new Date('2026-07-09T00:00:00.000Z'),
       properties: [
         { key: 'total_documents', value: 5 },
@@ -313,6 +319,16 @@ describe('batch query contracts', () => {
         { key: 'sources', value: ['drive-a', 'drive-b'] },
         { key: 'Total Cost', value: '$12.50' },
         { key: 'Processing Time (seconds)', value: 42 },
+      ],
+      lifecycleStatus: undefined,
+      publicationStatus: undefined,
+      metadata: [
+        {
+          name: 'batch-purpose',
+          value: 'Targeted reprocessing',
+          value_type: 'string',
+          notes: 'Why this batch was created.',
+        },
       ],
     }
 

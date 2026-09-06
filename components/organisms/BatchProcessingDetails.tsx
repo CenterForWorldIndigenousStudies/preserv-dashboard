@@ -4,6 +4,7 @@ import type { ReactElement } from 'react'
 import { Box, Stack, Typography } from '@mui/material'
 
 import { AccordionPanel } from '@molecules/AccordionPanel'
+import { Cost } from '@atoms/Cost'
 import { KeyValueRow } from '@molecules/KeyValueRow'
 import { NestedValueRenderer } from '@molecules/NestedValueRenderer'
 import type { BatchProperty } from 'types/batches'
@@ -30,7 +31,13 @@ export function BatchProcessingDetails({ properties }: BatchProcessingDetailsPro
         <Stack spacing={1.5} sx={{ mt: 1.5 }}>
           {properties.map((property, index) => {
             if (!isStructuredValue(property.value)) {
-              return <KeyValueRow key={`${property.key}-${index}`} label={property.key} value={property.value} />
+              return (
+                <KeyValueRow
+                  key={`${property.key}-${index}`}
+                  label={property.key}
+                  value={property.key === 'Total Cost' ? <Cost value={property.value} /> : property.value}
+                />
+              )
             }
 
             return (

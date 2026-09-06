@@ -78,6 +78,7 @@ function buildProcessBatchStatus(batch: SelectedBatchFields, manualEditAfterStar
     batchName: normalizeText(batch.name),
     startedBy: normalizeText(batch.started_by),
     createdAt: toIsoString(batch.created_at),
+    startedAt: batch.started_at instanceof Date ? batch.started_at.toISOString() : batch.started_at,
     lifecycleStatus: batch.lifecycle_status,
     publicationStatus: batch.publication_status,
     publicationTarget: batch.publication_target,
@@ -354,9 +355,7 @@ interface RightsDeterminatorCompletionArgs {
   failedCount: number
 }
 
-function buildCompletionUpdateData(
-  nextDetails: RawProcessBatchDetails,
-): {
+function buildCompletionUpdateData(nextDetails: RawProcessBatchDetails): {
   processing_details: string
 } {
   const serializedDetails = JSON.stringify(nextDetails)

@@ -235,6 +235,7 @@ export interface ProcessBatchStatus extends NormalizedProcessBatchDetails {
   batchName: string | null
   startedBy: string | null
   createdAt: string | null
+  startedAt?: string | null
   lifecycleStatus?: string | null
   publicationStatus?: string | null
   publicationTarget?: string | null

@@ -1,12 +1,13 @@
-import type { ReactElement } from 'react'
+import type { ReactElement, ReactNode } from 'react'
 import { Stack } from '@mui/material'
 import { notFound } from 'next/navigation'
 
-import { DateAtom } from '@atoms/Date'
 import { ReturnToPreviousPage } from '@atoms/ReturnToPreviousPage'
+import { Cost } from '@atoms/Cost'
 import { PAGE_LABELS } from '@constants/pageLabels'
 import { BATCHES_PATH } from '@constants/paths'
-import { DetailFieldGrid } from '@molecules/DetailFieldGrid'
+import { BatchOverviewFields } from '@molecules/BatchOverviewFields'
+import { MetadataTable } from '@molecules/MetadataTable'
 import { ProcessBatchProgress } from '@organisms/ProcessBatchProgress'
 import { DetailPageSection } from '@organisms/DetailPageSection'
 import { PageHeader } from '@organisms/PageHeader'
@@ -14,6 +15,8 @@ import { getBatchDetail } from '@lib/queries/batchQueries'
 import { getPipelineExecutionSnapshot } from '@lib/queries/pipelineExecutionQueries'
 import { getReprocessingDraft } from '@lib/queries/reprocessingDraftQueries'
 import { ReprocessingDraftWorkspace } from '@organisms/ReprocessingDraftWorkspace'
+import type { MetadataField } from 'types/metadata'
+import { parseMetadataValue } from '@lib/metadata'
 
 export const dynamic = 'force-dynamic'
 
@@ -52,6 +55,18 @@ export default async function BatchDetailPage({ params, searchParams }: BatchDet
     notFound()
   }
 
+  const requestedStages = executionSnapshot.batch?.pipelineRequestedStages ?? (draft ? [draft.restartStage] : [])
+
+  function renderMetadataValue(field: MetadataField): ReactNode {
+    if (field.name === 'cost_saved') {
+      return <Cost value={parseMetadataValue(field.value, field.value_type).display} />
+    }
+
+    const parsed = parseMetadataValue(field.value, field.value_type)
+
+    return parsed.display
+  }
+
   return (
     <Stack spacing={4} sx={{ width: '100%' }}>
       <ReturnToPreviousPage
@@ -65,16 +80,22 @@ export default async function BatchDetailPage({ params, searchParams }: BatchDet
       />
 
       <DetailPageSection title={'Batch Fields'}>
-        <DetailFieldGrid
-          fields={[
+        <BatchOverviewFields
+          createdAt={detail.createdAt}
+          startedAt={detail.startedAt}
+          requestedStages={requestedStages}
+          lifecycleStatus={detail.lifecycleStatus}
+          publicationStatus={detail.publicationStatus}
+          additionalFields={[
             { key: 'id', label: 'Batch ID', value: detail.id },
             { key: 'name', label: 'Name', value: detail.name ?? '—' },
-            { key: 'startedAt', label: 'Started At', value: <DateAtom value={detail.startedAt} /> },
             ...(detail.startedBy?.trim() ? [{ key: 'startedBy', label: 'Started By', value: detail.startedBy }] : []),
-            { key: 'lifecycleStatus', label: 'Lifecycle Status', value: detail.lifecycleStatus ?? 'Unknown' },
-            { key: 'publicationStatus', label: 'Publication Status', value: detail.publicationStatus ?? 'Unknown' },
           ]}
         />
+      </DetailPageSection>
+
+      <DetailPageSection title={'Metadata'}>
+        <MetadataTable fields={detail.metadata} renderValue={renderMetadataValue} />
       </DetailPageSection>
 
       {draft ? <ReprocessingDraftWorkspace initialDraft={draft} /> : null}

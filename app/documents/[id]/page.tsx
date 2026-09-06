@@ -1,16 +1,5 @@
-import type { ReactElement } from 'react'
-import {
-  Box,
-  Paper,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Typography,
-} from '@mui/material'
+import type { ReactElement, ReactNode } from 'react'
+import { Box, Divider, Paper, Stack, Typography } from '@mui/material'
 
 import { DateAtom } from '@atoms/Date'
 import { FileSize } from '@atoms/FileSize'
@@ -18,12 +7,15 @@ import { ReturnToPreviousPage } from '@atoms/ReturnToPreviousPage'
 import { SourceId } from '@atoms/SourceId'
 import { SourceFolderId } from '@atoms/SourceFolderId'
 import { AuditHistoryTable } from '@organisms/AuditHistoryTable'
+import { DocumentBatchAssociations } from '@organisms/DocumentBatchAssociations'
 import { DocumentLineageSection } from '@organisms/DocumentLineageSection'
 import { DocumentReadinessDiagnostics } from '@organisms/DocumentReadinessDiagnostics'
 import { DocumentTagsEditor } from '@organisms/DocumentTagsEditor'
 import { DocumentVersionsButton } from '@organisms/DocumentVersionsButton'
 import { DetailPageSection } from '@organisms/DetailPageSection'
 import { DetailFieldGrid } from '@molecules/DetailFieldGrid'
+import { MetadataTable } from '@molecules/MetadataTable'
+import { NeedsReviewReasons } from '@molecules/NeedsReviewReasons'
 import { NoDataState } from '@organisms/NoDataState'
 import { PageHeader } from '@organisms/PageHeader'
 import { ReviewHistoryTable } from '@organisms/ReviewHistoryTable'
@@ -37,6 +29,7 @@ import {
   REVIEW_QUEUE_PATH,
 } from '@constants/paths'
 import { PAGE_LABELS } from '@constants/pageLabels'
+import type { MetadataField } from 'types/metadata'
 
 export const dynamic = 'force-dynamic'
 
@@ -128,62 +121,86 @@ const panelSx = {
   p: { xs: 2.5, md: 3 },
 }
 
-const insetSx = {
-  bgcolor: 'rgba(244, 241, 240, 0.45)',
-  borderRadius: 3,
-  p: 2,
-}
+const contentDedupTextSourceIdMetadataKeys = new Set(['content_dedup_text_source_id', 'content_hash_timestamp'])
 
-const detailGridSx = {
-  display: 'grid',
-  gap: 2,
-  gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' },
-  m: 0,
-  mt: 3,
-}
+const fedoraSourceMetadataKeys = new Set([
+  'fedora_csv_source_id',
+  'fedora_publication_source_document_id',
+  'fedora_url',
+])
 
-const detailLabelSx = {
-  color: 'text.secondary',
-  fontSize: '0.75rem',
-  fontWeight: 600,
-  letterSpacing: '0.15em',
-  textTransform: 'uppercase',
-}
+const ocrSourceMetadataKeys = new Set([
+  'ocr_metadata_source_file',
+  'ocr_source_document_id',
+  'ocr_source_document_name',
+  'ocr_source_pdf_origin',
+  'ocr_text_url',
+  'ocr_version_document_id',
+])
 
-const detailValueSx = {
-  color: 'text.primary',
-  mt: 1,
-  overflowWrap: 'anywhere',
-}
+const originSourceMetadataKeys = new Set([
+  'folder_context',
+  'origin_parent_name',
+  'origin_parent_source_id',
+  'origin_source_id',
+  'origin_url',
+  'original_filename',
+])
 
-const tableHeadCellSx = {
-  bgcolor: '#f4f1eb',
-  borderBottom: '2px solid',
-  borderBottomColor: 'primary.main',
-  color: 'text.primary',
-  fontSize: '0.75rem',
-  fontWeight: 600,
-  letterSpacing: '0.1em',
-  px: 1.5,
-  py: 1,
-  textTransform: 'uppercase',
-}
+const rotatorSourceMetadataKeys = new Set(['rotation_source_document_id', 'rotation_source_document_name'])
 
-const tableBodyCellSx = {
-  borderBottom: '1px solid rgba(53, 88, 52, 0.1)',
-  color: 'text.primary',
-  fontSize: '0.875rem',
-  px: 1.5,
-  py: 1.5,
-  verticalAlign: 'top',
-}
+const sourceMetadataKeys = new Set([
+  'source_created_at',
+  'source_folder_id',
+  'source_folder_structure',
+  'source_id',
+  'source_updated_at',
+])
 
-function DetailValue({ children }: { children: React.ReactNode }): ReactElement {
-  return (
-    <Box component={'dd'} sx={{ ...detailValueSx, m: 0 }}>
-      {children}
-    </Box>
-  )
+const splitterSourceMetadataKeys = new Set(['split_parent_document_id', 'split_parent_document_name'])
+
+const recordedSourceMetadataKeys = new Set([
+  ...contentDedupTextSourceIdMetadataKeys,
+  ...fedoraSourceMetadataKeys,
+  ...ocrSourceMetadataKeys,
+  ...originSourceMetadataKeys,
+  ...rotatorSourceMetadataKeys,
+  ...sourceMetadataKeys,
+  ...splitterSourceMetadataKeys,
+])
+
+function renderMetadataValue(field: MetadataField): ReactNode {
+  if (field.name === 'needs_review') {
+    return <NeedsReviewReasons value={field.value} />
+  }
+
+  const parsed = parseMetadataValue(field.value, field.value_type)
+
+  if (
+    [
+      'content_dedup_text_source_id',
+      'fedora_csv_source_id',
+      'fedora_publication_source_document_id',
+      'ocr_source_document_id',
+      'ocr_version_document_id',
+      'origin_source_id',
+      'rotation_source_document_id',
+      'source_id',
+      'split_parent_document_id',
+    ].includes(field.name)
+  ) {
+    return <SourceId value={parsed.display as string} />
+  }
+
+  if (['source_folder_id', 'origin_parent_source_id'].includes(field.name)) {
+    return <SourceFolderId value={parsed.display as string} />
+  }
+
+  if (['content_hash_timestamp', 'source_created_at', 'source_updated_at'].includes(field.name)) {
+    return <DateAtom value={parsed.display as number} />
+  }
+
+  return parsed.display
 }
 
 export default async function DocumentDetailPage({
@@ -217,6 +234,8 @@ export default async function DocumentDetailPage({
     }
 
     const { audits, document, metadata, reviews, version_family, versions } = detail
+    const recordedSourceMetadata = metadata.filter((field) => recordedSourceMetadataKeys.has(field.name))
+    const displayedMetadata = metadata.filter((field) => !recordedSourceMetadataKeys.has(field.name))
 
     const documentFieldValues = {
       id: document.id,
@@ -284,46 +303,28 @@ export default async function DocumentDetailPage({
               ) : null}
             </Stack>
             {versions.length > 0 ? (
-              <Box sx={{ ...detailGridSx, mt: 3 }}>
+              <Stack spacing={3} sx={{ mt: 3 }}>
                 {versions.map((version) => (
-                  <Box key={version.id} component={'div'} sx={insetSx}>
-                    <Stack component={'dl'} spacing={1.5} sx={{ m: 0 }}>
-                      <Box component={'div'}>
-                        <Typography component={'dt'} variant={'caption'} sx={detailLabelSx}>
-                          {'Version Group'}
-                        </Typography>
-                        <DetailValue>{version.version_group_id}</DetailValue>
-                      </Box>
-                      <Box component={'div'}>
-                        <Typography component={'dt'} variant={'caption'} sx={detailLabelSx}>
-                          {'Changes Summary'}
-                        </Typography>
-                        <DetailValue>{version.changes_summary ?? '-'}</DetailValue>
-                      </Box>
-                      <Box component={'div'}>
-                        <Typography component={'dt'} variant={'caption'} sx={detailLabelSx}>
-                          {'Notes'}
-                        </Typography>
-                        <DetailValue>{version.notes ?? '-'}</DetailValue>
-                      </Box>
-                      <Box component={'div'}>
-                        <Typography component={'dt'} variant={'caption'} sx={detailLabelSx}>
-                          {'Similarity'}
-                        </Typography>
-                        <DetailValue>{version.similarity_score !== null ? version.similarity_score : '-'}</DetailValue>
-                      </Box>
-                      <Box component={'div'}>
-                        <Typography component={'dt'} variant={'caption'} sx={detailLabelSx}>
-                          {'Analyzed At'}
-                        </Typography>
-                        <DetailValue>
-                          {version.analyzed_at !== null ? <DateAtom value={version.analyzed_at} /> : '-'}
-                        </DetailValue>
-                      </Box>
-                    </Stack>
-                  </Box>
+                  <DetailFieldGrid
+                    key={version.id}
+                    fields={[
+                      { key: 'version-group', label: 'Version Group', value: version.version_group_id },
+                      { key: 'changes-summary', label: 'Changes Summary', value: version.changes_summary ?? '-' },
+                      { key: 'notes', label: 'Notes', value: version.notes ?? '-' },
+                      {
+                        key: 'similarity',
+                        label: 'Similarity',
+                        value: version.similarity_score !== null ? version.similarity_score : '-',
+                      },
+                      {
+                        key: 'analyzed-at',
+                        label: 'Analyzed At',
+                        value: version.analyzed_at !== null ? <DateAtom value={version.analyzed_at} /> : '-',
+                      },
+                    ]}
+                  />
                 ))}
-              </Box>
+              </Stack>
             ) : null}
             {version_family && versions.length === 0 ? (
               <Typography variant={'body2'} color={'text.secondary'} sx={{ mt: 2 }}>
@@ -342,71 +343,8 @@ export default async function DocumentDetailPage({
                 {'No related versions available.'}
               </Typography>
             ) : null}
+            <DocumentLineageSection detail={detail} />
           </Paper>
-
-          <Paper component={'section'} elevation={0} sx={panelSx}>
-            <Typography component={'h2'} variant={'h5'} color={'text.primary'}>
-              {'Metadata'}
-            </Typography>
-            {metadata.length > 0 ? (
-              <TableContainer sx={{ mt: 3, overflowX: 'auto' }}>
-                <Table size={'small'} sx={{ minWidth: 560 }}>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell scope={'col'} sx={tableHeadCellSx}>
-                        {'Field'}
-                      </TableCell>
-                      <TableCell scope={'col'} sx={tableHeadCellSx}>
-                        {'Value'}
-                      </TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {metadata.map(({ name, value, value_type }, i) => (
-                      <TableRow key={i}>
-                        <TableCell sx={{ ...tableBodyCellSx, fontWeight: 500 }}>{name}</TableCell>
-                        <TableCell sx={tableBodyCellSx}>
-                          {(() => {
-                            const parsed = parseMetadataValue(value, value_type)
-                            return [
-                              'content_dedup_text_source_id',
-                              'fedora_csv_source_id',
-                              'fedora_publication_source_document_id',
-                              'ocr_source_document_id',
-                              'ocr_version_document_id',
-                              'origin_source_id',
-                              'rotation_source_document_id',
-                              'source_id',
-                              'split_parent_document_id',
-                            ].includes(name) ? (
-                              <SourceId value={parsed.display as string} />
-                            ) : ['source_folder_id', 'origin_parent_source_id'].includes(name) ? (
-                              <SourceFolderId value={parsed.display as string} />
-                            ) : ['content_hash_timestamp', 'source_created_at', 'source_updated_at'].includes(name) ? (
-                              <DateAtom value={parsed.display as number} />
-                            ) : (
-                              parsed.display
-                            )
-                          })()}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            ) : (
-              <Typography variant={'body2'} color={'text.secondary'} sx={{ mt: 2 }}>
-                {'No metadata available.'}
-              </Typography>
-            )}
-          </Paper>
-
-          <DocumentLineageSection detail={detail} />
-
-          <DocumentReadinessDiagnostics
-            readiness={detail.readiness}
-            activeReviewReasons={detail.document.needs_review_reasons}
-          />
 
           <Paper component={'section'} elevation={0} sx={panelSx}>
             <Typography component={'h2'} variant={'h5'} color={'text.primary'}>
@@ -419,50 +357,35 @@ export default async function DocumentDetailPage({
 
           <Paper component={'section'} elevation={0} sx={panelSx}>
             <Typography component={'h2'} variant={'h5'} color={'text.primary'}>
+              {'Metadata'}
+            </Typography>
+            <MetadataTable fields={displayedMetadata} renderValue={renderMetadataValue} />
+            {recordedSourceMetadata.length > 0 ? (
+              <>
+                <Divider sx={{ my: 4 }} />
+                <Typography component={'h3'} variant={'h6'} color={'text.primary'}>
+                  {'Recorded source metadata'}
+                </Typography>
+                <MetadataTable fields={recordedSourceMetadata} minWidth={520} renderValue={renderMetadataValue} />
+              </>
+            ) : null}
+          </Paper>
+
+          <Paper component={'section'} elevation={0} sx={panelSx}>
+            <Typography component={'h2'} variant={'h5'} color={'text.primary'}>
               {'Batches'}
             </Typography>
-            {detail.document_to_batches.length > 0 ? (
-              <TableContainer sx={{ mt: 3, overflowX: 'auto' }}>
-                <Table size={'small'} sx={{ minWidth: 760 }}>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell scope={'col'} sx={tableHeadCellSx}>
-                        {'Batch ID'}
-                      </TableCell>
-                      <TableCell scope={'col'} sx={tableHeadCellSx}>
-                        {'Batch Origin'}
-                      </TableCell>
-                      <TableCell scope={'col'} sx={tableHeadCellSx}>
-                        {'Processing Time'}
-                      </TableCell>
-                      <TableCell scope={'col'} sx={tableHeadCellSx}>
-                        {'OCR Low'}
-                      </TableCell>
-                      <TableCell scope={'col'} sx={tableHeadCellSx}>
-                        {'OCR Medium'}
-                      </TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {detail.document_to_batches.map((batchLink) => (
-                      <TableRow key={batchLink.id}>
-                        <TableCell sx={{ ...tableBodyCellSx, fontWeight: 500 }}>
-                          {batchLink.batch_legacy_id ?? batchLink.batch_id}
-                        </TableCell>
-                        <TableCell sx={tableBodyCellSx}>{batchLink.batch_origin ?? '—'}</TableCell>
-                        <TableCell sx={tableBodyCellSx}>{batchLink.processing_time_seconds ?? '—'}</TableCell>
-                        <TableCell sx={tableBodyCellSx}>{batchLink.ocr_quality_low ? 'True' : 'False'}</TableCell>
-                        <TableCell sx={tableBodyCellSx}>{batchLink.ocr_quality_medium ? 'True' : 'False'}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            ) : (
-              <Typography variant={'body2'} color={'text.secondary'} sx={{ mt: 2 }}>
-                {'No batch links available.'}
-              </Typography>
-            )}
+            <DocumentBatchAssociations
+              batchAssociations={detail.document_to_batches}
+              batchReturnHref={currentDocumentHref}
+              batchReturnLabel={PAGE_LABELS.documentDetail}
+            />
+            <Box sx={{ mt: 4 }}>
+              <DocumentReadinessDiagnostics
+                readiness={detail.readiness}
+                activeReviewReasons={detail.document.needs_review_reasons}
+              />
+            </Box>
           </Paper>
         </Stack>
 

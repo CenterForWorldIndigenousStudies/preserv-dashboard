@@ -20,5 +20,19 @@ describe('DetailFieldGrid', () => {
     expect(markup).toContain('<time>July 9</time>')
     expect(markup).toContain('<dt')
     expect(markup).toContain('<dd')
+    expect(markup).toContain('grid-template-columns:repeat(3, minmax(0, 1fr))')
+    expect(markup).toContain('grid-template-columns:repeat(4, minmax(0, 1fr))')
+  })
+
+  it('makes field descriptions available through accessible tooltips', () => {
+    const markup = renderToStaticMarkup(
+      <DetailFieldGrid
+        fields={[
+          { key: 'created', label: 'Created', description: 'When the batch record was created.', value: 'June 1' },
+        ]}
+      />,
+    )
+
+    expect(markup).toContain('Created: When the batch record was created.')
   })
 })

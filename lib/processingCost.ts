@@ -43,18 +43,54 @@ function formatUsd(value: number): string {
   return `$${whole}.${(trimmedFraction || '').padEnd(2, '0')}`
 }
 
+/**
+ * Format a raw or already formatted cost for display in the dashboard.
+ *
+ * Keep this separate from total-cost calculation so every cost display uses
+ * the same precision and missing-value behavior.
+ */
+export function formatCost(value: unknown): string {
+  if (value === null || value === undefined) {
+    return '—'
+  }
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? formatUsd(value) : '—'
+  }
+
+  if (typeof value !== 'string' || !value.trim()) {
+    return '—'
+  }
+
+  const displayValue = value.trim()
+  const numericValue = Number(displayValue.replace(/[$,]/g, ''))
+  return Number.isFinite(numericValue) ? formatUsd(numericValue) : displayValue
+}
+
+function parseCurrentProcessingDetails(value: unknown): unknown {
+  if (typeof value !== 'string' || !value.trim()) {
+    return value
+  }
+
+  try {
+    return JSON.parse(value)
+  } catch {
+    return value
+  }
+}
+
 export function calculateTotalProcessingCost(
-  currentProcessingDetails: Readonly<Record<string, unknown>>,
+  currentProcessingDetails: unknown,
   legacyDocumentCosts: readonly { cost: unknown }[],
 ): string {
-  const currentCost = sumCurrentCostFields(currentProcessingDetails)
+  const currentCost = sumCurrentCostFields(parseCurrentProcessingDetails(currentProcessingDetails))
   if (currentCost.hasCost) {
-    return formatUsd(currentCost.total)
+    return formatCost(currentCost.total)
   }
 
   const legacyTotal = legacyDocumentCosts.reduce((total, row) => {
     const cost = Number(row.cost ?? 0)
     return Number.isFinite(cost) ? total + cost : total
   }, 0)
-  return formatUsd(legacyTotal)
+  return formatCost(legacyTotal)
 }

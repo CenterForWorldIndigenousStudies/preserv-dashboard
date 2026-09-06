@@ -1,5 +1,6 @@
 import type { DocumentTablePageInfo, DocumentTableQuery } from '@organisms/DocumentTable/types'
 import type { AdvancedSearchFilters } from '@lib/search'
+import type { MetadataField } from 'types/metadata'
 
 export type BatchQueryFilters = AdvancedSearchFilters
 
@@ -37,11 +38,15 @@ export interface BatchDetail {
   id: string
   name: string | null
   startedBy: string | null
+  createdAt: string | Date | null
   startedAt: string | Date | null
   properties: BatchProperty[]
   lifecycleStatus?: string | null
   publicationStatus?: string | null
+  metadata: BatchMetadataField[]
 }
+
+export type BatchMetadataField = MetadataField
 
 export interface BatchSearchSuggestion {
   id: string

@@ -28,27 +28,20 @@ import {
 } from '@constants/documentMetadata'
 import { db } from '@lib/db'
 import { createEditHistoryEntry, markDocumentBatchesPublicationLocked } from '@lib/editHistory'
+import { calculateTotalProcessingCost } from '@lib/processingCost'
 import { buildNameHash } from '@lib/tagHash'
 import { composeReviewQueueReasons } from '@lib/needsReview'
 import { evaluateDocumentReadiness } from '@lib/pipelineReadiness'
 import { appendReviewHistoryEpisode } from '@lib/reviewHistory'
 import { parseMetadataValue } from '@lib/metadata'
 import { removeOpenDraftMemberships } from '@lib/queries/reprocessingDraftQueries'
-import {
-  resolveBatchSearchIds,
-  resolveTagSearchIds,
-  type SearchQueryDbClient,
-} from '@lib/queries/searchResolvers'
+import { resolveBatchSearchIds, resolveTagSearchIds, type SearchQueryDbClient } from '@lib/queries/searchResolvers'
 import {
   Prisma,
   PrismaClient,
   type document_quality_validation_status as DocumentQualityValidationStatus,
 } from '@lib/prisma/generated/client'
-import {
-  getProtectedTagDeletionMessage,
-  isProtectedTagName,
-  normalizeTagName,
-} from '@lib/tagUtils'
+import { getProtectedTagDeletionMessage, isProtectedTagName, normalizeTagName } from '@lib/tagUtils'
 import type { CollectionWithMeta } from 'types/collections'
 import type {
   AuditEntry,
@@ -566,8 +559,7 @@ async function hydrateLibraryItems(rows: LibraryDocumentRow[], client: QueryDbCl
     return normalizeLibraryDocument({
       id: String(row.id),
       legacyId: row.id_legacy ?? null,
-      sourceId:
-        parseMetadataValue(normalizeRawLibraryMetadataValue(row.source_id), null).plainText || null,
+      sourceId: parseMetadataValue(normalizeRawLibraryMetadataValue(row.source_id), null).plainText || null,
       name: row.name ?? null,
       fedoraUrl:
         parseMetadataValue(
@@ -621,8 +613,7 @@ export async function getLibraryDocuments(
     total,
     page: context.page,
     pageSize: context.pageSize,
-    hasNextPage:
-      context.cursorDirection === 'prev' ? Boolean(context.cursor) : hasMore,
+    hasNextPage: context.cursorDirection === 'prev' ? Boolean(context.cursor) : hasMore,
     hasPreviousPage: context.page > 1,
     startCursor,
     endCursor,
@@ -776,7 +767,8 @@ export async function updateReviewQueueChecklist(
       data: { review_checklist: JSON.stringify(nextChecklist) },
     })
 
-    const checklistLabel = REVIEW_QUEUE_CHECKLIST_ITEMS.find((item) => item.key === params.itemKey)?.label ?? params.itemKey
+    const checklistLabel =
+      REVIEW_QUEUE_CHECKLIST_ITEMS.find((item) => item.key === params.itemKey)?.label ?? params.itemKey
     await createEditHistoryEntry(tx, {
       entityTable: 'document_quality',
       entityId: qualityRecord.id,
@@ -2911,57 +2903,58 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
       }),
       db.version_groups.findUnique({
         where: { canonical_document_id: documentId },
-      include: {
-        documents: {
-          include: {
-            document_to_metadata: {
-              include: { metadata: true },
-            },
-            document_to_tags: {
-              include: { tags: true },
+        include: {
+          documents: {
+            include: {
+              document_to_metadata: {
+                include: { metadata: true },
+              },
+              document_to_tags: {
+                include: { tags: true },
+              },
             },
           },
-        },
-        document_versions: {
-          include: {
-            documents: {
-              include: {
-                document_to_metadata: {
-                  include: { metadata: true },
-                },
-                document_to_tags: {
-                  include: { tags: true },
+          document_versions: {
+            include: {
+              documents: {
+                include: {
+                  document_to_metadata: {
+                    include: { metadata: true },
+                  },
+                  document_to_tags: {
+                    include: { tags: true },
+                  },
                 },
               },
             },
           },
         },
-      },
-    }),
-    db.document_versions.findMany({
-      where: { document_id: documentId },
-      include: {
-        version_groups: {
-          include: {
-            documents: {
-              include: {
-                document_to_metadata: {
-                  include: { metadata: true },
-                },
-                document_to_tags: {
-                  include: { tags: true },
+      }),
+      db.document_versions.findMany({
+        where: { document_id: documentId },
+        include: {
+          version_groups: {
+            include: {
+              documents: {
+                include: {
+                  document_to_metadata: {
+                    include: { metadata: true },
+                  },
+                  document_to_tags: {
+                    include: { tags: true },
+                  },
                 },
               },
-            },
-            document_versions: {
-              include: {
-                documents: {
-                  include: {
-                    document_to_metadata: {
-                      include: { metadata: true },
-                    },
-                    document_to_tags: {
-                      include: { tags: true },
+              document_versions: {
+                include: {
+                  documents: {
+                    include: {
+                      document_to_metadata: {
+                        include: { metadata: true },
+                      },
+                      document_to_tags: {
+                        include: { tags: true },
+                      },
                     },
                   },
                 },
@@ -2969,8 +2962,7 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
             },
           },
         },
-      },
-      orderBy: { created_at: 'desc' },
+        orderBy: { created_at: 'desc' },
       }),
       db.document_access.findMany({
         where: { document_id: documentId },
@@ -3120,6 +3112,7 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
       name: m.metadata.name,
       value: String(m.value ?? ''),
       value_type: m.value_type ?? null,
+      notes: m.metadata.notes ?? null,
     })),
     document_to_batches: batches.map((b) => ({
       id: String(b.id),
@@ -3127,12 +3120,13 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
       batch_id: String(b.batch_id),
       added_at: b.added_at ?? null,
       batch_origin: b.batch_origin ?? null,
-      cost: b.cost !== null ? String(b.cost) : null,
+      cost: calculateTotalProcessingCost(b.processing_details, [b]),
       processing_time_seconds: b.processing_time_seconds ?? null,
       ocr_quality_low: b.ocr_quality_low ?? null,
       ocr_quality_medium: b.ocr_quality_medium ?? null,
       batch_legacy_id: b.batches.id_legacy ?? null,
       batch_name: b.batches.name ?? null,
+      batch_status: b.batches.lifecycle_status ?? null,
     })),
     document_to_authors: authors.map((a) => ({
       id: String(a.id),
