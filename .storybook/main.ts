@@ -36,10 +36,19 @@ const config: StorybookConfig = {
         ...config.resolve,
         alias: {
           ...config.resolve?.alias,
+          // Keep next-auth/react out of the browser bundle. Stories use a
+          // deterministic unauthenticated session boundary instead.
+          'next-auth/react': path.resolve(__dirname, '../lib/nextAuthReact.storybook.tsx'),
+          'next-auth/providers/google': path.resolve(__dirname, '../lib/nextAuthProvider.storybook.ts'),
+          'next-auth': path.resolve(__dirname, '../lib/nextAuthReact.storybook.tsx'),
+          'next/navigation': path.resolve(__dirname, '../lib/nextNavigation.storybook.ts'),
           'next/router': 'next-router-mock',
           // Client components used in stories should not pull server actions
           // into the browser bundle.
           '@actions/documents': path.resolve(__dirname, '../app/actions/documents.storybook.ts'),
+          '@actions/library': path.resolve(__dirname, '../app/actions/library.storybook.ts'),
+          '@actions/batches': path.resolve(__dirname, '../app/actions/batches.storybook.ts'),
+          '@actions/pipelineExecution': path.resolve(__dirname, '../app/actions/pipelineExecution.storybook.ts'),
           '@actions/collections': path.resolve(__dirname, '../app/actions/collections.storybook.ts'),
           '@actions/ready-for-library': path.resolve(__dirname, '../app/actions/ready-for-library.storybook.ts'),
           // Stub @lib/db with a browser-safe no-op so Prisma (Node.js-only)
@@ -54,6 +63,8 @@ const config: StorybookConfig = {
           // Client stories only need the browser-safe utilities from this module.
           '@lib/tag-utils': path.resolve(__dirname, '../lib/tagUtils.storybook.ts'),
           '@lib/tagUtils': path.resolve(__dirname, '../lib/tagUtils.storybook.ts'),
+          '@lib/tagHash': path.resolve(__dirname, '../lib/tagUtils.storybook.ts'),
+          '@lib/pipelineTriggerRequests': path.resolve(__dirname, '../lib/pipelineTriggerRequests.storybook.ts'),
         },
       },
       define: {

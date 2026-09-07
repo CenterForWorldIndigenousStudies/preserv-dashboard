@@ -62,7 +62,7 @@ describe('PipelineTimelineCard', () => {
     const summary = container.querySelector('button[aria-expanded]')
 
     expect(summary?.getAttribute('aria-expanded')).toBe('true')
-    expect(summary?.textContent).toContain('Pipeline Timeline')
+    expect(summary?.querySelector('h3')?.textContent).toBe('Pipeline Timeline')
     expect(summary?.textContent).toContain('Running')
   })
 

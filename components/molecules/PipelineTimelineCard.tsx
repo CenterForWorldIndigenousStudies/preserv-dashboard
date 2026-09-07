@@ -162,7 +162,7 @@ export function PipelineTimelineCard({ batch }: PipelineTimelineCardProps): Reac
               <StatusDot status={timelineStatus} />
             </Box>
             <Box sx={{ minWidth: 0 }}>
-              <Typography variant={'h6'} sx={{ fontWeight: 700 }}>
+              <Typography component={'h3'} variant={'h6'} sx={{ fontWeight: 700 }}>
                 {'Pipeline Timeline'}
               </Typography>
               {createdAt ? (
