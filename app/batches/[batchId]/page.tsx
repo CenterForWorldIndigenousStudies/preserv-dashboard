@@ -17,6 +17,7 @@ import { getReprocessingDraft } from '@lib/queries/reprocessingDraftQueries'
 import { ReprocessingDraftWorkspace } from '@organisms/ReprocessingDraftWorkspace'
 import type { MetadataField } from 'types/metadata'
 import { parseMetadataValue } from '@lib/metadata'
+import { DateAtom } from '@atoms/Date'
 
 export const dynamic = 'force-dynamic'
 
@@ -63,6 +64,14 @@ export default async function BatchDetailPage({ params, searchParams }: BatchDet
     }
 
     const parsed = parseMetadataValue(field.value, field.value_type)
+
+    if (
+      ['binary_processing_datetime', 'duplicates_removed_timestamp', 'discrepancy_correction_timestamp'].includes(
+        field.name,
+      )
+    ) {
+      return <DateAtom value={parsed.display as number} />
+    }
 
     return parsed.display
   }
