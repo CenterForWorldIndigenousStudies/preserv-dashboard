@@ -36,6 +36,10 @@ export function ProcessBatchProgress({
   }, [initialBatch])
 
   useEffect(() => {
+    if (initialBatch.pipelineExecutionMode === 'legacy_import') {
+      return
+    }
+
     const eventSource = new EventSource(`${PROCESS_EVENTS_PATH}?batchId=${encodeURIComponent(initialBatch.batchId)}`)
     let closedByTerminalStatus = false
 
@@ -67,7 +71,7 @@ export function ProcessBatchProgress({
     return () => {
       eventSource.close()
     }
-  }, [initialBatch.batchId, streamVersion])
+  }, [initialBatch.batchId, initialBatch.pipelineExecutionMode, streamVersion])
 
   function reconnectAfterExecution(): void {
     setStreamError(null)

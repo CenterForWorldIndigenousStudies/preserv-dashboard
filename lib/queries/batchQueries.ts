@@ -152,6 +152,15 @@ function getTotalProcessingTime(
     return currentProcessingTime
   }
 
+  const summary = details.summary
+  const normalizedSummaryTime =
+    summary && typeof summary === 'object' && !Array.isArray(summary)
+      ? Number((summary as { processing_time_seconds?: unknown }).processing_time_seconds)
+      : Number.NaN
+  if (Number.isFinite(normalizedSummaryTime) && normalizedSummaryTime >= 0) {
+    return normalizedSummaryTime
+  }
+
   const statistics = getBatchStatistics(details.batch_statistics)
   const speed = Number(statistics.speed)
 
@@ -167,6 +176,15 @@ function getDocumentCount(row: BatchDatabaseRow, details: Record<string, unknown
   const totalDocuments = Number(details.total_documents)
   if (Number.isFinite(totalDocuments) && totalDocuments >= 0) {
     return totalDocuments
+  }
+
+  const summary = details.summary
+  const normalizedSummaryCount =
+    summary && typeof summary === 'object' && !Array.isArray(summary)
+      ? Number((summary as { document_count?: unknown }).document_count)
+      : Number.NaN
+  if (Number.isFinite(normalizedSummaryCount) && normalizedSummaryCount >= 0) {
+    return normalizedSummaryCount
   }
 
   return row.document_to_batches.length

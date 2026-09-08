@@ -313,6 +313,8 @@ export function parseProcessingDetails(raw: string | null): RawProcessBatchDetai
 
 export function normalizeProcessBatchDetails(details: RawProcessBatchDetails): NormalizedProcessBatchDetails {
   return {
+    pipelineExecutionMode: normalizeText(details.pipeline?.execution_mode),
+    legacyImportStatus: normalizeText(details.legacy_import?.status),
     pipelineRequestedStages: parseStringArray(details.pipeline?.requested_stages),
     pipelineConfig: parsePipelineConfig(details.pipeline?.config),
     currentExecution: normalizePipelineExecution(details.pipeline?.current_execution),

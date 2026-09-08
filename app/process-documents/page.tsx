@@ -3,6 +3,7 @@ import { Box, Button, Card, CardContent, Stack, Typography } from '@mui/material
 
 import { BATCHES_PATH } from '@constants/paths'
 import { getProcessBatchStatuses } from '@lib/processBatches'
+import { RECENT_BATCH_LIMIT } from '@lib/processDocuments'
 import { getReprocessingDraft, getReprocessingDrafts } from '@lib/queries/reprocessingDraftQueries'
 import { ReprocessingCart } from '@molecules/ReprocessingCart'
 import { ProcessDocumentsWorkspace } from '@organisms/ProcessDocumentsWorkspace'
@@ -20,7 +21,7 @@ export default async function ProcessDocumentsPage({ searchParams }: ProcessDocu
   const draftIdValue = params.draftId
   const draftId = (Array.isArray(draftIdValue) ? draftIdValue[0] : draftIdValue)?.trim()
   const [batches, drafts, draft] = await Promise.all([
-    getProcessBatchStatuses(),
+    getProcessBatchStatuses(RECENT_BATCH_LIMIT),
     getReprocessingDrafts(),
     draftId ? getReprocessingDraft(draftId) : Promise.resolve(null),
   ])

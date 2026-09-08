@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Box, Typography } from '@mui/material'
 import { KeyValueRow } from './KeyValueRow'
 
@@ -21,6 +22,7 @@ export interface NestedValueRendererProps {
    * Label used when the value itself is rendered as a key (non-object root).
    */
   fallbackLabel?: string
+  renderValue?: (key: string, value: unknown) => ReactNode | undefined
 }
 
 // ---------------------------------------------------------------------------
@@ -71,6 +73,7 @@ export function NestedValueRenderer({
   maxDepth = 4,
   sectionVariant = 'caption',
   fallbackLabel = 'value',
+  renderValue,
 }: NestedValueRendererProps): React.ReactElement | null {
   // Stop recursing at maxDepth — render as JSON string instead
   if (level > maxDepth) {
@@ -110,7 +113,12 @@ export function NestedValueRenderer({
               >
                 [{index}]
               </Typography>
-              <NestedValueRenderer value={item} level={level + 1} maxDepth={maxDepth} />
+              <NestedValueRenderer
+                value={item}
+                level={level + 1}
+                maxDepth={maxDepth}
+                renderValue={renderValue}
+              />
             </Box>
           )
         })}
@@ -129,7 +137,14 @@ export function NestedValueRenderer({
       <>
         {entries.map(([nestedKey, nestedValue]) => {
           if (isPrimitiveValue(nestedValue)) {
-            return <KeyValueRow key={`${level}-${nestedKey}`} label={nestedKey} value={nestedValue} level={level} />
+            return (
+              <KeyValueRow
+                key={`${level}-${nestedKey}`}
+                label={nestedKey}
+                value={renderValue?.(nestedKey, nestedValue) ?? nestedValue}
+                level={level}
+              />
+            )
           }
 
           return (
@@ -145,7 +160,12 @@ export function NestedValueRenderer({
               >
                 {nestedKey}
               </Typography>
-              <NestedValueRenderer value={nestedValue} level={level + 1} maxDepth={maxDepth} />
+              <NestedValueRenderer
+                value={nestedValue}
+                level={level + 1}
+                maxDepth={maxDepth}
+                renderValue={renderValue}
+              />
             </Box>
           )
         })}

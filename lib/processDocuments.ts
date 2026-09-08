@@ -2,9 +2,11 @@ import type { PipelineConfig } from '@lib/pipelineConfig'
 import { isPipelineBatchTerminal } from '@lib/pipelineExecution'
 import type { ProcessBatchStatus } from 'types/pipelineContracts'
 
+export const RECENT_BATCH_LIMIT = 3
+
 export function upsertBatchStatus(batches: ProcessBatchStatus[], nextBatch: ProcessBatchStatus): ProcessBatchStatus[] {
   const withoutExisting = batches.filter((batch) => batch.batchId !== nextBatch.batchId)
-  return [nextBatch, ...withoutExisting].slice(0, 25)
+  return [nextBatch, ...withoutExisting].slice(0, RECENT_BATCH_LIMIT)
 }
 
 export function getLiveBatchIds(batches: ProcessBatchStatus[]): string[] {

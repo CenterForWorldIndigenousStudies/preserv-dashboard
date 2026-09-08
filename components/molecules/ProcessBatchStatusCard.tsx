@@ -15,6 +15,7 @@ import { ProcessStageCard } from '@molecules/ProcessStageCard'
 import { PipelineTimelineCard } from '@molecules/PipelineTimelineCard'
 import { ProcessBatchSummaryHeader } from '@molecules/ProcessBatchSummaryHeader'
 import { formatExecutionLabel } from '@lib/pipelineFormatting'
+import { buildLegacyPipelineSteps } from '@lib/legacyPipelineProgress'
 import { createPendingProcessStage, shouldShowPendingProcessStage } from '@lib/processStageStatus'
 import type { ProcessBatchStatus } from 'types/pipelineContracts'
 
@@ -48,6 +49,7 @@ export function ProcessBatchStatusCard({
       ? createPendingProcessStage()
       : null)
   const executionLabel = formatExecutionLabel(batch)
+  const isLegacyBatch = batch.pipelineExecutionMode === 'legacy_import'
   return (
     <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, p: 3 }}>
       <Stack spacing={2.5}>
@@ -96,17 +98,25 @@ export function ProcessBatchStatusCard({
         />
         {executionActions}
 
-        <PipelineTimelineCard batch={batch} />
+        <PipelineTimelineCard
+          batch={batch}
+          steps={isLegacyBatch ? buildLegacyPipelineSteps(batch) : undefined}
+          title={isLegacyBatch ? 'Legacy Pipeline Progress' : undefined}
+        />
 
-        <ProcessStageCard label={'Ingest'} stage={batch.ingester} />
-        <ProcessStageCard label={'Document Splitter'} stage={batch.documentSplitter} />
-        <ProcessStageCard label={'Page Rotator'} stage={batch.pageRotator} />
-        <ProcessStageCard label={'OCR Processor'} stage={ocrProcessorStage} />
-        <ProcessStageCard label={'Content Dedup'} stage={batch.contentDedup} />
-        <MetadataExtractorStageCard batch={batch} stage={metadataExtractorStage} />
-        <ProcessStageCard label={'Metadata Validator'} stage={metadataValidatorStage} />
-        <ProcessStageCard label={'Rights Determinator'} stage={rightsDeterminatorStage} />
-        <ProcessStageCard label={'Fedora Ingester'} stage={batch.fedoraIngester ?? null} />
+        {!isLegacyBatch ? (
+          <>
+            <ProcessStageCard label={'Ingest'} stage={batch.ingester} />
+            <ProcessStageCard label={'Document Splitter'} stage={batch.documentSplitter} />
+            <ProcessStageCard label={'Page Rotator'} stage={batch.pageRotator} />
+            <ProcessStageCard label={'OCR Processor'} stage={ocrProcessorStage} />
+            <ProcessStageCard label={'Content Dedup'} stage={batch.contentDedup} />
+            <MetadataExtractorStageCard batch={batch} stage={metadataExtractorStage} />
+            <ProcessStageCard label={'Metadata Validator'} stage={metadataValidatorStage} />
+            <ProcessStageCard label={'Rights Determinator'} stage={rightsDeterminatorStage} />
+            <ProcessStageCard label={'Fedora Ingester'} stage={batch.fedoraIngester ?? null} />
+          </>
+        ) : null}
       </Stack>
     </Paper>
   )

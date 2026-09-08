@@ -150,6 +150,26 @@ describe('ProcessBatchStatusCard', () => {
     expect(markup).toContain('pending')
   })
 
+  it('shows historical progress instead of modern stage progress for legacy batches', () => {
+    const markup = renderToStaticMarkup(
+      <ThemeProvider>
+        <ProcessBatchStatusCard
+          batch={buildBatchStatus({
+            pipelineExecutionMode: 'legacy_import',
+            legacyImportStatus: 'historical',
+            publicationStatus: 'not_started',
+          })}
+        />
+      </ThemeProvider>,
+    )
+
+    expect(markup).toContain('Legacy Pipeline Progress')
+    expect(markup).toContain('Legacy processing')
+    expect(markup).toContain('Fedora Ingester')
+    expect(markup).not.toContain('Metadata Extractor')
+    expect(markup).not.toContain('OCR Processor')
+  })
+
   it('keeps the OpenAI batch status action unavailable before wave one submission exists', () => {
     const markup = renderToStaticMarkup(
       <ThemeProvider>

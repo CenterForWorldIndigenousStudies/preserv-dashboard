@@ -35,6 +35,15 @@ vi.mock('@organisms/ProcessBatchProgress', () => ({
   ),
 }))
 
+vi.mock('@organisms/BatchProcessingDetails', () => ({
+  BatchProcessingDetails: ({ properties }: { properties: readonly { key: string; value: unknown }[] }) => (
+    <div>
+      {'Historical processing details'}
+      {properties.map((property) => `${property.key}:${JSON.stringify(property.value)}`)}
+    </div>
+  ),
+}))
+
 vi.mock('next/navigation', () => ({
   notFound: mockNotFound,
 }))
@@ -148,5 +157,25 @@ describe('BatchDetailPage', () => {
     )
 
     expect(markup).not.toContain('Started By')
+  })
+
+  it('renders historical processing details when there is no live pipeline state', async () => {
+    mockGetBatchDetail.mockResolvedValue(detail)
+    mockGetPipelineExecutionSnapshot.mockResolvedValue({
+      batch: null,
+      currentExecution: null,
+      queueAttempts: [],
+      batchNameConflict: false,
+    })
+
+    const markup = renderToStaticMarkup(
+      await BatchDetailPage({
+        params: Promise.resolve({ batchId: 'batch-1' }),
+        searchParams: Promise.resolve({}),
+      }),
+    )
+
+    expect(markup).toContain('Historical processing details')
+    expect(markup).toContain('batch_statistics')
   })
 })

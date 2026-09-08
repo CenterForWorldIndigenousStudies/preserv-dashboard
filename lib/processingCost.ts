@@ -79,13 +79,33 @@ function parseCurrentProcessingDetails(value: unknown): unknown {
   }
 }
 
+function getNormalizedSummaryCost(value: unknown): number | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null
+  }
+
+  const summary = (value as { summary?: unknown }).summary
+  if (!summary || typeof summary !== 'object' || Array.isArray(summary)) {
+    return null
+  }
+
+  const cost = Number((summary as { cost_usd?: unknown }).cost_usd)
+  return Number.isFinite(cost) && cost >= 0 ? cost : null
+}
+
 export function calculateTotalProcessingCost(
   currentProcessingDetails: unknown,
   legacyDocumentCosts: readonly { cost: unknown }[],
 ): string {
-  const currentCost = sumCurrentCostFields(parseCurrentProcessingDetails(currentProcessingDetails))
+  const parsedDetails = parseCurrentProcessingDetails(currentProcessingDetails)
+  const currentCost = sumCurrentCostFields(parsedDetails)
   if (currentCost.hasCost) {
     return formatCost(currentCost.total)
+  }
+
+  const normalizedSummaryCost = getNormalizedSummaryCost(parsedDetails)
+  if (normalizedSummaryCost !== null) {
+    return formatCost(normalizedSummaryCost)
   }
 
   const legacyTotal = legacyDocumentCosts.reduce((total, row) => {

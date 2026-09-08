@@ -11,24 +11,31 @@ import type { BatchProperty } from 'types/batches'
 
 interface BatchProcessingDetailsProps {
   properties: readonly BatchProperty[]
+  showHeading?: boolean
 }
 
 function isStructuredValue(value: unknown): boolean {
   return typeof value === 'object' && value !== null
 }
 
-export function BatchProcessingDetails({ properties }: BatchProcessingDetailsProps): ReactElement {
+function renderProcessingValue(key: string, value: unknown): ReactElement | undefined {
+  return key === 'cost_usd' || key === 'cost_saved_usd' ? <Cost value={value} /> : undefined
+}
+
+export function BatchProcessingDetails({ properties, showHeading = true }: BatchProcessingDetailsProps): ReactElement {
   return (
     <Box>
-      <Typography variant={'overline'} sx={{ color: 'primary.main', fontWeight: 700, letterSpacing: '0.14em' }}>
-        {'Processing Details'}
-      </Typography>
+      {showHeading ? (
+        <Typography variant={'overline'} sx={{ color: 'primary.main', fontWeight: 700, letterSpacing: '0.14em' }}>
+          {'Processing Details'}
+        </Typography>
+      ) : null}
       {properties.length === 0 ? (
-        <Typography variant={'body2'} color={'text.secondary'} sx={{ mt: 1.5 }}>
+        <Typography variant={'body2'} color={'text.secondary'} sx={{ mt: showHeading ? 1.5 : 0 }}>
           {'No processing details are available.'}
         </Typography>
       ) : (
-        <Stack spacing={1.5} sx={{ mt: 1.5 }}>
+        <Stack spacing={1.5} sx={{ mt: showHeading ? 1.5 : 0 }}>
           {properties.map((property, index) => {
             if (!isStructuredValue(property.value)) {
               return (
@@ -59,7 +66,7 @@ export function BatchProcessingDetails({ properties }: BatchProcessingDetailsPro
                 summarySx={{ px: 1.5, '& .MuiAccordionSummary-content': { my: 1 } }}
                 detailsSx={{ px: 1.5, pt: 0, pb: 1.5 }}
               >
-                <NestedValueRenderer value={property.value} />
+                <NestedValueRenderer value={property.value} renderValue={renderProcessingValue} />
               </AccordionPanel>
             )
           })}

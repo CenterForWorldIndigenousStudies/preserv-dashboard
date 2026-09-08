@@ -21,6 +21,15 @@ describe('BatchProcessingDetails', () => {
     expect(markup).toContain('>5<')
   })
 
+  it('can omit its heading when the surrounding section supplies one', () => {
+    const markup = renderToStaticMarkup(
+      <BatchProcessingDetails properties={[{ key: 'total_documents', value: 5 }]} showHeading={false} />,
+    )
+
+    expect(markup).not.toContain('Processing Details')
+    expect(markup).toContain('total_documents')
+  })
+
   it('formats the total processing cost as a cost value', () => {
     const markup = renderToStaticMarkup(
       <BatchProcessingDetails properties={[{ key: 'Total Cost', value: 0.127778 }]} />,
@@ -39,6 +48,17 @@ describe('BatchProcessingDetails', () => {
     expect(markup).toContain('batch_statistics')
     expect(markup).toContain('speed')
     expect(markup).toContain('documents/second')
+  })
+
+  it('formats normalized summary costs consistently with other dashboard costs', () => {
+    const markup = renderToStaticMarkup(
+      <BatchProcessingDetails
+        properties={[{ key: 'summary', value: { cost_usd: 2.5, cost_saved_usd: 0.5 } }]}
+      />,
+    )
+
+    expect(markup).toContain('$2.50')
+    expect(markup).toContain('$0.50')
   })
 
   it('keeps malformed scalar text as text and reports empty details', () => {

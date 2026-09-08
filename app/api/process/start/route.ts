@@ -120,6 +120,24 @@ function requireIngesterTriggerConfig(): IngesterTriggerConfig {
   return { pipelineBaseUrl, triggerToken, callbackToken }
 }
 
+async function parseIngesterResponse(response: Response): Promise<IngesterAcceptedResponse> {
+  const body = (await response.text()).trim()
+  if (!body) {
+    return {}
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(body)
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed
+    }
+  } catch {
+    // The pipeline's framework-generated errors may be plain text rather than JSON.
+  }
+
+  return { error: body }
+}
+
 function normalizeIngesterErrorMessage(payload: IngesterAcceptedResponse): string | null {
   if (typeof payload.error === 'string') {
     const normalized = payload.error.trim()
@@ -212,7 +230,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       body: JSON.stringify(ingestPayload),
       cache: 'no-store',
     })
-    const payload = (await response.json()) as IngesterAcceptedResponse
+    const payload = await parseIngesterResponse(response)
     if (!response.ok) {
       const errorMessage = normalizeIngesterErrorMessage(payload)
       logEvent('error', 'ingester_trigger_failed', {

@@ -95,6 +95,42 @@ describe('process start route', () => {
     expect(mockSetProcessBatchPipelineConfig).not.toHaveBeenCalled()
   })
 
+  it('preserves a plain-text pipeline error response instead of reporting a JSON parse error', async () => {
+    vi.mocked(fetch).mockResolvedValue(new Response('Internal Server Error', { status: 500 }))
+
+    const request = new NextRequest(`http://localhost${PROCESS_START_PATH}`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        batchName: 'Test',
+        sourceFolderIds: ['folder-1'],
+        pipelineConfig: {
+          profileId: 'custom',
+          mode: 'custom',
+          executionPlan: [
+            {
+              id: 'step-ingester',
+              stepId: 'ingester',
+              service: 'ingester',
+              label: 'Ingest',
+              order: 0,
+              enabled: true,
+            },
+          ],
+        },
+      }),
+    })
+
+    const response = await POST(request)
+    const payload = (await response.json()) as { error?: string }
+
+    expect(response.status).toBe(500)
+    expect(payload.error).toBe('Internal Server Error')
+    expect(mockSetProcessBatchPipelineConfig).not.toHaveBeenCalled()
+  })
+
   it('rejects process starts that omit pipeline config', async () => {
     const request = new NextRequest(`http://localhost${PROCESS_START_PATH}`, {
       method: 'POST',
@@ -159,6 +195,8 @@ describe('process start route', () => {
       body: JSON.stringify({
         batchName: 'Test',
         sourceFolderIds: ['folder-1'],
+        collectionName: 'Collection A',
+        collectionNotes: 'Review set',
         pipelineConfig,
       }),
     })
@@ -173,7 +211,11 @@ describe('process start route', () => {
     if (typeof requestInit?.body !== 'string') {
       throw new Error('Expected dashboard to send a JSON string body to pipeline-api.')
     }
-    const ingesterPayload = JSON.parse(requestInit.body) as { pipeline_config?: unknown }
+    const ingesterPayload = JSON.parse(requestInit.body) as {
+      collection?: unknown
+      pipeline_config?: unknown
+    }
+    expect(ingesterPayload.collection).toEqual({ name: 'Collection A', notes: 'Review set' })
     expect(ingesterPayload.pipeline_config).toEqual(pipelineConfig)
     expect(mockSetProcessBatchPipelineConfig).toHaveBeenCalledWith('batch-1', pipelineConfig)
   })

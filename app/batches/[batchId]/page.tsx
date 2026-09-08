@@ -7,6 +7,7 @@ import { Cost } from '@atoms/Cost'
 import { PAGE_LABELS } from '@constants/pageLabels'
 import { BATCHES_PATH } from '@constants/paths'
 import { BatchOverviewFields } from '@molecules/BatchOverviewFields'
+import { BatchProcessingDetails } from '@organisms/BatchProcessingDetails'
 import { MetadataTable } from '@molecules/MetadataTable'
 import { ProcessBatchProgress } from '@organisms/ProcessBatchProgress'
 import { DetailPageSection } from '@organisms/DetailPageSection'
@@ -116,6 +117,12 @@ export default async function BatchDetailPage({ params, searchParams }: BatchDet
             queueAttempts={executionSnapshot.queueAttempts}
             processingDetails={detail.properties}
           />
+        </DetailPageSection>
+      ) : null}
+
+      {!draft && !executionSnapshot.batch && detail.properties.length > 0 ? (
+        <DetailPageSection title={'Processing Details'}>
+          <BatchProcessingDetails properties={detail.properties} showHeading={false} />
         </DetailPageSection>
       ) : null}
     </Stack>

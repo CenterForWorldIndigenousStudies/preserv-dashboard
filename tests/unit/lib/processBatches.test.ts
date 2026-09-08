@@ -164,6 +164,24 @@ describe('processBatches', () => {
     ])
   })
 
+  it('exposes legacy batches to the progress surface', async () => {
+    mockFindUnique.mockResolvedValue({
+      ...buildBatchRow({
+        pipeline: { execution_mode: 'legacy_import' },
+        legacy_import: { status: 'historical', batch: { completed_at: 1780027210 } },
+      }),
+      lifecycle_status: 'publication_locked',
+      publication_status: 'not_started',
+      publication_target: 'fedora',
+      batch_rollbacks: null,
+    })
+
+    const batch = await getProcessBatchStatus('batch-1')
+
+    expect(batch?.pipelineExecutionMode).toBe('legacy_import')
+    expect(batch?.legacyImportStatus).toBe('historical')
+  })
+
   it('parses pass-specific splitter and rotator details from the latest pass keys', async () => {
     queueCurrentBatchRow()
     const batch = await getProcessBatchStatus('batch-1')

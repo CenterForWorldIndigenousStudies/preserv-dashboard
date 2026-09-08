@@ -99,6 +99,8 @@ export function createProcessBatch(overrides: Partial<ProcessBatchStatus> = {}):
     batchName: 'May 2026 Preservation Batch',
     startedBy: 'archivist@example.org',
     createdAt: '2026-05-29T09:30:00.000Z',
+    pipelineExecutionMode: null,
+    legacyImportStatus: null,
     pipelineRequestedStages: processPipelineRequestedStages,
     pipelineConfig: processPipelineConfig,
     ingester: null,

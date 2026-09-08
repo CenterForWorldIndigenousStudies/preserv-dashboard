@@ -81,10 +81,26 @@ export interface RawDocumentFailure {
 }
 
 export interface RawProcessPipelineDetails {
+  execution_mode?: unknown
+  source?: {
+    system?: unknown
+    name?: unknown
+    legacy_batch_id?: unknown
+    registry_version?: unknown
+  } | null
   requested_stages?: unknown
   config?: unknown
   current_execution?: RawPipelineExecutionDetails | null
   execution_history?: RawPipelineExecutionDetails[] | null
+}
+
+export interface RawLegacyImportBatchDetails {
+  completed_at?: unknown
+}
+
+export interface RawLegacyImportDetails {
+  status?: unknown
+  batch?: RawLegacyImportBatchDetails | null
 }
 
 export interface RawPipelineExecutionDetails {
@@ -98,6 +114,15 @@ export interface RawPipelineExecutionDetails {
 
 export interface RawProcessBatchDetails {
   pipeline?: RawProcessPipelineDetails | null
+  summary?: {
+    document_count?: unknown
+    processing_time_seconds?: unknown
+    cost_usd?: unknown
+    cost_saved_usd?: unknown
+    duplicate_file_count?: unknown
+    duplicate_group_count?: unknown
+  } | null
+  legacy_import?: RawLegacyImportDetails | null
   data_ingester?: RawProcessStageDetails | null
   ingester?: RawProcessStageDetails | null
   document_splitter_pass_1?: RawProcessStageDetails | null
@@ -205,6 +230,8 @@ export interface NormalizedDocumentFailure {
 }
 
 export interface NormalizedProcessBatchDetails {
+  pipelineExecutionMode?: string | null
+  legacyImportStatus?: string | null
   pipelineRequestedStages: string[]
   pipelineConfig: PipelineConfig | null
   currentExecution?: NormalizedPipelineExecution | null

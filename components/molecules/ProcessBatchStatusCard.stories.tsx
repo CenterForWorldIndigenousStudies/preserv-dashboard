@@ -59,3 +59,15 @@ export const CompletedWithReview: Story = {
     }),
   },
 }
+
+export const HistoricalLegacyBatch: Story = {
+  args: {
+    batch: createProcessBatch({
+      batchName: 'Historical Data Combiner Batch',
+      pipelineExecutionMode: 'legacy_import',
+      legacyImportStatus: 'historical',
+      publicationStatus: 'not_started',
+      lifecycleStatus: 'publication_locked',
+    }),
+  },
+}

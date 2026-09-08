@@ -19,6 +19,8 @@ import type { ProcessBatchStatus } from 'types/pipelineContracts'
 
 interface PipelineTimelineCardProps {
   batch: ProcessBatchStatus
+  steps?: TimelineStep[]
+  title?: string
 }
 
 type PipelineTimelineStatus = Extract<PipelineStepRuntimeStatus, 'pending' | 'running' | 'completed' | 'failed'>
@@ -137,8 +139,8 @@ function buildTimelineSteps(batch: ProcessBatchStatus): TimelineStep[] {
   return timelineSteps
 }
 
-export function PipelineTimelineCard({ batch }: PipelineTimelineCardProps): ReactElement {
-  const timelineSteps = buildTimelineSteps(batch)
+export function PipelineTimelineCard({ batch, steps, title = 'Pipeline Timeline' }: PipelineTimelineCardProps): ReactElement {
+  const timelineSteps = steps ?? buildTimelineSteps(batch)
   const timelineStatus = getTimelineStatus(timelineSteps)
   const createdAt = formatDateTime(batch.createdAt)
   const [expanded, setExpanded] = useState(() => timelineStatus !== 'completed')
@@ -163,7 +165,7 @@ export function PipelineTimelineCard({ batch }: PipelineTimelineCardProps): Reac
             </Box>
             <Box sx={{ minWidth: 0 }}>
               <Typography component={'h3'} variant={'h6'} sx={{ fontWeight: 700 }}>
-                {'Pipeline Timeline'}
+                {title}
               </Typography>
               {createdAt ? (
                 <Typography variant={'caption'} sx={{ color: 'text.secondary' }}>

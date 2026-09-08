@@ -35,5 +35,6 @@ describe('ProcessDocumentsPage', () => {
     expect(markup).toContain('Open Batches for Monitoring')
     expect(markup).toContain('/batches')
     expect(markup).toContain('Process workspace stub')
+    expect(mockGetProcessBatchStatuses).toHaveBeenCalledWith(3)
   })
 })

@@ -238,7 +238,13 @@ describe('batch query contracts', () => {
         name: 'Batch One',
         id_legacy: 'LEGACY-BATCH-1',
         started_at: new Date('2026-07-09T00:00:00.000Z'),
-        processing_details: JSON.stringify({ total_documents: 5, batch_statistics: { speed: 42 } }),
+        processing_details: JSON.stringify({
+          summary: {
+            document_count: 5,
+            cost_usd: 8.75,
+            processing_time_seconds: 37,
+          },
+        }),
         document_to_batches: [
           { cost: 10.25, processing_time_seconds: 20 },
           { cost: 2.25, processing_time_seconds: 22 },
@@ -254,8 +260,8 @@ describe('batch query contracts', () => {
       idLegacy: 'LEGACY-BATCH-1',
       startedAt: new Date('2026-07-09T00:00:00.000Z'),
       documentCount: 5,
-      totalCost: '$12.50',
-      processingTime: 42,
+      totalCost: '$8.75',
+      processingTime: 37,
     }
 
     expect(result.data).toEqual([expected])

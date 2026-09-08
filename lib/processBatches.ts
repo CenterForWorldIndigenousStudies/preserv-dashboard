@@ -79,6 +79,8 @@ function buildProcessBatchStatus(batch: SelectedBatchFields, manualEditAfterStar
     startedBy: normalizeText(batch.started_by),
     createdAt: toIsoString(batch.created_at),
     startedAt: batch.started_at instanceof Date ? batch.started_at.toISOString() : batch.started_at,
+    pipelineExecutionMode: details.pipelineExecutionMode,
+    legacyImportStatus: details.legacyImportStatus,
     lifecycleStatus: batch.lifecycle_status,
     publicationStatus: batch.publication_status,
     publicationTarget: batch.publication_target,

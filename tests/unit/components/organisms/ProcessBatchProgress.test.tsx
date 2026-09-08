@@ -113,6 +113,17 @@ describe('ProcessBatchProgress', () => {
     expect(container.querySelector('[data-testid="processing-details"]')?.textContent).toContain('total_documents:5')
   })
 
+  it('does not open a live stream for a historical legacy batch', () => {
+    renderProgress(
+      createProcessBatch({
+        pipelineExecutionMode: 'legacy_import',
+        legacyImportStatus: 'historical',
+      }),
+    )
+
+    expect(FakeEventSource.instances).toHaveLength(0)
+  })
+
   it('reconnects after a rerun is queued after the previous stream completed', () => {
     const initialBatch = createProcessBatch({ lifecycleStatus: 'complete' })
     const container = renderProgress(initialBatch)
