@@ -27,8 +27,6 @@ function sleep(milliseconds: number): Promise<void> {
 
 function currentRequestId(batch: ProcessBatchStatus): string | null {
   return (
-    batch.rightsDeterminator?.requestId ??
-    batch.metadataValidator?.requestId ??
     batch.metadataExtractor?.requestId ??
     batch.contentDedup?.requestId ??
     batch.ocrProcessor?.requestId ??
@@ -58,8 +56,6 @@ function buildBatchStatusLogFields(batch: ProcessBatchStatus): Record<string, un
     ocrProcessorStatus: batch.ocrProcessor?.status ?? null,
     contentDedupStatus: batch.contentDedup?.status ?? null,
     metadataExtractorStatus: batch.metadataExtractor?.status ?? null,
-    metadataValidatorStatus: batch.metadataValidator?.status ?? null,
-    rightsDeterminatorStatus: batch.rightsDeterminator?.status ?? null,
   }
 }
 

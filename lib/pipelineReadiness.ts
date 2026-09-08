@@ -17,7 +17,6 @@ import type { Prisma, PrismaClient } from '@lib/prisma/generated/client'
 type ReadinessDbClient = PrismaClient | Prisma.TransactionClient
 
 const READINESS_SERVICE_KEY = 'readiness'
-const RIGHTS_CONFIDENCE_THRESHOLD = 0.7
 
 interface StoredMetadataRow {
   document_id: string
@@ -28,7 +27,6 @@ interface StoredMetadataRow {
 
 interface BatchLinkRow {
   document_id: string
-  processing_details: string
 }
 
 interface CandidateReadinessDocument {
@@ -38,7 +36,6 @@ interface CandidateReadinessDocument {
   accessLevels: string[]
   latestState: { id: string; new_state: string | null } | null
   quality: { validation_status: string | null } | null
-  validatedFields: Record<string, unknown>
 }
 
 export async function finalizePipelineBatchReadiness(
@@ -58,7 +55,7 @@ export async function evaluateDocumentReadiness(
   isPreservationCandidate: boolean
   evaluation: ReturnType<typeof evaluateCandidateReadiness>
 }> {
-  const [metadataRows, accessRows, links] = await Promise.all([
+  const [metadataRows, accessRows] = await Promise.all([
     client.document_to_metadata.findMany({
       where: { document_id: documentId },
       select: { value: true, metadata: { select: { name: true } } },
@@ -67,16 +64,12 @@ export async function evaluateDocumentReadiness(
       where: { document_id: documentId },
       select: { access_levels: { select: { level_name: true } } },
     }),
-    client.document_to_batches.findMany({
-      where: { document_id: documentId },
-      select: { document_id: true, processing_details: true },
-    }),
   ])
   const metadata: Record<string, unknown> = {}
   for (const row of metadataRows) {
     metadata[row.metadata.name] = parseStoredMetadataValue(row.value)
   }
-  const validatedFields = buildValidatedFields(links)
+  const validatedFields = {}
   const projectedMetadata = projectCandidateMetadata({ metadata, validatedFields })
   return {
     isPreservationCandidate: metadata.preservation_candidate === true,
@@ -94,7 +87,7 @@ async function loadCandidateReadinessDocuments(
 ): Promise<CandidateReadinessDocument[]> {
   const links = (await client.document_to_batches.findMany({
     where: { batch_id: batchId },
-    select: { document_id: true, processing_details: true },
+    select: { document_id: true },
   })) as BatchLinkRow[]
   const documentIds = [...new Set(links.map((link) => link.document_id))]
   if (documentIds.length === 0) return []
@@ -163,35 +156,9 @@ async function loadCandidateReadinessDocuments(
         accessLevels: accessByDocumentId.get(documentId) ?? [],
         latestState: latestStateByDocumentId.get(documentId) ?? null,
         quality: qualityByDocumentId.get(documentId) ?? null,
-        validatedFields: buildValidatedFields(
-          links.filter((link) => link.document_id === documentId),
-        ),
       },
     ]
   })
-}
-
-function buildValidatedFields(links: BatchLinkRow[]): Record<string, unknown> {
-  const validatedFields: Record<string, unknown> = {}
-  for (const link of links) {
-    const details = parseJsonRecord(link.processing_details)
-    const metadataValidator = parseJsonRecord(details.metadata_validator)
-    const lowConfidenceFields = Array.isArray(metadataValidator.low_confidence_fields)
-      ? metadataValidator.low_confidence_fields
-          .filter((field): field is string => typeof field === 'string')
-          .map((field) => field.trim())
-          .filter(Boolean)
-      : []
-    for (const field of lowConfidenceFields) {
-      validatedFields[field] = false
-    }
-
-    const rightsDeterminator = parseJsonRecord(details.rights_determinator)
-    if (typeof rightsDeterminator.confidence === 'number') {
-      validatedFields.dc_rights = rightsDeterminator.confidence >= RIGHTS_CONFIDENCE_THRESHOLD
-    }
-  }
-  return validatedFields
 }
 
 async function finalizeCandidateReadiness(
@@ -203,11 +170,11 @@ async function finalizeCandidateReadiness(
 
   const projectedMetadata = projectCandidateMetadata({
     metadata: document.metadata,
-    validatedFields: document.validatedFields,
+    validatedFields: {},
   })
   const evaluation = evaluateCandidateReadiness({
     metadata: projectedMetadata,
-    validatedFields: document.validatedFields,
+    validatedFields: {},
     accessLevels: document.accessLevels,
   })
   const activeReasons = mergeActiveReasons(document.activeReviewValue, evaluation.reasonGroups)
@@ -370,23 +337,6 @@ function parseStoredMetadataValue(rawValue: string | null): unknown {
     return rawValue
   }
   return unwrapValue(value)
-}
-
-function parseJsonRecord(value: unknown): Record<string, unknown> {
-  if (typeof value !== 'string') {
-    return typeof value === 'object' && value !== null && !Array.isArray(value)
-      ? (value as Record<string, unknown>)
-      : {}
-  }
-
-  try {
-    const parsed: unknown = JSON.parse(value)
-    return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
-      : {}
-  } catch {
-    return {}
-  }
 }
 
 function unwrapValue(value: unknown): unknown {

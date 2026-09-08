@@ -24,12 +24,11 @@ type Story = StoryObj<typeof meta>
 
 export const MetadataExtractor: Story = {}
 
-export const RightsDeterminatorWithoutCollection: Story = {
+export const MetadataExtractorWithoutCollection: Story = {
   args: {
     documentCount: 1,
-    restartStage: 'rights_determinator',
     collectionName: null,
     collectionNotes: null,
-    reason: 'Retry rights determination after review.',
+    reason: 'Retry metadata extraction after review.',
   },
 }

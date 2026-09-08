@@ -41,7 +41,7 @@ describe('pipeline callback handling', () => {
 
   it('ignores callbacks from an older operation', async () => {
     mockGetProcessBatchStatus.mockResolvedValue({
-      metadataValidator: { operationId: 'operation-current' },
+      metadataExtractor: { operationId: 'operation-current' },
     })
     const onSuccess = vi.fn()
 
@@ -52,8 +52,8 @@ describe('pipeline callback handling', () => {
         operation_id: 'operation-old',
         status: 'completed',
       }),
-      stage: 'metadata_validator',
-      eventName: 'metadata_validator_callback',
+      stage: 'metadata_extractor',
+      eventName: 'metadata_extractor_callback',
       onSuccess,
     })
 
@@ -65,7 +65,7 @@ describe('pipeline callback handling', () => {
   it('records a failed callback without invoking downstream success work', async () => {
     mockGetProcessBatchStatus.mockResolvedValue({
       batchId: 'batch-1',
-      metadataValidator: { operationId: 'operation-1' },
+      metadataExtractor: { operationId: 'operation-1' },
     })
     mockRecordProcessStageFailure.mockResolvedValue(undefined)
     const onSuccess = vi.fn()
@@ -77,10 +77,10 @@ describe('pipeline callback handling', () => {
         operation_id: 'operation-1',
         execution_mode: 'retry',
         status: 'failed',
-        error: 'Metadata validation failed',
+        error: 'Metadata extraction failed',
       }),
-      stage: 'metadata_validator',
-      eventName: 'metadata_validator_callback',
+      stage: 'metadata_extractor',
+      eventName: 'metadata_extractor_callback',
       onSuccess,
     })
 
@@ -93,13 +93,13 @@ describe('pipeline callback handling', () => {
       Record<string, unknown>,
     ]
     expect(failureCall[0]).toBe('batch-1')
-    expect(failureCall[1]).toBe('metadata_validator')
+    expect(failureCall[1]).toBe('metadata_extractor')
     expect(failureCall[2]).toMatchObject({
       requestId: 'request-1',
       operationId: 'operation-1',
       executionMode: 'retry',
       errorType: 'PipelineStageFailure',
-      errorMessage: 'Metadata validation failed',
+      errorMessage: 'Metadata extraction failed',
     })
     expect(typeof failureCall[2].receivedAt).toBe('number')
   })

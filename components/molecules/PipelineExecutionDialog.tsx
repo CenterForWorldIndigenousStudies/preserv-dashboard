@@ -50,8 +50,6 @@ const STAGE_LABELS: Record<CallbackStageKey, string> = {
   ocr_processor: 'OCR Processor',
   content_dedup: 'Content Deduplication',
   metadata_extractor: 'Metadata Extractor',
-  metadata_validator: 'Metadata Validator',
-  rights_determinator: 'Rights Determinator',
   fedora_ingester: 'Fedora Ingester',
 }
 
@@ -62,8 +60,6 @@ const STAGE_PROPERTIES: Record<CallbackStageKey, keyof ProcessBatchStatus> = {
   ocr_processor: 'ocrProcessor',
   content_dedup: 'contentDedup',
   metadata_extractor: 'metadataExtractor',
-  metadata_validator: 'metadataValidator',
-  rights_determinator: 'rightsDeterminator',
   fedora_ingester: 'fedoraIngester',
 }
 
@@ -111,7 +107,7 @@ export function PipelineExecutionDialog({
     () => availableStages(batch, mode, rerunPipelineConfig),
     [batch, mode, rerunPipelineConfig],
   )
-  const [stage, setStage] = useState<CallbackStageKey>(initialStage ?? stages[0] ?? 'metadata_validator')
+  const [stage, setStage] = useState<CallbackStageKey>(initialStage ?? stages[0] ?? 'metadata_extractor')
   const [reason, setReason] = useState('')
   const [newBatchName, setNewBatchName] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -128,7 +124,7 @@ export function PipelineExecutionDialog({
 
   useEffect(() => {
     if (!stages.includes(stage)) {
-      setStage(stages[0] ?? 'metadata_validator')
+      setStage(stages[0] ?? 'metadata_extractor')
     }
   }, [stage, stages])
 

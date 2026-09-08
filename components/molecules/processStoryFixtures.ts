@@ -32,8 +32,6 @@ const processPipelineDraft: PipelineSelectionDraft = {
     ocrProcessor: true,
     contentDedup: true,
     metadataExtraction: true,
-    metadataValidation: true,
-    rightsDeterminator: true,
   },
 }
 
@@ -73,8 +71,6 @@ export function createProcessStage(overrides: Partial<ProcessStageStatus> = {}):
     normalizedCount: 0,
     ocrCompletedCount: 0,
     extractedCount: 0,
-    metadataValidatedCount: 0,
-    rightsDeterminedCount: 0,
     needsReviewCount: 0,
     versionedCount: 0,
     resolvedCount: 0,
@@ -109,8 +105,6 @@ export function createProcessBatch(overrides: Partial<ProcessBatchStatus> = {}):
     ocrProcessor: null,
     contentDedup: null,
     metadataExtractor: null,
-    metadataValidator: null,
-    rightsDeterminator: null,
     ...overrides,
   }
 }

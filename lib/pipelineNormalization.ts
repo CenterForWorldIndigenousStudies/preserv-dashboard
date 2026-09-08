@@ -92,8 +92,6 @@ function parseStageCountFields(
   | 'normalizedCount'
   | 'ocrCompletedCount'
   | 'extractedCount'
-  | 'metadataValidatedCount'
-  | 'rightsDeterminedCount'
   | 'needsReviewCount'
   | 'versionedCount'
   | 'resolvedCount'
@@ -114,8 +112,6 @@ function parseStageCountFields(
     normalizedCount: parseNumber(stage.normalized_count),
     ocrCompletedCount: parseNumber(stage.ocr_completed_count),
     extractedCount: parseNumber(stage.extracted_count),
-    metadataValidatedCount: parseNumber(stage.metadata_validated_count),
-    rightsDeterminedCount: parseNumber(stage.rights_determined_count),
     needsReviewCount: parseNumber(stage.needs_review_count),
     versionedCount: parseNumber(stage.versioned_count),
     resolvedCount: parseNumber(stage.resolved_count),
@@ -324,8 +320,6 @@ export function normalizeProcessBatchDetails(details: RawProcessBatchDetails): N
     ocrProcessor: normalizeStage(details.ocr_processor),
     contentDedup: normalizeStage(details.content_dedup),
     metadataExtractor: normalizeStage(details.metadata_extractor),
-    metadataValidator: normalizeStage(details.metadata_validator),
-    rightsDeterminator: normalizeStage(details.rights_determinator),
     fedoraIngester: normalizeStage(details.fedora_ingester),
   }
 }
@@ -334,8 +328,6 @@ const DIRECT_STAGE_DETAIL_KEYS: Record<Exclude<CallbackStageKey, 'ingester' | 'd
   ocr_processor: 'ocr_processor',
   content_dedup: 'content_dedup',
   metadata_extractor: 'metadata_extractor',
-  metadata_validator: 'metadata_validator',
-  rights_determinator: 'rights_determinator',
   fedora_ingester: 'fedora_ingester',
 }
 

@@ -17,8 +17,6 @@ function buildBatch(overrides: Partial<ProcessBatchStatus> = {}): ProcessBatchSt
     ocrProcessor: null,
     contentDedup: null,
     metadataExtractor: null,
-    metadataValidator: null,
-    rightsDeterminator: null,
     currentExecution: null,
     ...overrides,
   }

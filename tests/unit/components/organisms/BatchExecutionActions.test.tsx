@@ -23,8 +23,6 @@ function buildBatchStatus(overrides: Partial<ProcessBatchStatus> = {}): ProcessB
     ocrProcessor: null,
     contentDedup: null,
     metadataExtractor: null,
-    metadataValidator: null,
-    rightsDeterminator: null,
     ...overrides,
   }
 }

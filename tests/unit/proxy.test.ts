@@ -15,8 +15,6 @@ describe('dashboard proxy matcher', () => {
       '/api/pipeline/ocr-processor/callback',
       '/api/pipeline/content-dedup/callback',
       '/api/pipeline/metadata-extractor/callback',
-      '/api/pipeline/metadata-validator/callback',
-      '/api/pipeline/rights-determinator/callback',
       '/api/pipeline/fedora-ingester/callback',
     ]
 

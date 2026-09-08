@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import {
-  getPipelineContinuationContext,
-  finalizePipelineReadinessIfDue,
-  shouldTriggerMetadataValidator,
-  triggerMetadataValidator,
-} from '@lib/pipelineTriggers'
+import { finalizePipelineReadinessIfDue } from '@lib/pipelineTriggers'
 import { handlePipelineCallback } from '@lib/pipelineCallbackHandling'
 import {
   getProcessBatchStatus,
@@ -57,9 +52,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         throw new Error(`Batch ${parsed.batchId} was not found after recording metadata-extractor callback.`)
       }
 
-      if (shouldTriggerMetadataValidator(batch)) {
-        await triggerMetadataValidator(batch, getPipelineContinuationContext(batch))
-      }
       await finalizePipelineReadinessIfDue(batch)
     },
   })

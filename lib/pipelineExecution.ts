@@ -3,10 +3,8 @@ import {
   DOCUMENT_SPLITTER_STAGE,
   FEDORA_INGESTER_STAGE,
   METADATA_EXTRACTOR_STAGE,
-  METADATA_VALIDATOR_STAGE,
   OCR_PROCESSOR_STAGE,
   PAGE_ROTATOR_STAGE,
-  RIGHTS_DETERMINATOR_STAGE,
 } from '@constants/pipeline'
 import { BATCH_LIFECYCLE_STATUSES } from '@constants/batchLifecycleStatuses'
 import { BATCH_PUBLICATION_STATUSES } from '@constants/batchPublicationStatuses'
@@ -25,8 +23,6 @@ const ORCHESTRATED_SERVICES = new Set<string>([
   OCR_PROCESSOR_STAGE,
   CONTENT_DEDUP_STAGE,
   METADATA_EXTRACTOR_STAGE,
-  METADATA_VALIDATOR_STAGE,
-  RIGHTS_DETERMINATOR_STAGE,
 ])
 
 const INGEST_ONLY_PIPELINE_CONFIG: PipelineConfig = {
@@ -82,10 +78,6 @@ function getStageForService(
       return batch.contentDedup
     case METADATA_EXTRACTOR_STAGE:
       return batch.metadataExtractor
-    case METADATA_VALIDATOR_STAGE:
-      return batch.metadataValidator
-    case RIGHTS_DETERMINATOR_STAGE:
-      return batch.rightsDeterminator
     case FEDORA_INGESTER_STAGE:
       return batch.fedoraIngester ?? null
     default:

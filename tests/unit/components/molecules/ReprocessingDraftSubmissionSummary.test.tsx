@@ -19,8 +19,8 @@ describe('ReprocessingDraftSubmissionSummary', () => {
     expect(markup).toContain('Starts at:')
     expect(markup).toContain('Then runs:')
     expect(markup).toContain('Metadata Extractor')
-    expect(markup).toContain('Metadata Validator')
-    expect(markup).toContain('Rights Determinator')
+    expect(markup).not.toContain('Metadata Validator')
+    expect(markup).not.toContain('Rights Determinator')
     expect(markup).toContain('Fedora Ingester')
     expect(markup).toContain('Review collection')
     expect(markup).toContain('Correct extracted metadata')
@@ -30,9 +30,9 @@ describe('ReprocessingDraftSubmissionSummary', () => {
     const markup = renderToStaticMarkup(
       <ReprocessingDraftSubmissionSummary
         documentCount={0}
-        restartStage={'rights_determinator'}
+        restartStage={'metadata_extractor'}
         collectionName={null}
-        reason={'Retry rights determination'}
+        reason={'Retry metadata extraction'}
       />,
     )
 

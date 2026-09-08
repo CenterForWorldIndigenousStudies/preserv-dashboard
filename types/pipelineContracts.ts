@@ -41,8 +41,6 @@ export interface RawProcessStageDetails {
   normalized_count?: unknown
   ocr_completed_count?: unknown
   extracted_count?: unknown
-  metadata_validated_count?: unknown
-  rights_determined_count?: unknown
   needs_review_count?: unknown
   versioned_count?: unknown
   resolved_count?: unknown
@@ -134,8 +132,6 @@ export interface RawProcessBatchDetails {
   ocr_processor?: RawProcessStageDetails | null
   content_dedup?: RawProcessStageDetails | null
   metadata_extractor?: RawProcessStageDetails | null
-  metadata_validator?: RawProcessStageDetails | null
-  rights_determinator?: RawProcessStageDetails | null
   fedora_ingester?: RawProcessStageDetails | null
 }
 
@@ -158,8 +154,6 @@ export type CallbackStageKey =
   | 'ocr_processor'
   | 'content_dedup'
   | 'metadata_extractor'
-  | 'metadata_validator'
-  | 'rights_determinator'
   | 'fedora_ingester'
 
 export interface NormalizedProcessStageStatus {
@@ -193,8 +187,6 @@ export interface NormalizedProcessStageStatus {
   normalizedCount: number
   ocrCompletedCount: number
   extractedCount: number
-  metadataValidatedCount: number
-  rightsDeterminedCount: number
   needsReviewCount: number
   versionedCount: number
   resolvedCount: number
@@ -241,8 +233,6 @@ export interface NormalizedProcessBatchDetails {
   ocrProcessor: NormalizedProcessStageStatus | null
   contentDedup: NormalizedProcessStageStatus | null
   metadataExtractor: NormalizedProcessStageStatus | null
-  metadataValidator: NormalizedProcessStageStatus | null
-  rightsDeterminator: NormalizedProcessStageStatus | null
   fedoraIngester?: NormalizedProcessStageStatus | null
 }
 

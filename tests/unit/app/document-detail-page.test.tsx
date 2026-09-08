@@ -109,9 +109,9 @@ describe('DocumentDetailPage', () => {
         { name: 'title', value: 'Document title', value_type: 'string', notes: 'The document title.' },
         {
           name: 'needs_review',
-          value: JSON.stringify({ metadata_validator: ['Missing rights statement.'] }),
+          value: JSON.stringify({ metadata_extractor: ['Missing rights statement.'] }),
           value_type: 'json',
-          notes: 'Review reasons recorded during validation.',
+          notes: 'Review reasons recorded during extraction.',
         },
       ],
       document_to_batches: [
@@ -154,7 +154,7 @@ describe('DocumentDetailPage', () => {
     expect(markup.match(/<th[^>]*>.*source_id.*<\/th>/g)).toHaveLength(1)
     expect(markup).toContain('source_id: The identifier assigned by the source system.')
     expect(markup).toContain('title: The document title.')
-    expect(markup).toContain('Metadata Validator')
+    expect(markup).toContain('Metadata Extractor')
     expect(markup).toContain('Missing rights statement.')
     expect(markup).toContain('Document title')
     expect(markup).toContain('Batches')

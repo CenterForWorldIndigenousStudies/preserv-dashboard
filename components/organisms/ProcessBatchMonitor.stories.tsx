@@ -17,8 +17,6 @@ function buildBatchStatus(): ProcessBatchStatus {
     ocrProcessor: null,
     contentDedup: null,
     metadataExtractor: null,
-    metadataValidator: null,
-    rightsDeterminator: null,
   }
 }
 

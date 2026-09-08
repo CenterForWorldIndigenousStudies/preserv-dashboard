@@ -24,8 +24,6 @@ const STAGE_PROPERTIES: Record<CallbackStageKey, keyof ProcessBatchStatus> = {
     ocr_processor: 'ocrProcessor',
     content_dedup: 'contentDedup',
     metadata_extractor: 'metadataExtractor',
-    metadata_validator: 'metadataValidator',
-    rights_determinator: 'rightsDeterminator',
     fedora_ingester: 'fedoraIngester',
 }
 

@@ -8,8 +8,6 @@ export type StepId =
   | 'ocr-processor'
   | 'content-dedup'
   | 'metadata-extraction'
-  | 'metadata-validation'
-  | 'rights-determinator'
   | 'fedora-ingester'
 
 export type ServiceId =
@@ -19,8 +17,6 @@ export type ServiceId =
   | 'ocr-processor'
   | 'content-dedup'
   | 'metadata-extraction'
-  | 'metadata-validation'
-  | 'rights-determinator'
   | 'fedora-ingester'
 
 export const DOCUMENT_SPLITTER_STAGE = 'document-splitter' as const
@@ -28,8 +24,6 @@ export const PAGE_ROTATOR_STAGE = 'page-rotator' as const
 export const OCR_PROCESSOR_STAGE = 'ocr-processor' as const
 export const CONTENT_DEDUP_STAGE = 'content-dedup' as const
 export const METADATA_EXTRACTOR_STAGE = 'metadata-extraction' as const
-export const METADATA_VALIDATOR_STAGE = 'metadata-validation' as const
-export const RIGHTS_DETERMINATOR_STAGE = 'rights-determinator' as const
 export const FEDORA_INGESTER_STAGE = 'fedora-ingester' as const
 
 export const SUPPORTED_DOWNSTREAM_STAGES = [
@@ -38,8 +32,6 @@ export const SUPPORTED_DOWNSTREAM_STAGES = [
   OCR_PROCESSOR_STAGE,
   CONTENT_DEDUP_STAGE,
   METADATA_EXTRACTOR_STAGE,
-  METADATA_VALIDATOR_STAGE,
-  RIGHTS_DETERMINATOR_STAGE,
 ] as const
 
 export interface StepDefinition {
@@ -139,22 +131,6 @@ export const PIPELINE_STEPS: StepDefinition[] = [
     service: 'metadata-extraction',
     order: 5,
     dependsOn: ['content-dedup'],
-  },
-  {
-    id: 'metadata-validation',
-    label: 'Metadata Validation',
-    description: 'Validate extracted metadata (future)',
-    service: 'metadata-validation',
-    order: 6,
-    dependsOn: ['metadata-extraction'],
-  },
-  {
-    id: 'rights-determinator',
-    label: 'Rights Determinator',
-    description: 'Determine rights and permissions (future)',
-    service: 'rights-determinator',
-    order: 7,
-    dependsOn: ['metadata-validation'],
   },
 ]
 

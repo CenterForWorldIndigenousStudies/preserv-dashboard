@@ -2,7 +2,6 @@ import {
   CONTENT_DEDUP_STAGE,
   DOCUMENT_SPLITTER_STAGE,
   METADATA_EXTRACTOR_STAGE,
-  METADATA_VALIDATOR_STAGE,
   OCR_PROCESSOR_STAGE,
   PAGE_ROTATOR_STAGE,
   PIPELINE_PROFILES,
@@ -38,8 +37,6 @@ export interface PipelineSelectionDraft {
     ocrProcessor: boolean
     contentDedup: boolean
     metadataExtraction: boolean
-    metadataValidation: boolean
-    rightsDeterminator: boolean
   }
 }
 
@@ -72,8 +69,6 @@ function isServiceId(value: unknown): value is ServiceId {
     value === 'ocr-processor' ||
     value === 'content-dedup' ||
     value === 'metadata-extraction' ||
-    value === 'metadata-validation' ||
-    value === 'rights-determinator' ||
     value === 'fedora-ingester'
   )
 }
@@ -86,8 +81,6 @@ function isStepId(value: unknown): value is StepId {
     value === 'ocr-processor' ||
     value === 'content-dedup' ||
     value === 'metadata-extraction' ||
-    value === 'metadata-validation' ||
-    value === 'rights-determinator' ||
     value === 'fedora-ingester'
   )
 }
@@ -255,8 +248,6 @@ export function expandPresetToDraft(profileId: ProfileId): PipelineSelectionDraf
       ocrProcessor: profile.steps['ocr-processor'] ?? false,
       contentDedup: profile.steps['content-dedup'] ?? false,
       metadataExtraction: false,
-      metadataValidation: false,
-      rightsDeterminator: false,
     },
   }
 }
@@ -385,29 +376,6 @@ export function draftToPipelineConfig(draft: PipelineSelectionDraft): PipelineCo
     })
   }
 
-  if (draft.steps.metadataValidation) {
-    plan.push({
-      id: 'step-metadata-validation',
-      stepId: 'metadata-validation',
-      service: METADATA_VALIDATOR_STAGE,
-      label: 'Metadata Validation',
-      order: 8,
-      enabled: true,
-      dependsOn: draft.steps.metadataExtraction ? ['step-metadata-extraction'] : getDownstreamDependencyId(draft),
-    })
-  }
-
-  if (draft.steps.rightsDeterminator) {
-    plan.push({
-      id: 'step-rights-determinator',
-      stepId: 'rights-determinator',
-      service: 'rights-determinator',
-      label: 'Rights Determinator',
-      order: 9,
-      enabled: true,
-    })
-  }
-
   return {
     profileId: draft.profileId,
     mode: draft.mode,
@@ -456,8 +424,6 @@ export function pipelineConfigToDraft(config: PipelineConfig): PipelineSelection
       ocrProcessor: hasService(OCR_PROCESSOR_STAGE),
       contentDedup: hasService(CONTENT_DEDUP_STAGE),
       metadataExtraction: hasService(METADATA_EXTRACTOR_STAGE),
-      metadataValidation: hasService(METADATA_VALIDATOR_STAGE),
-      rightsDeterminator: hasService('rights-determinator'),
     },
   }
 }
@@ -492,7 +458,5 @@ export function getEnabledSteps(draft: PipelineSelectionDraft): string[] {
   if (draft.steps.ocrProcessor) steps.push('OCR Processor')
   if (draft.steps.contentDedup) steps.push('Content Dedup')
   if (draft.steps.metadataExtraction) steps.push('Metadata Extraction')
-  if (draft.steps.metadataValidation) steps.push('Metadata Validation')
-  if (draft.steps.rightsDeterminator) steps.push('Rights Determinator')
   return steps
 }

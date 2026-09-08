@@ -35,13 +35,30 @@ function buildDraft(): PipelineSelectionDraft {
       ocrProcessor: true,
       contentDedup: true,
       metadataExtraction: true,
-      metadataValidation: false,
-      rightsDeterminator: false,
     },
   }
 }
 
 describe('pipelineConfig', () => {
+  it.each(['rights-determinator', 'metadata-validation'])('drops retired stage %s from saved execution plans', (stage) => {
+    const config = draftToPipelineConfig(buildDraft())
+    const parsed = parsePipelineConfig({
+      ...config,
+      executionPlan: [
+        ...config.executionPlan,
+        {
+          id: 'retired-stage',
+          stepId: stage,
+          service: stage,
+          label: 'Retired stage',
+          order: 9,
+          enabled: true,
+        },
+      ],
+    })
+    expect(parsed?.executionPlan).toEqual(config.executionPlan)
+  })
+
   it('chains OCR after the last normalize step and content dedup after OCR', () => {
     const config = draftToPipelineConfig(buildDraft())
 

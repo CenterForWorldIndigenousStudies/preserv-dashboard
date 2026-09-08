@@ -26,10 +26,8 @@ vi.mock('@lib/pipelineTriggerRequests', () => ({
   triggerDocumentSplitter: vi.fn(),
   triggerFedoraIngester: vi.fn(),
   triggerMetadataExtractor: mockTriggerMetadataExtractor,
-  triggerMetadataValidator: vi.fn(),
   triggerOcrProcessor: vi.fn(),
   triggerPageRotator: vi.fn(),
-  triggerRightsDeterminator: vi.fn(),
 }))
 vi.mock('next/cache', () => ({ revalidatePath: mockRevalidatePath }))
 

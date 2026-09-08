@@ -25,8 +25,6 @@ function buildSelectionBatch(): ProcessBatchStatus {
     ocrProcessor: completedStage,
     contentDedup: completedStage,
     metadataExtractor: completedStage,
-    metadataValidator: completedStage,
-    rightsDeterminator: completedStage,
     fedoraIngester: null,
   }
 }

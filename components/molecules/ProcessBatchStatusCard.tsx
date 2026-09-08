@@ -3,9 +3,7 @@ import { Alert, Paper, Stack } from '@mui/material'
 
 import {
   METADATA_EXTRACTOR_STAGE,
-  METADATA_VALIDATOR_STAGE,
   OCR_PROCESSOR_STAGE,
-  RIGHTS_DETERMINATOR_STAGE,
 } from '@constants/pipeline'
 import { BatchRollbackControl } from '@molecules/BatchRollbackControl'
 import { BatchOverviewFields } from '@molecules/BatchOverviewFields'
@@ -36,16 +34,6 @@ export function ProcessBatchStatusCard({
   const metadataExtractorStage =
     batch.metadataExtractor ??
     (shouldShowPendingProcessStage(batch, batch.metadataExtractor, METADATA_EXTRACTOR_STAGE)
-      ? createPendingProcessStage()
-      : null)
-  const metadataValidatorStage =
-    batch.metadataValidator ??
-    (shouldShowPendingProcessStage(batch, batch.metadataValidator, METADATA_VALIDATOR_STAGE)
-      ? createPendingProcessStage()
-      : null)
-  const rightsDeterminatorStage =
-    batch.rightsDeterminator ??
-    (shouldShowPendingProcessStage(batch, batch.rightsDeterminator, RIGHTS_DETERMINATOR_STAGE)
       ? createPendingProcessStage()
       : null)
   const executionLabel = formatExecutionLabel(batch)
@@ -112,8 +100,6 @@ export function ProcessBatchStatusCard({
             <ProcessStageCard label={'OCR Processor'} stage={ocrProcessorStage} />
             <ProcessStageCard label={'Content Dedup'} stage={batch.contentDedup} />
             <MetadataExtractorStageCard batch={batch} stage={metadataExtractorStage} />
-            <ProcessStageCard label={'Metadata Validator'} stage={metadataValidatorStage} />
-            <ProcessStageCard label={'Rights Determinator'} stage={rightsDeterminatorStage} />
             <ProcessStageCard label={'Fedora Ingester'} stage={batch.fedoraIngester ?? null} />
           </>
         ) : null}

@@ -110,8 +110,6 @@ function hasProcessState(batch: ProcessBatchStatus): boolean {
     batch.ocrProcessor !== null ||
     batch.contentDedup !== null ||
     batch.metadataExtractor !== null ||
-    batch.metadataValidator !== null ||
-    batch.rightsDeterminator !== null ||
     (batch.fedoraIngester !== null && batch.fedoraIngester !== undefined)
   )
 }
@@ -337,26 +335,6 @@ interface MetadataExtractorCompletionArgs {
   failedCount: number
 }
 
-interface MetadataValidatorCompletionArgs {
-  requestId: string
-  initiatedAt: string
-  completedAt: string
-  processedCount: number
-  metadataValidatedCount: number
-  needsReviewCount: number
-  failedCount: number
-}
-
-interface RightsDeterminatorCompletionArgs {
-  requestId: string
-  initiatedAt: string
-  completedAt: string
-  processedCount: number
-  rightsDeterminedCount: number
-  needsReviewCount: number
-  failedCount: number
-}
-
 function buildCompletionUpdateData(nextDetails: RawProcessBatchDetails): {
   processing_details: string
 } {
@@ -394,114 +372,6 @@ export async function recordMetadataExtractorCompletion(
       last_transition_at: completedAt,
       processed_count: processedCount,
       extracted_count: extractedCount,
-      failed_count: failedCount,
-      current_pass: 1,
-      max_passes: 1,
-      completed_passes: [1],
-    },
-  }
-
-  await db.batches.update({
-    where: { id: batchId },
-    data: {
-      ...buildCompletionUpdateData(nextDetails),
-    },
-  })
-}
-
-export async function recordMetadataValidatorCompletion(
-  batchId: string,
-  {
-    requestId,
-    initiatedAt,
-    completedAt,
-    processedCount,
-    metadataValidatedCount,
-    needsReviewCount,
-    failedCount,
-  }: MetadataValidatorCompletionArgs,
-): Promise<void> {
-  const batch = await db.batches.findUnique({
-    where: { id: batchId },
-    select: processBatchSelect,
-  })
-
-  if (!batch) {
-    throw new Error(`Batch ${batchId} was not found`)
-  }
-
-  const details = parseProcessingDetails(batch.processing_details)
-  const currentStage = details.metadata_validator
-  const currentStageDetails = currentStage && typeof currentStage === 'object' ? currentStage : {}
-
-  const nextDetails: RawProcessBatchDetails = {
-    ...details,
-    metadata_validator: {
-      ...currentStageDetails,
-      status: 'completed',
-      request_id: requestId,
-      requested_by_app: 'preserv-dashboard',
-      initiated_at: initiatedAt,
-      started_at: initiatedAt,
-      completed_at: completedAt,
-      last_transition_at: completedAt,
-      processed_count: processedCount,
-      metadata_validated_count: metadataValidatedCount,
-      needs_review_count: needsReviewCount,
-      failed_count: failedCount,
-      current_pass: 1,
-      max_passes: 1,
-      completed_passes: [1],
-    },
-  }
-
-  await db.batches.update({
-    where: { id: batchId },
-    data: {
-      ...buildCompletionUpdateData(nextDetails),
-    },
-  })
-}
-
-export async function recordRightsDeterminatorCompletion(
-  batchId: string,
-  {
-    requestId,
-    initiatedAt,
-    completedAt,
-    processedCount,
-    rightsDeterminedCount,
-    needsReviewCount,
-    failedCount,
-  }: RightsDeterminatorCompletionArgs,
-): Promise<void> {
-  const batch = await db.batches.findUnique({
-    where: { id: batchId },
-    select: processBatchSelect,
-  })
-
-  if (!batch) {
-    throw new Error(`Batch ${batchId} was not found`)
-  }
-
-  const details = parseProcessingDetails(batch.processing_details)
-  const currentStage = details.rights_determinator
-  const currentStageDetails = currentStage && typeof currentStage === 'object' ? currentStage : {}
-
-  const nextDetails: RawProcessBatchDetails = {
-    ...details,
-    rights_determinator: {
-      ...currentStageDetails,
-      status: 'completed',
-      request_id: requestId,
-      requested_by_app: 'preserv-dashboard',
-      initiated_at: initiatedAt,
-      started_at: initiatedAt,
-      completed_at: completedAt,
-      last_transition_at: completedAt,
-      processed_count: processedCount,
-      rights_determined_count: rightsDeterminedCount,
-      needs_review_count: needsReviewCount,
       failed_count: failedCount,
       current_pass: 1,
       max_passes: 1,

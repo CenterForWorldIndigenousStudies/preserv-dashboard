@@ -17,10 +17,8 @@ import {
   triggerDocumentSplitter,
   triggerFedoraIngester,
   triggerMetadataExtractor,
-  triggerMetadataValidator,
   triggerOcrProcessor,
   triggerPageRotator,
-  triggerRightsDeterminator,
 } from '@lib/pipelineTriggerRequests'
 import type { PipelineExecutionActionResult, PipelineExecutionRequest } from 'types/pipelineExecution'
 import type { CallbackStageKey, ProcessBatchStatus } from 'types/pipelineContracts'
@@ -31,8 +29,6 @@ const REPROCESSABLE_STAGES = new Set<CallbackStageKey>([
   'ocr_processor',
   'content_dedup',
   'metadata_extractor',
-  'metadata_validator',
-  'rights_determinator',
 ])
 
 const triggerByStage: Partial<Record<CallbackStageKey, (batch: ProcessBatchStatus, context?: PipelineExecutionContextInput) => Promise<unknown>>> = {
@@ -41,8 +37,6 @@ const triggerByStage: Partial<Record<CallbackStageKey, (batch: ProcessBatchStatu
   ocr_processor: triggerOcrProcessor,
   content_dedup: triggerContentDedup,
   metadata_extractor: triggerMetadataExtractor,
-  metadata_validator: triggerMetadataValidator,
-  rights_determinator: triggerRightsDeterminator,
   fedora_ingester: triggerFedoraIngester,
 }
 
@@ -230,8 +224,6 @@ function stageProperty(stage: CallbackStageKey): keyof ProcessBatchStatus {
     ocr_processor: 'ocrProcessor',
     content_dedup: 'contentDedup',
     metadata_extractor: 'metadataExtractor',
-    metadata_validator: 'metadataValidator',
-    rights_determinator: 'rightsDeterminator',
     fedora_ingester: 'fedoraIngester',
   }
   return properties[stage]
@@ -258,8 +250,6 @@ function buildReprocessTriggerBatch(request: PipelineExecutionRequest, startedBy
     ocrProcessor: null,
     contentDedup: null,
     metadataExtractor: null,
-    metadataValidator: null,
-    rightsDeterminator: null,
     fedoraIngester: null,
   }
 }

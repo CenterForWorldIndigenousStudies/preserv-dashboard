@@ -27,8 +27,6 @@ const REPROCESSABLE_START_STAGES = new Set<CallbackStageKey>([
   'ocr_processor',
   'content_dedup',
   'metadata_extractor',
-  'metadata_validator',
-  'rights_determinator',
 ])
 
 const DRAFT_DETAILS_KEY = 'reprocessing_draft'

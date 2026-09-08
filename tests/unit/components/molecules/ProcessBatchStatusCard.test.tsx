@@ -25,8 +25,6 @@ function buildBatchStatus(overrides: Partial<ProcessBatchStatus> = {}): ProcessB
     ocrProcessor: null,
     contentDedup: null,
     metadataExtractor: null,
-    metadataValidator: null,
-    rightsDeterminator: null,
     ...overrides,
   }
 }
@@ -190,67 +188,6 @@ describe('ProcessBatchStatusCard', () => {
     expect(markup).toContain('Run wave 2 becomes available after wave 1 has been imported.')
   })
 
-  it('shows metadata validator details and validator-specific metrics', () => {
-    const markup = renderToStaticMarkup(
-      <ThemeProvider>
-        <ProcessBatchStatusCard
-          batch={buildBatchStatus({
-            pipelineRequestedStages: ['metadata-extraction', 'metadata-validation'],
-            metadataValidator: {
-              status: 'completed',
-              requestId: 'request-10',
-              requestedByApp: 'preserv-dashboard',
-              initiatedAt: '2026-07-02T00:00:00.000Z',
-              startedAt: '2026-07-02T00:00:01.000Z',
-              completedAt: '2026-07-02T00:00:05.000Z',
-              lastTransitionAt: '2026-07-02T00:00:05.000Z',
-              error: null,
-              callbackDeliveryStatus: null,
-              callbackNotifiedAt: null,
-              callbackReceivedAt: null,
-              callbackHttpStatus: null,
-              callbackErrorType: null,
-              callbackErrorMessage: null,
-              processedCount: 4,
-              ingestedCount: 0,
-              duplicateCount: 0,
-              exactDuplicateCount: 0,
-              skippedSameOriginCount: 0,
-              splitCount: 0,
-              childCount: 0,
-              passedThroughCount: 0,
-              rotatedCount: 0,
-              normalizedCount: 0,
-              ocrCompletedCount: 0,
-              extractedCount: 0,
-              metadataValidatedCount: 3,
-              rightsDeterminedCount: 0,
-              needsReviewCount: 1,
-              versionedCount: 0,
-              resolvedCount: 0,
-              skippedCount: 0,
-              reviewNeededCount: 0,
-              failedCount: 0,
-              currentPass: 1,
-              maxPasses: 1,
-              completedPasses: [1],
-              sourceFolderIds: [],
-              collectionName: null,
-              collectionNotes: null,
-              mode: null,
-              openaiBatchWave1: null,
-              openaiBatchWave2: null,
-            },
-          })}
-        />
-      </ThemeProvider>,
-    )
-
-    expect(markup).toContain('Metadata Validator')
-    expect(markup).toContain('Validated')
-    expect(markup).toContain('Needs Review')
-  })
-
   it('warns when a completed stage still has review-needed documents', () => {
     const markup = renderToStaticMarkup(
       <ThemeProvider>
@@ -284,8 +221,6 @@ describe('ProcessBatchStatusCard', () => {
               normalizedCount: 0,
               ocrCompletedCount: 3,
               extractedCount: 0,
-              metadataValidatedCount: 0,
-              rightsDeterminedCount: 0,
               needsReviewCount: 0,
               versionedCount: 0,
               resolvedCount: 0,
@@ -312,80 +247,4 @@ describe('ProcessBatchStatusCard', () => {
     expect(markup).toContain('completed')
   })
 
-  it('shows pending rights determinator details when rights was requested but has not started yet', () => {
-    const markup = renderToStaticMarkup(
-      <ThemeProvider>
-        <ProcessBatchStatusCard
-          batch={buildBatchStatus({
-            pipelineRequestedStages: ['metadata-extraction', 'metadata-validation', 'rights-determinator'],
-          })}
-        />
-      </ThemeProvider>,
-    )
-
-    expect(markup).toContain('Rights Determinator')
-    expect(markup).toContain('pending')
-  })
-
-  it('shows rights determinator details and rights-specific metrics', () => {
-    const markup = renderToStaticMarkup(
-      <ThemeProvider>
-        <ProcessBatchStatusCard
-          batch={buildBatchStatus({
-            pipelineRequestedStages: ['metadata-extraction', 'metadata-validation', 'rights-determinator'],
-            rightsDeterminator: {
-              status: 'completed',
-              requestId: 'request-11',
-              requestedByApp: 'preserv-dashboard',
-              initiatedAt: '2026-07-02T00:00:00.000Z',
-              startedAt: '2026-07-02T00:00:01.000Z',
-              completedAt: '2026-07-02T00:00:05.000Z',
-              lastTransitionAt: '2026-07-02T00:00:05.000Z',
-              error: null,
-              callbackDeliveryStatus: null,
-              callbackNotifiedAt: null,
-              callbackReceivedAt: null,
-              callbackHttpStatus: null,
-              callbackErrorType: null,
-              callbackErrorMessage: null,
-              processedCount: 4,
-              ingestedCount: 0,
-              duplicateCount: 0,
-              exactDuplicateCount: 0,
-              skippedSameOriginCount: 0,
-              splitCount: 0,
-              childCount: 0,
-              passedThroughCount: 0,
-              rotatedCount: 0,
-              normalizedCount: 0,
-              ocrCompletedCount: 0,
-              extractedCount: 0,
-              metadataValidatedCount: 0,
-              rightsDeterminedCount: 2,
-              needsReviewCount: 1,
-              versionedCount: 0,
-              resolvedCount: 0,
-              skippedCount: 0,
-              reviewNeededCount: 0,
-              failedCount: 1,
-              currentPass: 1,
-              maxPasses: 1,
-              completedPasses: [1],
-              sourceFolderIds: [],
-              collectionName: null,
-              collectionNotes: null,
-              mode: null,
-              openaiBatchWave1: null,
-              openaiBatchWave2: null,
-            },
-          })}
-        />
-      </ThemeProvider>,
-    )
-
-    expect(markup).toContain('Rights Determinator')
-    expect(markup).toContain('Rights Determined')
-    expect(markup).toContain('Needs Review')
-    expect(markup).toContain('Failed')
-  })
 })

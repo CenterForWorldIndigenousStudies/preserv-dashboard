@@ -43,8 +43,6 @@ export const CompletedPipeline: Story = {
       ocrProcessor: createProcessStage({ status: 'completed', processedCount: 46, ocrCompletedCount: 46 }),
       contentDedup: createProcessStage({ status: 'completed', processedCount: 46, exactDuplicateCount: 2 }),
       metadataExtractor: createProcessStage({ status: 'completed', processedCount: 44, extractedCount: 44 }),
-      metadataValidator: createProcessStage({ status: 'completed', processedCount: 44, metadataValidatedCount: 44 }),
-      rightsDeterminator: createProcessStage({ status: 'completed', processedCount: 44, rightsDeterminedCount: 44 }),
     }),
   },
 }

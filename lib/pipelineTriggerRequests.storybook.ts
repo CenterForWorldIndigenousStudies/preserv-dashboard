@@ -46,20 +46,6 @@ export function triggerMetadataExtractor(
   return trigger('metadata_extractor')
 }
 
-export function triggerMetadataValidator(
-  _batch: ProcessBatchStatus,
-  _executionContext?: PipelineExecutionContextInput,
-): Promise<PipelineTriggerAcceptedResponse> {
-  return trigger('metadata_validator')
-}
-
-export function triggerRightsDeterminator(
-  _batch: ProcessBatchStatus,
-  _executionContext?: PipelineExecutionContextInput,
-): Promise<PipelineTriggerAcceptedResponse> {
-  return trigger('rights_determinator')
-}
-
 export function triggerFedoraIngester(
   _batch: ProcessBatchStatus,
   _executionContext?: PipelineExecutionContextInput,

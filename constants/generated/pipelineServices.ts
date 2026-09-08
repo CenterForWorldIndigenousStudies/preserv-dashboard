@@ -18,17 +18,11 @@ export const GENERATED_PIPELINE_SERVICES = {
   metadata_extractor: {
     display_name: 'Metadata Extractor',
   },
-  metadata_validator: {
-    display_name: 'Metadata Validator',
-  },
   ocr_processor: {
     display_name: 'OCR Processor',
   },
   page_rotator: {
     display_name: 'Page Rotator',
-  },
-  rights_determinator: {
-    display_name: 'Rights Determinator',
   },
 } as const
 

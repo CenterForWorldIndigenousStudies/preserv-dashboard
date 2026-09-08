@@ -39,8 +39,6 @@ function getStageDetails(
     ocr_processor: batch.ocrProcessor,
     content_dedup: batch.contentDedup,
     metadata_extractor: batch.metadataExtractor,
-    metadata_validator: batch.metadataValidator,
-    rights_determinator: batch.rightsDeterminator,
     fedora_ingester: batch.fedoraIngester ?? null,
   }
 

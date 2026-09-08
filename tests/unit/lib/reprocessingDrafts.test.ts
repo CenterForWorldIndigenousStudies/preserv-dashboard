@@ -14,8 +14,6 @@ describe('reprocessing draft helpers', () => {
   it('returns the selected stage and every downstream execution stage', () => {
     expect(getReprocessingDownstreamStages('metadata_extractor')).toEqual([
       'metadata_extractor',
-      'metadata_validator',
-      'rights_determinator',
       'fedora_ingester',
     ])
   })

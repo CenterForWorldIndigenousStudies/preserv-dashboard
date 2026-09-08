@@ -8,8 +8,6 @@ export const REPROCESSING_STAGE_OPTIONS: Array<{ value: CallbackStageKey; label:
   { value: 'ocr_processor', label: 'OCR Processor' },
   { value: 'content_dedup', label: 'Content Deduplication' },
   { value: 'metadata_extractor', label: 'Metadata Extractor' },
-  { value: 'metadata_validator', label: 'Metadata Validator' },
-  { value: 'rights_determinator', label: 'Rights Determinator' },
 ]
 
 export const REPROCESSING_EXECUTION_STAGE_ORDER: CallbackStageKey[] = [

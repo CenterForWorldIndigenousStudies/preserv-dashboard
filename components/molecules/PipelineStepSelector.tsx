@@ -184,7 +184,7 @@ export function PipelineStepSelector({ draft, mode, onDraftChange }: PipelineSte
 
   const handleSimpleStepToggle = useCallback(
     (
-      stepKey: 'ocrProcessor' | 'contentDedup' | 'metadataExtraction' | 'metadataValidation' | 'rightsDeterminator',
+      stepKey: 'ocrProcessor' | 'contentDedup' | 'metadataExtraction',
       value: boolean,
     ) => {
       onDraftChange({
@@ -329,23 +329,6 @@ export function PipelineStepSelector({ draft, mode, onDraftChange }: PipelineSte
             </Stack>
           )}
 
-          {draft.steps.metadataValidation !== undefined && (
-            <StepRow
-              label={'Metadata Validation'}
-              description={'Validate extracted metadata (future)'}
-              checked={draft.steps.metadataValidation}
-              onChange={(value) => handleSimpleStepToggle('metadataValidation', value)}
-            />
-          )}
-
-          {draft.steps.rightsDeterminator !== undefined && (
-            <StepRow
-              label={'Rights Determinator'}
-              description={'Determine rights and permissions (future)'}
-              checked={draft.steps.rightsDeterminator}
-              onChange={(value) => handleSimpleStepToggle('rightsDeterminator', value)}
-            />
-          )}
         </Stack>
       </Stack>
     </Paper>

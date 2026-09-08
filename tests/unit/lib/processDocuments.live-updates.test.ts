@@ -31,8 +31,6 @@ function buildStageStatus(status: ProcessStageStatus['status']): ProcessStageSta
     normalizedCount: 0,
     ocrCompletedCount: 0,
     extractedCount: 0,
-    metadataValidatedCount: 0,
-    rightsDeterminedCount: 0,
     needsReviewCount: 0,
     versionedCount: 0,
     resolvedCount: 0,
@@ -65,8 +63,6 @@ function buildBatchStatus(batchId: string, status: ProcessStageStatus['status'])
     ocrProcessor: null,
     contentDedup: null,
     metadataExtractor: null,
-    metadataValidator: null,
-    rightsDeterminator: null,
   }
 }
 

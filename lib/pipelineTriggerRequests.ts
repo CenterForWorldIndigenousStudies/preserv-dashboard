@@ -5,10 +5,8 @@ import {
   FEDORA_INGESTER_CALLBACK_PATH,
   DOCUMENT_SPLITTER_CALLBACK_PATH,
   METADATA_EXTRACTOR_CALLBACK_PATH,
-  METADATA_VALIDATOR_CALLBACK_PATH,
   OCR_PROCESSOR_CALLBACK_PATH,
   PAGE_ROTATOR_CALLBACK_PATH,
-  RIGHTS_DETERMINATOR_CALLBACK_PATH,
 } from '@constants/paths'
 import { DASHBOARD_BASE_URL } from '@constants/server'
 import { logEvent } from '@lib/observability'
@@ -25,8 +23,6 @@ type TriggerConfig = {
     | 'ocr_processor'
     | 'content_dedup'
     | 'metadata_extractor'
-    | 'metadata_validator'
-    | 'rights_determinator'
     | 'fedora_ingester'
   endpointPath: string
   callbackPath: string
@@ -225,28 +221,6 @@ export async function triggerMetadataExtractor(
     serviceName: 'metadata_extractor',
     callbackPath: METADATA_EXTRACTOR_CALLBACK_PATH,
     endpointPath: '/metadata-extractor',
-  }, executionContext)
-}
-
-export async function triggerMetadataValidator(
-  batch: ProcessBatchStatus,
-  executionContext?: PipelineExecutionContextInput,
-): Promise<PipelineTriggerAcceptedResponse> {
-  return triggerPipelineService(batch, {
-    serviceName: 'metadata_validator',
-    callbackPath: METADATA_VALIDATOR_CALLBACK_PATH,
-    endpointPath: '/metadata-validator',
-  }, executionContext)
-}
-
-export async function triggerRightsDeterminator(
-  batch: ProcessBatchStatus,
-  executionContext?: PipelineExecutionContextInput,
-): Promise<PipelineTriggerAcceptedResponse> {
-  return triggerPipelineService(batch, {
-    serviceName: 'rights_determinator',
-    callbackPath: RIGHTS_DETERMINATOR_CALLBACK_PATH,
-    endpointPath: '/rights-determinator',
   }, executionContext)
 }
 

@@ -100,49 +100,4 @@ describe('pipelineNormalization', () => {
     expect(normalized.metadataExtractor?.startedAt).toBe('2024-05-29T16:31:40.000Z')
   })
 
-  test('parses metadata validator stage details', () => {
-    const normalized = normalizeProcessBatchDetails({
-      pipeline: {
-        requested_stages: ['metadata-extraction', 'metadata-validation'],
-      },
-      metadata_validator: {
-        status: 'completed',
-        request_id: 'request-10',
-        started_at: 1717000400,
-        metadata_validated_count: 3,
-        needs_review_count: 1,
-        failed_count: 0,
-      },
-    })
-
-    expect(normalized.pipelineRequestedStages).toEqual(['metadata-extraction', 'metadata-validation'])
-    expect(normalized.metadataValidator?.status).toBe('completed')
-    expect(normalized.metadataValidator?.requestId).toBe('request-10')
-    expect(normalized.metadataValidator?.startedAt).toBe('2024-05-29T16:33:20.000Z')
-    expect(normalized.metadataValidator?.metadataValidatedCount).toBe(3)
-    expect(normalized.metadataValidator?.needsReviewCount).toBe(1)
-  })
-
-  test('parses rights determinator stage details', () => {
-    const normalized = normalizeProcessBatchDetails({
-      pipeline: {
-        requested_stages: ['metadata-extraction', 'metadata-validation', 'rights-determinator'],
-      },
-      rights_determinator: {
-        status: 'completed',
-        request_id: 'request-11',
-        started_at: 1717000500,
-        rights_determined_count: 2,
-        needs_review_count: 1,
-        failed_count: 1,
-      },
-    })
-
-    expect(normalized.pipelineRequestedStages).toEqual(['metadata-extraction', 'metadata-validation', 'rights-determinator'])
-    expect(normalized.rightsDeterminator?.status).toBe('completed')
-    expect(normalized.rightsDeterminator?.requestId).toBe('request-11')
-    expect(normalized.rightsDeterminator?.startedAt).toBe('2024-05-29T16:35:00.000Z')
-    expect(normalized.rightsDeterminator?.rightsDeterminedCount).toBe(2)
-    expect(normalized.rightsDeterminator?.needsReviewCount).toBe(1)
-  })
 })

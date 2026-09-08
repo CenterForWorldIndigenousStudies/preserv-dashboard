@@ -49,8 +49,6 @@ export const FullPipeline: Story = {
         ocrProcessor: true,
         contentDedup: true,
         metadataExtraction: true,
-        metadataValidation: true,
-        rightsDeterminator: true,
       },
     },
     mode: 'custom',

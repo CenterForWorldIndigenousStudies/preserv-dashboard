@@ -41,15 +41,15 @@ export const CompletedWithReview: Story = {
   args: {
     batch: createProcessBatch({
       batchName: 'Completed Batch with Review Items',
-      pipelineRequestedStages: ['document-splitter', 'page-rotator', 'ocr-processor', 'metadata-validation'],
+      pipelineRequestedStages: ['document-splitter', 'page-rotator', 'ocr-processor', 'metadata-extraction'],
       ingester: createProcessStage({ status: 'completed', processedCount: 48, ingestedCount: 46, duplicateCount: 2 }),
       documentSplitter: createProcessStage({ status: 'completed', processedCount: 46, splitCount: 8, childCount: 54 }),
       pageRotator: createProcessStage({ status: 'completed', processedCount: 54, rotatedCount: 35, passedThroughCount: 19 }),
       ocrProcessor: createProcessStage({ status: 'completed', processedCount: 54, ocrCompletedCount: 54 }),
-      metadataValidator: createProcessStage({
+      metadataExtractor: createProcessStage({
         status: 'completed',
         processedCount: 54,
-        metadataValidatedCount: 49,
+        extractedCount: 54,
         needsReviewCount: 5,
         reviewNeededCount: 5,
         collectionName: 'Review Queue Collection',

@@ -10,14 +10,10 @@ vi.mock('@lib/observability', () => ({
 
 import {
   triggerMetadataExtractor,
-  triggerMetadataValidator,
-  triggerRightsDeterminator,
 } from '@lib/pipelineTriggerRequests'
 import type { ProcessBatchStatus } from 'types/pipelineContracts'
 import {
   METADATA_EXTRACTOR_CALLBACK_PATH,
-  METADATA_VALIDATOR_CALLBACK_PATH,
-  RIGHTS_DETERMINATOR_CALLBACK_PATH,
 } from '@constants/paths'
 import { PIPELINE_EXECUTION_MODES } from '@constants/pipelineExecutionModes'
 
@@ -35,8 +31,6 @@ function buildBatchStatus(overrides: Partial<ProcessBatchStatus> = {}): ProcessB
     ocrProcessor: null,
     contentDedup: null,
     metadataExtractor: null,
-    metadataValidator: null,
-    rightsDeterminator: null,
     ...overrides,
   }
 }
@@ -99,62 +93,6 @@ describe('pipelineTriggerRequests', () => {
     })
   })
 
-  it('sends the metadata validator trigger with the shared callback contract', async () => {
-    let receivedBody: string | null = null
-    vi.mocked(fetch).mockImplementation((_input, init) => {
-      receivedBody = typeof init?.body === 'string' ? init.body : null
-      return Promise.resolve(
-        buildJsonResponse({
-          batchId: 'batch-1',
-          status: 'queued',
-          service: 'metadata_validator',
-          pass: null,
-        }),
-      )
-    })
-
-    await triggerMetadataValidator(buildBatchStatus())
-
-    expect(fetch).toHaveBeenCalledTimes(1)
-    if (receivedBody === null) {
-      throw new Error('Expected dashboard to send a JSON string body to metadata-validator.')
-    }
-
-    const payload = JSON.parse(receivedBody) as Record<string, unknown>
-    expect(payload.callback).toEqual({
-      url: `http://localhost:3000${METADATA_VALIDATOR_CALLBACK_PATH}`,
-      token: 'pipeline-callback-token',
-    })
-  })
-
-  it('sends the rights determinator trigger with the shared callback contract', async () => {
-    let receivedBody: string | null = null
-    vi.mocked(fetch).mockImplementation((_input, init) => {
-      receivedBody = typeof init?.body === 'string' ? init.body : null
-      return Promise.resolve(
-        buildJsonResponse({
-          batchId: 'batch-1',
-          status: 'queued',
-          service: 'rights_determinator',
-          pass: null,
-        }),
-      )
-    })
-
-    await triggerRightsDeterminator(buildBatchStatus())
-
-    expect(fetch).toHaveBeenCalledTimes(1)
-    if (receivedBody === null) {
-      throw new Error('Expected dashboard to send a JSON string body to rights-determinator.')
-    }
-
-    const payload = JSON.parse(receivedBody) as Record<string, unknown>
-    expect(payload.callback).toEqual({
-      url: `http://localhost:3000${RIGHTS_DETERMINATOR_CALLBACK_PATH}`,
-      token: 'pipeline-callback-token',
-    })
-  })
-
   it('serializes an explicit retry execution context', async () => {
     let receivedBody: string | null = null
     vi.mocked(fetch).mockImplementation((_input, init) => {
@@ -163,13 +101,13 @@ describe('pipelineTriggerRequests', () => {
         buildJsonResponse({
           batchId: 'batch-1',
           status: 'queued',
-          service: 'metadata_validator',
+          service: 'metadata_extractor',
           pass: null,
         }),
       )
     })
 
-    await triggerMetadataValidator(buildBatchStatus(), {
+    await triggerMetadataExtractor(buildBatchStatus(), {
       executionMode: PIPELINE_EXECUTION_MODES.RETRY,
       operationId: 'operation-1',
       idempotencyKey: 'idempotency-1',
@@ -177,7 +115,7 @@ describe('pipelineTriggerRequests', () => {
     })
 
     if (receivedBody === null) {
-      throw new Error('Expected dashboard to send a JSON string body to metadata-validator.')
+      throw new Error('Expected dashboard to send a JSON string body to metadata-extractor.')
     }
 
     expect(JSON.parse(receivedBody)).toMatchObject({
@@ -196,10 +134,10 @@ describe('pipelineTriggerRequests', () => {
     let receivedBody: string | null = null
     vi.mocked(fetch).mockImplementation((_input, init) => {
       receivedBody = typeof init?.body === 'string' ? init.body : null
-      return Promise.resolve(buildJsonResponse({ batchId: 'batch-1', status: 'queued', service: 'metadata_validator', pass: null }))
+      return Promise.resolve(buildJsonResponse({ batchId: 'batch-1', status: 'queued', service: 'metadata_extractor', pass: null }))
     })
 
-    await triggerMetadataValidator(buildBatchStatus(), {
+    await triggerMetadataExtractor(buildBatchStatus(), {
       executionMode: PIPELINE_EXECUTION_MODES.REPROCESS,
       operationId: 'operation-1',
       idempotencyKey: 'idempotency-1',
@@ -208,7 +146,7 @@ describe('pipelineTriggerRequests', () => {
     })
 
     if (receivedBody === null) {
-      throw new Error('Expected dashboard to send a JSON string body to metadata-validator.')
+      throw new Error('Expected dashboard to send a JSON string body to metadata-extractor.')
     }
 
     expect(JSON.parse(receivedBody)).toMatchObject({
@@ -227,7 +165,7 @@ describe('pipelineTriggerRequests', () => {
         buildJsonResponse({
           batchId: 'batch-1',
           status: 'queued',
-          service: 'metadata_validator',
+          service: 'metadata_extractor',
           pass: null,
         }),
       )
@@ -239,7 +177,7 @@ describe('pipelineTriggerRequests', () => {
       metadataExtraction: { mode: 'openai_batch' as const },
       executionPlan: [],
     }
-    await triggerMetadataValidator(buildBatchStatus(), {
+    await triggerMetadataExtractor(buildBatchStatus(), {
       executionMode: PIPELINE_EXECUTION_MODES.RERUN,
       operationId: 'operation-rerun-1',
       idempotencyKey: 'idempotency-rerun-1',
@@ -248,7 +186,7 @@ describe('pipelineTriggerRequests', () => {
     })
 
     if (receivedBody === null) {
-      throw new Error('Expected dashboard to send a JSON string body to metadata-validator.')
+      throw new Error('Expected dashboard to send a JSON string body to metadata-extractor.')
     }
 
     expect(JSON.parse(receivedBody)).toMatchObject({

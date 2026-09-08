@@ -5,16 +5,12 @@ const {
   mockGetProcessBatchStatus,
   mockRecordMetadataExtractorCompletion,
   mockMarkProcessStageCallbackReceived,
-  mockShouldTriggerMetadataValidator,
-  mockTriggerMetadataValidator,
   mockFinalizePipelineReadinessIfDue,
   mockLogEvent,
 } = vi.hoisted(() => ({
   mockGetProcessBatchStatus: vi.fn(),
   mockRecordMetadataExtractorCompletion: vi.fn(),
   mockMarkProcessStageCallbackReceived: vi.fn(),
-  mockShouldTriggerMetadataValidator: vi.fn(),
-  mockTriggerMetadataValidator: vi.fn(),
   mockFinalizePipelineReadinessIfDue: vi.fn(),
   mockLogEvent: vi.fn(),
 }))
@@ -27,8 +23,6 @@ vi.mock('@lib/processBatches', () => ({
 
 vi.mock('@lib/pipelineTriggers', () => ({
   getPipelineContinuationContext: () => undefined,
-  shouldTriggerMetadataValidator: mockShouldTriggerMetadataValidator,
-  triggerMetadataValidator: mockTriggerMetadataValidator,
   finalizePipelineReadinessIfDue: mockFinalizePipelineReadinessIfDue,
 }))
 
@@ -48,7 +42,7 @@ describe('metadata-extractor callback route', () => {
     vi.clearAllMocks()
   })
 
-  it('records callback receipt and triggers metadata validator when it is next eligible', async () => {
+  it('records callback receipt and finalizes readiness after extraction', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-07-02T21:00:00.000Z'))
     mockRecordMetadataExtractorCompletion.mockResolvedValue(undefined)
@@ -58,8 +52,6 @@ describe('metadata-extractor callback route', () => {
       batchName: 'Batch 1',
       startedBy: 'archivist@example.org',
     })
-    mockShouldTriggerMetadataValidator.mockReturnValue(true)
-    mockTriggerMetadataValidator.mockResolvedValue(undefined)
 
     const request = new NextRequest(`http://localhost${METADATA_EXTRACTOR_CALLBACK_PATH}`, {
       method: 'POST',
@@ -89,7 +81,9 @@ describe('metadata-extractor callback route', () => {
       failedCount: 1,
     })
     expect(mockMarkProcessStageCallbackReceived).toHaveBeenCalledWith('batch-1', 'metadata_extractor', 1783026000)
-    expect(mockTriggerMetadataValidator).toHaveBeenCalledTimes(1)
+    expect(mockFinalizePipelineReadinessIfDue).toHaveBeenCalledWith(
+      expect.objectContaining({ batchId: 'batch-1' }),
+    )
     vi.useRealTimers()
   })
 })

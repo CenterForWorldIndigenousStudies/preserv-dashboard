@@ -48,7 +48,7 @@ export const PendingLastStep: Story = {
   args: {
     isLast: true,
     step: {
-      label: 'Metadata Validator',
+      label: 'Metadata Extractor',
       status: 'pending',
     },
   },

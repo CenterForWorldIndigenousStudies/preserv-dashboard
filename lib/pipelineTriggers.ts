@@ -5,10 +5,8 @@ import {
   CONTENT_DEDUP_STAGE,
   DOCUMENT_SPLITTER_STAGE,
   METADATA_EXTRACTOR_STAGE,
-  METADATA_VALIDATOR_STAGE,
   OCR_PROCESSOR_STAGE,
   PAGE_ROTATOR_STAGE,
-  RIGHTS_DETERMINATOR_STAGE,
 } from '@constants/pipeline'
 import {
   getNextEligibleExecutionStep,
@@ -22,10 +20,8 @@ export {
   triggerContentDedup,
   triggerDocumentSplitter,
   triggerMetadataExtractor,
-  triggerMetadataValidator,
   triggerOcrProcessor,
   triggerPageRotator,
-  triggerRightsDeterminator,
   triggerFedoraIngester,
 } from '@lib/pipelineTriggerRequests'
 import type { PipelineExecutionStep } from '@lib/pipelineConfig'
@@ -76,9 +72,7 @@ export function normalizeRequestedProcessStages(value: unknown): string[] {
       stage === PAGE_ROTATOR_STAGE ||
       stage === OCR_PROCESSOR_STAGE ||
       stage === CONTENT_DEDUP_STAGE ||
-      stage === METADATA_EXTRACTOR_STAGE ||
-      stage === METADATA_VALIDATOR_STAGE ||
-      stage === RIGHTS_DETERMINATOR_STAGE,
+      stage === METADATA_EXTRACTOR_STAGE,
   )
 }
 
@@ -114,16 +108,6 @@ export function shouldTriggerContentDedup(batch: ProcessBatchStatus): boolean {
 export function shouldTriggerMetadataExtractor(batch: ProcessBatchStatus): boolean {
   getPipelineConfigForBatch(batch)
   return isNextEligibleStep(batch, METADATA_EXTRACTOR_STAGE)
-}
-
-export function shouldTriggerMetadataValidator(batch: ProcessBatchStatus): boolean {
-  getPipelineConfigForBatch(batch)
-  return isNextEligibleStep(batch, METADATA_VALIDATOR_STAGE)
-}
-
-export function shouldTriggerRightsDeterminator(batch: ProcessBatchStatus): boolean {
-  getPipelineConfigForBatch(batch)
-  return isNextEligibleStep(batch, RIGHTS_DETERMINATOR_STAGE)
 }
 
 export function shouldCloseProcessStream(batch: ProcessBatchStatus): boolean {
