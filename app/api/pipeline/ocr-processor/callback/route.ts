@@ -22,16 +22,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     onSuccess: async ({ parsed }) => {
       await markProcessStageCallbackReceived(parsed.batchId, 'ocr_processor', Math.floor(Date.now() / 1000))
       const batch = await getProcessBatchStatus(parsed.batchId)
-    if (!batch) {
+      if (!batch) {
         throw new Error(`Batch ${parsed.batchId} was not found after recording ocr-processor callback.`)
-    }
+      }
 
-    if (shouldTriggerContentDedup(batch)) {
-      await triggerContentDedup(batch, getPipelineContinuationContext(batch))
-    } else if (shouldTriggerMetadataExtractor(batch)) {
-      await triggerMetadataExtractor(batch, getPipelineContinuationContext(batch))
-    }
-    await finalizePipelineReadinessIfDue(batch)
+      if (shouldTriggerContentDedup(batch)) {
+        await triggerContentDedup(batch, getPipelineContinuationContext(batch))
+      } else if (shouldTriggerMetadataExtractor(batch)) {
+        await triggerMetadataExtractor(batch, getPipelineContinuationContext(batch))
+      }
+      await finalizePipelineReadinessIfDue(batch)
     },
   })
 }

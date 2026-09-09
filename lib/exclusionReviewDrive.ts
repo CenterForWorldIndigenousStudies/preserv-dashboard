@@ -1,9 +1,5 @@
 import { getExclusionReviewConfig } from '@lib/exclusionReviewConfig'
-import {
-  fetchDriveJson,
-  GOOGLE_FOLDER_MIME,
-  type DriveFileResponse,
-} from '@lib/googleDrive'
+import { fetchDriveJson, GOOGLE_FOLDER_MIME, type DriveFileResponse } from '@lib/googleDrive'
 import type { DriveIndexItem } from 'types/exclusionReview'
 
 interface DriveListResponse {
@@ -11,20 +7,13 @@ interface DriveListResponse {
   nextPageToken?: string | null
 }
 
-function toDriveUrl(
-  itemType: DriveIndexItem['itemType'],
-  driveId: string,
-): string {
+function toDriveUrl(itemType: DriveIndexItem['itemType'], driveId: string): string {
   return itemType === 'folder'
     ? `https://drive.google.com/drive/folders/${driveId}`
     : `https://drive.google.com/file/d/${driveId}/view`
 }
 
-function toDriveIndexItem(
-  file: DriveFileResponse,
-  parentDriveId: string | null,
-  path: string[],
-): DriveIndexItem {
+function toDriveIndexItem(file: DriveFileResponse, parentDriveId: string | null, path: string[]): DriveIndexItem {
   if (!file.id) {
     throw new Error('Drive response is missing file id')
   }
@@ -86,11 +75,7 @@ async function resolveDriveFilesFromRoot(
 
   /* eslint-disable no-await-in-loop */
   for (const parentDriveId of parentDriveIds) {
-    const parentChain = await resolveDriveFilesFromRoot(
-      parentDriveId,
-      rootFolderId,
-      nextVisitedDriveIds,
-    )
+    const parentChain = await resolveDriveFilesFromRoot(parentDriveId, rootFolderId, nextVisitedDriveIds)
     if (parentChain) {
       return [...parentChain, currentFile]
     }
@@ -100,15 +85,9 @@ async function resolveDriveFilesFromRoot(
   return null
 }
 
-export async function resolveExclusionReviewAncestorChain(
-  driveId: string,
-): Promise<DriveIndexItem[]> {
+export async function resolveExclusionReviewAncestorChain(driveId: string): Promise<DriveIndexItem[]> {
   const { rootFolderId } = getExclusionReviewConfig()
-  const filesFromRootToTarget = await resolveDriveFilesFromRoot(
-    driveId,
-    rootFolderId,
-    new Set<string>(),
-  )
+  const filesFromRootToTarget = await resolveDriveFilesFromRoot(driveId, rootFolderId, new Set<string>())
 
   if (!filesFromRootToTarget) {
     throw new Error(`Drive item ${driveId} is not under configured root ${rootFolderId}`)
@@ -117,8 +96,7 @@ export async function resolveExclusionReviewAncestorChain(
   const ancestorIds: string[] = []
 
   return filesFromRootToTarget.map((file, index) => {
-    const parentDriveId =
-      index === 0 ? null : (filesFromRootToTarget[index - 1]?.id ?? null)
+    const parentDriveId = index === 0 ? null : (filesFromRootToTarget[index - 1]?.id ?? null)
     const item = toDriveIndexItem(file, parentDriveId, [...ancestorIds])
 
     if (index < filesFromRootToTarget.length - 1 && file.id) {
@@ -145,9 +123,7 @@ export async function listExclusionReviewChildrenFromDrive(
   const path =
     parentPath && parentPath.length > 0
       ? [...parentPath]
-      : (await resolveExclusionReviewAncestorChain(parentDriveId)).map(
-          (item) => item.driveId,
-        )
+      : (await resolveExclusionReviewAncestorChain(parentDriveId)).map((item) => item.driveId)
 
   const payload = await fetchDriveJson<DriveListResponse>('/files', {
     q: `'${parentDriveId}' in parents and trashed = false`,
@@ -178,14 +154,10 @@ function tokenizeDriveNameSearchQuery(query: string): string[] {
 }
 
 function buildDriveNameSearchQuery(terms: string[]): string {
-  return `${terms
-    .map((term) => `name contains '${escapeDriveNameQueryTerm(term)}'`)
-    .join(' and ')} and trashed = false`
+  return `${terms.map((term) => `name contains '${escapeDriveNameQueryTerm(term)}'`).join(' and ')} and trashed = false`
 }
 
-async function resolveSearchMatchesFromDriveFiles(
-  files: DriveFileResponse[],
-): Promise<DriveIndexItem[]> {
+async function resolveSearchMatchesFromDriveFiles(files: DriveFileResponse[]): Promise<DriveIndexItem[]> {
   const resolvedItems: Array<DriveIndexItem | null> = []
 
   /* eslint-disable no-await-in-loop */
@@ -204,14 +176,10 @@ async function resolveSearchMatchesFromDriveFiles(
   }
   /* eslint-enable no-await-in-loop */
 
-  return resolvedItems
-    .filter((item): item is DriveIndexItem => item !== null)
-    .sort(compareDriveIndexItems)
+  return resolvedItems.filter((item): item is DriveIndexItem => item !== null).sort(compareDriveIndexItems)
 }
 
-export async function searchExclusionReviewDriveByName(
-  query: string,
-): Promise<DriveIndexItem[]> {
+export async function searchExclusionReviewDriveByName(query: string): Promise<DriveIndexItem[]> {
   const trimmedQuery = query.trim()
   if (!trimmedQuery) {
     return []

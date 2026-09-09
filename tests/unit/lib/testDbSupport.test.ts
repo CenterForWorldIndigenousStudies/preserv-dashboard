@@ -1,9 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
-import {
-  isSandboxDbAccessError,
-  shouldSkipDashboardIntegrationSuite,
-} from '../../../tests/integration/support/test-db'
+import { isSandboxDbAccessError, shouldSkipDashboardIntegrationSuite } from '../../../tests/integration/support/test-db'
 
 const DASHBOARD_INTEGRATION_SKIP_REASON = 'DASHBOARD_INTEGRATION_SKIP_REASON'
 
@@ -31,8 +28,7 @@ describe('dashboard integration DB support', () => {
   it('skips dashboard integration suites only when a skip reason is set', () => {
     expect(shouldSkipDashboardIntegrationSuite()).toBe(false)
 
-    process.env[DASHBOARD_INTEGRATION_SKIP_REASON] =
-      'Managed environment blocked localhost MariaDB access.'
+    process.env[DASHBOARD_INTEGRATION_SKIP_REASON] = 'Managed environment blocked localhost MariaDB access.'
 
     expect(shouldSkipDashboardIntegrationSuite()).toBe(true)
   })

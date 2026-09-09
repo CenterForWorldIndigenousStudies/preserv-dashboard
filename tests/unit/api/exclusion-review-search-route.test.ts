@@ -26,9 +26,7 @@ describe('exclusion review search route', () => {
       user: { email: 'viewer@example.org' },
     })
 
-    const response = await GET(
-      new NextRequest('http://localhost/api/exclusion-review/search'),
-    )
+    const response = await GET(new NextRequest('http://localhost/api/exclusion-review/search'))
     const payload = (await response.json()) as { error?: string }
 
     expect(response.status).toBe(400)
@@ -47,11 +45,7 @@ describe('exclusion review search route', () => {
       pathNodes: [],
     })
 
-    const response = await GET(
-      new NextRequest(
-        'http://localhost/api/exclusion-review/search?q=annual%20report',
-      ),
-    )
+    const response = await GET(new NextRequest('http://localhost/api/exclusion-review/search?q=annual%20report'))
     const payload = (await response.json()) as { result?: { query: string } }
 
     expect(response.status).toBe(200)
@@ -69,11 +63,7 @@ describe('exclusion review search route', () => {
       },
     })
 
-    const response = await GET(
-      new NextRequest(
-        'http://localhost/api/exclusion-review/search?q=annual%20report',
-      ),
-    )
+    const response = await GET(new NextRequest('http://localhost/api/exclusion-review/search?q=annual%20report'))
     const payload = (await response.json()) as { error?: string }
 
     expect(response.status).toBe(503)

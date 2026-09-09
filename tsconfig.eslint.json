@@ -24,13 +24,5 @@
     "types/**/*.ts",
     "types/**/*.tsx"
   ],
-  "exclude": [
-    "node_modules",
-    "no_commit",
-    "dist",
-    ".next",
-    "storybook-static",
-    "coverage",
-    "lib/prisma/generated"
-  ]
+  "exclude": ["node_modules", "no_commit", "dist", ".next", "storybook-static", "coverage", "lib/prisma/generated"]
 }

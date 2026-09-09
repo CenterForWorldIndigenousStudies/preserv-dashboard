@@ -181,14 +181,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return validatedInput
   }
 
-  const {
-    batchName,
-    sourceFolderIds,
-    collectionName,
-    collectionNotes,
-    pipelineConfig,
-    requestedStages,
-  } = validatedInput
+  const { batchName, sourceFolderIds, collectionName, collectionNotes, pipelineConfig, requestedStages } =
+    validatedInput
 
   const callbackUrl = new URL(DATA_INGESTER_CALLBACK_PATH, DASHBOARD_BASE_URL).toString()
   const requestId = randomUUID()
@@ -241,10 +235,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         statusCode: response.status,
         errorMessage,
       })
-      return NextResponse.json(
-        errorMessage ? { ...payload, error: errorMessage } : payload,
-        { status: response.status },
-      )
+      return NextResponse.json(errorMessage ? { ...payload, error: errorMessage } : payload, {
+        status: response.status,
+      })
     }
 
     const batchId = typeof payload.batchId === 'string' ? payload.batchId.trim() : ''

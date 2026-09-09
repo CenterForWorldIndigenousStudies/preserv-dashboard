@@ -4,7 +4,6 @@ import { act, type ReactNode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it } from 'vitest'
 import { NeedsReviewReasonsPopover } from '@molecules/NeedsReviewReasonsPopover'
-
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 const groups = [
@@ -66,9 +65,9 @@ describe('NeedsReviewReasonsPopover', () => {
     expect(document.getElementById(popoverId ?? '')?.textContent).toContain('A second boundary also needs review.')
 
     act(() => {
-      document.getElementById(popoverId ?? '')?.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
-      )
+      document
+        .getElementById(popoverId ?? '')
+        ?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     })
 
     expect(trigger?.getAttribute('aria-expanded')).toBe('false')

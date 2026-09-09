@@ -14,10 +14,7 @@ export interface NeedsReviewReasonsPopoverProps {
 }
 
 function countReasons(groups: NeedsReviewReasonGroup[]): number {
-  return groups.reduce(
-    (total, group) => total + group.reasons.filter((reason) => reason.trim().length > 0).length,
-    0,
-  )
+  return groups.reduce((total, group) => total + group.reasons.filter((reason) => reason.trim().length > 0).length, 0)
 }
 
 export function NeedsReviewReasonsPopover({

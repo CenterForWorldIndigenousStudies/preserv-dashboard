@@ -150,10 +150,7 @@ export async function DELETE(request: NextRequest, context: RouteContext): Promi
     }
 
     if (deleteTagFromSystem && isProtectedTagName(documentTag.tags.name)) {
-      return NextResponse.json(
-        { error: getProtectedTagDeletionMessage(documentTag.tags.name) },
-        { status: 409 },
-      )
+      return NextResponse.json({ error: getProtectedTagDeletionMessage(documentTag.tags.name) }, { status: 409 })
     }
 
     const result = await db.$transaction(async (tx) => {

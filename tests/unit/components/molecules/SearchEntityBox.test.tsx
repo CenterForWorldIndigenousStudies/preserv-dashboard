@@ -6,7 +6,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import ThemeProvider from '@components/ThemeProvider'
 import { SearchEntityBox } from '@molecules/SearchEntityBox'
-
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 interface TestOption {

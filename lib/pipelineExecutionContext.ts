@@ -1,7 +1,4 @@
-import {
-  PIPELINE_EXECUTION_MODES,
-  type PipelineExecutionMode,
-} from '@constants/pipelineExecutionModes'
+import { PIPELINE_EXECUTION_MODES, type PipelineExecutionMode } from '@constants/pipelineExecutionModes'
 import type { PipelineConfig } from '@lib/pipelineConfig'
 
 export interface PipelineExecutionCollection {

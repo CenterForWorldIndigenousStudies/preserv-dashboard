@@ -33,7 +33,6 @@ vi.mock('@organisms/DocumentTable/DocumentTable', () => ({
 
 import { BatchesTable } from '@organisms/BatchesTable'
 import type { BatchListItem } from 'types/batches'
-
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 const row: BatchListItem = {
@@ -143,13 +142,23 @@ describe('BatchesTable', () => {
     expect(renderCell(0)).toContain('ID batch/1')
     expect(renderCell(0)).toContain('Legacy LEGACY-BATCH-1')
 
-    const result = (await config.definition.fetcher({ page: 1, pageSize: 25, search: 'batch', filters: initialQuery.filters })) as {
+    const result = (await config.definition.fetcher({
+      page: 1,
+      pageSize: 25,
+      search: 'batch',
+      filters: initialQuery.filters,
+    })) as {
       data: BatchListItem[]
       totalCount: number
     }
 
     expect(result).toEqual(expect.objectContaining({ data: [row], totalCount: 1 }))
-    expect(mockGetBatchesAction).toHaveBeenCalledWith({ page: 1, pageSize: 25, search: 'batch', filters: initialQuery.filters })
+    expect(mockGetBatchesAction).toHaveBeenCalledWith({
+      page: 1,
+      pageSize: 25,
+      search: 'batch',
+      filters: initialQuery.filters,
+    })
   })
 
   it('synchronizes Advanced Search filters into the Batches URL', () => {

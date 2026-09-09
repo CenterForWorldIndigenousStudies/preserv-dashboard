@@ -1,11 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
-const {
-  mockApplyExclusionReviewDecision,
-  mockGetDashboardSession,
-  mockGetExclusionReviewConfig,
-} = vi.hoisted(() => ({
+const { mockApplyExclusionReviewDecision, mockGetDashboardSession, mockGetExclusionReviewConfig } = vi.hoisted(() => ({
   mockApplyExclusionReviewDecision: vi.fn(),
   mockGetDashboardSession: vi.fn(),
   mockGetExclusionReviewConfig: vi.fn(),
@@ -50,9 +46,7 @@ describe('exclusion review decision route', () => {
     const payload = (await response.json()) as { error?: string }
 
     expect(response.status).toBe(403)
-    expect(payload.error).toBe(
-      'You do not have permission to edit exclusion review.',
-    )
+    expect(payload.error).toBe('You do not have permission to edit exclusion review.')
     expect(mockApplyExclusionReviewDecision).not.toHaveBeenCalled()
   })
 

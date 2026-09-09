@@ -11,6 +11,11 @@ export function IconSpinner({
   ariaLabel = 'Loading',
 }: IconProps & { ariaLabel?: string }): ReactNode {
   return (
-    <CircularProgress size={size} aria-label={ariaLabel} className={className || undefined} sx={{ color: 'currentColor' }} />
+    <CircularProgress
+      size={size}
+      aria-label={ariaLabel}
+      className={className || undefined}
+      sx={{ color: 'currentColor' }}
+    />
   )
 }

@@ -7,11 +7,7 @@ import {
 import { db } from '@lib/db'
 import { normalizeNeedsReviewValue } from '@lib/needsReview'
 import { appendReviewHistoryEpisode } from '@lib/reviewHistory'
-import {
-  evaluateCandidateReadiness,
-  projectCandidateMetadata,
-  type ReadinessReasonGroup,
-} from '@lib/readiness'
+import { evaluateCandidateReadiness, projectCandidateMetadata, type ReadinessReasonGroup } from '@lib/readiness'
 import type { Prisma, PrismaClient } from '@lib/prisma/generated/client'
 
 type ReadinessDbClient = PrismaClient | Prisma.TransactionClient
@@ -38,10 +34,7 @@ interface CandidateReadinessDocument {
   quality: { validation_status: string | null } | null
 }
 
-export async function finalizePipelineBatchReadiness(
-  batchId: string,
-  client: ReadinessDbClient = db,
-): Promise<void> {
+export async function finalizePipelineBatchReadiness(batchId: string, client: ReadinessDbClient = db): Promise<void> {
   await client.$transaction(async (tx) => {
     const documents = await loadCandidateReadinessDocuments(tx, batchId)
     await Promise.all(documents.map((document) => finalizeCandidateReadiness(tx, document)))

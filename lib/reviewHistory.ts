@@ -67,7 +67,11 @@ export function normalizeReviewHistoryValue(value: unknown): ReviewHistoryValue 
 
   if (typeof unwrappedValue === 'object' && unwrappedValue !== null && !Array.isArray(unwrappedValue)) {
     const candidate = unwrappedValue as Partial<ReviewHistoryValue>
-    if (candidate.version === 1 && Array.isArray(candidate.episodes) && candidate.episodes.every(isReviewHistoryEpisode)) {
+    if (
+      candidate.version === 1 &&
+      Array.isArray(candidate.episodes) &&
+      candidate.episodes.every(isReviewHistoryEpisode)
+    ) {
       const legacyValues = Array.isArray(candidate.legacy_values) ? candidate.legacy_values : []
       return withLegacyValues({ version: 1, episodes: candidate.episodes }, legacyValues)
     }
@@ -80,10 +84,7 @@ export function normalizeReviewHistoryValue(value: unknown): ReviewHistoryValue 
   }
 }
 
-export function appendReviewHistoryEpisode(
-  value: unknown,
-  episode: ReviewHistoryEpisode,
-): ReviewHistoryValue {
+export function appendReviewHistoryEpisode(value: unknown, episode: ReviewHistoryEpisode): ReviewHistoryValue {
   const normalizedValue = normalizeReviewHistoryValue(value)
   return {
     ...normalizedValue,

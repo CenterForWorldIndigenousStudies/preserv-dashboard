@@ -93,10 +93,7 @@ describeDbIntegration('exclusion review queries (integration)', () => {
         tx,
       )
 
-      expect(
-        parentMarked.updatedNodes.find((node) => node.driveId === 'child-file')
-          ?.effectiveDecision,
-      ).toBe('exclude')
+      expect(parentMarked.updatedNodes.find((node) => node.driveId === 'child-file')?.effectiveDecision).toBe('exclude')
 
       const result = await applyExclusionReviewDecision(
         {
@@ -107,14 +104,8 @@ describeDbIntegration('exclusion review queries (integration)', () => {
         tx,
       )
 
-      expect(
-        result.updatedNodes.find((node) => node.driveId === 'child-file')
-          ?.effectiveDecision,
-      ).toBe('include')
-      expect(
-        result.updatedNodes.find((node) => node.driveId === 'child-file')
-          ?.isInheritedLocked,
-      ).toBe(false)
+      expect(result.updatedNodes.find((node) => node.driveId === 'child-file')?.effectiveDecision).toBe('include')
+      expect(result.updatedNodes.find((node) => node.driveId === 'child-file')?.isInheritedLocked).toBe(false)
     })
   })
 })

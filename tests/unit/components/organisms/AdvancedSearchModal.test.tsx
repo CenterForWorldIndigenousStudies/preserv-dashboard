@@ -53,7 +53,6 @@ vi.mock('@molecules/SearchEntityBox', () => ({
 
 import { AdvancedSearchModal } from '@organisms/AdvancedSearchModal'
 import type { AdvancedSearchFilters, FilterOptions } from '@lib/search'
-
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 const defaultFilters: AdvancedSearchFilters = {

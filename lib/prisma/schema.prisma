@@ -238,7 +238,7 @@ model document_to_batches {
   batch_id                String    @db.VarChar(36)
   added_at                DateTime? @db.DateTime(0)
   batch_origin            String?   @db.Text
-  cost                    Decimal?  @db.Decimal(12, 2)
+  cost                    Decimal?  @db.Decimal(12, 6)
   processing_time_seconds Int?
   ocr_quality_low         Boolean?
   ocr_quality_medium      Boolean?

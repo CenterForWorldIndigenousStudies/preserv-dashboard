@@ -12,7 +12,11 @@ const meta = {
     backgrounds: { default: 'sand' },
   },
   decorators: [
-    (StoryComponent) => <Box sx={{ m: '0 auto', maxWidth: 820 }}><StoryComponent /></Box>,
+    (StoryComponent) => (
+      <Box sx={{ m: '0 auto', maxWidth: 820 }}>
+        <StoryComponent />
+      </Box>
+    ),
   ],
 } satisfies Meta<typeof ProcessStageDetailList>
 

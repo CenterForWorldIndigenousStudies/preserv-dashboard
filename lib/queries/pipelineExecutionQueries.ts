@@ -1,10 +1,7 @@
 import { db } from '@lib/db'
 import { buildNameHash } from '@lib/tagHash'
 import { getProcessBatchStatus } from '@lib/processBatches'
-import type {
-  PipelineExecutionSnapshot,
-  PipelineQueueAttemptSummary,
-} from 'types/pipelineExecution'
+import type { PipelineExecutionSnapshot, PipelineQueueAttemptSummary } from 'types/pipelineExecution'
 
 function parseJsonRecord(value: string | null): Record<string, unknown> {
   if (!value?.trim()) {

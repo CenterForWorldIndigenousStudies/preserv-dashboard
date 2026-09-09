@@ -12,9 +12,7 @@ describe('ExclusionReviewPage', () => {
     const markup = renderToStaticMarkup(ExclusionReviewPage())
 
     expect(markup).toContain('Exclusion Review')
-    expect(markup).toContain(
-      'Browse one configured Google Drive root and record include or exclude review decisions.',
-    )
+    expect(markup).toContain('Browse one configured Google Drive root and record include or exclude review decisions.')
     expect(markup).toContain('Exclusion review workspace stub')
   })
 })

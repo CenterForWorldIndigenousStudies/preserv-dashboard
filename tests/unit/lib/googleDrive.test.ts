@@ -121,9 +121,7 @@ describe('googleDrive', () => {
     const { listChildDriveFolders } = await import('@lib/googleDrive')
 
     const requestPromise = listChildDriveFolders('parent-123')
-    const expectation = expect(requestPromise).rejects.toThrow(
-      'Google Drive request timed out.',
-    )
+    const expectation = expect(requestPromise).rejects.toThrow('Google Drive request timed out.')
     await vi.advanceTimersByTimeAsync(15000)
 
     await expectation

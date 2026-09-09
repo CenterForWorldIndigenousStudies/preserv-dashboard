@@ -10,10 +10,7 @@ import {
 } from '@constants/paths'
 import { DASHBOARD_BASE_URL } from '@constants/server'
 import { logEvent } from '@lib/observability'
-import {
-  normalizePipelineExecutionContext,
-  type PipelineExecutionContextInput,
-} from '@lib/pipelineExecutionContext'
+import { normalizePipelineExecutionContext, type PipelineExecutionContextInput } from '@lib/pipelineExecutionContext'
 import type { ProcessBatchStatus } from 'types/pipelineContracts'
 
 type TriggerConfig = {
@@ -173,64 +170,88 @@ export async function triggerDocumentSplitter(
   batch: ProcessBatchStatus,
   executionContext?: PipelineExecutionContextInput,
 ): Promise<PipelineTriggerAcceptedResponse> {
-  return triggerPipelineService(batch, {
-    serviceName: 'document_splitter',
-    callbackPath: DOCUMENT_SPLITTER_CALLBACK_PATH,
-    endpointPath: '/split',
-  }, executionContext)
+  return triggerPipelineService(
+    batch,
+    {
+      serviceName: 'document_splitter',
+      callbackPath: DOCUMENT_SPLITTER_CALLBACK_PATH,
+      endpointPath: '/split',
+    },
+    executionContext,
+  )
 }
 
 export async function triggerPageRotator(
   batch: ProcessBatchStatus,
   executionContext?: PipelineExecutionContextInput,
 ): Promise<PipelineTriggerAcceptedResponse> {
-  return triggerPipelineService(batch, {
-    serviceName: 'page_rotator',
-    callbackPath: PAGE_ROTATOR_CALLBACK_PATH,
-    endpointPath: '/rotate',
-  }, executionContext)
+  return triggerPipelineService(
+    batch,
+    {
+      serviceName: 'page_rotator',
+      callbackPath: PAGE_ROTATOR_CALLBACK_PATH,
+      endpointPath: '/rotate',
+    },
+    executionContext,
+  )
 }
 
 export async function triggerOcrProcessor(
   batch: ProcessBatchStatus,
   executionContext?: PipelineExecutionContextInput,
 ): Promise<PipelineTriggerAcceptedResponse> {
-  return triggerPipelineService(batch, {
-    serviceName: 'ocr_processor',
-    callbackPath: OCR_PROCESSOR_CALLBACK_PATH,
-    endpointPath: '/ocr',
-  }, executionContext)
+  return triggerPipelineService(
+    batch,
+    {
+      serviceName: 'ocr_processor',
+      callbackPath: OCR_PROCESSOR_CALLBACK_PATH,
+      endpointPath: '/ocr',
+    },
+    executionContext,
+  )
 }
 
 export async function triggerContentDedup(
   batch: ProcessBatchStatus,
   executionContext?: PipelineExecutionContextInput,
 ): Promise<PipelineTriggerAcceptedResponse> {
-  return triggerPipelineService(batch, {
-    serviceName: 'content_dedup',
-    callbackPath: CONTENT_DEDUP_CALLBACK_PATH,
-    endpointPath: '/content-dedup',
-  }, executionContext)
+  return triggerPipelineService(
+    batch,
+    {
+      serviceName: 'content_dedup',
+      callbackPath: CONTENT_DEDUP_CALLBACK_PATH,
+      endpointPath: '/content-dedup',
+    },
+    executionContext,
+  )
 }
 
 export async function triggerMetadataExtractor(
   batch: ProcessBatchStatus,
   executionContext?: PipelineExecutionContextInput,
 ): Promise<PipelineTriggerAcceptedResponse> {
-  return triggerPipelineService(batch, {
-    serviceName: 'metadata_extractor',
-    callbackPath: METADATA_EXTRACTOR_CALLBACK_PATH,
-    endpointPath: '/metadata-extractor',
-  }, executionContext)
+  return triggerPipelineService(
+    batch,
+    {
+      serviceName: 'metadata_extractor',
+      callbackPath: METADATA_EXTRACTOR_CALLBACK_PATH,
+      endpointPath: '/metadata-extractor',
+    },
+    executionContext,
+  )
 }
 
 export async function triggerFedoraIngester(
   batch: ProcessBatchStatus,
   executionContext?: PipelineExecutionContextInput,
 ): Promise<PipelineTriggerAcceptedResponse> {
-  return triggerPipelineService(batch, {
-    serviceName: 'fedora_ingester',
-    callbackPath: FEDORA_INGESTER_CALLBACK_PATH,
-    endpointPath: '/fedora-ingester',
-  }, executionContext)
+  return triggerPipelineService(
+    batch,
+    {
+      serviceName: 'fedora_ingester',
+      callbackPath: FEDORA_INGESTER_CALLBACK_PATH,
+      endpointPath: '/fedora-ingester',
+    },
+    executionContext,
+  )
 }

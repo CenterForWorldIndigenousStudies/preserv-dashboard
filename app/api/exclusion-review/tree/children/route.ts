@@ -14,10 +14,7 @@ export async function GET(request: NextRequest) {
   const email = normalizeEmail(session?.user?.email)
 
   if (!email) {
-    return NextResponse.json(
-      { error: 'Authentication required.' },
-      { status: 401 },
-    )
+    return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })
   }
 
   const parentId = request.nextUrl.searchParams.get('parentId')?.trim()
@@ -32,9 +29,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ page })
   } catch (error) {
-    return buildExclusionReviewRouteErrorResponse(
-      error,
-      'Unable to load branch children.',
-    )
+    return buildExclusionReviewRouteErrorResponse(error, 'Unable to load branch children.')
   }
 }

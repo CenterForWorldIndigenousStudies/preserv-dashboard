@@ -2,20 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { PIPELINE_EXECUTION_MODES } from '@constants/pipelineExecutionModes'
 import { logEvent } from '@lib/observability'
-import {
-  parseBearerToken,
-  parsePipelineCallbackBody,
-  type ParsedPipelineCallbackBody,
-} from '@lib/pipelineCallbacks'
-import {
-  getProcessBatchStatus,
-  recordProcessStageFailure,
-} from '@lib/processBatches'
-import type {
-  CallbackStageKey,
-  PipelineCallbackBody,
-  ProcessBatchStatus,
-} from 'types/pipelineContracts'
+import { parseBearerToken, parsePipelineCallbackBody, type ParsedPipelineCallbackBody } from '@lib/pipelineCallbacks'
+import { getProcessBatchStatus, recordProcessStageFailure } from '@lib/processBatches'
+import type { CallbackStageKey, PipelineCallbackBody, ProcessBatchStatus } from 'types/pipelineContracts'
 
 interface PipelineCallbackHandlerArgs {
   request: NextRequest
@@ -28,10 +17,7 @@ interface PipelineCallbackHandlerArgs {
   }) => Promise<void>
 }
 
-function getStageDetails(
-  batch: ProcessBatchStatus,
-  stage: CallbackStageKey,
-): ProcessBatchStatus['ingester'] {
+function getStageDetails(batch: ProcessBatchStatus, stage: CallbackStageKey): ProcessBatchStatus['ingester'] {
   const stageDetails: Record<CallbackStageKey, ProcessBatchStatus['ingester']> = {
     ingester: batch.ingester,
     document_splitter: batch.documentSplitter,

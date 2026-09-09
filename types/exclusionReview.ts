@@ -1,15 +1,7 @@
 export type ExclusionReviewDecision = 'include' | 'exclude' | null
 export type ExclusionReviewItemType = 'folder' | 'file'
-export type ExclusionReviewSubtreeIndexStatus =
-  | 'pending'
-  | 'syncing'
-  | 'complete'
-  | 'error'
-export type ExclusionReviewAggregateFolderStatus =
-  | 'allIncluded'
-  | 'allExcluded'
-  | 'mixedReviewed'
-  | null
+export type ExclusionReviewSubtreeIndexStatus = 'pending' | 'syncing' | 'complete' | 'error'
+export type ExclusionReviewAggregateFolderStatus = 'allIncluded' | 'allExcluded' | 'mixedReviewed' | null
 
 export interface DriveIndexItem {
   driveId: string

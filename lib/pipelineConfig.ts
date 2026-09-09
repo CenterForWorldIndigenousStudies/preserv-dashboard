@@ -387,17 +387,11 @@ export function draftToPipelineConfig(draft: PipelineSelectionDraft): PipelineCo
 }
 
 export function pipelineConfigToDraft(config: PipelineConfig): PipelineSelectionDraft {
-  const passOneSteps = config.executionPlan.filter(
-    (step) => step.stepId === 'normalize-pass-1' && step.enabled,
-  )
-  const passTwoSteps = config.executionPlan.filter(
-    (step) => step.stepId === 'normalize-pass-2' && step.enabled,
-  )
+  const passOneSteps = config.executionPlan.filter((step) => step.stepId === 'normalize-pass-1' && step.enabled)
+  const passTwoSteps = config.executionPlan.filter((step) => step.stepId === 'normalize-pass-2' && step.enabled)
   const hasService = (service: PipelineServiceId): boolean =>
     config.executionPlan.some((step) => step.service === service && step.enabled)
-  const profileId = PIPELINE_PROFILES.some((profile) => profile.id === config.profileId)
-    ? config.profileId
-    : 'custom'
+  const profileId = PIPELINE_PROFILES.some((profile) => profile.id === config.profileId) ? config.profileId : 'custom'
 
   return {
     profileId,

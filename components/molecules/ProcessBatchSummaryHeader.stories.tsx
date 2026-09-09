@@ -12,7 +12,11 @@ const meta = {
     layout: 'centered',
   },
   decorators: [
-    (StoryComponent) => <Box sx={{ width: 'min(100%, 720px)' }}><StoryComponent /></Box>,
+    (StoryComponent) => (
+      <Box sx={{ width: 'min(100%, 720px)' }}>
+        <StoryComponent />
+      </Box>
+    ),
   ],
 } satisfies Meta<typeof ProcessBatchSummaryHeader>
 

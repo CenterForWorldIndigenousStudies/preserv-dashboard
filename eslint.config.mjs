@@ -25,7 +25,7 @@ export default tseslint.config(
       'storybook-static/**',
       'stories/**',
       'lib/prisma/generated/**',
-      'vitest.shims.d.ts'
+      'vitest.shims.d.ts',
     ],
   },
   eslint.configs.recommended,

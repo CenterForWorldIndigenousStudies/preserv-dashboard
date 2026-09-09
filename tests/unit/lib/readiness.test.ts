@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  REQUIRED_READINESS_FIELDS,
-  evaluateCandidateReadiness,
-  projectCandidateMetadata,
-} from '@lib/readiness'
+import { REQUIRED_READINESS_FIELDS, evaluateCandidateReadiness, projectCandidateMetadata } from '@lib/readiness'
 
 const completeMetadata = (): Record<string, unknown> => ({
   dc_title: 'A document',
@@ -88,9 +84,7 @@ describe('candidate readiness', () => {
       validatedFields: { dc_subject_unesco: true },
     })
 
-    expect(projectCandidateMetadata({ metadata, validatedFields: { dc_subject_unesco: true } })).toEqual(
-      metadata,
-    )
+    expect(projectCandidateMetadata({ metadata, validatedFields: { dc_subject_unesco: true } })).toEqual(metadata)
     expect(metadata).toMatchObject({
       dc_subject_unesco: 'Indigenous peoples',
       dc_subject: 'Indigenous peoples',

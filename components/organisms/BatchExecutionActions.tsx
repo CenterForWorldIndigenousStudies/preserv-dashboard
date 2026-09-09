@@ -69,7 +69,8 @@ export function BatchExecutionActions({
       ) : null}
       {queueAttempts.find((attempt) => attempt.status === 'failed') ? (
         <Alert severity={'error'}>
-          {queueAttempts.find((attempt) => attempt.status === 'failed')?.errorMessage ?? 'The latest queue attempt failed.'}
+          {queueAttempts.find((attempt) => attempt.status === 'failed')?.errorMessage ??
+            'The latest queue attempt failed.'}
         </Alert>
       ) : null}
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
@@ -89,7 +90,7 @@ export function BatchExecutionActions({
           open
           onClose={() => setMode(null)}
           onExecutionQueued={onExecutionQueued}
-          initialStage={mode === 'retry' ? failedStage ?? undefined : undefined}
+          initialStage={mode === 'retry' ? (failedStage ?? undefined) : undefined}
         />
       ) : null}
     </Stack>

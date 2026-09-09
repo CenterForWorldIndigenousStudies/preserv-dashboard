@@ -1,10 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 
-import {
-  METADATA_EXTRACTOR_CALLBACK_PATH,
-  METADATA_EXTRACTOR_RUN_WAVE_TWO_PATH,
-} from '@constants/paths'
+import { METADATA_EXTRACTOR_CALLBACK_PATH, METADATA_EXTRACTOR_RUN_WAVE_TWO_PATH } from '@constants/paths'
 import { DASHBOARD_BASE_URL } from '@constants/server'
 import { logEvent } from '@lib/observability'
 import { getProcessBatchStatus } from '@lib/processBatches'
@@ -43,7 +40,10 @@ function requireTriggerConfig(): TriggerConfig {
   return { pipelineBaseUrl, triggerToken, callbackToken }
 }
 
-function validateBatchForWaveTwo(batchId: string, batch: Awaited<ReturnType<typeof getProcessBatchStatus>>): NextResponse | null {
+function validateBatchForWaveTwo(
+  batchId: string,
+  batch: Awaited<ReturnType<typeof getProcessBatchStatus>>,
+): NextResponse | null {
   if (!batch) {
     return NextResponse.json({ error: `Batch ${batchId} was not found.` }, { status: 404 })
   }

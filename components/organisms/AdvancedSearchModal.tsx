@@ -359,9 +359,7 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
               label={'Batch'}
               placeholder={'Partial batch name'}
               helperText={batchSearch.error ?? undefined}
-              onInputChange={(value) =>
-                setDraftFilters((previousFilters) => ({ ...previousFilters, batch: value }))
-              }
+              onInputChange={(value) => setDraftFilters((previousFilters) => ({ ...previousFilters, batch: value }))}
               onSelectOption={(option) =>
                 setDraftFilters((previousFilters) => ({ ...previousFilters, batch: option.name }))
               }
@@ -378,9 +376,7 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
               label={'Tag'}
               placeholder={'Tag name or close match'}
               helperText={tagSearch.error ?? undefined}
-              onInputChange={(value) =>
-                setDraftFilters((previousFilters) => ({ ...previousFilters, tag: value }))
-              }
+              onInputChange={(value) => setDraftFilters((previousFilters) => ({ ...previousFilters, tag: value }))}
               onSelectOption={(option) =>
                 setDraftFilters((previousFilters) => ({ ...previousFilters, tag: option.name }))
               }

@@ -20,14 +20,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     onSuccess: async ({ parsed }) => {
       await markProcessStageCallbackReceived(parsed.batchId, 'content_dedup', Math.floor(Date.now() / 1000))
       const batch = await getProcessBatchStatus(parsed.batchId)
-    if (!batch) {
+      if (!batch) {
         throw new Error(`Batch ${parsed.batchId} was not found after recording content-dedup callback.`)
-    }
+      }
 
-    if (shouldTriggerMetadataExtractor(batch)) {
-      await triggerMetadataExtractor(batch, getPipelineContinuationContext(batch))
-    }
-    await finalizePipelineReadinessIfDue(batch)
+      if (shouldTriggerMetadataExtractor(batch)) {
+        await triggerMetadataExtractor(batch, getPipelineContinuationContext(batch))
+      }
+      await finalizePipelineReadinessIfDue(batch)
     },
   })
 }

@@ -159,9 +159,17 @@ describe('applyReviewQueueDecision', () => {
       { document_id: 'doc-1', value: JSON.stringify({ value: '2025' }), metadata: { name: 'dc_date' } },
       { document_id: 'doc-1', value: JSON.stringify({ value: 'Report' }), metadata: { name: 'dc_type' } },
       { document_id: 'doc-1', value: JSON.stringify({ value: 'eng' }), metadata: { name: 'dc_language_iso' } },
-      { document_id: 'doc-1', value: JSON.stringify({ value: 'Abstract' }), metadata: { name: 'dc_description_abstract' } },
+      {
+        document_id: 'doc-1',
+        value: JSON.stringify({ value: 'Abstract' }),
+        metadata: { name: 'dc_description_abstract' },
+      },
       { document_id: 'doc-1', value: JSON.stringify({ value: 'Public domain' }), metadata: { name: 'dc_rights' } },
-      { document_id: 'doc-1', value: JSON.stringify({ value: 'Indigenous peoples' }), metadata: { name: 'dc_subject_unesco' } },
+      {
+        document_id: 'doc-1',
+        value: JSON.stringify({ value: 'Indigenous peoples' }),
+        metadata: { name: 'dc_subject_unesco' },
+      },
     ])
     tx.document_access.findMany.mockResolvedValue([{ access_levels: { level_name: 'public' } }])
     tx.document_to_batches.findMany.mockImplementation(
@@ -313,9 +321,17 @@ describe('applyReviewQueueDecision', () => {
       { document_id: 'doc-3', value: JSON.stringify({ value: '2025' }), metadata: { name: 'dc_date' } },
       { document_id: 'doc-3', value: JSON.stringify({ value: 'Report' }), metadata: { name: 'dc_type' } },
       { document_id: 'doc-3', value: JSON.stringify({ value: 'eng' }), metadata: { name: 'dc_language_iso' } },
-      { document_id: 'doc-3', value: JSON.stringify({ value: 'Abstract' }), metadata: { name: 'dc_description_abstract' } },
+      {
+        document_id: 'doc-3',
+        value: JSON.stringify({ value: 'Abstract' }),
+        metadata: { name: 'dc_description_abstract' },
+      },
       { document_id: 'doc-3', value: JSON.stringify({ value: 'Public domain' }), metadata: { name: 'dc_rights' } },
-      { document_id: 'doc-3', value: JSON.stringify({ value: 'Indigenous peoples' }), metadata: { name: 'dc_subject_unesco' } },
+      {
+        document_id: 'doc-3',
+        value: JSON.stringify({ value: 'Indigenous peoples' }),
+        metadata: { name: 'dc_subject_unesco' },
+      },
     ])
     tx.document_access.findMany.mockResolvedValue([{ access_levels: { level_name: 'public' } }])
     tx.document_to_batches.findMany.mockResolvedValue([{ document_id: 'doc-3', processing_details: '{}' }])
@@ -372,7 +388,11 @@ describe('applyReviewQueueDecision', () => {
     })
     tx.document_to_metadata.findFirst.mockResolvedValue(null)
     tx.document_to_metadata.findMany.mockResolvedValue([
-      { document_id: 'doc-blocked', value: JSON.stringify({ value: true }), metadata: { name: 'preservation_candidate' } },
+      {
+        document_id: 'doc-blocked',
+        value: JSON.stringify({ value: true }),
+        metadata: { name: 'preservation_candidate' },
+      },
       { document_id: 'doc-blocked', value: JSON.stringify({ value: 'A document' }), metadata: { name: 'dc_title' } },
     ])
     tx.document_access.findMany.mockResolvedValue([])

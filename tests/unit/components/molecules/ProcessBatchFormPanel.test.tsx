@@ -23,7 +23,6 @@ vi.mock('@molecules/SearchEntityBox', () => ({
 }))
 
 import { ProcessBatchFormPanel } from '@molecules/ProcessBatchFormPanel'
-
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 let mountedRoot: Root | undefined

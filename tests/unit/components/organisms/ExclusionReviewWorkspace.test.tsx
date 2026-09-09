@@ -13,10 +13,7 @@ import {
 describe('ExclusionReviewWorkspace', () => {
   it('does not make the search effect depend on branch state updates', () => {
     const source = fs.readFileSync(
-      path.resolve(
-        process.cwd(),
-        'components/organisms/ExclusionReviewWorkspace.tsx',
-      ),
+      path.resolve(process.cwd(), 'components/organisms/ExclusionReviewWorkspace.tsx'),
       'utf8',
     )
 

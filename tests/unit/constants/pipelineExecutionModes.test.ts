@@ -9,11 +9,6 @@ describe('pipeline execution mode contract', () => {
   })
 
   it('exposes the stable serialized values', () => {
-    expect(Object.values(PIPELINE_EXECUTION_MODES)).toEqual([
-      'normal',
-      'retry',
-      'rerun',
-      'reprocess',
-    ])
+    expect(Object.values(PIPELINE_EXECUTION_MODES)).toEqual(['normal', 'retry', 'rerun', 'reprocess'])
   })
 })

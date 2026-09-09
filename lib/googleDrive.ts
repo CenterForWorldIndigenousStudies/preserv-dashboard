@@ -57,9 +57,7 @@ function parseServiceAccountJson(raw: string): GoogleServiceAccountCredentials {
     typeof credentials.private_key !== 'string' ||
     credentials.private_key.trim().length === 0
   ) {
-    throw new Error(
-      'GOOGLE_SERVICE_ACCOUNT_JSON must include non-empty client_email and private_key fields',
-    )
+    throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON must include non-empty client_email and private_key fields')
   }
 
   return {
@@ -85,11 +83,7 @@ async function loadServiceAccountCredentials(): Promise<GoogleServiceAccountCred
 }
 
 function base64UrlEncode(value: string | Buffer): string {
-  return Buffer.from(value)
-    .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/g, '')
+  return Buffer.from(value).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
 }
 
 function createJwtAssertion(credentials: GoogleServiceAccountCredentials): string {
@@ -229,9 +223,7 @@ async function listDriveFiles(query: string): Promise<DriveFileResponse[]> {
 }
 
 export async function listRootDriveFolders(): Promise<DriveFolderOption[]> {
-  const configuredRootIds = parseConfiguredRootFolderIds(
-    process.env.GOOGLE_INGEST_SOURCE_ROOT_FOLDER_IDS,
-  )
+  const configuredRootIds = parseConfiguredRootFolderIds(process.env.GOOGLE_INGEST_SOURCE_ROOT_FOLDER_IDS)
 
   if (configuredRootIds.length > 0) {
     const files = await Promise.all(configuredRootIds.map((folderId) => getDriveFile(folderId)))
@@ -243,9 +235,9 @@ export async function listRootDriveFolders(): Promise<DriveFolderOption[]> {
       .sort((left, right) => left.name.localeCompare(right.name))
   }
 
-  const sharedFolders = (await listDriveFiles(
-    `mimeType = '${GOOGLE_FOLDER_MIME}' and trashed = false and sharedWithMe = true`,
-  ))
+  const sharedFolders = (
+    await listDriveFiles(`mimeType = '${GOOGLE_FOLDER_MIME}' and trashed = false and sharedWithMe = true`)
+  )
     .map(toDriveFolderOption)
     .filter((file): file is DriveFolderOption => file !== null)
 
@@ -260,11 +252,7 @@ export async function listRootDriveFolders(): Promise<DriveFolderOption[]> {
 }
 
 export async function listChildDriveFolders(parentId: string): Promise<DriveFolderOption[]> {
-  return (
-    await listDriveFiles(
-      `'${parentId}' in parents and mimeType = '${GOOGLE_FOLDER_MIME}' and trashed = false`,
-    )
-  )
+  return (await listDriveFiles(`'${parentId}' in parents and mimeType = '${GOOGLE_FOLDER_MIME}' and trashed = false`))
     .map(toDriveFolderOption)
     .filter((file): file is DriveFolderOption => file !== null)
     .sort((left, right) => left.name.localeCompare(right.name))

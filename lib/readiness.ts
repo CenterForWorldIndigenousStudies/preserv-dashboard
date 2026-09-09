@@ -87,9 +87,7 @@ function isValidated(value: unknown): boolean {
   const unwrappedValue = unwrapValue(value)
   if (typeof unwrappedValue === 'boolean') return unwrappedValue
   if (typeof unwrappedValue === 'string') {
-    return !['failed', 'invalid', 'rejected', 'error', 'needs_review'].includes(
-      unwrappedValue.trim().toLowerCase(),
-    )
+    return !['failed', 'invalid', 'rejected', 'error', 'needs_review'].includes(unwrappedValue.trim().toLowerCase())
   }
   if (typeof unwrappedValue === 'object' && unwrappedValue !== null) {
     const record = unwrappedValue as Record<string, unknown>

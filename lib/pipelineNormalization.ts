@@ -324,7 +324,10 @@ export function normalizeProcessBatchDetails(details: RawProcessBatchDetails): N
   }
 }
 
-const DIRECT_STAGE_DETAIL_KEYS: Record<Exclude<CallbackStageKey, 'ingester' | 'document_splitter' | 'page_rotator'>, keyof RawProcessBatchDetails> = {
+const DIRECT_STAGE_DETAIL_KEYS: Record<
+  Exclude<CallbackStageKey, 'ingester' | 'document_splitter' | 'page_rotator'>,
+  keyof RawProcessBatchDetails
+> = {
   ocr_processor: 'ocr_processor',
   content_dedup: 'content_dedup',
   metadata_extractor: 'metadata_extractor',

@@ -12,7 +12,11 @@ const meta = {
     backgrounds: { default: 'sand' },
   },
   decorators: [
-    (StoryComponent) => <Box sx={{ m: '0 auto', maxWidth: 980 }}><StoryComponent /></Box>,
+    (StoryComponent) => (
+      <Box sx={{ m: '0 auto', maxWidth: 980 }}>
+        <StoryComponent />
+      </Box>
+    ),
   ],
 } satisfies Meta<typeof ProcessBatchStatusCard>
 
@@ -31,7 +35,12 @@ export const PipelineInProgress: Story = {
         completedAt: '2026-05-29T09:45:00.000Z',
       }),
       documentSplitter: createProcessStage({ status: 'completed', processedCount: 40, splitCount: 12 }),
-      pageRotator: createProcessStage({ status: 'running', processedCount: 40, rotatedCount: 26, passedThroughCount: 14 }),
+      pageRotator: createProcessStage({
+        status: 'running',
+        processedCount: 40,
+        rotatedCount: 26,
+        passedThroughCount: 14,
+      }),
       ocrProcessor: createProcessStage({ status: 'queued' }),
     }),
   },
@@ -44,7 +53,12 @@ export const CompletedWithReview: Story = {
       pipelineRequestedStages: ['document-splitter', 'page-rotator', 'ocr-processor', 'metadata-extraction'],
       ingester: createProcessStage({ status: 'completed', processedCount: 48, ingestedCount: 46, duplicateCount: 2 }),
       documentSplitter: createProcessStage({ status: 'completed', processedCount: 46, splitCount: 8, childCount: 54 }),
-      pageRotator: createProcessStage({ status: 'completed', processedCount: 54, rotatedCount: 35, passedThroughCount: 19 }),
+      pageRotator: createProcessStage({
+        status: 'completed',
+        processedCount: 54,
+        rotatedCount: 35,
+        passedThroughCount: 19,
+      }),
       ocrProcessor: createProcessStage({ status: 'completed', processedCount: 54, ocrCompletedCount: 54 }),
       metadataExtractor: createProcessStage({
         status: 'completed',

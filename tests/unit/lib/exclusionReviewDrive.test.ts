@@ -53,9 +53,7 @@ describe('exclusionReviewDrive', () => {
         ),
       )
 
-    const { getExclusionReviewRootFromDrive } = await import(
-      '@lib/exclusionReviewDrive'
-    )
+    const { getExclusionReviewRootFromDrive } = await import('@lib/exclusionReviewDrive')
 
     await expect(getExclusionReviewRootFromDrive()).resolves.toEqual({
       driveId: 'root-folder-1',
@@ -143,13 +141,9 @@ describe('exclusionReviewDrive', () => {
         ),
       )
 
-    const { listExclusionReviewChildrenFromDrive } = await import(
-      '@lib/exclusionReviewDrive'
-    )
+    const { listExclusionReviewChildrenFromDrive } = await import('@lib/exclusionReviewDrive')
 
-    await expect(
-      listExclusionReviewChildrenFromDrive('folder-123'),
-    ).resolves.toEqual({
+    await expect(listExclusionReviewChildrenFromDrive('folder-123')).resolves.toEqual({
       items: [
         {
           driveId: 'folder-456',
@@ -178,8 +172,7 @@ describe('exclusionReviewDrive', () => {
 
   it('uses the stored parent path when listing children for an already indexed folder', async () => {
     fetchMock.mockImplementation((input) => {
-      const url =
-        input instanceof Request ? new URL(input.url) : new URL(String(input))
+      const url = input instanceof Request ? new URL(input.url) : new URL(String(input))
 
       if (url.origin === 'https://oauth2.googleapis.com') {
         return new Response(JSON.stringify({ access_token: 'test-token' }), {
@@ -212,10 +205,7 @@ describe('exclusionReviewDrive', () => {
         )
       }
 
-      if (
-        url.origin === 'https://www.googleapis.com' &&
-        url.pathname === '/drive/v3/files/folder-123'
-      ) {
+      if (url.origin === 'https://www.googleapis.com' && url.pathname === '/drive/v3/files/folder-123') {
         return new Response(
           JSON.stringify({
             id: 'folder-123',
@@ -230,10 +220,7 @@ describe('exclusionReviewDrive', () => {
         )
       }
 
-      if (
-        url.origin === 'https://www.googleapis.com' &&
-        url.pathname === '/drive/v3/files/other-root'
-      ) {
+      if (url.origin === 'https://www.googleapis.com' && url.pathname === '/drive/v3/files/other-root') {
         return new Response(
           JSON.stringify({
             id: 'other-root',
@@ -251,36 +238,30 @@ describe('exclusionReviewDrive', () => {
       throw new Error(`Unexpected request: ${url.toString()}`)
     })
 
-    const { listExclusionReviewChildrenFromDrive } = await import(
-      '@lib/exclusionReviewDrive'
-    )
-    const listChildrenWithStoredPath =
-      listExclusionReviewChildrenFromDrive as unknown as (
-        parentDriveId: string,
-        pageToken?: string,
-        parentPath?: string[],
-      ) => Promise<{ items: unknown[]; nextPageToken: string | null }>
+    const { listExclusionReviewChildrenFromDrive } = await import('@lib/exclusionReviewDrive')
+    const listChildrenWithStoredPath = listExclusionReviewChildrenFromDrive as unknown as (
+      parentDriveId: string,
+      pageToken?: string,
+      parentPath?: string[],
+    ) => Promise<{ items: unknown[]; nextPageToken: string | null }>
 
-    await expect(
-      listChildrenWithStoredPath('folder-123', undefined, [
-        'root-folder-1',
-        'folder-123',
-      ]),
-    ).resolves.toEqual({
-      items: [
-        {
-          driveId: 'child-1',
-          parentDriveId: 'folder-123',
-          itemType: 'file',
-          name: 'Child.pdf',
-          mimeType: 'application/pdf',
-          driveUrl: 'https://drive.google.com/file/d/child-1/view',
-          path: ['root-folder-1', 'folder-123'],
-          depth: 2,
-        },
-      ],
-      nextPageToken: null,
-    })
+    await expect(listChildrenWithStoredPath('folder-123', undefined, ['root-folder-1', 'folder-123'])).resolves.toEqual(
+      {
+        items: [
+          {
+            driveId: 'child-1',
+            parentDriveId: 'folder-123',
+            itemType: 'file',
+            name: 'Child.pdf',
+            mimeType: 'application/pdf',
+            driveUrl: 'https://drive.google.com/file/d/child-1/view',
+            path: ['root-folder-1', 'folder-123'],
+            depth: 2,
+          },
+        ],
+        nextPageToken: null,
+      },
+    )
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
@@ -417,9 +398,7 @@ describe('exclusionReviewDrive', () => {
         ),
       )
 
-    const { searchExclusionReviewDriveByName } = await import(
-      '@lib/exclusionReviewDrive'
-    )
+    const { searchExclusionReviewDriveByName } = await import('@lib/exclusionReviewDrive')
 
     await expect(searchExclusionReviewDriveByName('annual report')).resolves.toEqual([
       {
@@ -437,8 +416,7 @@ describe('exclusionReviewDrive', () => {
 
   it('finds exact filenames with punctuation by retrying search with split name terms', async () => {
     fetchMock.mockImplementation((input) => {
-      const url =
-        input instanceof Request ? new URL(input.url) : new URL(String(input))
+      const url = input instanceof Request ? new URL(input.url) : new URL(String(input))
 
       if (url.origin === 'https://oauth2.googleapis.com') {
         return new Response(JSON.stringify({ access_token: 'test-token' }), {
@@ -447,10 +425,7 @@ describe('exclusionReviewDrive', () => {
         })
       }
 
-      if (
-        url.origin === 'https://www.googleapis.com' &&
-        url.pathname === '/drive/v3/files'
-      ) {
+      if (url.origin === 'https://www.googleapis.com' && url.pathname === '/drive/v3/files') {
         const query = url.searchParams.get('q')
 
         if (query === "name contains 'Document 1.pdf' and trashed = false") {
@@ -460,10 +435,7 @@ describe('exclusionReviewDrive', () => {
           })
         }
 
-        if (
-          query ===
-          "name contains 'Document' and name contains '1' and name contains 'pdf' and trashed = false"
-        ) {
+        if (query === "name contains 'Document' and name contains '1' and name contains 'pdf' and trashed = false") {
           return new Response(
             JSON.stringify({
               files: [
@@ -483,10 +455,7 @@ describe('exclusionReviewDrive', () => {
         }
       }
 
-      if (
-        url.origin === 'https://www.googleapis.com' &&
-        url.pathname === '/drive/v3/files/document-1'
-      ) {
+      if (url.origin === 'https://www.googleapis.com' && url.pathname === '/drive/v3/files/document-1') {
         return new Response(
           JSON.stringify({
             id: 'document-1',
@@ -501,10 +470,7 @@ describe('exclusionReviewDrive', () => {
         )
       }
 
-      if (
-        url.origin === 'https://www.googleapis.com' &&
-        url.pathname === '/drive/v3/files/folder-123'
-      ) {
+      if (url.origin === 'https://www.googleapis.com' && url.pathname === '/drive/v3/files/folder-123') {
         return new Response(
           JSON.stringify({
             id: 'folder-123',
@@ -519,10 +485,7 @@ describe('exclusionReviewDrive', () => {
         )
       }
 
-      if (
-        url.origin === 'https://www.googleapis.com' &&
-        url.pathname === '/drive/v3/files/root-folder-1'
-      ) {
+      if (url.origin === 'https://www.googleapis.com' && url.pathname === '/drive/v3/files/root-folder-1') {
         return new Response(
           JSON.stringify({
             id: 'root-folder-1',
@@ -540,9 +503,7 @@ describe('exclusionReviewDrive', () => {
       throw new Error(`Unexpected request: ${url.toString()}`)
     })
 
-    const { searchExclusionReviewDriveByName } = await import(
-      '@lib/exclusionReviewDrive'
-    )
+    const { searchExclusionReviewDriveByName } = await import('@lib/exclusionReviewDrive')
 
     await expect(searchExclusionReviewDriveByName('Document 1.pdf')).resolves.toEqual([
       {
@@ -621,9 +582,7 @@ describe('exclusionReviewDrive', () => {
         ),
       )
 
-    const { resolveExclusionReviewAncestorChain } = await import(
-      '@lib/exclusionReviewDrive'
-    )
+    const { resolveExclusionReviewAncestorChain } = await import('@lib/exclusionReviewDrive')
 
     await expect(resolveExclusionReviewAncestorChain('file-1')).resolves.toEqual([
       {
@@ -722,9 +681,7 @@ describe('exclusionReviewDrive', () => {
         ),
       )
 
-    const { resolveExclusionReviewAncestorChain } = await import(
-      '@lib/exclusionReviewDrive'
-    )
+    const { resolveExclusionReviewAncestorChain } = await import('@lib/exclusionReviewDrive')
 
     await expect(resolveExclusionReviewAncestorChain('folder-123')).resolves.toEqual([
       {

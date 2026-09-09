@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { db } from '@lib/db'
-import {
-  BATCH_SEARCH_CANDIDATE_LIMIT,
-  getBatchSearchLimit,
-  scoreBatchSearchCandidates,
-} from '@lib/batchSearch'
+import { BATCH_SEARCH_CANDIDATE_LIMIT, getBatchSearchLimit, scoreBatchSearchCandidates } from '@lib/batchSearch'
 import { buildBatchNameHash } from '@lib/batchNameHash'
 import type { BatchSearchResponse } from 'types/batches'
 
@@ -32,9 +28,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<BatchSearc
     ])
 
     const batches = scoreBatchSearchCandidates(candidates, query, limit)
-    const exactMatch = exactMatchRow?.name
-      ? (scoreBatchSearchCandidates([exactMatchRow], query, 1)[0] ?? null)
-      : null
+    const exactMatch = exactMatchRow?.name ? (scoreBatchSearchCandidates([exactMatchRow], query, 1)[0] ?? null) : null
 
     return NextResponse.json({ batches, exactMatch })
   } catch (error: unknown) {

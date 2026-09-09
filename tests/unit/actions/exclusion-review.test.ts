@@ -27,10 +27,7 @@ vi.mock('@root/auth', () => ({
   getDashboardSession: mockGetDashboardSession,
 }))
 
-import {
-  applyExclusionReviewDecisionAction,
-  syncExclusionReviewBranchAction,
-} from '@actions/exclusion-review'
+import { applyExclusionReviewDecisionAction, syncExclusionReviewBranchAction } from '@actions/exclusion-review'
 
 describe('exclusion review actions', () => {
   afterEach(() => {

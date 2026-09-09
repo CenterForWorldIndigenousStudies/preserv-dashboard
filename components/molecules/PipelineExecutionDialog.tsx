@@ -152,11 +152,12 @@ export function PipelineExecutionDialog({
   }
 
   const title = mode === 'retry' ? 'Retry Pipeline Stage' : mode === 'rerun' ? 'Rerun Pipeline' : 'Reprocess Documents'
-  const description = mode === 'retry'
-    ? 'This creates a new queue attempt and preserves the failed attempt in history.'
-    : mode === 'rerun'
-      ? 'This starts the existing unpublished batch again from the selected stage.'
-      : 'This creates new document artifacts in a new batch and preserves the existing documents and history.'
+  const description =
+    mode === 'retry'
+      ? 'This creates a new queue attempt and preserves the failed attempt in history.'
+      : mode === 'rerun'
+        ? 'This starts the existing unpublished batch again from the selected stage.'
+        : 'This creates new document artifacts in a new batch and preserves the existing documents and history.'
   const stageFieldLabel = mode === 'rerun' ? 'Start from stage' : 'Restart stage'
 
   return (
@@ -164,13 +165,17 @@ export function PipelineExecutionDialog({
       <DialogTitle>{title}</DialogTitle>
       <DialogContent>
         <Stack spacing={2.5} sx={{ pt: 1 }}>
-          <Typography variant={'body2'} color={'text.secondary'}>{description}</Typography>
+          <Typography variant={'body2'} color={'text.secondary'}>
+            {description}
+          </Typography>
           {mode === 'rerun' ? (
             <>
               <PipelineProfileSelector
                 draft={rerunDraft}
                 onProfileChange={(profileId) => setRerunDraft(expandPresetToDraft(profileId))}
-                onConvertToCustom={() => setRerunDraft((current) => ({ ...current, profileId: 'custom', mode: 'custom' }))}
+                onConvertToCustom={() =>
+                  setRerunDraft((current) => ({ ...current, profileId: 'custom', mode: 'custom' }))
+                }
                 onOpenStepsModal={() => setIsPipelineStepsModalOpen(true)}
               />
               <PipelineStepsModal
@@ -189,7 +194,11 @@ export function PipelineExecutionDialog({
               label={stageFieldLabel}
               onChange={(event) => setStage(event.target.value)}
             >
-              {stages.map((option) => <MenuItem key={option} value={option}>{STAGE_LABELS[option]}</MenuItem>)}
+              {stages.map((option) => (
+                <MenuItem key={option} value={option}>
+                  {STAGE_LABELS[option]}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
           {mode === 'reprocess' ? (
@@ -216,8 +225,14 @@ export function PipelineExecutionDialog({
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} disabled={submitting}>{'Cancel'}</Button>
-        <Button onClick={() => void submit()} variant={'contained'} disabled={submitting || !reason.trim() || stages.length === 0}>
+        <Button onClick={onClose} disabled={submitting}>
+          {'Cancel'}
+        </Button>
+        <Button
+          onClick={() => void submit()}
+          variant={'contained'}
+          disabled={submitting || !reason.trim() || stages.length === 0}
+        >
           {submitting ? 'Queuing…' : 'Confirm'}
         </Button>
       </DialogActions>

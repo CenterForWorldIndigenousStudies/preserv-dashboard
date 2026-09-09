@@ -12,11 +12,7 @@ vi.mock('@lib/db', () => ({
   },
 }))
 
-import {
-  resolveBatchSearchIds,
-  resolveTagSearchIds,
-  type SearchQueryDbClient,
-} from '@lib/queries/searchResolvers'
+import { resolveBatchSearchIds, resolveTagSearchIds, type SearchQueryDbClient } from '@lib/queries/searchResolvers'
 
 const client = {
   tags: { findMany: mockTagsFindMany },

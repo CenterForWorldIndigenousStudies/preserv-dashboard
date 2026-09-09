@@ -12,7 +12,11 @@ const meta = {
     backgrounds: { default: 'sand' },
   },
   decorators: [
-    (StoryComponent) => <Box sx={{ m: '0 auto', maxWidth: 820 }}><StoryComponent /></Box>,
+    (StoryComponent) => (
+      <Box sx={{ m: '0 auto', maxWidth: 820 }}>
+        <StoryComponent />
+      </Box>
+    ),
   ],
 } satisfies Meta<typeof ProcessStageMetricsGrid>
 
@@ -29,13 +33,25 @@ export const IngestMetrics: Story = {
 export const OcrMetrics: Story = {
   args: {
     stageLabel: 'OCR Processor',
-    stage: createProcessStage({ processedCount: 46, ocrCompletedCount: 42, passedThroughCount: 4, reviewNeededCount: 2, failedCount: 2 }),
+    stage: createProcessStage({
+      processedCount: 46,
+      ocrCompletedCount: 42,
+      passedThroughCount: 4,
+      reviewNeededCount: 2,
+      failedCount: 2,
+    }),
   },
 }
 
 export const SplitterMetrics: Story = {
   args: {
     stageLabel: 'Document Splitter',
-    stage: createProcessStage({ processedCount: 46, splitCount: 8, childCount: 54, passedThroughCount: 38, reviewNeededCount: 1 }),
+    stage: createProcessStage({
+      processedCount: 46,
+      splitCount: 8,
+      childCount: 54,
+      passedThroughCount: 38,
+      reviewNeededCount: 1,
+    }),
   },
 }

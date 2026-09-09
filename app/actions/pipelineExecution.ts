@@ -31,7 +31,9 @@ const REPROCESSABLE_STAGES = new Set<CallbackStageKey>([
   'metadata_extractor',
 ])
 
-const triggerByStage: Partial<Record<CallbackStageKey, (batch: ProcessBatchStatus, context?: PipelineExecutionContextInput) => Promise<unknown>>> = {
+const triggerByStage: Partial<
+  Record<CallbackStageKey, (batch: ProcessBatchStatus, context?: PipelineExecutionContextInput) => Promise<unknown>>
+> = {
   document_splitter: triggerDocumentSplitter,
   page_rotator: triggerPageRotator,
   ocr_processor: triggerOcrProcessor,
@@ -130,7 +132,11 @@ async function preflightExecution(request: PipelineExecutionRequest): Promise<Ex
   if (request.mode !== 'reprocess' && !sourceBatch?.batch) {
     return { ok: false, error: `Batch ${request.batchId} was not found.` }
   }
-  if (request.mode === 'retry' && sourceBatch?.batch && getStageStatus(sourceBatch.batch, request.restartStage) !== 'failed') {
+  if (
+    request.mode === 'retry' &&
+    sourceBatch?.batch &&
+    getStageStatus(sourceBatch.batch, request.restartStage) !== 'failed'
+  ) {
     return { ok: false, error: 'Retry is only available for a failed stage.' }
   }
   if (request.mode === 'rerun' && sourceBatch?.batch && isPublishedBatch(sourceBatch.batch)) {
@@ -198,9 +204,10 @@ export async function requestPipelineExecution(
       collection: request.collection,
       pipelineConfig: request.mode === 'rerun' ? request.pipelineConfig : undefined,
     })
-    const acceptedBatchId = accepted && typeof accepted === 'object' && 'batchId' in accepted && typeof accepted.batchId === 'string'
-      ? accepted.batchId
-      : request.batchId ?? ''
+    const acceptedBatchId =
+      accepted && typeof accepted === 'object' && 'batchId' in accepted && typeof accepted.batchId === 'string'
+        ? accepted.batchId
+        : (request.batchId ?? '')
 
     revalidatePath(BATCHES_PATH)
     revalidatePath(DOCUMENTS_PATH)

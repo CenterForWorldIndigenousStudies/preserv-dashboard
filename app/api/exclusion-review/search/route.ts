@@ -14,10 +14,7 @@ export async function GET(request: NextRequest) {
   const email = normalizeEmail(session?.user?.email)
 
   if (!email) {
-    return NextResponse.json(
-      { error: 'Authentication required.' },
-      { status: 401 },
-    )
+    return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })
   }
 
   const query = request.nextUrl.searchParams.get('q')?.trim()
@@ -29,9 +26,6 @@ export async function GET(request: NextRequest) {
     const result = await searchExclusionReviewTree(query)
     return NextResponse.json({ result })
   } catch (error) {
-    return buildExclusionReviewRouteErrorResponse(
-      error,
-      'Unable to search exclusion review.',
-    )
+    return buildExclusionReviewRouteErrorResponse(error, 'Unable to search exclusion review.')
   }
 }

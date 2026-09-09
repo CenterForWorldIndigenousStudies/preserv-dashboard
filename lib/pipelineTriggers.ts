@@ -27,23 +27,16 @@ export {
 import type { PipelineExecutionStep } from '@lib/pipelineConfig'
 import type { ProcessBatchStatus } from 'types/pipelineContracts'
 
-export function getPipelineContinuationContext(
-  batch: ProcessBatchStatus,
-): PipelineExecutionContextInput | undefined {
+export function getPipelineContinuationContext(batch: ProcessBatchStatus): PipelineExecutionContextInput | undefined {
   const execution = batch.currentExecution
-  const executionMode = execution?.executionMode as Exclude<
-    PipelineExecutionContextInput['executionMode'],
-    undefined
-  >
+  const executionMode = execution?.executionMode as Exclude<PipelineExecutionContextInput['executionMode'], undefined>
   if (
     !execution?.operationId ||
     !execution.idempotencyKey ||
     !execution.executionMode ||
-    ![
-      PIPELINE_EXECUTION_MODES.RETRY,
-      PIPELINE_EXECUTION_MODES.RERUN,
-      PIPELINE_EXECUTION_MODES.REPROCESS,
-    ].includes(executionMode as Exclude<PipelineExecutionContextInput['executionMode'], undefined | 'normal'>)
+    ![PIPELINE_EXECUTION_MODES.RETRY, PIPELINE_EXECUTION_MODES.RERUN, PIPELINE_EXECUTION_MODES.REPROCESS].includes(
+      executionMode as Exclude<PipelineExecutionContextInput['executionMode'], undefined | 'normal'>,
+    )
   ) {
     return undefined
   }

@@ -107,7 +107,7 @@ model document_to_batches {
   document_id             String    @db.VarChar(36)
   batch_id                String    @db.VarChar(36)
   added_at                DateTime? @default(now()) @db.DateTime(0)
-  cost                    Decimal?  @default(0.00) @db.Decimal(10, 2)
+  cost                    Decimal?  @default(0.00) @db.Decimal(12, 6)
   processing_time_seconds Int?      @default(0)
   documents               documents @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "1")
   batches                 batches   @relation(fields: [batch_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "2")

@@ -85,10 +85,7 @@ function getStageForService(
   }
 }
 
-export function getExecutionStepReviewWarningCount(
-  batch: ProcessBatchStatus,
-  step: PipelineExecutionStep,
-): number {
+export function getExecutionStepReviewWarningCount(batch: ProcessBatchStatus, step: PipelineExecutionStep): number {
   const stage = getStageForService(batch, step.service)
   if (!stage || stage.reviewNeededCount <= 0) {
     return 0

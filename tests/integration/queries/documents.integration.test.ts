@@ -354,11 +354,7 @@ describeDbIntegration('documents queries (integration)', () => {
         const defaultResult = await getNeedsReviewDocuments({ pageSize: 100 }, tx)
         const defaultIds = new Set(defaultResult.data.map((item) => item.id))
         expect([...defaultIds]).toEqual(
-          expect.arrayContaining([
-            metadataOnlyDocument.id,
-            formatErrorDocument.id,
-            generalErrorDocument.id,
-          ]),
+          expect.arrayContaining([metadataOnlyDocument.id, formatErrorDocument.id, generalErrorDocument.id]),
         )
         expect(defaultIds.has(statusOnlyDocument.id)).toBe(false)
         expect(defaultIds.has(rejectedDocument.id)).toBe(false)

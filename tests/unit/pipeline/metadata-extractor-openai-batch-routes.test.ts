@@ -1,11 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
-const {
-  mockGetDashboardSession,
-  mockGetProcessBatchStatus,
-  mockLogEvent,
-} = vi.hoisted(() => ({
+const { mockGetDashboardSession, mockGetProcessBatchStatus, mockLogEvent } = vi.hoisted(() => ({
   mockGetDashboardSession: vi.fn(),
   mockGetProcessBatchStatus: vi.fn(),
   mockLogEvent: vi.fn(),
@@ -25,10 +21,7 @@ vi.mock('@lib/observability', () => ({
 
 import { POST as postOpenAIBatchStatus } from '@api/process/metadata-extractor/openai-batch-status/route'
 import { POST as postRunWaveTwo } from '@api/process/metadata-extractor/run-wave-two/route'
-import {
-  METADATA_EXTRACTOR_OPENAI_BATCH_STATUS_PATH,
-  METADATA_EXTRACTOR_RUN_WAVE_TWO_PATH,
-} from '@constants/paths'
+import { METADATA_EXTRACTOR_OPENAI_BATCH_STATUS_PATH, METADATA_EXTRACTOR_RUN_WAVE_TWO_PATH } from '@constants/paths'
 import type { ProcessBatchStatus } from 'types/pipelineContracts'
 
 function buildBatchStatus(): ProcessBatchStatus {
@@ -141,10 +134,13 @@ describe('metadata extractor OpenAI batch routes', () => {
 
   it('queues a wave one status check against pipeline-api', async () => {
     vi.mocked(fetch).mockResolvedValue(
-      new Response(JSON.stringify({ batchId: 'batch-1', status: 'queued', service: 'metadata_extractor', pass: null }), {
-        status: 202,
-        headers: { 'Content-Type': 'application/json' },
-      }),
+      new Response(
+        JSON.stringify({ batchId: 'batch-1', status: 'queued', service: 'metadata_extractor', pass: null }),
+        {
+          status: 202,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      ),
     )
 
     const request = new NextRequest(`http://localhost${METADATA_EXTRACTOR_OPENAI_BATCH_STATUS_PATH}`, {

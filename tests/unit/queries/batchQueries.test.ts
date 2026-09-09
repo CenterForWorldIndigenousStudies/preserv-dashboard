@@ -269,6 +269,28 @@ describe('batch query contracts', () => {
     expect(result.pageInfo).toMatchObject({ pageSize: 25, hasNextPage: false, hasPreviousPage: false })
   })
 
+  it('preserves sub-cent precision when accumulating document costs at the batch total level', async () => {
+    mockBatchesCount.mockResolvedValue(1)
+    mockBatchesFindMany.mockResolvedValue([
+      {
+        id: 'batch-1',
+        name: 'Batch One',
+        id_legacy: null,
+        started_at: new Date('2026-09-01T16:00:13.000Z'),
+        processing_details: JSON.stringify({ total_documents: 3 }),
+        document_to_batches: [
+          { cost: '0.00041385', processing_time_seconds: 1 },
+          { cost: '0.0032076', processing_time_seconds: 2 },
+          { cost: '0.00410235', processing_time_seconds: 3 },
+        ],
+      },
+    ])
+
+    const result = await getBatches({ page: 1, pageSize: 25, filters: {} })
+
+    expect(result.data[0]?.totalCost).toBe('$0.007724')
+  })
+
   it('searches batch names, IDs, and legacy IDs', async () => {
     mockBatchesCount.mockResolvedValue(0)
     mockBatchesFindMany.mockResolvedValue([])

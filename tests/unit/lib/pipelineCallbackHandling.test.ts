@@ -87,11 +87,7 @@ describe('pipeline callback handling', () => {
     expect(response.status).toBe(204)
     expect(onSuccess).not.toHaveBeenCalled()
     expect(mockRecordProcessStageFailure).toHaveBeenCalledTimes(1)
-    const failureCall = mockRecordProcessStageFailure.mock.calls[0] as [
-      string,
-      string,
-      Record<string, unknown>,
-    ]
+    const failureCall = mockRecordProcessStageFailure.mock.calls[0] as [string, string, Record<string, unknown>]
     expect(failureCall[0]).toBe('batch-1')
     expect(failureCall[1]).toBe('metadata_extractor')
     expect(failureCall[2]).toMatchObject({

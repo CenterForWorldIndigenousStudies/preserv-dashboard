@@ -23,10 +23,7 @@ vi.mock('@lib/exclusionReviewDrive', () => ({
   searchExclusionReviewDriveByName: mockSearchExclusionReviewDriveByName,
 }))
 
-import {
-  deriveEffectiveDecision,
-  reconcileInheritedLineage,
-} from '@lib/exclusionReviewQueries'
+import { deriveEffectiveDecision, reconcileInheritedLineage } from '@lib/exclusionReviewQueries'
 
 describe('deriveEffectiveDecision', () => {
   it('uses the inherited folder override while it is active', () => {
@@ -158,9 +155,7 @@ describe('searchExclusionReviewTree', () => {
 
         const driveIds = args?.where?.drive_id?.in ?? null
         if (driveIds) {
-          return [indexedRoot, indexedFolder, indexedFile].filter((record) =>
-            driveIds.includes(record.drive_id),
-          )
+          return [indexedRoot, indexedFolder, indexedFile].filter((record) => driveIds.includes(record.drive_id))
         }
 
         return []
@@ -175,20 +170,13 @@ describe('searchExclusionReviewTree', () => {
 
     const { searchExclusionReviewTree } = await import('@lib/exclusionReviewQueries')
 
-    const result = await searchExclusionReviewTree(
-      '100 Consent Abstract.doc',
-      client as never,
-    )
+    const result = await searchExclusionReviewTree('100 Consent Abstract.doc', client as never)
 
     expect(result.matches).toHaveLength(1)
     expect(result.matches[0]?.driveId).toBe('file-1')
     expect(result.matches[0]?.name).toBe('100 Consent Abstract.doc')
     expect(result.ancestorDriveIdsToExpand).toEqual(['root-folder', 'folder-1'])
-    expect(result.pathNodes.map((item) => item.driveId).sort()).toEqual([
-      'file-1',
-      'folder-1',
-      'root-folder',
-    ])
+    expect(result.pathNodes.map((item) => item.driveId).sort()).toEqual(['file-1', 'folder-1', 'root-folder'])
     expect(mockSearchExclusionReviewDriveByName).not.toHaveBeenCalled()
   })
 })

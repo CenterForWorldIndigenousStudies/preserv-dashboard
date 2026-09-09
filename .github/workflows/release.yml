@@ -7,7 +7,7 @@ on:
 
 permissions:
   id-token: write
-  contents: write   # push tag
+  contents: write # push tag
 
 jobs:
   publish:

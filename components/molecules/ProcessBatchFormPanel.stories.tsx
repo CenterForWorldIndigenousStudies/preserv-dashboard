@@ -29,7 +29,11 @@ const meta = {
     backgrounds: { default: 'sand' },
   },
   decorators: [
-    (StoryComponent) => <Box sx={{ m: '0 auto', maxWidth: 760 }}><StoryComponent /></Box>,
+    (StoryComponent) => (
+      <Box sx={{ m: '0 auto', maxWidth: 760 }}>
+        <StoryComponent />
+      </Box>
+    ),
   ],
 } satisfies Meta<typeof ProcessBatchFormPanel>
 

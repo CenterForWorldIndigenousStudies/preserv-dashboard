@@ -5,7 +5,6 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { useBatchSearch } from '@lib/hooks/useBatchSearch'
-
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 let mountedRoot: Root | undefined
@@ -62,8 +61,8 @@ describe('useBatchSearch', () => {
       ok: true,
       json: () =>
         Promise.resolve({
-        batches: [{ id: 'batch-1', name: 'Special batch', score: 140 }],
-        exactMatch: { id: 'batch-1', name: 'Special batch', score: 140 },
+          batches: [{ id: 'batch-1', name: 'Special batch', score: 140 }],
+          exactMatch: { id: 'batch-1', name: 'Special batch', score: 140 },
         }),
     })
     vi.stubGlobal('fetch', fetchMock)

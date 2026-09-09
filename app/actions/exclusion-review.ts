@@ -18,10 +18,7 @@ function normalizeEmail(email: string | null | undefined): string | null {
   return trimmed ? trimmed : null
 }
 
-export async function getExclusionReviewTreeAction(
-  parentDriveId?: string,
-  pageToken: string | null = null,
-) {
+export async function getExclusionReviewTreeAction(parentDriveId?: string, pageToken: string | null = null) {
   const session = await getDashboardSession()
   const email = normalizeEmail(session?.user?.email)
 
@@ -86,10 +83,7 @@ export async function applyExclusionReviewDecisionAction(
 
 export async function syncExclusionReviewBranchAction(
   driveId: string,
-): Promise<
-  | { ok: true; message: string }
-  | { ok: false; error: string }
-> {
+): Promise<{ ok: true; message: string } | { ok: false; error: string }> {
   const trimmedDriveId = driveId.trim()
   if (!trimmedDriveId) {
     return { ok: false, error: 'Drive ID is required.' }

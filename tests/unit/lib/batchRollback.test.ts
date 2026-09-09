@@ -38,9 +38,7 @@ describe('requestBatchRollback', () => {
       ),
     )
 
-    await expect(requestBatchRollback('batch-1')).rejects.toThrow(
-      'Rollback is unavailable after publication',
-    )
+    await expect(requestBatchRollback('batch-1')).rejects.toThrow('Rollback is unavailable after publication')
   })
 
   it('posts a retry request for a failed rollback', async () => {

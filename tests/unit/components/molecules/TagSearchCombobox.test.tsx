@@ -35,7 +35,6 @@ vi.mock('@molecules/SearchEntityBox', () => ({
 }))
 
 import { TagSearchCombobox } from '@molecules/TagSearchCombobox'
-
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 let mountedRoot: Root | undefined
@@ -47,12 +46,7 @@ function renderCombobox(onSelectCreate: (tagName: string) => void = vi.fn(), val
 
   act(() => {
     mountedRoot?.render(
-      <TagSearchCombobox
-        open
-        value={value}
-        onSelectExisting={vi.fn()}
-        onSelectCreate={onSelectCreate}
-      />,
+      <TagSearchCombobox open value={value} onSelectExisting={vi.fn()} onSelectCreate={onSelectCreate} />,
     )
   })
 

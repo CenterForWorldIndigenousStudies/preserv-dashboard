@@ -30,18 +30,15 @@ export async function POST(request: NextRequest, context: RouteContext): Promise
   }
 
   const reason = typeof body.reason === 'string' ? body.reason.trim() : undefined
-  const response = await fetch(
-    new URL(`/batches/${encodeURIComponent(batchId)}/rollback`, pipelineBaseUrl),
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${triggerToken}`,
-      },
-      body: JSON.stringify({ requested_by: requestedBy, reason, idempotency_key: randomUUID() }),
-      cache: 'no-store',
+  const response = await fetch(new URL(`/batches/${encodeURIComponent(batchId)}/rollback`, pipelineBaseUrl), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${triggerToken}`,
     },
-  )
+    body: JSON.stringify({ requested_by: requestedBy, reason, idempotency_key: randomUUID() }),
+    cache: 'no-store',
+  })
 
   let responseBody: unknown
   try {

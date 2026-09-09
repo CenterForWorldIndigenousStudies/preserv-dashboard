@@ -19,14 +19,11 @@ export async function POST(_request: NextRequest, context: RouteContext): Promis
   }
 
   const { batchId } = await context.params
-  const response = await fetch(
-    new URL(`/batches/${encodeURIComponent(batchId)}/rollback/retry`, pipelineBaseUrl),
-    {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${triggerToken}` },
-      cache: 'no-store',
-    },
-  )
+  const response = await fetch(new URL(`/batches/${encodeURIComponent(batchId)}/rollback/retry`, pipelineBaseUrl), {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${triggerToken}` },
+    cache: 'no-store',
+  })
 
   let responseBody: unknown
   try {
