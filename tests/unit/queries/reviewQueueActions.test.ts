@@ -27,7 +27,7 @@ import {
   applyReviewQueueDecision,
   ReviewQueueApprovalBlockedError,
   updateReviewQueueChecklist,
-} from '@lib/queries/queries'
+} from '@lib/queries/reviewQueueQueries'
 import type { ReviewHistoryValue } from 'types/reviewHistory'
 
 interface MockTransactionClient {

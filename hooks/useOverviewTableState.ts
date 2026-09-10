@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import type { MRT_SortingState } from 'material-react-table'
 
 import { serializeStatusesParam, type AdvancedSearchFilters } from '@lib/search'
-import type { DocumentsQueryParams } from '@lib/queries/queries'
+import type { DocumentsQueryParams } from '@lib/queries/documentQueries'
 import type { DocumentsCursor } from 'types/pagination'
 
 // ---------------------------------------------------------------------------

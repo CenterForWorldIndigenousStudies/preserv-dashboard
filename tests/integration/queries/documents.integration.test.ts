@@ -8,14 +8,9 @@ vi.mock('@lib/editHistory', () => ({
   markDocumentBatchesPublicationLocked: vi.fn(),
 }))
 
-import {
-  applyReviewQueueDecisionInTransaction,
-  getAllDocuments,
-  getDocuments,
-  getNeedsReviewDocuments,
-  getNeedsReviewDocumentsCount,
-  getReadyForLibraryDocuments,
-} from '@lib/queries/queries'
+import { applyReviewQueueDecisionInTransaction, getNeedsReviewDocuments, getNeedsReviewDocumentsCount } from '@lib/queries/reviewQueueQueries'
+import { getAllDocuments, getDocuments } from '@lib/queries/documentQueries'
+import { getReadyForLibraryDocuments } from '@lib/queries/readyForLibraryQueries'
 import { resetTestDatabase, shouldSkipDashboardIntegrationSuite } from '../support/test-db'
 import { withRollbackTransaction } from '../support/transaction'
 
@@ -490,16 +485,16 @@ describeDbIntegration('documents queries (integration)', () => {
     })
   })
 
-  const createTestAuthor = async (tx: Prisma.TransactionClient, name: string): Promise<{ id: string }> => {
+  const createTestContributor = async (tx: Prisma.TransactionClient, name: string): Promise<{ id: string }> => {
     const { token } = makeIds()
-    const author = await tx.authors.create({
+    const contributor = await tx.contributors.create({
       data: {
         id: `a${token}`,
         name,
       },
       select: { id: true },
     })
-    return author
+    return contributor
   }
 
   const createTestBatch = async (tx: Prisma.TransactionClient, name: string): Promise<{ id: string }> => {
@@ -547,16 +542,18 @@ describeDbIntegration('documents queries (integration)', () => {
     return tag
   }
 
-  const linkAuthorToDocument = async (
+  const linkContributorToDocument = async (
     tx: Prisma.TransactionClient,
     documentId: string,
-    authorId: string,
+    contributorId: string,
   ): Promise<void> => {
-    await tx.document_to_authors.create({
+    await tx.document_to_contributors.create({
       data: {
-        id: `da-${documentId}-${authorId}`.slice(0, 36),
+        id: `dc-${documentId}-${contributorId}`.slice(0, 36),
         document_id: documentId,
-        author_id: authorId,
+        contributor_id: contributorId,
+        type: 'PRIMARY',
+        role: 'author',
       },
     })
   }
@@ -689,8 +686,8 @@ describeDbIntegration('documents queries (integration)', () => {
     it('filters by author search term', async () => {
       await withRollbackTransaction(async (tx) => {
         const doc = await createTestDocument(tx, { name: 'UNIQUE_SEARCH_TERM_123xyz' })
-        const author = await createTestAuthor(tx, 'UNIQUE_SEARCH_TERM_123xyz Author')
-        await linkAuthorToDocument(tx, doc.id, author.id)
+        const contributor = await createTestContributor(tx, 'UNIQUE_SEARCH_TERM_123xyz Author')
+        await linkContributorToDocument(tx, doc.id, contributor.id)
 
         const result = await getAllDocuments({ search: 'UNIQUE_SEARCH_TERM_123xyz' }, tx)
 
@@ -703,8 +700,8 @@ describeDbIntegration('documents queries (integration)', () => {
       await withRollbackTransaction(async (tx) => {
         const docA = await createTestDocument(tx, { name: 'SORT_PAIR_SOURCE A' })
         const docB = await createTestDocument(tx, { name: 'SORT_PAIR_SOURCE B' })
-        const author = await createTestAuthor(tx, 'SORT_PAIR_SOURCE Author')
-        await Promise.all([linkAuthorToDocument(tx, docA.id, author.id), linkAuthorToDocument(tx, docB.id, author.id)])
+        const contributor = await createTestContributor(tx, 'SORT_PAIR_SOURCE Author')
+        await Promise.all([linkContributorToDocument(tx, docA.id, contributor.id), linkContributorToDocument(tx, docB.id, contributor.id)])
 
         await tx.document_to_metadata.createMany({
           data: [
@@ -744,10 +741,10 @@ describeDbIntegration('documents queries (integration)', () => {
       await withRollbackTransaction(async (tx) => {
         const plainDoc = await createTestDocument(tx, { name: 'SORT_PAIR_DUP Plain' })
         const duplicateDoc = await createTestDocument(tx, { name: 'SORT_PAIR_DUP Duplicate' })
-        const author = await createTestAuthor(tx, 'SORT_PAIR_DUP Author')
+        const contributor = await createTestContributor(tx, 'SORT_PAIR_DUP Author')
         await Promise.all([
-          linkAuthorToDocument(tx, plainDoc.id, author.id),
-          linkAuthorToDocument(tx, duplicateDoc.id, author.id),
+          linkContributorToDocument(tx, plainDoc.id, contributor.id),
+          linkContributorToDocument(tx, duplicateDoc.id, contributor.id),
         ])
 
         await tx.document_to_tags.create({
@@ -782,11 +779,11 @@ describeDbIntegration('documents queries (integration)', () => {
       await withRollbackTransaction(async (tx) => {
         const matchingDoc = await createTestDocument(tx, { name: 'ADVANCED_SEARCH_MATCH' })
         const nonMatchingDoc = await createTestDocument(tx, { name: 'ADVANCED_SEARCH_MISS' })
-        const author = await createTestAuthor(tx, 'Mary Filter Person')
+        const contributor = await createTestContributor(tx, 'Mary Filter Person')
         const batch = await createTestBatch(tx, 'Overview Advanced Batch')
         const collectionTag = await createTestTag(tx, 'Overview Advanced Collection')
 
-        await linkAuthorToDocument(tx, matchingDoc.id, author.id)
+        await linkContributorToDocument(tx, matchingDoc.id, contributor.id)
         await tx.document_to_batches.create({
           data: {
             id: `ab-${matchingDoc.id}`,
@@ -1004,14 +1001,14 @@ describeDbIntegration('documents queries (integration)', () => {
 
         const matchingDocument = await createTestDocument(tx, { name: 'READY_FILTER_MATCH' })
         const nonMatchingDocument = await createTestDocument(tx, { name: 'READY_FILTER_MISS' })
-        const matchingAuthor = await createTestAuthor(tx, 'Matching Author')
-        const otherAuthor = await createTestAuthor(tx, 'Different Author')
+        const matchingContributor = await createTestContributor(tx, 'Matching Author')
+        const otherContributor = await createTestContributor(tx, 'Different Author')
         const matchingBatch = await createTestBatch(tx, 'Ready Special RCR Writings September 25 2025')
         const otherBatch = await createTestBatch(tx, 'Ready Other Batch')
 
         await Promise.all([
-          linkAuthorToDocument(tx, matchingDocument.id, matchingAuthor.id),
-          linkAuthorToDocument(tx, nonMatchingDocument.id, otherAuthor.id),
+          linkContributorToDocument(tx, matchingDocument.id, matchingContributor.id),
+          linkContributorToDocument(tx, nonMatchingDocument.id, otherContributor.id),
           tx.document_to_batches.create({
             data: {
               id: `rfb-${matchingDocument.id}`.slice(0, 36),

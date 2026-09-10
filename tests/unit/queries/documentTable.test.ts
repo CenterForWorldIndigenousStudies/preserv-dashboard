@@ -14,7 +14,8 @@ vi.mock('@lib/editHistory', () => ({
   createEditHistoryEntry: vi.fn(),
 }))
 
-import { getAllDocuments, getNeedsReviewDocuments, normalizeDocumentTablePageSize } from '@lib/queries/queries'
+import { getAllDocuments, normalizeDocumentTablePageSize } from '@lib/queries/documentQueries'
+import { getNeedsReviewDocuments } from '@lib/queries/reviewQueueQueries'
 
 interface PrismaSqlCall {
   strings: string[]

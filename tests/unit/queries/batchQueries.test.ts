@@ -138,7 +138,7 @@ describe('batch query contracts', () => {
       [
         'created_at',
         'document_access',
-        'document_to_authors',
+        'document_to_contributors',
         'document_to_tags',
         'document_quality',
         'document_to_tags',

@@ -353,9 +353,10 @@ function buildBatchDocumentWhere(
     const authorTokens = getAuthorSearchTokens(filters.author)
     if (authorTokens.length > 0) {
       conditions.push({
-        document_to_authors: {
+        document_to_contributors: {
           some: {
-            OR: authorTokens.map((token) => ({ authors: { name: { contains: token } } })),
+            role: 'author',
+            OR: authorTokens.map((token) => ({ contributors: { name: { contains: token } } })),
           },
         },
       })

@@ -113,7 +113,7 @@ describeDbIntegration('batch queries (integration)', () => {
       }
       const duplicateTagId = duplicateTag.id
 
-      const author = await tx.authors.create({
+      const contributor = await tx.contributors.create({
         data: { id: randomUUID(), name: 'Ada Integration Author' },
         select: { id: true },
       })
@@ -187,8 +187,14 @@ describeDbIntegration('batch queries (integration)', () => {
         })
 
         if (options.authorId) {
-          await tx.document_to_authors.create({
-            data: { id: randomUUID(), document_id: options.id, author_id: options.authorId },
+          await tx.document_to_contributors.create({
+            data: {
+              id: randomUUID(),
+              document_id: options.id,
+              contributor_id: options.authorId,
+              type: 'PRIMARY',
+              role: 'author',
+            },
           })
         }
 
@@ -211,7 +217,7 @@ describeDbIntegration('batch queries (integration)', () => {
         id: `d${token}match`.slice(0, 36),
         createdAt: new Date('2026-03-15T12:00:00.000Z'),
         batchId: matchingBatch.id,
-        authorId: author.id,
+        authorId: contributor.id,
         includeCollection: true,
         includeSearchTag: true,
         includeDuplicate: true,

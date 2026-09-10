@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { getDistinctCollections, getDocumentDetail } from '@lib/queries/queries'
+import { getDistinctCollections } from '@lib/queries/queries'
+import { getDocumentDetail } from '@lib/queries/documentQueries'
 
 interface RouteContext {
   params: Promise<{

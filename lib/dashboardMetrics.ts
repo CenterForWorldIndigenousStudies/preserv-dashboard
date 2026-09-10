@@ -1,7 +1,8 @@
 import { BATCHES_PATH, READY_FOR_LIBRARY_PATH, REVIEW_QUEUE_PATH } from '@constants/paths'
 import { hasTerminalPipelineFailure, isPipelineBatchTerminal } from '@lib/pipelineExecution'
 import { getProcessBatchStatuses } from '@lib/processBatches'
-import { getNeedsReviewDocumentsCount, getReadyForLibraryDocuments } from '@lib/queries/queries'
+import { getNeedsReviewDocumentsCount } from '@lib/queries/reviewQueueQueries'
+import { getReadyForLibraryDocuments } from '@lib/queries/readyForLibraryQueries'
 
 export interface DashboardKpiMetric {
   title: string

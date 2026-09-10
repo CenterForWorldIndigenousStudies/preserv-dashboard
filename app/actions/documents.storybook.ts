@@ -1,5 +1,5 @@
 import type { DocumentsPageResult } from 'types/pagination'
-import type { DocumentsQueryParams } from '@lib/queries/queries'
+import type { DocumentsQueryParams } from '@lib/queries/documentQueries'
 
 const EMPTY_RESULT: DocumentsPageResult = {
   data: [],

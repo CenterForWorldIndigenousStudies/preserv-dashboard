@@ -6,7 +6,7 @@ const {
   mockDocumentVersionsFindMany,
   mockDocumentToMetadataFindMany,
   mockDocumentToBatchesFindMany,
-  mockDocumentToAuthorsFindMany,
+  mockDocumentToContributorsFindMany,
   mockDocumentToTagsFindMany,
   mockDocumentAccessFindMany,
   mockVersionGroupsFindUnique,
@@ -16,7 +16,7 @@ const {
   mockDocumentVersionsFindMany: vi.fn(),
   mockDocumentToMetadataFindMany: vi.fn(),
   mockDocumentToBatchesFindMany: vi.fn(),
-  mockDocumentToAuthorsFindMany: vi.fn(),
+  mockDocumentToContributorsFindMany: vi.fn(),
   mockDocumentToTagsFindMany: vi.fn(),
   mockDocumentAccessFindMany: vi.fn(),
   mockVersionGroupsFindUnique: vi.fn(),
@@ -29,7 +29,7 @@ vi.mock('@lib/db', () => ({
     document_versions: { findMany: mockDocumentVersionsFindMany },
     document_to_metadata: { findMany: mockDocumentToMetadataFindMany },
     document_to_batches: { findMany: mockDocumentToBatchesFindMany },
-    document_to_authors: { findMany: mockDocumentToAuthorsFindMany },
+    document_to_contributors: { findMany: mockDocumentToContributorsFindMany },
     document_to_tags: { findMany: mockDocumentToTagsFindMany },
     document_access: { findMany: mockDocumentAccessFindMany },
     version_groups: { findUnique: mockVersionGroupsFindUnique },
@@ -40,7 +40,7 @@ vi.mock('@lib/editHistory', () => ({
   createEditHistoryEntry: vi.fn(),
 }))
 
-import { getDocumentDetail } from '@lib/queries/queries'
+import { getDocumentDetail } from '@lib/queries/documentQueries'
 
 describe('getDocumentDetail version family mapping', () => {
   afterEach(() => {
@@ -62,7 +62,7 @@ describe('getDocumentDetail version family mapping', () => {
     mockDocumentQualityFindUnique.mockResolvedValue(null)
     mockDocumentToMetadataFindMany.mockResolvedValue([])
     mockDocumentToBatchesFindMany.mockResolvedValue([])
-    mockDocumentToAuthorsFindMany.mockResolvedValue([])
+  mockDocumentToContributorsFindMany.mockResolvedValue([])
     mockDocumentToTagsFindMany.mockResolvedValue([])
     mockDocumentAccessFindMany.mockResolvedValue([])
     mockVersionGroupsFindUnique.mockResolvedValue(null)

@@ -9,7 +9,7 @@ import {
   searchExclusionReviewDriveByName,
 } from '@lib/exclusionReviewDrive'
 import { Prisma, type drive_exclusion_review_items } from '@lib/prisma/generated/client'
-import type { QueryDbClient } from '@lib/queries/queries'
+import type { QueryDbClient } from '@lib/queries/documentQuerySupport'
 import type {
   ApplyDecisionInput,
   DriveIndexItem,

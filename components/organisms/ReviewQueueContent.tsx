@@ -8,7 +8,8 @@ import {
   normalizeTextFilter,
   type FilterOptions,
 } from '@lib/search'
-import { getNeedsReviewDocuments, type DocumentsQueryParams } from '@lib/queries/queries'
+import { getNeedsReviewDocuments } from '@lib/queries/reviewQueueQueries'
+import type { DocumentsQueryParams } from '@lib/queries/documentQueries'
 import { ReviewQueueTable } from '@organisms/ReviewQueueTable'
 import type { ReviewQueuePageProps } from 'types/reviewQueue'
 

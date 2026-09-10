@@ -6,9 +6,9 @@ import {
   getNeedsReviewDocuments,
   getReviewQueueDocuments,
   updateReviewQueueChecklist,
-  type DocumentsQueryParams,
   type ReviewQueueChecklistUpdateParams,
-} from '@lib/queries/queries'
+} from '@lib/queries/reviewQueueQueries'
+import type { DocumentsQueryParams } from '@lib/queries/documentQueries'
 import type { ReviewQueueDecision, ReviewQueueDocumentsQueryParams } from 'types/reviewQueue'
 import type { ReviewQueueChecklistItemKey, ReviewQueueChecklistState } from '@constants/reviewQueueChecklist'
 import { getDashboardSession } from '@root/auth'

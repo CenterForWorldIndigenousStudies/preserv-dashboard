@@ -1,5 +1,5 @@
 import type { LibraryDocumentsPageResult } from 'types/documents'
-import type { DocumentsQueryParams } from '@lib/queries/queries'
+import type { DocumentsQueryParams } from '@lib/queries/documentQueries'
 
 export function getLibraryDocumentsAction(_params: DocumentsQueryParams = {}): Promise<LibraryDocumentsPageResult> {
   return Promise.resolve({

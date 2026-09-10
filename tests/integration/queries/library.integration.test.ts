@@ -2,7 +2,7 @@ import type { Prisma } from '@lib/prisma/generated/client'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { db } from '@lib/db'
-import { getLibraryDocuments } from '@lib/queries/queries'
+import { getLibraryDocuments } from '@lib/queries/libraryQueries'
 
 import { resetTestDatabase, shouldSkipDashboardIntegrationSuite } from '../support/test-db'
 import { withRollbackTransaction } from '../support/transaction'

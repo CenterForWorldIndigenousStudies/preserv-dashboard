@@ -20,18 +20,6 @@ model alembic_version {
   version_num String @id @db.VarChar(32)
 }
 
-model authors {
-  id                  String                @id @db.VarChar(36)
-  name                String                @db.Text
-  name_hash           String?               @unique(map: "uk_authors_name_hash") @db.VarChar(64)
-  notes               String?               @db.Text
-  created_at          DateTime?             @default(now()) @db.DateTime(0)
-  updated_at          DateTime?             @default(now()) @db.DateTime(0)
-  document_to_authors document_to_authors[]
-
-  @@index([name(length: 255)], map: "idx_authors_name")
-}
-
 model batch_external_operations {
   id               String    @id @db.VarChar(36)
   batch_id         String    @db.VarChar(36)
@@ -181,6 +169,18 @@ model collections {
   @@index([tag_id], map: "idx_collections_tag_id")
 }
 
+model contributors {
+  id                       String                     @id @db.VarChar(36)
+  name                     String                     @db.Text
+  name_hash                String?                    @unique(map: "uk_contributors_name_hash") @db.VarChar(64)
+  notes                    String?                    @db.Text
+  created_at               DateTime?                  @default(now()) @db.DateTime(0)
+  updated_at               DateTime?                  @default(now()) @db.DateTime(0)
+  document_to_contributors document_to_contributors[]
+
+  @@index([name(length: 255)], map: "idx_contributors_name")
+}
+
 model document_access {
   id               String        @id @db.VarChar(36)
   document_id      String        @db.VarChar(36)
@@ -216,22 +216,6 @@ model document_quality {
   @@index([current_status], map: "idx_document_quality_current_status")
 }
 
-model document_to_authors {
-  id               String    @id @db.VarChar(36)
-  document_id      String    @db.VarChar(36)
-  author_id        String    @db.VarChar(36)
-  contributor_type String?   @db.VarChar(255)
-  notes            String?   @db.Text
-  created_at       DateTime? @default(now()) @db.DateTime(0)
-  updated_at       DateTime? @default(now()) @db.DateTime(0)
-  authors          authors   @relation(fields: [author_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_to_authors_author_id")
-  documents        documents @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_to_authors_document_id")
-
-  @@unique([document_id, author_id], map: "uk_document_to_authors_document_author")
-  @@index([author_id], map: "idx_document_to_authors_author_id")
-  @@index([document_id], map: "idx_document_to_authors_document_id")
-}
-
 model document_to_batches {
   id                      String    @id @db.VarChar(36)
   document_id             String    @db.VarChar(36)
@@ -249,6 +233,23 @@ model document_to_batches {
   @@unique([document_id, batch_id], map: "uk_document_to_batches_document_batch")
   @@index([batch_id], map: "idx_document_to_batches_batch_id")
   @@index([document_id], map: "idx_document_to_batches_document_id")
+}
+
+model document_to_contributors {
+  id             String       @id @db.VarChar(36)
+  document_id    String       @db.VarChar(36)
+  contributor_id String       @db.VarChar(36)
+  type           String?      @db.VarChar(255)
+  role           String       @db.VarChar(255)
+  notes          String?      @db.Text
+  created_at     DateTime?    @default(now()) @db.DateTime(0)
+  updated_at     DateTime?    @default(now()) @db.DateTime(0)
+  contributors   contributors @relation(fields: [contributor_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_to_contributors_contributor_id")
+  documents      documents    @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_document_to_contributors_document_id")
+
+  @@unique([document_id, contributor_id, role], map: "uk_document_to_contributors_document_contributor_role")
+  @@index([contributor_id], map: "idx_document_to_contributors_contributor_id")
+  @@index([document_id], map: "idx_document_to_contributors_document_id")
 }
 
 model document_to_metadata {
@@ -317,24 +318,24 @@ model document_versions {
 }
 
 model documents {
-  id                     String                   @id @db.VarChar(36)
-  filesize               BigInt?
-  hash_binary            String?                  @db.VarChar(255)
-  hash_content           String?                  @db.VarChar(255)
-  id_legacy              String?                  @unique(map: "uk_documents_id_legacy") @db.VarChar(255)
-  name                   String?                  @db.VarChar(255)
-  created_at             DateTime?                @default(now()) @db.DateTime(0)
-  updated_at             DateTime?                @default(now()) @db.DateTime(0)
-  document_access        document_access[]
-  document_quality       document_quality?
-  document_to_authors    document_to_authors[]
-  document_to_batches    document_to_batches[]
-  document_to_metadata   document_to_metadata[]
-  document_to_publishers document_to_publishers[]
-  document_to_tags       document_to_tags[]
-  document_versions      document_versions[]
-  state_history          state_history[]
-  version_groups         version_groups?
+  id                       String                     @id @db.VarChar(36)
+  filesize                 BigInt?
+  hash_binary              String?                    @db.VarChar(255)
+  hash_content             String?                    @db.VarChar(255)
+  id_legacy                String?                    @unique(map: "uk_documents_id_legacy") @db.VarChar(255)
+  name                     String?                    @db.VarChar(255)
+  created_at               DateTime?                  @default(now()) @db.DateTime(0)
+  updated_at               DateTime?                  @default(now()) @db.DateTime(0)
+  document_access          document_access[]
+  document_quality         document_quality?
+  document_to_batches      document_to_batches[]
+  document_to_contributors document_to_contributors[]
+  document_to_metadata     document_to_metadata[]
+  document_to_publishers   document_to_publishers[]
+  document_to_tags         document_to_tags[]
+  document_versions        document_versions[]
+  state_history            state_history[]
+  version_groups           version_groups?
 
   @@index([created_at, id], map: "idx_documents_created_at_id")
   @@index([filesize], map: "idx_documents_filesize")

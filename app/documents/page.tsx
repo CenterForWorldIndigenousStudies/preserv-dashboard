@@ -10,7 +10,8 @@ import {
   normalizeTextFilter,
   parseStatusesParam,
 } from '@lib/search'
-import { getAllDocuments, getDocumentFilterOptions, type DocumentsQueryParams } from '@lib/queries/queries'
+import { getDocumentFilterOptions } from '@lib/queries/queries'
+import { getAllDocuments, type DocumentsQueryParams } from '@lib/queries/documentQueries'
 import { PAGE_LABELS } from '@constants/pageLabels'
 
 export const dynamic = 'force-dynamic'

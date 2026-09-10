@@ -14,7 +14,7 @@ import { DocumentTable } from '@organisms/DocumentTable/DocumentTable'
 import { useDocumentTableController } from '@organisms/DocumentTable/useDocumentTableController'
 import type { DocumentTableConfig, DocumentTableFetchResult, DocumentTableQuery } from '@organisms/DocumentTable/types'
 import { serializeStatusesParam, type AdvancedSearchFilters, type FilterOptions } from '@lib/search'
-import type { DocumentsQueryParams } from '@lib/queries/queries'
+import type { DocumentsQueryParams } from '@lib/queries/documentQueries'
 import type { ReadyForLibraryItem } from 'types/documents'
 
 interface ReadyForLibraryTableProps {

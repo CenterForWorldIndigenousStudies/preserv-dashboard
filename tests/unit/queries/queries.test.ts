@@ -41,14 +41,9 @@ vi.mock('@lib/editHistory', () => ({
   createEditHistoryEntry: vi.fn(),
 }))
 
-import {
-  buildReadyForLibraryItems,
-  getAllDocuments,
-  getDocuments,
-  getNeedsReviewDocuments,
-  getNeedsReviewDocumentsCount,
-  getReadyForLibraryDocuments,
-} from '@lib/queries/queries'
+import { getAllDocuments, getDocuments } from '@lib/queries/documentQueries'
+import { getNeedsReviewDocuments, getNeedsReviewDocumentsCount } from '@lib/queries/reviewQueueQueries'
+import { buildReadyForLibraryItems, getReadyForLibraryDocuments } from '@lib/queries/readyForLibraryQueries'
 
 // ---------------------------------------------------------------------------
 // Shared call inspection helpers
@@ -98,9 +93,9 @@ describe('buildSearchWhere (via getAllDocuments)', () => {
 
     const sql = queryText(0)
     expect(sql).toContain('EXISTS (')
-    expect(sql).toContain('FROM document_to_authors dta')
-    expect(sql).toContain('INNER JOIN authors a ON a.id = dta.author_id')
-    expect(sql).toContain('LOWER(a.name COLLATE utf8mb4_unicode_ci)')
+    expect(sql).toContain('FROM document_to_contributors dtc')
+    expect(sql).toContain('INNER JOIN contributors c ON c.id = dtc.contributor_id')
+    expect(sql).toContain('LOWER(c.name COLLATE utf8mb4_unicode_ci)')
     expect(sql).not.toContain('d.hash_binary LIKE')
     expect(sql).not.toContain('d.hash_content LIKE')
     expect(sql).not.toContain('d.id_legacy LIKE')
@@ -171,7 +166,7 @@ describe('getReadyForLibraryDocuments advanced filters', () => {
 
     const sql = queryText(1)
     expect(sql).toContain('d.id IN')
-    expect(sql).toContain('FROM document_to_authors dta')
+    expect(sql).toContain('FROM document_to_contributors dtc')
     expect(sql).toContain('FROM document_to_tags dtt')
     expect(sql).toContain('FROM document_to_batches dtb')
     expect(sql).toContain('d.created_at >=')

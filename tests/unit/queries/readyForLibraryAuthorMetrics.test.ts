@@ -6,7 +6,7 @@ const { mockFindMany } = vi.hoisted(() => ({
 
 vi.mock('@lib/db', () => ({
   db: {
-    document_to_authors: {
+    document_to_contributors: {
       findMany: mockFindMany,
     },
   },
@@ -32,7 +32,8 @@ describe('getUniqueDocumentCountByAuthor', () => {
 
     expect(mockFindMany).toHaveBeenCalledWith({
       where: {
-        authors: {
+        role: 'author',
+        contributors: {
           name: 'Ryser, Rudolph C.',
         },
       },

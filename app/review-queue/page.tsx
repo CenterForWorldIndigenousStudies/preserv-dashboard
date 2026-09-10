@@ -13,7 +13,8 @@ import {
   type FilterOptions,
   type StatusOption,
 } from '@lib/search'
-import { getNeedsReviewDocuments, type DocumentsQueryParams } from '@lib/queries/queries'
+import { getNeedsReviewDocuments } from '@lib/queries/reviewQueueQueries'
+import type { DocumentsQueryParams } from '@lib/queries/documentQueries'
 import { getReprocessingDrafts } from '@lib/queries/reprocessingDraftQueries'
 import { ReprocessingCart } from '@molecules/ReprocessingCart'
 import { PAGE_LABELS } from '@constants/pageLabels'

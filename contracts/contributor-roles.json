@@ -1,0 +1,10 @@
+{
+  "AUTHOR": "author",
+  "EDITOR": "editor",
+  "TRANSLATOR": "translator",
+  "PUBLISHER": "publisher",
+  "ILLUSTRATOR": "illustrator",
+  "INTERVIEWER": "interviewer",
+  "COMPILER": "compiler",
+  "CONTRIBUTOR": "contributor"
+}

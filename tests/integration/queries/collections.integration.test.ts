@@ -10,8 +10,8 @@ import {
   getCollectionDocuments,
   getDocumentsForCollection,
   getDocumentsNotInCollection,
-  getDocumentFilterOptions,
-} from '@lib/queries/queries'
+} from '@lib/queries/collectionQueries'
+import { getDocumentFilterOptions } from '@lib/queries/queries'
 import { resetTestDatabase, shouldSkipDashboardIntegrationSuite } from '../support/test-db'
 import { withRollbackTransaction } from '../support/transaction'
 

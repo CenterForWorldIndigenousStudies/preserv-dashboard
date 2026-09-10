@@ -27,7 +27,7 @@ import {
 import { useOverviewTableState } from '@hooks/useOverviewTableState'
 import { DEFAULT_REPROCESSING_START_STAGE } from '@lib/reprocessingDrafts'
 import { type AdvancedSearchFilters, type FilterOptions, type StatusOption } from '@lib/search'
-import type { DocumentsQueryParams } from '@lib/queries/queries'
+import type { DocumentsQueryParams } from '@lib/queries/documentQueries'
 import type { Document } from 'types/documents'
 import type { DocumentsPageResult } from 'types/pagination'
 import type { ReviewQueueDecision } from 'types/reviewQueue'

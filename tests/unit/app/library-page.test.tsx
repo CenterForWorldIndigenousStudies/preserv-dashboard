@@ -8,8 +8,12 @@ const { mockGetLibraryDocuments, mockGetDocumentFilterOptions, mockLibraryTable,
   mocks: { libraryTableProps: undefined as Record<string, unknown> | undefined },
 }))
 
-vi.mock('@lib/queries/queries', () => ({
+vi.mock('@lib/queries/libraryQueries', async (importOriginal) => ({
+  ...(await importOriginal()),
   getLibraryDocuments: mockGetLibraryDocuments,
+}))
+
+vi.mock('@lib/queries/queries', () => ({
   getDocumentFilterOptions: mockGetDocumentFilterOptions,
 }))
 

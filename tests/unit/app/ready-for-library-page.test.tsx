@@ -13,8 +13,12 @@ const {
   mockReadyForLibraryTable: vi.fn(() => null),
 }))
 
-vi.mock('@lib/queries/queries', () => ({
+vi.mock('@lib/queries/readyForLibraryQueries', async (importOriginal) => ({
+  ...(await importOriginal()),
   getReadyForLibraryDocuments: mockGetReadyForLibraryDocuments,
+}))
+
+vi.mock('@lib/queries/queries', () => ({
   getDocumentFilterOptions: mockGetDocumentFilterOptions,
 }))
 
@@ -31,7 +35,7 @@ vi.mock('@organisms/ReadyForLibraryHandoff', () => ({
 }))
 
 import ReadyForLibraryPage from '@root/app/ready-for-library/page'
-import { parseReadyForLibraryQueryParams } from '@lib/queries/readyForLibarayQuery'
+import { parseReadyForLibraryQueryParams } from '@lib/queries/readyForLibraryQueries'
 
 describe('ReadyForLibraryPage', () => {
   afterEach(() => {

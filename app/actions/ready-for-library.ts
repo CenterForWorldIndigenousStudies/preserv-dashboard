@@ -7,8 +7,8 @@ import { getDashboardSession } from '@root/auth'
 import {
   getReadyForLibraryBatchIds,
   getReadyForLibraryDocuments,
-  type DocumentsQueryParams,
-} from '@lib/queries/queries'
+} from '@lib/queries/readyForLibraryQueries'
+import type { DocumentsQueryParams } from '@lib/queries/documentQueries'
 import { getProcessBatchStatus } from '@lib/processBatches'
 import { isPipelineBatchTerminal } from '@lib/pipelineExecution'
 import { triggerFedoraIngester } from '@lib/pipelineTriggers'

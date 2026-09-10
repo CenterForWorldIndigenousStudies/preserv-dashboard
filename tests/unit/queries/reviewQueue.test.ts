@@ -8,7 +8,7 @@ vi.mock('@lib/editHistory', () => ({
   createEditHistoryEntry: vi.fn(),
 }))
 
-import { getReviewQueueDocuments } from '@lib/queries/queries'
+import { getReviewQueueDocuments } from '@lib/queries/reviewQueueQueries'
 
 interface ReviewQueueTestClient {
   metadata: {

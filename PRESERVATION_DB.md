@@ -55,17 +55,18 @@ erDiagram
         datetime changed_at
     }
 
-    document_to_authors {
+    document_to_contributors {
         varchar id PK
         varchar document_id FK
-        varchar author_id FK
-        varchar contributor_type
+        varchar contributor_id FK
+        varchar type
+        varchar role
         text notes
         datetime created_at
         datetime updated_at
     }
 
-    authors {
+    contributors {
         varchar id PK
         text name
         varchar name_hash UK
@@ -337,7 +338,7 @@ erDiagram
 
     documents ||--o{ document_access : "access"
     documents ||--o| document_quality : "quality"
-    documents ||--o{ document_to_authors : "authors"
+    documents ||--o{ document_to_contributors : "contributors"
     documents ||--o{ document_to_batches : "batches"
     documents ||--o{ document_to_metadata : "metadata"
     documents ||--o{ document_to_publishers : "publishers"
@@ -345,7 +346,7 @@ erDiagram
     documents ||--o{ document_versions : "versions"
     documents ||--o{ state_history : "state"
     documents ||--o| version_groups : "canonical_for"
-    authors ||--o{ document_to_authors : "document_to_authors"
+    contributors ||--o{ document_to_contributors : "document_to_contributors"
     publishers ||--o{ document_to_publishers : "document_to_publishers"
     batches ||--o{ document_to_batches : "document_to_batches"
     batches ||--o{ batch_to_batches_metadata : "batch_metadata"
@@ -363,7 +364,7 @@ erDiagram
     access_levels ||--o{ document_access : "document_access"
 
 %% Composite Indexes:
-%%   document_to_authors.(document_id, author_id) (composite unique)
+%%   document_to_contributors.(document_id, contributor_id, role) (composite unique)
 %%   document_to_batches.(document_id, batch_id) (composite unique)
 %%   document_to_metadata.(document_id, metadata_id) (composite unique)
 %%   document_to_publishers.(document_id, publisher_id) (composite unique)
@@ -552,7 +553,7 @@ Primary document records.
 | `created_at` | `DATETIME` | Row creation time. |
 | `updated_at` | `DATETIME` | Row update time. |
 
-Common joins: `document_quality`, `state_history`, `document_access`, `document_to_metadata`, `document_to_tags`, `document_to_authors`, `document_to_publishers`, `document_to_batches`, `document_versions`.
+Common joins: `document_quality`, `state_history`, `document_access`, `document_to_metadata`, `document_to_tags`, `document_to_contributors`, `document_to_publishers`, `document_to_batches`, `document_versions`.
 
 ### document_access
 
@@ -622,34 +623,35 @@ Query note: use this table for status history; `document_quality.current_status`
 The table also enforces a composite unique constraint on `(document_id, previous_state, new_state, changed_at)`.
 The persisted state values are strings; the canonical known-value contract is [`contracts/document-states.json`](../../contracts/document-states.json).
 
-### authors
+### contributors
 
-Author lookup table.
+Contributor lookup table for people and organizations associated with documents.
 
 | Column | Type | Notes |
 | --- | --- | --- |
 | `id` | `VARCHAR(36)` | Primary key. |
-| `name` | `TEXT` | Author name. |
+| `name` | `TEXT` | Contributor name. |
 | `name_hash` | `VARCHAR(64)` | Generated stored SHA-256 hash of normalized `name`. Unique. |
 | `notes` | `TEXT` | Internal notes. |
 | `created_at` | `DATETIME` | Row creation time. |
 | `updated_at` | `DATETIME` | Row update time. |
 
-### document_to_authors
+### document_to_contributors
 
-Document-to-author association table.
+Document-to-contributor association table.
 
 | Column | Type | Notes |
 | --- | --- | --- |
 | `id` | `VARCHAR(36)` | Primary key. |
 | `document_id` | `VARCHAR(36)` | FK to `documents.id`. |
-| `author_id` | `VARCHAR(36)` | FK to `authors.id`. |
-| `contributor_type` | `VARCHAR(255)` | Role such as author, editor, translator. |
+| `contributor_id` | `VARCHAR(36)` | FK to `contributors.id`. |
+| `type` | `VARCHAR(255)` | Ordering tier such as `PRIMARY`, `SECONDARY`, or `TERTIARY`. |
+| `role` | `VARCHAR(255)` | Controlled contribution role such as `author`, `editor`, or `translator`. |
 | `notes` | `TEXT` | Attribution notes. |
 | `created_at` | `DATETIME` | Row creation time. |
 | `updated_at` | `DATETIME` | Row update time. |
 
-Constraint notes: unique on `(document_id, author_id)`.
+Constraint notes: unique on `(document_id, contributor_id, role)`, allowing one contributor to have multiple roles on the same document.
 
 ### publishers
 

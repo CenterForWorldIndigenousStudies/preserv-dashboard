@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { getDocumentDetail, updateDocumentCollectionTags } from '@lib/queries/queries'
+import { getDocumentDetail } from '@lib/queries/documentQueries'
+import { updateDocumentCollectionTags } from '@lib/queries/collectionQueries'
 
 interface RouteContext {
   params: Promise<{

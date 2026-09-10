@@ -72,11 +72,13 @@ export interface DocumentToBatch {
   batch_status: string | null
 }
 
-export interface DocumentToAuthor {
+export interface DocumentToContributor {
   id: string
   document_id: string
-  author_id: string
-  contributor_type: string | null
+  contributor_id: string
+  contributor_name: string | null
+  type: string | null
+  role: string
   notes: string | null
 }
 
@@ -128,7 +130,7 @@ export interface DocumentDetail {
   version_family: VersionFamily | null
   metadata: DocumentMetadataField[]
   document_to_batches: DocumentToBatch[]
-  document_to_authors: DocumentToAuthor[]
+  document_to_contributors: DocumentToContributor[]
   document_to_tags: DocumentToTag[]
   audits: AuditEntry[]
   reviews: ReviewItem[]

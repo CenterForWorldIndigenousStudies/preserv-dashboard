@@ -26,7 +26,7 @@ const {
   mockDocumentLineageSection: vi.fn(() => <div data-testid={'lineage-section'} />),
 }))
 
-vi.mock('@lib/queries/queries', () => ({
+vi.mock('@lib/queries/documentQueries', () => ({
   getDocumentDetail: mockGetDocumentDetail,
 }))
 
@@ -130,7 +130,7 @@ describe('DocumentDetailPage', () => {
           batch_status: 'complete',
         },
       ],
-      document_to_authors: [],
+      document_to_contributors: [],
       document_to_tags: [],
       audits: [],
       reviews: [],

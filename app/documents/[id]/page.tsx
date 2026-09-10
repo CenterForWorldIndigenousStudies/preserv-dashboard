@@ -20,7 +20,7 @@ import { NoDataState } from '@organisms/NoDataState'
 import { PageHeader } from '@organisms/PageHeader'
 import { ReviewHistoryTable } from '@organisms/ReviewHistoryTable'
 import { parseMetadataValue } from '@lib/metadata'
-import { getDocumentDetail } from '@lib/queries/queries'
+import { getDocumentDetail } from '@lib/queries/documentQueries'
 import {
   COLLECTIONS_PATH,
   DOCUMENTS_PATH,

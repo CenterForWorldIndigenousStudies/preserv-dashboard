@@ -8,7 +8,7 @@ const { mockApplyReviewQueueDecision, mockGetDashboardSession, mockRevalidatePat
     mockUpdateReviewQueueChecklist: vi.fn(),
   }))
 
-vi.mock('@lib/queries/queries', () => ({
+vi.mock('@lib/queries/reviewQueueQueries', () => ({
   applyReviewQueueDecision: mockApplyReviewQueueDecision,
   getNeedsReviewDocuments: vi.fn(),
   getReviewQueueDocuments: vi.fn(),

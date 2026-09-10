@@ -20,7 +20,7 @@ import {
   normalizeLibraryDocument,
   normalizeRawLibraryMetadataValue,
   selectLatestLibraryBatch,
-} from '@lib/queries/queries'
+} from '@lib/queries/libraryQueries'
 
 function queryText(index = 0): string {
   const call = mockQueryRaw.mock.calls[index]?.[0] as { strings: string[] } | undefined
@@ -156,7 +156,7 @@ describe('getLibraryDocuments', () => {
     })
 
     const sql = queryText(0)
-    expect(sql).toContain('FROM document_to_authors dta')
+    expect(sql).toContain('FROM document_to_contributors dtc')
     expect(sql).toContain('FROM document_to_tags dtt')
     expect(sql).toContain('FROM document_to_batches filtered_dtb')
     expect(sql).toContain('FROM document_to_batches latest_dtb')

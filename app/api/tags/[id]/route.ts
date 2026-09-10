@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { deleteTag, deleteTagAndDocumentAssociations } from '@lib/queries/queries'
+import { deleteTag, deleteTagAndDocumentAssociations } from '@lib/queries/collectionQueries'
 
 interface RouteContext {
   params: Promise<{

@@ -1,8 +1,11 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('@lib/queries/queries', () => ({
+vi.mock('@lib/queries/documentQueries', () => ({
   getAllDocuments: vi.fn(),
+}))
+
+vi.mock('@lib/queries/queries', () => ({
   getDocumentFilterOptions: vi.fn(),
 }))
 
