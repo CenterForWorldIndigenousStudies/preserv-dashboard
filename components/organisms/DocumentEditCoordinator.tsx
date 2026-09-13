@@ -13,7 +13,7 @@ import { DocumentEditActions } from '@molecules/DocumentEditActions'
 import { DocumentEditAccessDialog } from '@molecules/DocumentEditAccessDialog'
 import { DocumentEditConfirmationDialog } from '@molecules/DocumentEditConfirmationDialog'
 import { getDocumentEditAuthorizationPath, getDocumentEditPath } from '@constants/paths'
-import { EDITABLE_DOCUMENT_METADATA_FIELDS, METADATA_EXTRACTOR_METADATA_FIELDS } from '@constants/documentEditing'
+import { EDITABLE_DOCUMENT_METADATA_FIELDS } from '@constants/documentEditing'
 import { DocumentEditContext } from '@lib/hooks/useDocumentEditContext'
 import { parseMetadataList, parseMetadataValue } from '@lib/metadata'
 import { normalizeDocumentEditValue } from '@lib/documentEditing'
@@ -109,7 +109,7 @@ function buildInitialSnapshot(
   initialContributors: DocumentToContributor[],
   initialPublishers: DocumentToPublisher[],
 ): DocumentEditSnapshot {
-  const allowedNames = new Set<string>([...EDITABLE_DOCUMENT_METADATA_FIELDS, ...METADATA_EXTRACTOR_METADATA_FIELDS])
+  const allowedNames = new Set<string>(EDITABLE_DOCUMENT_METADATA_FIELDS)
   const editableMetadata = Object.fromEntries(
     metadata
       .filter(

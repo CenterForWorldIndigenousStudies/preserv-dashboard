@@ -1,5 +1,5 @@
 import type { DocumentTableQuery } from '@organisms/DocumentTable/types'
-import { DOCUMENT_STATES } from '@constants/documentStates'
+import { GENERATED_DOCUMENT_STATES } from '@constants/generated/documentStates'
 import {
   normalizeAccessLevel,
   normalizeDateFilter,
@@ -216,7 +216,7 @@ export async function getReadyForLibraryDocuments(
       documentIds: approvedWithAccess,
       additionalConditions: [
         buildPreservationCandidateConditionSql('d'),
-        Prisma.sql`NOT ${buildLatestStateConditionSql('latest_ready_state', DOCUMENT_STATES.INGESTED_FEDORA)}`,
+        Prisma.sql`NOT ${buildLatestStateConditionSql('latest_ready_state', GENERATED_DOCUMENT_STATES.INGESTED_FEDORA)}`,
       ],
     },
     client,

@@ -11,7 +11,7 @@ import {
   type DocumentTypeOption,
   type StatusOption,
 } from '@lib/search'
-import { DOCUMENT_STATES } from '@constants/documentStates'
+import { GENERATED_DOCUMENT_STATES } from '@constants/generated/documentStates'
 import { db } from '@lib/db'
 import { Prisma } from '@lib/prisma/generated/client'
 import { parseMetadataValue } from '@lib/metadata'
@@ -271,7 +271,7 @@ async function buildLibraryQueryContext(
 function buildLibraryWhereSql(context: LibraryQueryContext, includeCursor: boolean): Prisma.Sql {
   const additionalConditions: Prisma.Sql[] = [
     buildPreservationCandidateConditionSql('d'),
-    Prisma.sql`latest_state.new_state = ${Prisma.raw(`'${DOCUMENT_STATES.INGESTED_FEDORA}'`)}`,
+    Prisma.sql`latest_state.new_state = ${Prisma.raw(`'${GENERATED_DOCUMENT_STATES.INGESTED_FEDORA}'`)}`,
   ]
   if (context.filterParams.batchIds) {
     additionalConditions.push(buildLibraryBatchConditionSql(context.filterParams.batchIds))

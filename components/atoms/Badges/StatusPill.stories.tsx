@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 
-import { DOCUMENT_STATES } from '@constants/documentStates'
+import { GENERATED_DOCUMENT_STATES } from '@constants/generated/documentStates'
 
 import { StatusPill } from './StatusPill'
 
@@ -11,7 +11,7 @@ const meta = {
   argTypes: {
     status: {
       control: 'select',
-      options: [...Object.values(DOCUMENT_STATES), 'pending'],
+      options: [...Object.values(GENERATED_DOCUMENT_STATES), 'pending'],
     },
   },
 } satisfies Meta<typeof StatusPill>
@@ -28,7 +28,7 @@ export const NeedsReview: Story = {
 export const AllStates: Story = {
   render: () => (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-      {Object.values(DOCUMENT_STATES).map((state) => (
+      {Object.values(GENERATED_DOCUMENT_STATES).map((state) => (
         <StatusPill key={state} status={state} />
       ))}
     </div>

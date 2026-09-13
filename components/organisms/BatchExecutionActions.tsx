@@ -7,8 +7,8 @@ import { PipelineExecutionDialog } from '@molecules/PipelineExecutionDialog'
 import { REPROCESSING_EXECUTION_STAGE_ORDER } from '@lib/reprocessingDrafts'
 import type { PipelineExecutionMode, PipelineQueueAttemptSummary } from 'types/pipelineExecution'
 import type { CallbackStageKey, ProcessBatchStatus } from 'types/pipelineContracts'
-import { BATCH_LIFECYCLE_STATUSES } from '@constants/batchLifecycleStatuses'
-import { BATCH_PUBLICATION_STATUSES } from '@constants/batchPublicationStatuses'
+import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
+import { GENERATED_BATCH_PUBLICATION_STATUSES } from '@constants/generated/batchPublicationStatuses'
 
 interface BatchExecutionActionsProps {
   batch: ProcessBatchStatus | null
@@ -44,14 +44,14 @@ export function BatchExecutionActions({
 
   if (!batch) return null
   const published =
-    batch.lifecycleStatus === BATCH_LIFECYCLE_STATUSES.PUBLICATION_LOCKED ||
-    batch.lifecycleStatus === BATCH_LIFECYCLE_STATUSES.COMPLETE ||
+    batch.lifecycleStatus === GENERATED_BATCH_LIFECYCLE_STATUSES.PUBLICATION_LOCKED ||
+    batch.lifecycleStatus === GENERATED_BATCH_LIFECYCLE_STATUSES.COMPLETE ||
     new Set<string>([
-      BATCH_PUBLICATION_STATUSES.PUBLISHED,
-      BATCH_PUBLICATION_STATUSES.PUBLICATION_LOCKED,
-      BATCH_PUBLICATION_STATUSES.UNKNOWN,
+      GENERATED_BATCH_PUBLICATION_STATUSES.PUBLISHED,
+      GENERATED_BATCH_PUBLICATION_STATUSES.PUBLICATION_LOCKED,
+      GENERATED_BATCH_PUBLICATION_STATUSES.UNKNOWN,
     ]).has(batch.publicationStatus ?? '')
-  const reverted = batch.lifecycleStatus === BATCH_LIFECYCLE_STATUSES.REVERTED
+  const reverted = batch.lifecycleStatus === GENERATED_BATCH_LIFECYCLE_STATUSES.REVERTED
   const rerunDisabled = published || reverted
 
   return (

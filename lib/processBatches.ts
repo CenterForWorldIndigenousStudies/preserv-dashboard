@@ -1,6 +1,6 @@
 import { db } from '@lib/db'
-import { BATCH_LIFECYCLE_STATUSES } from '@constants/batchLifecycleStatuses'
-import { BATCH_PUBLICATION_STATUSES } from '@constants/batchPublicationStatuses'
+import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
+import { GENERATED_BATCH_PUBLICATION_STATUSES } from '@constants/generated/batchPublicationStatuses'
 import { toBatchProperties } from '@lib/batchProperties'
 import { normalizeProcessBatchDetails, parseProcessingDetails, resolveStageDetailKey } from '@lib/pipelineNormalization'
 import { parsePipelineConfig, pipelineConfigToRequestedStages, type PipelineConfig } from '@lib/pipelineConfig'
@@ -313,14 +313,14 @@ export async function recordProcessStageFailure(
     where: { id: batchId },
     data: {
       processing_details: JSON.stringify(nextDetails),
-      ...(batch.publication_status === BATCH_PUBLICATION_STATUSES.NOT_STARTED &&
+      ...(batch.publication_status === GENERATED_BATCH_PUBLICATION_STATUSES.NOT_STARTED &&
       !new Set<string>([
-        BATCH_LIFECYCLE_STATUSES.ROLLBACK_REQUESTED,
-        BATCH_LIFECYCLE_STATUSES.DRAINING,
-        BATCH_LIFECYCLE_STATUSES.REVERTING,
-        BATCH_LIFECYCLE_STATUSES.ROLLBACK_FAILED,
+        GENERATED_BATCH_LIFECYCLE_STATUSES.ROLLBACK_REQUESTED,
+        GENERATED_BATCH_LIFECYCLE_STATUSES.DRAINING,
+        GENERATED_BATCH_LIFECYCLE_STATUSES.REVERTING,
+        GENERATED_BATCH_LIFECYCLE_STATUSES.ROLLBACK_FAILED,
       ]).has(batch.lifecycle_status)
-        ? { lifecycle_status: BATCH_LIFECYCLE_STATUSES.FAILED }
+        ? { lifecycle_status: GENERATED_BATCH_LIFECYCLE_STATUSES.FAILED }
         : {}),
     },
   })

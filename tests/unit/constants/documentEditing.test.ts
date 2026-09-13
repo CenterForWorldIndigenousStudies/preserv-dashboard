@@ -1,10 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  EDITABLE_DOCUMENT_METADATA_FIELDS,
-  METADATA_EXTRACTOR_METADATA_FIELDS,
-  isEditableDocumentMetadataField,
-} from '@constants/documentEditing'
+import { EDITABLE_DOCUMENT_METADATA_FIELDS, isEditableDocumentMetadataField } from '@constants/documentEditing'
+import * as documentEditing from '@constants/documentEditing'
+import { GENERATED_METADATA_EXTRACTOR_METADATA_FIELDS } from '@constants/generated/metadataExtractorFields'
 
 describe('document editing metadata contract', () => {
   it('includes the explicitly approved metadata fields', () => {
@@ -46,7 +44,12 @@ describe('document editing metadata contract', () => {
   })
 
   it('includes all current metadata-extractor metadata targets', () => {
-    expect(METADATA_EXTRACTOR_METADATA_FIELDS).toEqual(
+    expect('METADATA_EXTRACTOR_METADATA_FIELDS' in documentEditing).toBe(false)
+    expect(
+      GENERATED_METADATA_EXTRACTOR_METADATA_FIELDS.every((field) => EDITABLE_DOCUMENT_METADATA_FIELDS.includes(field)),
+    ).toBe(true)
+    expect(new Set(EDITABLE_DOCUMENT_METADATA_FIELDS).size).toBe(EDITABLE_DOCUMENT_METADATA_FIELDS.length)
+    expect(GENERATED_METADATA_EXTRACTOR_METADATA_FIELDS).toEqual(
       expect.arrayContaining([
         'dc_title',
         'dc_date',

@@ -1,4 +1,5 @@
-import { PIPELINE_EXECUTION_MODES, type PipelineExecutionMode } from '@constants/pipelineExecutionModes'
+import { type PipelineExecutionMode } from '@constants/pipelineExecutionModes'
+import { GENERATED_PIPELINE_EXECUTION_MODES } from '@constants/generated/pipelineExecutionModes'
 import type { PipelineConfig } from '@lib/pipelineConfig'
 
 export interface PipelineExecutionCollection {
@@ -57,7 +58,7 @@ function validateExecutionScope(
   newBatchName: string | undefined,
   draftBatchId: string | undefined,
 ): void {
-  if (executionMode === PIPELINE_EXECUTION_MODES.REPROCESS) {
+  if (executionMode === GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS) {
     if (draftBatchId) {
       if (newBatchName) {
         throw new Error('draft reprocess execution cannot specify newBatchName.')
@@ -90,8 +91,9 @@ export function normalizePipelineExecutionContext(
     throw new Error('requestId cannot be blank.')
   }
 
-  const executionMode = input.executionMode ?? PIPELINE_EXECUTION_MODES.NORMAL
-  const fallbackIdentifier = executionMode === PIPELINE_EXECUTION_MODES.NORMAL ? normalizedRequestId : undefined
+  const executionMode = input.executionMode ?? GENERATED_PIPELINE_EXECUTION_MODES.NORMAL
+  const fallbackIdentifier =
+    executionMode === GENERATED_PIPELINE_EXECUTION_MODES.NORMAL ? normalizedRequestId : undefined
   const operationId = normalizeOptionalText(input.operationId, 'operationId') ?? fallbackIdentifier
   const idempotencyKey = normalizeOptionalText(input.idempotencyKey, 'idempotencyKey') ?? fallbackIdentifier
   const reason = normalizeOptionalText(input.reason, 'reason')
@@ -110,8 +112,8 @@ export function normalizePipelineExecutionContext(
   validateExecutionScope(executionMode, sourceDocumentIds, newBatchName, draftBatchId)
   if (
     input.pipelineConfig &&
-    executionMode !== PIPELINE_EXECUTION_MODES.NORMAL &&
-    executionMode !== PIPELINE_EXECUTION_MODES.RERUN
+    executionMode !== GENERATED_PIPELINE_EXECUTION_MODES.NORMAL &&
+    executionMode !== GENERATED_PIPELINE_EXECUTION_MODES.RERUN
   ) {
     throw new Error(`${executionMode} execution cannot specify pipelineConfig.`)
   }

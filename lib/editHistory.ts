@@ -1,7 +1,7 @@
 import { getDashboardSession } from '@root/auth'
 import { db } from '@lib/db'
 import type { Prisma, PrismaClient } from '@lib/prisma/generated/client'
-import { BATCH_LIFECYCLE_STATUSES } from '@constants/batchLifecycleStatuses'
+import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
 
 export interface CreateEditHistoryEntryParams {
   entityTable: string
@@ -48,7 +48,11 @@ export async function markDocumentBatchesPublicationLocked(
   const memberships = await client.document_to_batches.findMany({
     where: {
       document_id: documentId,
-      batches: { lifecycle_status: { notIn: [BATCH_LIFECYCLE_STATUSES.DRAFT, BATCH_LIFECYCLE_STATUSES.ARCHIVE] } },
+      batches: {
+        lifecycle_status: {
+          notIn: [GENERATED_BATCH_LIFECYCLE_STATUSES.DRAFT, GENERATED_BATCH_LIFECYCLE_STATUSES.ARCHIVE],
+        },
+      },
     },
     select: { batch_id: true, batches: { select: { lifecycle_status: true, publication_status: true } } },
   })
@@ -58,7 +62,7 @@ export async function markDocumentBatchesPublicationLocked(
   await client.batches.updateMany({
     where: { id: { in: memberships.map((membership) => membership.batch_id) } },
     data: {
-      lifecycle_status: BATCH_LIFECYCLE_STATUSES.PUBLICATION_LOCKED,
+      lifecycle_status: GENERATED_BATCH_LIFECYCLE_STATUSES.PUBLICATION_LOCKED,
       updated_at: new Date(),
     },
   })
@@ -73,7 +77,7 @@ export async function markDocumentBatchesPublicationLocked(
           publication_status: membership.batches.publication_status,
         },
         newValue: {
-          lifecycle_status: BATCH_LIFECYCLE_STATUSES.PUBLICATION_LOCKED,
+          lifecycle_status: GENERATED_BATCH_LIFECYCLE_STATUSES.PUBLICATION_LOCKED,
           publication_status: membership.batches.publication_status,
         },
         editSummary: `Locked batch after an associated document edit (${documentId}).`,

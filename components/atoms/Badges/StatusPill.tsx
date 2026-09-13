@@ -1,15 +1,15 @@
 import type { ReactNode } from 'react'
 
 import { Badge, type BadgeVariant } from '@atoms/Badges/Badge'
-import { DOCUMENT_STATES } from '@constants/documentStates'
+import { GENERATED_DOCUMENT_STATES } from '@constants/generated/documentStates'
 
 export const statusVariantMap = {
-  [DOCUMENT_STATES.APPROVED]: 'success',
+  [GENERATED_DOCUMENT_STATES.APPROVED]: 'success',
   complete: 'success',
-  [DOCUMENT_STATES.FAILED]: 'danger',
-  [DOCUMENT_STATES.INGESTED_FEDORA]: 'success',
-  [DOCUMENT_STATES.REJECTED]: 'danger',
-  [DOCUMENT_STATES.NEEDS_REVIEW]: 'info',
+  [GENERATED_DOCUMENT_STATES.FAILED]: 'danger',
+  [GENERATED_DOCUMENT_STATES.INGESTED_FEDORA]: 'success',
+  [GENERATED_DOCUMENT_STATES.REJECTED]: 'danger',
+  [GENERATED_DOCUMENT_STATES.NEEDS_REVIEW]: 'info',
 } as const
 
 export interface StatusPillProps {
@@ -34,8 +34,8 @@ export function humanizeStatusLabel(status?: string | null): string {
 export function StatusPill({ status, variant: variantOverride, className = '', sx }: StatusPillProps): ReactNode {
   const normalized = status?.trim().toLowerCase() ?? ''
   const variant: BadgeVariant =
-    normalized === DOCUMENT_STATES.NEEDS_REVIEW
-      ? statusVariantMap[DOCUMENT_STATES.NEEDS_REVIEW]
+    normalized === GENERATED_DOCUMENT_STATES.NEEDS_REVIEW
+      ? statusVariantMap[GENERATED_DOCUMENT_STATES.NEEDS_REVIEW]
       : variantOverride ?? statusVariantMap[normalized as keyof typeof statusVariantMap] ?? 'neutral'
 
   return (

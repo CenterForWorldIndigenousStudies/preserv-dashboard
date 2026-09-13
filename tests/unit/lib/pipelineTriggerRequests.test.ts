@@ -15,7 +15,7 @@ import type { ProcessBatchStatus } from 'types/pipelineContracts'
 import {
   METADATA_EXTRACTOR_CALLBACK_PATH,
 } from '@constants/paths'
-import { PIPELINE_EXECUTION_MODES } from '@constants/pipelineExecutionModes'
+import { GENERATED_PIPELINE_EXECUTION_MODES } from '@constants/generated/pipelineExecutionModes'
 
 function buildBatchStatus(overrides: Partial<ProcessBatchStatus> = {}): ProcessBatchStatus {
   return {
@@ -108,7 +108,7 @@ describe('pipelineTriggerRequests', () => {
     })
 
     await triggerMetadataExtractor(buildBatchStatus(), {
-      executionMode: PIPELINE_EXECUTION_MODES.RETRY,
+      executionMode: GENERATED_PIPELINE_EXECUTION_MODES.RETRY,
       operationId: 'operation-1',
       idempotencyKey: 'idempotency-1',
       reason: 'Retry failed metadata validation',
@@ -138,7 +138,7 @@ describe('pipelineTriggerRequests', () => {
     })
 
     await triggerMetadataExtractor(buildBatchStatus(), {
-      executionMode: PIPELINE_EXECUTION_MODES.REPROCESS,
+      executionMode: GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS,
       operationId: 'operation-1',
       idempotencyKey: 'idempotency-1',
       draftBatchId: 'draft-1',
@@ -178,7 +178,7 @@ describe('pipelineTriggerRequests', () => {
       executionPlan: [],
     }
     await triggerMetadataExtractor(buildBatchStatus(), {
-      executionMode: PIPELINE_EXECUTION_MODES.RERUN,
+      executionMode: GENERATED_PIPELINE_EXECUTION_MODES.RERUN,
       operationId: 'operation-rerun-1',
       idempotencyKey: 'idempotency-rerun-1',
       reason: 'Run the selected configuration again',

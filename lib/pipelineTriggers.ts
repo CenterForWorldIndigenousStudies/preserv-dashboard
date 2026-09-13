@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 
-import { PIPELINE_EXECUTION_MODES } from '@constants/pipelineExecutionModes'
+import { GENERATED_PIPELINE_EXECUTION_MODES } from '@constants/generated/pipelineExecutionModes'
 import {
   CONTENT_DEDUP_STAGE,
   DOCUMENT_SPLITTER_STAGE,
@@ -34,9 +34,11 @@ export function getPipelineContinuationContext(batch: ProcessBatchStatus): Pipel
     !execution?.operationId ||
     !execution.idempotencyKey ||
     !execution.executionMode ||
-    ![PIPELINE_EXECUTION_MODES.RETRY, PIPELINE_EXECUTION_MODES.RERUN, PIPELINE_EXECUTION_MODES.REPROCESS].includes(
-      executionMode as Exclude<PipelineExecutionContextInput['executionMode'], undefined | 'normal'>,
-    )
+    ![
+      GENERATED_PIPELINE_EXECUTION_MODES.RETRY,
+      GENERATED_PIPELINE_EXECUTION_MODES.RERUN,
+      GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS,
+    ].includes(executionMode as Exclude<PipelineExecutionContextInput['executionMode'], undefined | 'normal'>)
   ) {
     return undefined
   }

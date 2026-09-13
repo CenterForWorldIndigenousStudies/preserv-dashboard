@@ -1,4 +1,4 @@
-import { EDITABLE_DOCUMENT_METADATA_FIELDS, METADATA_EXTRACTOR_METADATA_FIELDS } from '@constants/documentEditing'
+import { EDITABLE_DOCUMENT_METADATA_FIELDS } from '@constants/documentEditing'
 import type { DocumentEditValue } from 'types/documentEditing'
 
 export function normalizeDocumentEditValue(value: unknown): DocumentEditValue {
@@ -117,8 +117,5 @@ export function parseDocumentDateInputValue(value: string): number | null {
 }
 
 export function isKnownDocumentEditMetadataField(name: string): boolean {
-  return (
-    EDITABLE_DOCUMENT_METADATA_FIELDS.includes(name as (typeof EDITABLE_DOCUMENT_METADATA_FIELDS)[number]) ||
-    METADATA_EXTRACTOR_METADATA_FIELDS.includes(name as (typeof METADATA_EXTRACTOR_METADATA_FIELDS)[number])
-  )
+  return EDITABLE_DOCUMENT_METADATA_FIELDS.includes(name as (typeof EDITABLE_DOCUMENT_METADATA_FIELDS)[number])
 }

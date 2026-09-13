@@ -1,7 +1,7 @@
 import { Prisma, type PrismaClient } from '@lib/prisma/generated/client'
 
-import { BATCH_LIFECYCLE_STATUSES } from '@constants/batchLifecycleStatuses'
-import { BATCH_PUBLICATION_STATUSES } from '@constants/batchPublicationStatuses'
+import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
+import { GENERATED_BATCH_PUBLICATION_STATUSES } from '@constants/generated/batchPublicationStatuses'
 import { db } from '@lib/db'
 import { createEditHistoryEntry } from '@lib/editHistory'
 import { buildNameHash } from '@lib/tagHash'
@@ -116,7 +116,7 @@ async function lockRow(client: Prisma.TransactionClient, table: 'batches' | 'doc
 
 async function draftById(client: DraftQueryClient, batchId: string) {
   return client.batches.findFirst({
-    where: { id: batchId, lifecycle_status: BATCH_LIFECYCLE_STATUSES.DRAFT },
+    where: { id: batchId, lifecycle_status: GENERATED_BATCH_LIFECYCLE_STATUSES.DRAFT },
     select: draftSelect(),
   })
 }
@@ -214,7 +214,7 @@ async function getOpenDraftMemberships(
   return client.document_to_batches.findMany({
     where: {
       document_id: { in: normalizedDocumentIds },
-      batches: { lifecycle_status: BATCH_LIFECYCLE_STATUSES.DRAFT },
+      batches: { lifecycle_status: GENERATED_BATCH_LIFECYCLE_STATUSES.DRAFT },
       ...(excludedBatchId ? { batch_id: { not: excludedBatchId } } : {}),
     },
     select: {
@@ -252,7 +252,7 @@ export async function removeOpenDraftMemberships(
 
 export async function getReprocessingDrafts(client: DraftQueryClient = db): Promise<ReprocessingDraftSummary[]> {
   const rows = await client.batches.findMany({
-    where: { lifecycle_status: BATCH_LIFECYCLE_STATUSES.DRAFT },
+    where: { lifecycle_status: GENERATED_BATCH_LIFECYCLE_STATUSES.DRAFT },
     orderBy: [{ updated_at: 'desc' }, { id: 'desc' }],
     select: draftSelect(),
   })
@@ -264,7 +264,7 @@ export async function getReprocessingDraft(
   client: DraftQueryClient = db,
 ): Promise<ReprocessingDraftDetail | null> {
   const row = await client.batches.findFirst({
-    where: { id: batchId, lifecycle_status: BATCH_LIFECYCLE_STATUSES.DRAFT },
+    where: { id: batchId, lifecycle_status: GENERATED_BATCH_LIFECYCLE_STATUSES.DRAFT },
     select: {
       ...draftSelect(),
       document_to_batches: {
@@ -278,7 +278,7 @@ export async function getReprocessingDraft(
               name: true,
               id_legacy: true,
               document_to_batches: {
-                where: { batches: { lifecycle_status: { not: BATCH_LIFECYCLE_STATUSES.DRAFT } } },
+                where: { batches: { lifecycle_status: { not: GENERATED_BATCH_LIFECYCLE_STATUSES.DRAFT } } },
                 orderBy: [{ added_at: 'desc' }, { id: 'desc' }],
                 take: 1,
                 select: { batches: { select: { name: true } } },
@@ -307,7 +307,7 @@ export async function getOpenDraftForDocument(
   client: DraftQueryClient = db,
 ): Promise<ReprocessingDraftSummary | null> {
   const row = await client.document_to_batches.findFirst({
-    where: { document_id: documentId, batches: { lifecycle_status: BATCH_LIFECYCLE_STATUSES.DRAFT } },
+    where: { document_id: documentId, batches: { lifecycle_status: GENERATED_BATCH_LIFECYCLE_STATUSES.DRAFT } },
     select: { batches: { select: draftSelect() } },
   })
   return row ? summaryFromRow(row.batches) : null
@@ -323,7 +323,7 @@ export async function getOpenDraftDocumentIds(
   const rows = await client.document_to_batches.findMany({
     where: {
       document_id: { in: normalizedDocumentIds },
-      batches: { lifecycle_status: BATCH_LIFECYCLE_STATUSES.DRAFT },
+      batches: { lifecycle_status: GENERATED_BATCH_LIFECYCLE_STATUSES.DRAFT },
     },
     select: { document_id: true },
   })
@@ -388,8 +388,8 @@ export async function createReprocessingDraftForDocuments(
           id: batchId,
           name,
           started_by: input.createdBy ?? null,
-          lifecycle_status: BATCH_LIFECYCLE_STATUSES.DRAFT,
-          publication_status: BATCH_PUBLICATION_STATUSES.NOT_STARTED,
+          lifecycle_status: GENERATED_BATCH_LIFECYCLE_STATUSES.DRAFT,
+          publication_status: GENERATED_BATCH_PUBLICATION_STATUSES.NOT_STARTED,
           processing_details: buildDraftProcessingDetails({
             restartStage,
             reason,
@@ -419,7 +419,7 @@ export async function createReprocessingDraftForDocuments(
         previousValue: null,
         newValue: {
           name,
-          lifecycle_status: BATCH_LIFECYCLE_STATUSES.DRAFT,
+          lifecycle_status: GENERATED_BATCH_LIFECYCLE_STATUSES.DRAFT,
           restart_stage: restartStage,
           document_ids: documentIds,
         },
@@ -577,13 +577,13 @@ export async function archiveReprocessingDraft(batchId: string): Promise<Reproce
     if (!draft) return { ok: false, error: 'The reprocessing draft is not editable.' }
     await tx.batches.update({
       where: { id: normalizedBatchId },
-      data: { lifecycle_status: BATCH_LIFECYCLE_STATUSES.ARCHIVE },
+      data: { lifecycle_status: GENERATED_BATCH_LIFECYCLE_STATUSES.ARCHIVE },
     })
     await createEditHistoryEntry(tx, {
       entityTable: 'batches',
       entityId: normalizedBatchId,
-      previousValue: { lifecycle_status: BATCH_LIFECYCLE_STATUSES.DRAFT },
-      newValue: { lifecycle_status: BATCH_LIFECYCLE_STATUSES.ARCHIVE },
+      previousValue: { lifecycle_status: GENERATED_BATCH_LIFECYCLE_STATUSES.DRAFT },
+      newValue: { lifecycle_status: GENERATED_BATCH_LIFECYCLE_STATUSES.ARCHIVE },
       editSummary: 'Archived reprocessing draft batch.',
     })
     return { ok: true, batchId: normalizedBatchId }

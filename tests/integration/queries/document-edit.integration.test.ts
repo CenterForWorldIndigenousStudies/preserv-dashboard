@@ -7,7 +7,7 @@ import {
   applyDocumentEditInTransaction,
   DocumentEditValidationError,
 } from '@lib/queries/documentEditQueries'
-import { BATCH_LIFECYCLE_STATUSES } from '@constants/batchLifecycleStatuses'
+import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
 import { resetTestDatabase, shouldSkipDashboardIntegrationSuite } from '../support/test-db'
 import { withRollbackTransaction } from '../support/transaction'
 
@@ -123,7 +123,7 @@ describeDbIntegration('document editing (integration)', () => {
         tx.document_to_metadata.findFirst({ where: { document_id: documentId, metadata_id: titleMetadata.id } }),
       ).resolves.toMatchObject({ value: JSON.stringify({ value: 'After' }), value_type: 'string' })
       await expect(tx.batches.findUnique({ where: { id: batchId } })).resolves.toMatchObject({
-        lifecycle_status: BATCH_LIFECYCLE_STATUSES.PUBLICATION_LOCKED,
+        lifecycle_status: GENERATED_BATCH_LIFECYCLE_STATUSES.PUBLICATION_LOCKED,
       })
       await expect(
         tx.edit_history.count({ where: { entity_table: 'documents', entity_id: documentId } }),

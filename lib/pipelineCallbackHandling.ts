@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { PIPELINE_EXECUTION_MODES } from '@constants/pipelineExecutionModes'
+import { GENERATED_PIPELINE_EXECUTION_MODES } from '@constants/generated/pipelineExecutionModes'
 import { logEvent } from '@lib/observability'
 import { parseBearerToken, parsePipelineCallbackBody, type ParsedPipelineCallbackBody } from '@lib/pipelineCallbacks'
 import { getProcessBatchStatus, recordProcessStageFailure } from '@lib/processBatches'
@@ -92,7 +92,7 @@ async function processCallback({
     await recordProcessStageFailure(parsed.batchId, stage, {
       requestId: parsed.requestId,
       operationId: parsed.operationId || parsed.requestId,
-      executionMode: parsed.executionMode || PIPELINE_EXECUTION_MODES.NORMAL,
+      executionMode: parsed.executionMode || GENERATED_PIPELINE_EXECUTION_MODES.NORMAL,
       errorType: 'PipelineStageFailure',
       errorMessage: parsed.errorMessage || `${stage} reported failure.`,
       receivedAt: Math.floor(Date.now() / 1000),

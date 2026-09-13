@@ -5,7 +5,7 @@ import type { MRT_ColumnDef } from 'material-react-table'
 
 import { DateAtom } from '@atoms/Date'
 import { StatusPill } from '@atoms/Badges/StatusPill'
-import { DOCUMENT_STATES } from '@constants/documentStates'
+import { GENERATED_DOCUMENT_STATES } from '@constants/generated/documentStates'
 import { NeedsReviewReasonsPopover } from '@molecules/NeedsReviewReasonsPopover'
 import { DetailDataTable } from '@organisms/DetailDataTable'
 import type { StateHistoryEntry } from 'types/documents'
@@ -29,7 +29,7 @@ function renderState(
   diagnosticsHref: string | undefined,
 ): ReactNode {
   const trigger = <StatusPill status={value} />
-  const isNeedsReview = value?.trim().toLowerCase() === DOCUMENT_STATES.NEEDS_REVIEW
+  const isNeedsReview = value?.trim().toLowerCase() === GENERATED_DOCUMENT_STATES.NEEDS_REVIEW
 
   if (!isNeedsReview || !hasReviewReasons(needsReviewReasons)) {
     return value ? trigger : '—'

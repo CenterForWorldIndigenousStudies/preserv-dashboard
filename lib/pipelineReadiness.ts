@@ -1,4 +1,4 @@
-import { DOCUMENT_STATES } from '@constants/documentStates'
+import { GENERATED_DOCUMENT_STATES } from '@constants/generated/documentStates'
 import {
   NEEDS_REVIEW_HISTORY_METADATA_NAME,
   NEEDS_REVIEW_HISTORY_METADATA_NOTES,
@@ -158,8 +158,8 @@ async function finalizeCandidateReadiness(
   client: Prisma.TransactionClient,
   document: CandidateReadinessDocument,
 ): Promise<void> {
-  if (document.latestState?.new_state === DOCUMENT_STATES.INGESTED_FEDORA) return
-  if (document.latestState?.new_state === DOCUMENT_STATES.REJECTED) return
+  if (document.latestState?.new_state === GENERATED_DOCUMENT_STATES.INGESTED_FEDORA) return
+  if (document.latestState?.new_state === GENERATED_DOCUMENT_STATES.REJECTED) return
 
   const projectedMetadata = projectCandidateMetadata({
     metadata: document.metadata,
@@ -171,7 +171,7 @@ async function finalizeCandidateReadiness(
     accessLevels: document.accessLevels,
   })
   const activeReasons = mergeActiveReasons(document.activeReviewValue, evaluation.reasonGroups)
-  const targetState = activeReasons ? DOCUMENT_STATES.NEEDS_REVIEW : DOCUMENT_STATES.APPROVED
+  const targetState = activeReasons ? GENERATED_DOCUMENT_STATES.NEEDS_REVIEW : GENERATED_DOCUMENT_STATES.APPROVED
 
   if (projectedMetadata.dc_subject !== undefined) {
     await upsertMetadataValue(client, document.id, 'dc_subject', projectedMetadata.dc_subject)
@@ -190,12 +190,12 @@ async function finalizeCandidateReadiness(
       id: crypto.randomUUID(),
       document_id: document.id,
       current_status: stateHistoryId,
-      validation_status: targetState === DOCUMENT_STATES.APPROVED ? 'APPROVED' : 'NEEDS_REVIEW',
+      validation_status: targetState === GENERATED_DOCUMENT_STATES.APPROVED ? 'APPROVED' : 'NEEDS_REVIEW',
       validation_timestamp: Math.floor(Date.now() / 1000),
     },
     update: {
       current_status: stateHistoryId,
-      validation_status: targetState === DOCUMENT_STATES.APPROVED ? 'APPROVED' : 'NEEDS_REVIEW',
+      validation_status: targetState === GENERATED_DOCUMENT_STATES.APPROVED ? 'APPROVED' : 'NEEDS_REVIEW',
       validation_timestamp: Math.floor(Date.now() / 1000),
     },
   })

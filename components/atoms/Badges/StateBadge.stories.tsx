@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { Stack } from '@mui/material'
 import { StateBadge } from '@atoms/Badges/StateBadge'
-import { DOCUMENT_STATES } from '@constants/documentStates'
+import { GENERATED_DOCUMENT_STATES } from '@constants/generated/documentStates'
 
-const states = [...new Set([...Object.values(DOCUMENT_STATES), 'pending'])]
+const states = [...new Set([...Object.values(GENERATED_DOCUMENT_STATES), 'pending'])]
 const meta = {
   title: 'Atoms/Badges/StateBadge',
   component: StateBadge,

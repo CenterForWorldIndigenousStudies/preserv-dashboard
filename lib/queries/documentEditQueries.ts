@@ -12,8 +12,8 @@ import { buildNameHash } from '@lib/tagHash'
 import { getProtectedTagDeletionMessage, isProtectedTagName, normalizeTagName } from '@lib/tagUtils'
 import { normalizeDocumentEditValue, serializeDocumentMetadataValue } from '@lib/documentEditing'
 import { appendNeedsReviewReason, normalizeNeedsReviewValue } from '@lib/needsReview'
-import { BATCH_PUBLICATION_STATUSES } from '@constants/batchPublicationStatuses'
-import { DOCUMENT_STATES } from '@constants/documentStates'
+import { GENERATED_BATCH_PUBLICATION_STATUSES } from '@constants/generated/batchPublicationStatuses'
+import { GENERATED_DOCUMENT_STATES } from '@constants/generated/documentStates'
 import { NEEDS_REVIEW_METADATA_NAME } from '@constants/documentMetadata'
 import { isEditableDocumentMetadataField } from '@constants/documentEditing'
 import type {
@@ -691,7 +691,10 @@ export async function authorizeDocumentEditingInTransaction(
       },
     }),
     tx.document_to_batches.findFirst({
-      where: { document_id: params.documentId, batches: { publication_status: BATCH_PUBLICATION_STATUSES.PUBLISHED } },
+      where: {
+        document_id: params.documentId,
+        batches: { publication_status: GENERATED_BATCH_PUBLICATION_STATUSES.PUBLISHED },
+      },
       select: { id: true },
     }),
     tx.document_to_metadata.findFirst({
@@ -701,7 +704,8 @@ export async function authorizeDocumentEditingInTransaction(
   ])
 
   const isApproved = quality?.validation_status?.toString().toUpperCase() === 'APPROVED'
-  const isPublished = quality?.state_history?.new_state === DOCUMENT_STATES.INGESTED_FEDORA || Boolean(publishedBatch)
+  const isPublished =
+    quality?.state_history?.new_state === GENERATED_DOCUMENT_STATES.INGESTED_FEDORA || Boolean(publishedBatch)
   if (!isApproved && !isPublished) {
     failValidation('This document is not approved or published and does not require edit authorization.')
   }
@@ -736,7 +740,7 @@ export async function authorizeDocumentEditingInTransaction(
       id: crypto.randomUUID(),
       document_id: params.documentId,
       previous_state: previousState,
-      new_state: DOCUMENT_STATES.NEEDS_REVIEW,
+      new_state: GENERATED_DOCUMENT_STATES.NEEDS_REVIEW,
       changed_at: new Date(),
     },
     select: { id: true },
@@ -774,7 +778,7 @@ export async function authorizeDocumentEditingInTransaction(
   })
   await markDocumentBatchesPublicationLocked(tx, params.documentId)
 
-  return { changed: true, previousState, newState: DOCUMENT_STATES.NEEDS_REVIEW }
+  return { changed: true, previousState, newState: GENERATED_DOCUMENT_STATES.NEEDS_REVIEW }
 }
 
 export async function authorizeDocumentEditing(

@@ -1,0 +1,117 @@
+{
+  "DC_TITLE": {
+    "name": "dc_title",
+    "target": "metadata",
+    "value_shape": "scalar"
+  },
+  "DC_DATE": {
+    "name": "dc_date",
+    "target": "metadata",
+    "value_shape": "scalar"
+  },
+  "DC_DESCRIPTION": {
+    "name": "dc_description",
+    "target": "metadata",
+    "value_shape": "scalar"
+  },
+  "DC_DESCRIPTION_ABSTRACT": {
+    "name": "dc_description_abstract",
+    "target": "metadata",
+    "value_shape": "scalar"
+  },
+  "DC_TYPE": {
+    "name": "dc_type",
+    "target": "metadata",
+    "value_shape": "scalar"
+  },
+  "DC_LANGUAGE_ISO": {
+    "name": "dc_language_iso",
+    "target": "metadata",
+    "value_shape": "scalar"
+  },
+  "DC_SOURCE": {
+    "name": "dc_source",
+    "target": "metadata",
+    "value_shape": "scalar"
+  },
+  "DC_COVERAGE_SPATIAL": {
+    "name": "dc_coverage_spatial",
+    "target": "metadata",
+    "value_shape": "scalar"
+  },
+  "DC_COVERAGE_CULTURAL": {
+    "name": "dc_coverage_cultural",
+    "target": "metadata",
+    "value_shape": "list"
+  },
+  "DC_IDENTIFIER_DOI": {
+    "name": "dc_identifier_doi",
+    "target": "metadata",
+    "value_shape": "scalar"
+  },
+  "DC_IDENTIFIER_ISBN": {
+    "name": "dc_identifier_isbn",
+    "target": "metadata",
+    "value_shape": "scalar"
+  },
+  "DC_IDENTIFIER_ISSN": {
+    "name": "dc_identifier_issn",
+    "target": "metadata",
+    "value_shape": "scalar"
+  },
+  "DC_RIGHTS": {
+    "name": "dc_rights",
+    "target": "metadata",
+    "value_shape": "scalar"
+  },
+  "DC_IDENTIFIER_CITATION": {
+    "name": "dc_identifier_citation",
+    "target": "metadata",
+    "value_shape": "scalar"
+  },
+  "DC_SUBJECT_UNESCO": {
+    "name": "dc_subject_unesco",
+    "target": "metadata",
+    "value_shape": "list"
+  },
+  "BRIAN_DEER_CODE": {
+    "name": "brian_deer_code",
+    "target": "metadata",
+    "value_shape": "scalar"
+  },
+  "LONG_TAIL_KEYWORDS": {
+    "name": "long_tail_keywords",
+    "target": "metadata",
+    "value_shape": "list"
+  },
+  "SEO_KEYWORDS": {
+    "name": "seo_keywords",
+    "target": "metadata",
+    "value_shape": "list"
+  },
+  "SENSITIVE_CONTENT": {
+    "name": "sensitive_content",
+    "target": "metadata",
+    "value_shape": "scalar"
+  },
+  "AUTHORS": {
+    "name": "authors",
+    "target": "contributors",
+    "value_shape": "list"
+  },
+  "PUBLISHER": {
+    "name": "publisher",
+    "target": "publishers",
+    "value_shape": "scalar"
+  },
+  "RUDOLPH_RYSER_DETECTED": {
+    "name": "rudolph_ryser_detected",
+    "target": "processing_details",
+    "value_shape": "boolean"
+  },
+  "RUDOLPH_RYSER_DETECTED_FROM_TEXT": {
+    "name": "rudolph_ryser_detected_from_text",
+    "target": "processing_details",
+    "value_shape": "boolean"
+  }
+}

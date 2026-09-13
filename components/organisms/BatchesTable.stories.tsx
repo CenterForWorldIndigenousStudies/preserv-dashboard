@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 
 import { BatchesTable } from './BatchesTable'
-import { BATCH_LIFECYCLE_STATUSES } from '@constants/batchLifecycleStatuses'
-import { BATCH_PUBLICATION_STATUSES } from '@constants/batchPublicationStatuses'
+import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
+import { GENERATED_BATCH_PUBLICATION_STATUSES } from '@constants/generated/batchPublicationStatuses'
 import type { FilterOptions } from '@lib/search'
 import type { BatchListItem } from 'types/batches'
 
@@ -37,8 +37,8 @@ const filterOptions: FilterOptions = {
   collections: ['January collection', 'February collection'],
   accessLevels: ['public', 'restricted'],
   statuses: ['APPROVED', 'PENDING'],
-  lifecycleStatuses: Object.values(BATCH_LIFECYCLE_STATUSES),
-  publicationStatuses: Object.values(BATCH_PUBLICATION_STATUSES),
+  lifecycleStatuses: Object.values(GENERATED_BATCH_LIFECYCLE_STATUSES),
+  publicationStatuses: Object.values(GENERATED_BATCH_PUBLICATION_STATUSES),
 }
 
 const meta = {

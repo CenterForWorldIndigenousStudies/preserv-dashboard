@@ -1,5 +1,3 @@
-import { GENERATED_DOCUMENT_STATES, type GeneratedDocumentState } from '@constants/generated/documentStates'
-
-export const DOCUMENT_STATES = GENERATED_DOCUMENT_STATES
+import { type GeneratedDocumentState } from '@constants/generated/documentStates'
 
 export type DocumentState = GeneratedDocumentState

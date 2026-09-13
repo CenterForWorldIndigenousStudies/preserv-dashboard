@@ -1,6 +1,6 @@
 import { REVIEW_QUEUE_DEFAULT_VALIDATION_STATUSES, REVIEW_QUEUE_SORT_FIELDS } from '@constants/reviewQueue'
-import { BATCH_LIFECYCLE_STATUSES } from '@constants/batchLifecycleStatuses'
-import { DOCUMENT_STATES } from '@constants/documentStates'
+import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
+import { GENERATED_DOCUMENT_STATES } from '@constants/generated/documentStates'
 import {
   isReviewQueueChecklistItemKey,
   normalizeReviewQueueChecklist,
@@ -90,7 +90,10 @@ async function hydrateNeedsReviewReasons(documents: Document[], client: QueryDbC
       },
     }),
     client.document_to_batches?.findMany({
-      where: { document_id: { in: documentIds }, batches: { lifecycle_status: BATCH_LIFECYCLE_STATUSES.DRAFT } },
+      where: {
+        document_id: { in: documentIds },
+        batches: { lifecycle_status: GENERATED_BATCH_LIFECYCLE_STATUSES.DRAFT },
+      },
       select: { document_id: true, batches: { select: { id: true, name: true } } },
     }),
   ])
@@ -296,7 +299,8 @@ export async function applyReviewQueueDecisionInTransaction(
   params: NormalizedReviewQueueDecisionParams,
 ): Promise<void> {
   const { documentId, decision, validationTimestamp, validatorName } = params
-  const newState = params.decision === 'APPROVED' ? DOCUMENT_STATES.APPROVED : DOCUMENT_STATES.REJECTED
+  const newState =
+    params.decision === 'APPROVED' ? GENERATED_DOCUMENT_STATES.APPROVED : GENERATED_DOCUMENT_STATES.REJECTED
   const nextValidationStatus: DocumentQualityValidationStatus = params.decision
 
   const qualityRecord = await tx.document_quality.findUnique({
@@ -833,7 +837,7 @@ function buildNeedsReviewDocumentsWhereSql(params: {
     buildPreservationCandidateConditionSql('d'),
     buildActiveNeedsReviewConditionSql(),
     Prisma.sql`LOWER(COALESCE(dq.validation_status, '')) NOT IN ('approved', 'rejected')`,
-    Prisma.sql`NOT ${buildLatestStateConditionSql('latest_review_state', DOCUMENT_STATES.INGESTED_FEDORA)}`,
+    Prisma.sql`NOT ${buildLatestStateConditionSql('latest_review_state', GENERATED_DOCUMENT_STATES.INGESTED_FEDORA)}`,
   ]
 
   if (params.statuses?.length) {

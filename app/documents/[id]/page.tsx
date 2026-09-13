@@ -15,7 +15,7 @@ import { NoDataState } from '@organisms/NoDataState'
 import { PageHeader } from '@organisms/PageHeader'
 import { buildPipelineDiagnostics } from '@lib/documentDetailViewModel'
 import { getDocumentEditWarning } from '@lib/documentEditAccess'
-import { BATCH_PUBLICATION_STATUSES } from '@constants/batchPublicationStatuses'
+import { GENERATED_BATCH_PUBLICATION_STATUSES } from '@constants/generated/batchPublicationStatuses'
 import { getDocumentDetail } from '@lib/queries/documentQueries'
 import { getReprocessingDrafts } from '@lib/queries/reprocessingDraftQueries'
 import {
@@ -183,7 +183,8 @@ export default async function DocumentDetailPage({
           editWarning={getDocumentEditWarning({
             validationStatus: detail.quality?.validation_status,
             hasPublishedBatch: detail.document_to_batches.some(
-              (batch) => batch.batch_publication_status?.toLowerCase() === BATCH_PUBLICATION_STATUSES.PUBLISHED,
+              (batch) =>
+                batch.batch_publication_status?.toLowerCase() === GENERATED_BATCH_PUBLICATION_STATUSES.PUBLISHED,
             ),
             latestState: detail.state_history[0]?.new_state,
           })}

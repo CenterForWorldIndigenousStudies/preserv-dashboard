@@ -6,8 +6,8 @@ import {
   OCR_PROCESSOR_STAGE,
   PAGE_ROTATOR_STAGE,
 } from '@constants/pipeline'
-import { BATCH_LIFECYCLE_STATUSES } from '@constants/batchLifecycleStatuses'
-import { BATCH_PUBLICATION_STATUSES } from '@constants/batchPublicationStatuses'
+import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
+import { GENERATED_BATCH_PUBLICATION_STATUSES } from '@constants/generated/batchPublicationStatuses'
 import {
   type PipelineConfig,
   type PipelineExecutionStep,
@@ -194,16 +194,16 @@ export function getNextEligibleExecutionStep(batch: ProcessBatchStatus): Pipelin
       'rollback_requested',
       'draining',
       'reverting',
-      BATCH_LIFECYCLE_STATUSES.REVERTED,
-      BATCH_LIFECYCLE_STATUSES.ROLLBACK_FAILED,
-      BATCH_LIFECYCLE_STATUSES.PUBLICATION_LOCKED,
-      BATCH_LIFECYCLE_STATUSES.COMPLETE,
-      BATCH_LIFECYCLE_STATUSES.FAILED,
+      GENERATED_BATCH_LIFECYCLE_STATUSES.REVERTED,
+      GENERATED_BATCH_LIFECYCLE_STATUSES.ROLLBACK_FAILED,
+      GENERATED_BATCH_LIFECYCLE_STATUSES.PUBLICATION_LOCKED,
+      GENERATED_BATCH_LIFECYCLE_STATUSES.COMPLETE,
+      GENERATED_BATCH_LIFECYCLE_STATUSES.FAILED,
     ]).has(batch.lifecycleStatus ?? '') ||
     new Set<string>([
-      BATCH_PUBLICATION_STATUSES.PUBLICATION_LOCKED,
-      BATCH_PUBLICATION_STATUSES.PUBLISHED,
-      BATCH_PUBLICATION_STATUSES.UNKNOWN,
+      GENERATED_BATCH_PUBLICATION_STATUSES.PUBLICATION_LOCKED,
+      GENERATED_BATCH_PUBLICATION_STATUSES.PUBLISHED,
+      GENERATED_BATCH_PUBLICATION_STATUSES.UNKNOWN,
     ]).has(batch.publicationStatus ?? '')
   ) {
     return null
@@ -249,11 +249,16 @@ export function isPipelineBatchTerminal(batch: ProcessBatchStatus): boolean {
   }
 
   if (
-    new Set<string>([BATCH_LIFECYCLE_STATUSES.REVERTED, BATCH_LIFECYCLE_STATUSES.COMPLETE, BATCH_LIFECYCLE_STATUSES.FAILED, BATCH_LIFECYCLE_STATUSES.ROLLBACK_FAILED]).has(
-      batch.lifecycleStatus ?? '',
-    ) ||
+    new Set<string>([
+      GENERATED_BATCH_LIFECYCLE_STATUSES.REVERTED,
+      GENERATED_BATCH_LIFECYCLE_STATUSES.COMPLETE,
+      GENERATED_BATCH_LIFECYCLE_STATUSES.FAILED,
+      GENERATED_BATCH_LIFECYCLE_STATUSES.ROLLBACK_FAILED,
+    ]).has(batch.lifecycleStatus ?? '') ||
     batch.rollbackStatus === 'failed' ||
-    new Set<string>([BATCH_PUBLICATION_STATUSES.PUBLISHED, BATCH_PUBLICATION_STATUSES.UNKNOWN]).has(batch.publicationStatus ?? '')
+    new Set<string>([GENERATED_BATCH_PUBLICATION_STATUSES.PUBLISHED, GENERATED_BATCH_PUBLICATION_STATUSES.UNKNOWN]).has(
+      batch.publicationStatus ?? '',
+    )
   ) {
     return true
   }

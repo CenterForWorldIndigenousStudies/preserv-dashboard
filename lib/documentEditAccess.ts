@@ -1,4 +1,4 @@
-import { DOCUMENT_STATES } from '@constants/documentStates'
+import { GENERATED_DOCUMENT_STATES } from '@constants/generated/documentStates'
 
 export type DocumentEditWarning = 'approved' | 'published'
 
@@ -13,6 +13,7 @@ export function getDocumentEditWarning({
   hasPublishedBatch,
   latestState,
 }: DocumentEditWarningInput): DocumentEditWarning | null {
-  if (hasPublishedBatch || latestState?.trim().toLowerCase() === DOCUMENT_STATES.INGESTED_FEDORA) return 'published'
+  if (hasPublishedBatch || latestState?.trim().toLowerCase() === GENERATED_DOCUMENT_STATES.INGESTED_FEDORA)
+    return 'published'
   return validationStatus?.trim().toUpperCase() === 'APPROVED' ? 'approved' : null
 }

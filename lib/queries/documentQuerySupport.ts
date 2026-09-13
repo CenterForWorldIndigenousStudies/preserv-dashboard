@@ -1,5 +1,5 @@
 import { normalizeReviewQueueChecklist } from '@constants/reviewQueueChecklist'
-import { DOCUMENT_STATES } from '@constants/documentStates'
+import { GENERATED_DOCUMENT_STATES } from '@constants/generated/documentStates'
 import { db } from '@lib/db'
 import { Prisma } from '@lib/prisma/generated/client'
 import type { AccessLevelOption, DocumentTypeOption, StatusOption } from '@lib/search'
@@ -303,8 +303,8 @@ export function buildLatestStateConditionSql(alias: string, newState: string): P
   const stateAlias = Prisma.raw(alias)
   const newerStateAlias = Prisma.raw(`newer_${alias}`)
   const stateValue =
-    newState === DOCUMENT_STATES.INGESTED_FEDORA
-      ? Prisma.raw(`'${DOCUMENT_STATES.INGESTED_FEDORA}'`)
+    newState === GENERATED_DOCUMENT_STATES.INGESTED_FEDORA
+      ? Prisma.raw(`'${GENERATED_DOCUMENT_STATES.INGESTED_FEDORA}'`)
       : Prisma.sql`${newState}`
 
   return Prisma.sql`EXISTS (

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { PIPELINE_EXECUTION_MODES } from '@constants/pipelineExecutionModes'
+import { GENERATED_PIPELINE_EXECUTION_MODES } from '@constants/generated/pipelineExecutionModes'
 import { normalizePipelineExecutionContext } from '@lib/pipelineExecutionContext'
 
 describe('normalizePipelineExecutionContext', () => {
@@ -13,7 +13,7 @@ describe('normalizePipelineExecutionContext', () => {
     }
 
     const context = normalizePipelineExecutionContext('request-1', {
-      executionMode: PIPELINE_EXECUTION_MODES.NORMAL,
+      executionMode: GENERATED_PIPELINE_EXECUTION_MODES.NORMAL,
       pipelineConfig,
     })
 
@@ -22,7 +22,7 @@ describe('normalizePipelineExecutionContext', () => {
 
   it('accepts a draft batch as the target of reprocessing without a new name', () => {
     const context = normalizePipelineExecutionContext('request-1', {
-      executionMode: PIPELINE_EXECUTION_MODES.REPROCESS,
+      executionMode: GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS,
       operationId: 'operation-1',
       idempotencyKey: 'idempotency-1',
       draftBatchId: ' draft-1 ',
@@ -35,7 +35,7 @@ describe('normalizePipelineExecutionContext', () => {
 
   it('normalizes collection metadata for a draft submission', () => {
     const context = normalizePipelineExecutionContext('request-1', {
-      executionMode: PIPELINE_EXECUTION_MODES.REPROCESS,
+      executionMode: GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS,
       operationId: 'operation-1',
       idempotencyKey: 'idempotency-1',
       draftBatchId: 'draft-1',
