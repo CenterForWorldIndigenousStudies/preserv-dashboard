@@ -27,9 +27,6 @@ export function DocumentHistorySections({
       component={'section'}
       sx={{ display: 'grid', gap: 4, gridTemplateColumns: { xs: '1fr', xl: 'repeat(2, minmax(0, 1fr))' } }}
     >
-      <DetailPageSection title={'Audit History'}>
-        <AuditHistoryTable audits={audits} />
-      </DetailPageSection>
       <DetailPageSection title={'State History'}>
         <StateHistoryTable
           states={states}
@@ -37,6 +34,9 @@ export function DocumentHistorySections({
           needsReviewReasons={needsReviewReasons}
           diagnosticsHref={diagnosticsHref}
         />
+      </DetailPageSection>
+      <DetailPageSection title={'Audit History'}>
+        <AuditHistoryTable audits={audits} />
       </DetailPageSection>
     </Box>
   )

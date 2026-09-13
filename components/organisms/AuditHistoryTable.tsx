@@ -3,8 +3,25 @@
 import { useMemo } from 'react'
 import type { MRT_ColumnDef } from 'material-react-table'
 import { DateAtom } from '@atoms/Date'
+import { AuditValuePopover } from '@molecules/AuditValuePopover'
 import { DetailDataTable } from '@organisms/DetailDataTable'
 import type { AuditEntry } from 'types/documents'
+
+const INLINE_VALUE_LENGTH = 80
+
+function renderAuditValue(value: string | null, label: 'before' | 'after') {
+  const normalizedValue = value ?? ''
+
+  if (!normalizedValue) {
+    return '—'
+  }
+
+  if (normalizedValue.length > INLINE_VALUE_LENGTH || normalizedValue.includes('\n')) {
+    return <AuditValuePopover value={normalizedValue} label={label} />
+  }
+
+  return normalizedValue
+}
 
 export function AuditHistoryTable({ audits }: { audits: AuditEntry[] }) {
   const columns = useMemo<MRT_ColumnDef<AuditEntry>[]>(
@@ -29,13 +46,13 @@ export function AuditHistoryTable({ audits }: { audits: AuditEntry[] }) {
         accessorKey: 'before_value',
         header: 'Before',
         size: 200,
-        Cell: ({ renderedCellValue }) => String((renderedCellValue as string | null) ?? '') || '—',
+        Cell: ({ renderedCellValue }) => renderAuditValue(renderedCellValue as string | null, 'before'),
       },
       {
         accessorKey: 'after_value',
         header: 'After',
         size: 200,
-        Cell: ({ renderedCellValue }) => String((renderedCellValue as string | null) ?? '') || '—',
+        Cell: ({ renderedCellValue }) => renderAuditValue(renderedCellValue as string | null, 'after'),
       },
       {
         accessorKey: 'changed_at',

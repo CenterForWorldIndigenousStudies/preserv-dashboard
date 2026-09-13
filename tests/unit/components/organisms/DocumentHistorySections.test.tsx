@@ -21,5 +21,6 @@ describe('DocumentHistorySections', () => {
     expect(markup).toContain('State History')
     expect(markup).toContain('Audit history table')
     expect(markup).toContain('State history table')
+    expect(markup.indexOf('State History')).toBeLessThan(markup.indexOf('Audit History'))
   })
 })
