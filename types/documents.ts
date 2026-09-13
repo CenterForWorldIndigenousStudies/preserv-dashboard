@@ -20,6 +20,7 @@ export interface Document {
   updated_at: Date | string | null
   is_duplicate?: boolean
   needs_review_reasons?: NeedsReviewReasonGroup[]
+  has_pipeline_diagnostics?: boolean
   review_checklist?: ReviewQueueChecklistState | null
   open_reprocessing_draft?: { id: string; name: string | null } | null
 }
@@ -62,6 +63,8 @@ export interface DocumentToBatch {
   document_id: string
   batch_id: string
   added_at: Date | string | null
+  batch_started_at: Date | string | null
+  batch_document_count: number
   batch_origin: string | null
   cost: string | null
   processing_time_seconds: number | null
@@ -70,6 +73,7 @@ export interface DocumentToBatch {
   batch_legacy_id: string | null
   batch_name: string | null
   batch_status: string | null
+  batch_publication_status?: string | null
 }
 
 export interface DocumentToContributor {
@@ -79,6 +83,14 @@ export interface DocumentToContributor {
   contributor_name: string | null
   type: string | null
   role: string
+  notes: string | null
+}
+
+export interface DocumentToPublisher {
+  id: string
+  document_id: string
+  publisher_id: string
+  publisher_name: string | null
   notes: string | null
 }
 
@@ -100,8 +112,17 @@ export interface AuditEntry {
   document_id: string
   field_name: string
   source_name: string
+  editor_email?: string | null
   before_value: string | null
   after_value: string | null
+  changed_at: string
+}
+
+export interface StateHistoryEntry {
+  id: string
+  document_id: string
+  previous_state: string | null
+  new_state: string | null
   changed_at: string
 }
 
@@ -131,9 +152,10 @@ export interface DocumentDetail {
   metadata: DocumentMetadataField[]
   document_to_batches: DocumentToBatch[]
   document_to_contributors: DocumentToContributor[]
+  document_to_publishers: DocumentToPublisher[]
   document_to_tags: DocumentToTag[]
   audits: AuditEntry[]
-  reviews: ReviewItem[]
+  state_history: StateHistoryEntry[]
 }
 
 export interface FailureItem extends Document {

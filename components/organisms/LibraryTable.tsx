@@ -73,7 +73,14 @@ export function LibraryTable({ filterOptions, initialQuery, initialData }: Libra
     nextParams.set('page', String(controller.query.page))
     nextParams.set('pageSize', String(controller.query.pageSize))
     syncSearchParam(nextParams, 'search', controller.query.search)
-    syncSearchParam(nextParams, 'author', controller.query.filters.author)
+    syncSearchParam(
+      nextParams,
+      'contributor',
+      controller.query.filters.contributor !== controller.query.search
+        ? controller.query.filters.contributor
+        : undefined,
+    )
+    syncSearchParam(nextParams, 'publisher', controller.query.filters.publisher)
     syncSearchParam(nextParams, 'tag', controller.query.filters.tag)
     syncSearchParam(nextParams, 'statuses', serializeStatusesParam(controller.query.filters.statuses))
     syncSearchParam(

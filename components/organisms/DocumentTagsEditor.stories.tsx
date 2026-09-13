@@ -67,3 +67,15 @@ export const Empty: Story = {
     initialTags: initialTagsMap.empty,
   },
 }
+
+export const Editable: Story = {
+  args: {
+    editable: true,
+    value: initialTagsMap.populated.map((tag) => ({
+      tagId: tag.tag_id,
+      name: tag.tags.name ?? 'Untitled tag',
+      notes: tag.notes,
+    })),
+    onChange: () => undefined,
+  },
+}

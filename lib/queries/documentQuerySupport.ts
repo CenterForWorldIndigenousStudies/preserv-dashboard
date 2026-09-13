@@ -62,15 +62,11 @@ export const DEFAULT_OVERVIEW_SORT_FIELD: (typeof DOCUMENTS_ORDERABLE_FIELDS)[nu
 export const DEFAULT_OVERVIEW_SECONDARY_SORT_FIELD: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number] = 'updated_at'
 const DEFAULT_OVERVIEW_SORT_TIMESTAMP = new Date('1000-01-01T00:00:00.000Z')
 
-export function isOverviewSortField(
-  value?: string,
-): value is (typeof DOCUMENTS_ORDERABLE_FIELDS)[number] {
+export function isOverviewSortField(value?: string): value is (typeof DOCUMENTS_ORDERABLE_FIELDS)[number] {
   return !!value && (DOCUMENTS_ORDERABLE_FIELDS as readonly string[]).includes(value)
 }
 
-export function normalizeOverviewSortField(
-  value?: string,
-): (typeof DOCUMENTS_ORDERABLE_FIELDS)[number] {
+export function normalizeOverviewSortField(value?: string): (typeof DOCUMENTS_ORDERABLE_FIELDS)[number] {
   return isOverviewSortField(value) ? value : DEFAULT_OVERVIEW_SORT_FIELD
 }
 
@@ -82,7 +78,8 @@ export async function getOverviewDocumentsPage(
     pageSize: number
     orderBy?: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
     sortDirection?: 'asc' | 'desc'
-    search?: string
+    contributor?: string
+    publisher?: string
     tagIds?: string[]
     statuses?: StatusOption[]
     documentType?: DocumentTypeOption
@@ -104,7 +101,8 @@ export async function getOverviewDocumentsPage(
   const sortField = normalizeOverviewSortField(params.orderBy)
   const sortDirection = usesDefaultSort ? 'asc' : params.sortDirection === 'asc' ? 'asc' : 'desc'
   const cursorDirection = params.cursorDirection === 'prev' ? 'prev' : 'next'
-  const searchTerm = params.search?.trim()
+  const contributorTerm = params.contributor?.trim()
+  const publisherTerm = params.publisher?.trim()
   const sortExpression = Prisma.raw(OVERVIEW_SORT_EXPRESSIONS[sortField])
   const defaultSecondarySortExpression = usesDefaultSort
     ? Prisma.raw(OVERVIEW_SORT_EXPRESSIONS[DEFAULT_OVERVIEW_SECONDARY_SORT_FIELD])
@@ -120,7 +118,8 @@ export async function getOverviewDocumentsPage(
     defaultSecondarySortExpression,
     documentType: params.documentType,
     requireValidationStatus: params.requireValidationStatus,
-    searchTerm,
+    contributorTerm,
+    publisherTerm,
     sortDirection,
     sortExpression,
     sortField,
@@ -199,12 +198,12 @@ export async function getOverviewDocumentsPage(
       endCursor,
     },
   }
-
 }
 
 export function buildOverviewDocumentsWhereSql(params: {
   additionalConditions?: readonly Prisma.Sql[]
-  searchTerm?: string
+  contributorTerm?: string
+  publisherTerm?: string
   tagIds?: string[]
   statuses?: StatusOption[]
   documentType?: DocumentTypeOption
@@ -224,8 +223,12 @@ export function buildOverviewDocumentsWhereSql(params: {
 }): Prisma.Sql {
   const conditions: Prisma.Sql[] = [...(params.additionalConditions ?? [])]
 
-  if (params.searchTerm) {
-    conditions.push(buildOverviewAuthorSearchConditionSql(params.searchTerm))
+  if (params.contributorTerm) {
+    conditions.push(buildOverviewContributorSearchConditionSql(params.contributorTerm))
+  }
+
+  if (params.publisherTerm) {
+    conditions.push(buildOverviewPublisherSearchConditionSql(params.publisherTerm))
   }
 
   if (params.tagIds) {
@@ -363,28 +366,32 @@ export function buildOverviewStatusConditionSql(statuses: StatusOption[]): Prism
   return Prisma.sql`LOWER(COALESCE(dq.validation_status, '')) IN (${Prisma.join(normalizedStatuses)})`
 }
 
-export function buildOverviewAuthorSearchConditionSql(searchTerm: string): Prisma.Sql {
-  const rawTokens = searchTerm
-    .trim()
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase()
-    .split(/[^\p{L}\p{N}]+/u)
-    .map((token) => token.trim())
-    .filter(Boolean)
+function getSearchTokens(searchTerm: string): string[] {
+  return Array.from(
+    new Set(
+      searchTerm
+        .trim()
+        .normalize('NFD')
+        .replace(/\p{Diacritic}/gu, '')
+        .toLowerCase()
+        .split(/[^\p{L}\p{N}]+/u)
+        .map((token) => token.trim())
+        .filter(Boolean),
+    ),
+  )
+}
 
-  const tokens = Array.from(new Set(rawTokens))
-  if (!tokens.length) {
-    return Prisma.sql`1 = 1`
-  }
+function buildNormalizedNameTokenConditions(nameSql: Prisma.Sql, tokens: string[]): Prisma.Sql[] {
+  return tokens.map((token) => Prisma.sql`${nameSql} LIKE ${`%${token}%`}`)
+}
 
-  const normalizedAuthorNameSql = Prisma.sql`
+function buildNormalizedNameSql(alias: string): Prisma.Sql {
+  return Prisma.sql`
     REPLACE(
       REPLACE(
         REPLACE(
-          REPLACE(LOWER(c.name COLLATE utf8mb4_unicode_ci), ' ', ''),
-          ',',
-          ''
+          REPLACE(LOWER(${Prisma.raw(`${alias}.name`)} COLLATE utf8mb4_unicode_ci), ' ', ''),
+          ',',''
         ),
         '.',
         ''
@@ -393,11 +400,16 @@ export function buildOverviewAuthorSearchConditionSql(searchTerm: string): Prism
       ''
     )
   `
+}
 
-  const tokenConditions = tokens.map((token) => {
-    const likeValue = `%${token}%`
-    return Prisma.sql`${normalizedAuthorNameSql} LIKE ${likeValue}`
-  })
+export function buildOverviewContributorSearchConditionSql(searchTerm: string): Prisma.Sql {
+  const tokens = getSearchTokens(searchTerm)
+  if (!tokens.length) {
+    return Prisma.sql`1 = 1`
+  }
+
+  const normalizedContributorNameSql = buildNormalizedNameSql('c')
+  const tokenConditions = buildNormalizedNameTokenConditions(normalizedContributorNameSql, tokens)
 
   return Prisma.sql`
     EXISTS (
@@ -405,7 +417,26 @@ export function buildOverviewAuthorSearchConditionSql(searchTerm: string): Prism
       FROM document_to_contributors dtc
       INNER JOIN contributors c ON c.id = dtc.contributor_id
       WHERE dtc.document_id = d.id
-        AND dtc.role = 'author'
+        AND (${Prisma.join(tokenConditions, ' OR ')})
+    )
+  `
+}
+
+export function buildOverviewPublisherSearchConditionSql(searchTerm: string): Prisma.Sql {
+  const tokens = getSearchTokens(searchTerm)
+  if (!tokens.length) {
+    return Prisma.sql`1 = 1`
+  }
+
+  const normalizedPublisherNameSql = buildNormalizedNameSql('p')
+  const tokenConditions = buildNormalizedNameTokenConditions(normalizedPublisherNameSql, tokens)
+
+  return Prisma.sql`
+    EXISTS (
+      SELECT 1
+      FROM document_to_publishers dtp
+      INNER JOIN publishers p ON p.id = dtp.publisher_id
+      WHERE dtp.document_id = d.id
         AND (${Prisma.join(tokenConditions, ' OR ')})
     )
   `

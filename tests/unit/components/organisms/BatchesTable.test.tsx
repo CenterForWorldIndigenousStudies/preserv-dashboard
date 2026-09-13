@@ -58,7 +58,8 @@ const initialQuery = {
   orderBy: 'name',
   sortDirection: 'asc' as const,
   filters: {
-    author: 'Ada',
+    contributor: 'Ada',
+    publisher: 'Example Press',
     tag: 'Refugee',
     statuses: ['APPROVED'],
     lifecycleStatuses: ['DRAFT', 'FAILED'],
@@ -141,6 +142,9 @@ describe('BatchesTable', () => {
     expect(renderCell(0)).toContain('Batch One')
     expect(renderCell(0)).toContain('ID batch/1')
     expect(renderCell(0)).toContain('Legacy LEGACY-BATCH-1')
+    expect(renderCell(3)).toContain('/documents?batch=Batch+One')
+    expect(renderCell(3)).toContain('5')
+    expect(renderCell(5)).toContain('42 seconds')
 
     const result = (await config.definition.fetcher({
       page: 1,
@@ -190,7 +194,8 @@ describe('BatchesTable', () => {
     if (typeof nextUrl !== 'string') {
       throw new Error('Expected BatchesTable to replace the URL with a string')
     }
-    expect(nextUrl).toContain('author=Ada')
+    expect(nextUrl).toContain('contributor=Ada')
+    expect(nextUrl).toContain('publisher=Example+Press')
     expect(nextUrl).toContain('tag=Refugee')
     expect(nextUrl).toContain('statuses=APPROVED')
     expect(nextUrl).toContain('lifecycleStatuses=DRAFT%2CFAILED')

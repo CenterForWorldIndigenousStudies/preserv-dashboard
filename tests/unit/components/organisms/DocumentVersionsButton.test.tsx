@@ -52,7 +52,7 @@ describe('DocumentVersionsButton', () => {
               source_id: 'drive-file-123',
               created_at: null,
               updated_at: null,
-              is_canonical: false,
+              is_canonical: true,
               is_duplicate: false,
               is_preservation_candidate: true,
             },
@@ -66,6 +66,9 @@ describe('DocumentVersionsButton', () => {
     )
     expect(markup).toContain('fromLabel=Document+Detail%3A+Original+document')
     expect(markup).toContain('Candidate')
+    expect(markup).toContain('Canonical')
+    expect(markup).toContain('aria-label="Document roles"')
+    expect(markup.indexOf('Candidate')).toBeLessThan(markup.indexOf('Canonical'))
     expect(markup).toContain('Source')
     expect(markup).toContain('drive-file-123')
   })

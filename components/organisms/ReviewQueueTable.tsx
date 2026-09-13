@@ -3,8 +3,6 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
-import Menu from '@mui/material/Menu'
-import MenuItem from '@mui/material/MenuItem'
 import Snackbar from '@mui/material/Snackbar'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
@@ -15,9 +13,9 @@ import type { MRT_ColumnDef, MRT_RowSelectionState, MRT_Updater } from 'material
 import { useRouter } from 'next/navigation'
 
 import { Badge, type BadgeVariant } from '@atoms/Badges/Badge'
-import { Button } from '@atoms/Button'
 import { DateAtom } from '@atoms/Date'
-import { getDocumentDetailPath } from '@constants/paths'
+import { StatusPill } from '@atoms/Badges/StatusPill'
+import { getDocumentDetailPath, getDocumentDiagnosticsPath } from '@constants/paths'
 import { PAGE_LABELS } from '@constants/pageLabels'
 import {
   buildDefaultReviewQueueChecklistState,
@@ -37,6 +35,7 @@ import { EntityNameBlock } from '@molecules/EntityNameBlock'
 import { NeedsReviewReasonsPopover } from '@molecules/NeedsReviewReasonsPopover'
 import { ReviewQueueReprocessDialog } from '@organisms/ReviewQueueReprocessDialog'
 import { ReviewQueueCommentsPopover } from '@molecules/ReviewQueueCommentsPopover'
+import { ReviewQueueActionButton } from '@molecules/ReviewQueueActionButton'
 import { DocumentTable } from '@organisms/DocumentTable/DocumentTable'
 import { ReviewQueueChecklistPanel } from '@organisms/ReviewQueueChecklistPanel'
 import type { DocumentTableConfig } from '@organisms/DocumentTable/types'
@@ -59,15 +58,7 @@ interface ReviewQueueSelectionProps {
   excludedRowIds?: readonly string[]
 }
 
-interface ReviewQueueActionButtonProps {
-  batchActionPending: boolean
-  selectedCount: number
-  hasSelectedDraftDocuments: boolean
-  onApprove: () => void
-  onReject: () => void
-  onReprocess: () => void
-  onRemove: () => void
-}
+export { ReviewQueueActionButton as ActionButton } from '@molecules/ReviewQueueActionButton'
 
 function getReviewQueueSelectionKey(queryKey: string): string {
   return `${REVIEW_QUEUE_SELECTION_STORAGE_PREFIX}:${queryKey}`
@@ -184,7 +175,7 @@ function buildReviewQueueColumns(params: {
         }
 
         const statusBadge = (
-          <Badge variant={getValidationStatusBadgeVariant(original.validation_status)}>{statusLabel}</Badge>
+          <StatusPill status={statusLabel} variant={getValidationStatusBadgeVariant(original.validation_status)} />
         )
 
         if (reviewReasons.length === 0) {
@@ -197,6 +188,11 @@ function buildReviewQueueColumns(params: {
             groups={reviewReasons}
             trigger={statusBadge}
             triggerLabel={`View review reasons for document ${original.id}`}
+            diagnosticsHref={
+              original.has_pipeline_diagnostics
+                ? getDocumentDiagnosticsPath(original.id, params.preservedOverviewHref, PAGE_LABELS.reviewQueue)
+                : undefined
+            }
           />
         )
       },
@@ -292,74 +288,6 @@ function getReviewQueueSelectionProps(
   }
 }
 
-export function ActionButton({
-  batchActionPending,
-  selectedCount,
-  hasSelectedDraftDocuments,
-  onApprove,
-  onReject,
-  onReprocess,
-  onRemove,
-}: ReviewQueueActionButtonProps): ReactElement {
-  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
-  const menuOpen = Boolean(anchorEl)
-
-  const closeMenu = (): void => {
-    setAnchorEl(null)
-  }
-
-  return (
-    <>
-      <Button
-        variant={'secondary'}
-        size={'sm'}
-        disabled={batchActionPending || selectedCount === 0}
-        onClick={(event) => setAnchorEl(event.currentTarget)}
-        aria-haspopup={'menu'}
-        aria-expanded={menuOpen ? 'true' : undefined}
-      >
-        {`Actions (${selectedCount})`}
-      </Button>
-      <Menu anchorEl={anchorEl} open={menuOpen} onClose={closeMenu}>
-        <MenuItem
-          onClick={() => {
-            closeMenu()
-            onApprove()
-          }}
-        >
-          {'Approve'}
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            closeMenu()
-            onReject()
-          }}
-        >
-          {'Reject'}
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            closeMenu()
-            onReprocess()
-          }}
-        >
-          {'Reprocess'}
-        </MenuItem>
-        {hasSelectedDraftDocuments ? (
-          <MenuItem
-            onClick={() => {
-              closeMenu()
-              onRemove()
-            }}
-          >
-            {'Remove from draft'}
-          </MenuItem>
-        ) : null}
-      </Menu>
-    </>
-  )
-}
-
 export function ReviewQueueTable({
   initialData,
   initialQuery,
@@ -384,6 +312,7 @@ export function ReviewQueueTable({
     accessLevel,
     batch,
     collection,
+    contributor,
     createdFrom,
     createdTo,
     documentType,
@@ -395,6 +324,7 @@ export function ReviewQueueTable({
     searchParams,
     statuses,
     tag,
+    publisher,
     setGlobalFilter,
     setOverviewFilters,
     setPageSize,
@@ -489,7 +419,8 @@ export function ReviewQueueTable({
   }, [pathname, searchParams])
   const currentFilters: AdvancedSearchFilters = useMemo(
     () => ({
-      author: globalFilter || undefined,
+      contributor: contributor || undefined,
+      publisher: publisher || undefined,
       tag: tag || undefined,
       statuses: effectiveStatuses ?? [],
       documentType,
@@ -499,7 +430,18 @@ export function ReviewQueueTable({
       collection: collection || undefined,
       accessLevel,
     }),
-    [accessLevel, batch, collection, createdFrom, createdTo, documentType, effectiveStatuses, globalFilter, tag],
+    [
+      accessLevel,
+      batch,
+      collection,
+      contributor,
+      createdFrom,
+      createdTo,
+      documentType,
+      effectiveStatuses,
+      publisher,
+      tag,
+    ],
   )
   const reviewQueueQueryKey = useMemo(() => JSON.stringify(effectiveQueryParams), [effectiveQueryParams])
   const selectedReviewQueueDocumentIds = useMemo(
@@ -680,7 +622,8 @@ export function ReviewQueueTable({
           orderBy: query.orderBy as DocumentsQueryParams['orderBy'],
           sortDirection: query.sortDirection,
           search: query.search,
-          author: query.filters.author ?? query.search,
+          contributor: query.filters.contributor ?? query.search,
+          publisher: query.filters.publisher,
           tag: query.filters.tag,
           statuses: resolveStatuses(query.filters.statuses),
           documentType: query.filters.documentType,
@@ -708,7 +651,7 @@ export function ReviewQueueTable({
       },
     },
     trailingToolbarSlot: (
-      <ActionButton
+      <ReviewQueueActionButton
         batchActionPending={batchActionPending}
         selectedCount={selectedReviewQueueDocumentIds.length}
         hasSelectedDraftDocuments={selectedDraftDocumentIds.length > 0}

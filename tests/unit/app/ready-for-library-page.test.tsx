@@ -4,12 +4,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 const {
   mockGetReadyForLibraryDocuments,
   mockGetDocumentFilterOptions,
-  mockGetUniqueDocumentCountByAuthor,
   mockReadyForLibraryTable,
 } = vi.hoisted(() => ({
   mockGetReadyForLibraryDocuments: vi.fn(),
   mockGetDocumentFilterOptions: vi.fn(),
-  mockGetUniqueDocumentCountByAuthor: vi.fn(),
   mockReadyForLibraryTable: vi.fn(() => null),
 }))
 
@@ -20,10 +18,6 @@ vi.mock('@lib/queries/readyForLibraryQueries', async (importOriginal) => ({
 
 vi.mock('@lib/queries/queries', () => ({
   getDocumentFilterOptions: mockGetDocumentFilterOptions,
-}))
-
-vi.mock('@lib/readyForLibraryAuthorMetrics', () => ({
-  getUniqueDocumentCountByAuthor: mockGetUniqueDocumentCountByAuthor,
 }))
 
 vi.mock('@organisms/ReadyForLibraryTable', () => ({
@@ -45,7 +39,8 @@ describe('ReadyForLibraryPage', () => {
   it('parses the full Advanced Search filter set', () => {
     const query = parseReadyForLibraryQueryParams({
       search: 'Sample',
-      author: 'Author',
+      contributor: 'Contributor',
+      publisher: 'Publisher',
       tag: 'collection-tag',
       statuses: 'APPROVED,VALIDATED',
       documentType: 'unique',
@@ -59,7 +54,8 @@ describe('ReadyForLibraryPage', () => {
     expect(query).toMatchObject({
       search: 'Sample',
       filters: {
-        author: 'Author',
+        contributor: 'Contributor',
+        publisher: 'Publisher',
         tag: 'collection-tag',
         statuses: ['APPROVED', 'VALIDATED'],
         documentType: 'unique',
@@ -86,7 +82,6 @@ describe('ReadyForLibraryPage', () => {
       ],
       total: 1,
     })
-    mockGetUniqueDocumentCountByAuthor.mockResolvedValue(3)
     mockGetDocumentFilterOptions.mockResolvedValue({ collections: [], accessLevels: [], statuses: [] })
 
     const markup = renderToStaticMarkup(ReadyForLibraryPage({ searchParams: Promise.resolve({}) }))
@@ -108,5 +103,6 @@ describe('ReadyForLibraryPage', () => {
     expect(markup).toContain(
       'This page does not confirm final library handoff readiness until the handoff is queued and completes.',
     )
+    expect(markup).not.toContain('Featured author')
   })
 })

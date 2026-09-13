@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { composeReviewQueueReasons, normalizeNeedsReviewValue } from '@lib/needsReview'
+import { appendNeedsReviewReason, composeReviewQueueReasons, normalizeNeedsReviewValue } from '@lib/needsReview'
 
 describe('normalizeNeedsReviewValue', () => {
   it('normalizes grouped service reasons with humanized pass labels', () => {
@@ -108,5 +108,30 @@ describe('composeReviewQueueReasons', () => {
         reasons: ['Boundary requires review.'],
       },
     ])
+  })
+})
+
+describe('appendNeedsReviewReason', () => {
+  it('preserves existing service reasons and appends the dashboard edit reason', () => {
+    expect(
+      appendNeedsReviewReason(
+        {
+          ocr_processor: ['OCR output needs review.'],
+        },
+        'Correct the title before approving again.',
+      ),
+    ).toEqual({
+      ocr_processor: ['OCR output needs review.'],
+      document_edit: ['Correct the title before approving again.'],
+    })
+  })
+
+  it('does not duplicate an already appended reason', () => {
+    expect(
+      appendNeedsReviewReason(
+        { document_edit: ['Correct the title before approving again.'] },
+        'Correct the title before approving again.',
+      ),
+    ).toEqual({ document_edit: ['Correct the title before approving again.'] })
   })
 })

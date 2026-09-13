@@ -131,7 +131,8 @@ describe('ReviewQueueTable adapter', () => {
         })}
       </>,
     )
-    expect(cellMarkup).toContain('NEEDS_REVIEW')
+    expect(cellMarkup).toContain('Needs Review')
+    expect(cellMarkup).not.toContain('>NEEDS_REVIEW<')
     expect(cellMarkup).toContain('View review reasons for document doc-1')
 
     const reviewDetailsCell = config.definition.columns.find(({ id }) => id === 'review_details')?.Cell

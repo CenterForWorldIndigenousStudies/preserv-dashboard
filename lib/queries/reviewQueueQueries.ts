@@ -18,16 +18,21 @@ import { createEditHistoryEntry, markDocumentBatchesPublicationLocked } from '@l
 import { composeReviewQueueReasons } from '@lib/needsReview'
 import { evaluateDocumentReadiness } from '@lib/pipelineReadiness'
 import { appendReviewHistoryEpisode } from '@lib/reviewHistory'
+import { parseCommentPipelineEvents } from '@lib/commentPipeline'
 import { removeOpenDraftMemberships } from '@lib/queries/reprocessingDraftQueries'
 import { resolveBatchSearchIds, resolveTagSearchIds } from '@lib/queries/searchResolvers'
-import { Prisma, type document_quality_validation_status as DocumentQualityValidationStatus } from '@lib/prisma/generated/client'
+import {
+  Prisma,
+  type document_quality_validation_status as DocumentQualityValidationStatus,
+} from '@lib/prisma/generated/client'
 import {
   DEFAULT_OVERVIEW_SECONDARY_SORT_FIELD,
   DEFAULT_OVERVIEW_SORT_FIELD,
   DOCUMENTS_ORDERABLE_FIELDS,
   OVERVIEW_SORT_EXPRESSIONS,
   buildLatestStateConditionSql,
-  buildOverviewAuthorSearchConditionSql,
+  buildOverviewContributorSearchConditionSql,
+  buildOverviewPublisherSearchConditionSql,
   buildOverviewBatchConditionSql,
   buildOverviewCollectionConditionSql,
   buildOverviewDocumentsCursorConditionSql,
@@ -75,9 +80,14 @@ async function hydrateNeedsReviewReasons(documents: Document[], client: QueryDbC
     client.document_to_metadata.findMany({
       where: {
         document_id: { in: documentIds },
-        metadata: { name: 'needs_review' },
+        metadata: { name: { in: ['needs_review', 'comment_pipeline'] } },
       },
-      select: { document_id: true, value: true },
+      select: {
+        document_id: true,
+        value: true,
+        value_type: true,
+        metadata: { select: { name: true } },
+      },
     }),
     client.document_to_batches?.findMany({
       where: { document_id: { in: documentIds }, batches: { lifecycle_status: BATCH_LIFECYCLE_STATUSES.DRAFT } },
@@ -85,9 +95,18 @@ async function hydrateNeedsReviewReasons(documents: Document[], client: QueryDbC
     }),
   ])
   const metadataValueByDocumentId = new Map<string, unknown>()
+  const pipelineDiagnosticDocumentIds = new Set<string>()
 
   for (const metadataRow of metadataRows) {
-    metadataValueByDocumentId.set(metadataRow.document_id, metadataRow.value)
+    if (metadataRow.metadata.name === NEEDS_REVIEW_METADATA_NAME) {
+      metadataValueByDocumentId.set(metadataRow.document_id, metadataRow.value)
+    }
+    if (metadataRow.metadata.name === 'comment_pipeline') {
+      const events = parseCommentPipelineEvents(metadataRow.value, metadataRow.value_type)
+      if (events.length > 0) {
+        pipelineDiagnosticDocumentIds.add(metadataRow.document_id)
+      }
+    }
   }
 
   const draftByDocumentId = new Map((draftRows ?? []).map((row) => [row.document_id, row.batches]))
@@ -98,6 +117,7 @@ async function hydrateNeedsReviewReasons(documents: Document[], client: QueryDbC
     return {
       ...(reasons.length > 0 ? { ...document, needs_review_reasons: reasons } : document),
       open_reprocessing_draft: draft ?? null,
+      has_pipeline_diagnostics: pipelineDiagnosticDocumentIds.has(document.id),
     }
   })
 }
@@ -115,7 +135,8 @@ export async function getNeedsReviewDocuments(
       pageSize,
       orderBy: params.orderBy,
       sortDirection: params.sortDirection,
-      search: normalizeTextFilter(params.search ?? params.author),
+      contributor: normalizeTextFilter(params.contributor ?? params.search),
+      publisher: normalizeTextFilter(params.publisher),
       statuses,
       tagIds: await resolveTagSearchIds(normalizeTextFilter(params.tag), client),
       documentType: normalizeDocumentType(params.documentType),
@@ -170,7 +191,8 @@ export async function getNeedsReviewDocumentsCount(
     cursorDirection: 'next',
     defaultSecondarySortExpression: undefined,
     documentType: normalizeDocumentType(params.documentType),
-    searchTerm: normalizeTextFilter(params.search ?? params.author),
+    contributorTerm: normalizeTextFilter(params.contributor ?? params.search),
+    publisherTerm: normalizeTextFilter(params.publisher),
     sortDirection: 'asc',
     sortExpression: Prisma.raw(OVERVIEW_SORT_EXPRESSIONS[DEFAULT_OVERVIEW_SORT_FIELD]),
     sortField: DEFAULT_OVERVIEW_SORT_FIELD,
@@ -464,7 +486,6 @@ function normalizeReviewQueueTextFilter(value?: string): string {
   return value?.trim().toLowerCase() ?? ''
 }
 
-
 function getReviewQueueReasons(params: {
   validationStatus: string | null
   needsReview: boolean
@@ -589,7 +610,8 @@ async function getNeedsReviewDocumentsPage(
     pageSize: number
     orderBy?: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
     sortDirection?: 'asc' | 'desc'
-    search?: string
+    contributor?: string
+    publisher?: string
     statuses?: StatusOption[]
     tagIds?: string[]
     documentType?: DocumentTypeOption
@@ -608,7 +630,8 @@ async function getNeedsReviewDocumentsPage(
   const sortField = normalizeOverviewSortField(params.orderBy)
   const sortDirection = usesDefaultSort ? 'asc' : params.sortDirection === 'asc' ? 'asc' : 'desc'
   const cursorDirection = params.cursorDirection === 'prev' ? 'prev' : 'next'
-  const searchTerm = params.search?.trim()
+  const contributorTerm = params.contributor?.trim()
+  const publisherTerm = params.publisher?.trim()
   const sortExpression = Prisma.raw(OVERVIEW_SORT_EXPRESSIONS[sortField])
   const defaultSecondarySortExpression = usesDefaultSort
     ? Prisma.raw(OVERVIEW_SORT_EXPRESSIONS[DEFAULT_OVERVIEW_SECONDARY_SORT_FIELD])
@@ -623,7 +646,8 @@ async function getNeedsReviewDocumentsPage(
     cursorDirection,
     defaultSecondarySortExpression,
     documentType: params.documentType,
-    searchTerm,
+    contributorTerm,
+    publisherTerm,
     sortDirection,
     sortExpression,
     sortField,
@@ -788,7 +812,8 @@ function buildFilteredReviewQueueCursorConditionSql(params: {
   `
 }
 function buildNeedsReviewDocumentsWhereSql(params: {
-  searchTerm?: string
+  contributorTerm?: string
+  publisherTerm?: string
   statuses?: StatusOption[]
   tagIds?: string[]
   documentType?: DocumentTypeOption
@@ -815,8 +840,12 @@ function buildNeedsReviewDocumentsWhereSql(params: {
     conditions.push(buildOverviewStatusConditionSql(params.statuses))
   }
 
-  if (params.searchTerm) {
-    conditions.push(buildOverviewAuthorSearchConditionSql(params.searchTerm))
+  if (params.contributorTerm) {
+    conditions.push(buildOverviewContributorSearchConditionSql(params.contributorTerm))
+  }
+
+  if (params.publisherTerm) {
+    conditions.push(buildOverviewPublisherSearchConditionSql(params.publisherTerm))
   }
 
   if (params.tagIds) {

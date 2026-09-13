@@ -2,7 +2,9 @@
 
 import { useId, useState, type ReactElement, type ReactNode } from 'react'
 import Button from '@mui/material/Button'
+import Divider from '@mui/material/Divider'
 import Popover from '@mui/material/Popover'
+import Link from 'next/link'
 import { NeedsReviewReasons } from '@molecules/NeedsReviewReasons'
 import type { NeedsReviewReasonGroup } from 'types/needsReview'
 
@@ -11,6 +13,7 @@ export interface NeedsReviewReasonsPopoverProps {
   groups: NeedsReviewReasonGroup[]
   trigger?: ReactNode
   triggerLabel?: string
+  diagnosticsHref?: string
 }
 
 function countReasons(groups: NeedsReviewReasonGroup[]): number {
@@ -22,6 +25,7 @@ export function NeedsReviewReasonsPopover({
   groups,
   trigger,
   triggerLabel,
+  diagnosticsHref,
 }: NeedsReviewReasonsPopoverProps): ReactElement {
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null)
   const popoverId = `needs-review-reasons-${useId().replace(/:/g, '-')}`
@@ -75,6 +79,14 @@ export function NeedsReviewReasonsPopover({
         }}
       >
         <NeedsReviewReasons value={groups} />
+        {diagnosticsHref ? (
+          <>
+            <Divider sx={{ my: 1 }} />
+            <Button component={Link} href={diagnosticsHref} size={'small'} sx={{ textTransform: 'none' }}>
+              {'View pipeline diagnostics'}
+            </Button>
+          </>
+        ) : null}
       </Popover>
     </>
   )

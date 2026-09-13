@@ -7,8 +7,11 @@ const {
   mockDocumentToMetadataFindMany,
   mockDocumentToBatchesFindMany,
   mockDocumentToContributorsFindMany,
+  mockDocumentToPublishersFindMany,
   mockDocumentToTagsFindMany,
   mockDocumentAccessFindMany,
+  mockStateHistoryFindMany,
+  mockEditHistoryFindMany,
   mockVersionGroupsFindUnique,
 } = vi.hoisted(() => ({
   mockDocumentFindUnique: vi.fn(),
@@ -17,8 +20,11 @@ const {
   mockDocumentToMetadataFindMany: vi.fn(),
   mockDocumentToBatchesFindMany: vi.fn(),
   mockDocumentToContributorsFindMany: vi.fn(),
+  mockDocumentToPublishersFindMany: vi.fn(),
   mockDocumentToTagsFindMany: vi.fn(),
   mockDocumentAccessFindMany: vi.fn(),
+  mockStateHistoryFindMany: vi.fn(),
+  mockEditHistoryFindMany: vi.fn(),
   mockVersionGroupsFindUnique: vi.fn(),
 }))
 
@@ -30,8 +36,11 @@ vi.mock('@lib/db', () => ({
     document_to_metadata: { findMany: mockDocumentToMetadataFindMany },
     document_to_batches: { findMany: mockDocumentToBatchesFindMany },
     document_to_contributors: { findMany: mockDocumentToContributorsFindMany },
+    document_to_publishers: { findMany: mockDocumentToPublishersFindMany },
     document_to_tags: { findMany: mockDocumentToTagsFindMany },
     document_access: { findMany: mockDocumentAccessFindMany },
+    state_history: { findMany: mockStateHistoryFindMany },
+    edit_history: { findMany: mockEditHistoryFindMany },
     version_groups: { findUnique: mockVersionGroupsFindUnique },
   },
 }))
@@ -62,11 +71,62 @@ describe('getDocumentDetail version family mapping', () => {
     mockDocumentQualityFindUnique.mockResolvedValue(null)
     mockDocumentToMetadataFindMany.mockResolvedValue([])
     mockDocumentToBatchesFindMany.mockResolvedValue([])
-  mockDocumentToContributorsFindMany.mockResolvedValue([])
+    mockDocumentToContributorsFindMany.mockResolvedValue([])
+    mockDocumentToPublishersFindMany.mockResolvedValue([])
     mockDocumentToTagsFindMany.mockResolvedValue([])
     mockDocumentAccessFindMany.mockResolvedValue([])
+    mockStateHistoryFindMany.mockResolvedValue([])
+    mockEditHistoryFindMany.mockResolvedValue([])
     mockVersionGroupsFindUnique.mockResolvedValue(null)
   }
+
+  it('maps normalized contributor and publisher relationships for document details', async () => {
+    mockBaseDocument()
+    mockDocumentVersionsFindMany.mockResolvedValue([])
+    mockDocumentToContributorsFindMany.mockResolvedValue([
+      {
+        id: 'dtc-1',
+        document_id: 'canonical-1',
+        contributor_id: 'contributor-1',
+        type: 'PRIMARY',
+        role: 'author',
+        notes: 'Primary author.',
+        contributors: { name: 'Ada Example' },
+      },
+    ])
+    mockDocumentToPublishersFindMany.mockResolvedValue([
+      {
+        id: 'dtp-1',
+        document_id: 'canonical-1',
+        publisher_id: 'publisher-1',
+        notes: 'Original publisher.',
+        publishers: { name: 'Example Press' },
+      },
+    ])
+
+    const result = await getDocumentDetail('canonical-1')
+
+    expect(result?.document_to_contributors).toEqual([
+      {
+        id: 'dtc-1',
+        document_id: 'canonical-1',
+        contributor_id: 'contributor-1',
+        contributor_name: 'Ada Example',
+        type: 'PRIMARY',
+        role: 'author',
+        notes: 'Primary author.',
+      },
+    ])
+    expect(result?.document_to_publishers).toEqual([
+      {
+        id: 'dtp-1',
+        document_id: 'canonical-1',
+        publisher_id: 'publisher-1',
+        publisher_name: 'Example Press',
+        notes: 'Original publisher.',
+      },
+    ])
+  })
 
   it('maps metadata definition notes for document detail display', async () => {
     mockBaseDocument()

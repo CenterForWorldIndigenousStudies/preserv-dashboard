@@ -16,6 +16,43 @@ export function formatMetadataValue(value: unknown): string {
 }
 
 /**
+ * Parses a JSON metadata value into an ordered list of displayable strings.
+ * Supports both the stored {"value": [...]} envelope and a raw JSON array.
+ */
+export function parseMetadataList(rawValue: string | null | undefined, valueType: string | null | undefined): string[] {
+  if (!rawValue || valueType?.toLowerCase() !== 'json') {
+    return []
+  }
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(rawValue)
+  } catch {
+    return []
+  }
+
+  const candidate =
+    parsed && typeof parsed === 'object' && !Array.isArray(parsed) && 'value' in parsed
+      ? (parsed as { value?: unknown }).value
+      : parsed
+
+  if (!Array.isArray(candidate)) {
+    return []
+  }
+
+  return candidate.flatMap((item) => {
+    if (typeof item === 'string') {
+      const value = item.trim()
+      return value ? [value] : []
+    }
+    if (typeof item === 'number' || typeof item === 'boolean') {
+      return [String(item)]
+    }
+    return []
+  })
+}
+
+/**
  * Parse a metadata value from {"value": [...]} JSON structure.
  * Returns a DisplayAndString with a renderable display and plain text.
  */

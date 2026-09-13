@@ -33,12 +33,7 @@ import {
 import { normalizeDocumentTablePageSize, type DocumentsQueryParams } from '@lib/queries/documentQueries'
 import { resolveBatchSearchIds, resolveTagSearchIds } from '@lib/queries/searchResolvers'
 import type { DocumentsCursor } from 'types/pagination'
-import type {
-  LibraryBatch,
-  LibraryCollection,
-  LibraryDocumentItem,
-  LibraryDocumentsPageResult,
-} from 'types/documents'
+import type { LibraryBatch, LibraryCollection, LibraryDocumentItem, LibraryDocumentsPageResult } from 'types/documents'
 
 export interface LibraryBatchAssociation {
   batchId: string
@@ -153,7 +148,10 @@ export function parseLibraryQueryParams(
     cursorId: normalizeTextFilter(firstSearchParam(params.cursorId)),
     cursorDirection: cursorDirection === 'prev' || cursorDirection === 'next' ? cursorDirection : undefined,
     filters: {
-      author: normalizeTextFilter(firstSearchParam(params.author)),
+      contributor:
+        normalizeTextFilter(firstSearchParam(params.contributor)) ??
+        normalizeTextFilter(firstSearchParam(params.search)),
+      publisher: normalizeTextFilter(firstSearchParam(params.publisher)),
       tag: normalizeTextFilter(firstSearchParam(params.tag)),
       statuses: parseStatusesParam(params.statuses),
       documentType: normalizeDocumentType(firstSearchParam(params.documentType)),
@@ -212,7 +210,8 @@ interface LibraryQueryContext {
     createdTo?: string
     defaultSecondarySortExpression?: Prisma.Sql
     documentType?: DocumentTypeOption
-    searchTerm?: string
+    contributorTerm?: string
+    publisherTerm?: string
     sortDirection: 'asc' | 'desc'
     sortExpression: Prisma.Sql
     sortField: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
@@ -232,7 +231,8 @@ async function buildLibraryQueryContext(
   const sortField = normalizeOverviewSortField(params.orderBy)
   const sortDirection: 'asc' | 'desc' = usesDefaultSort ? 'asc' : params.sortDirection === 'asc' ? 'asc' : 'desc'
   const cursorDirection = params.cursorDirection === 'prev' ? 'prev' : 'next'
-  const searchTerm = normalizeTextFilter(params.search ?? params.author)
+  const contributorTerm = normalizeTextFilter(params.contributor ?? params.search)
+  const publisherTerm = normalizeTextFilter(params.publisher)
   const sortExpression = Prisma.raw(OVERVIEW_SORT_EXPRESSIONS[sortField])
   const defaultSecondarySortExpression = usesDefaultSort
     ? Prisma.raw(OVERVIEW_SORT_EXPRESSIONS[DEFAULT_OVERVIEW_SECONDARY_SORT_FIELD])
@@ -247,7 +247,8 @@ async function buildLibraryQueryContext(
     createdTo: normalizeDateFilter(params.createdTo),
     defaultSecondarySortExpression,
     documentType: normalizeDocumentType(params.documentType),
-    searchTerm,
+    contributorTerm,
+    publisherTerm,
     sortDirection,
     sortExpression,
     sortField,

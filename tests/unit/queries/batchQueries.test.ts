@@ -52,7 +52,8 @@ describe('batch query contracts', () => {
       cursorId: 'batch-1',
       cursorDirection: 'next',
       filters: {
-        author: undefined,
+        contributor: undefined,
+        publisher: undefined,
         tag: undefined,
         statuses: undefined,
         lifecycleStatuses: undefined,
@@ -70,7 +71,8 @@ describe('batch query contracts', () => {
   it('normalizes Advanced Search parameters for batch queries', () => {
     expect(
       parseBatchQueryParams({
-        author: ' Ada ',
+        contributor: ' Ada ',
+        publisher: ' Example Press ',
         tag: ' refuge ',
         statuses: 'APPROVED,REJECTED',
         lifecycleStatuses: 'DRAFT,FAILED',
@@ -83,7 +85,8 @@ describe('batch query contracts', () => {
         accessLevel: 'PUBLIC',
       }).filters,
     ).toEqual({
-      author: 'Ada',
+      contributor: 'Ada',
+      publisher: 'Example Press',
       tag: 'refuge',
       statuses: ['APPROVED', 'REJECTED'],
       lifecycleStatuses: ['DRAFT', 'FAILED'],
@@ -105,7 +108,8 @@ describe('batch query contracts', () => {
       page: 1,
       pageSize: 25,
       filters: {
-        author: 'Ada',
+        contributor: 'Ada',
+        publisher: 'Example Press',
         statuses: ['APPROVED'],
         documentType: 'duplicate',
         createdFrom: '2026-01-01',
@@ -129,7 +133,7 @@ describe('batch query contracts', () => {
       }
     ).AND
 
-    expect(documentConditions).toHaveLength(6)
+    expect(documentConditions).toHaveLength(7)
     expect(documentConditions).toContainEqual({ document_quality: { validation_status: { in: ['APPROVED'] } } })
     const conditionKeys = (documentConditions as unknown as Record<string, unknown>[])
       .map((condition) => Object.keys(condition)[0] ?? '')
@@ -139,6 +143,7 @@ describe('batch query contracts', () => {
         'created_at',
         'document_access',
         'document_to_contributors',
+        'document_to_publishers',
         'document_to_tags',
         'document_quality',
         'document_to_tags',
@@ -224,7 +229,7 @@ describe('batch query contracts', () => {
     ])
     mockBatchesCount.mockResolvedValue(1)
 
-    await expect(getBatchOverviewMetrics({ page: 1, pageSize: 25, filters: { author: 'Ada' } })).resolves.toEqual({
+    await expect(getBatchOverviewMetrics({ page: 1, pageSize: 25, filters: { contributor: 'Ada' } })).resolves.toEqual({
       totalBatches: 1,
       totalDocuments: 3,
     })

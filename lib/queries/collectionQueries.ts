@@ -3,7 +3,8 @@ import { createEditHistoryEntry, markDocumentBatchesPublicationLocked } from '@l
 import { buildNameHash } from '@lib/tagHash'
 import { resolveBatchSearchIds, resolveTagSearchIds } from '@lib/queries/searchResolvers'
 import {
-  buildOverviewAuthorSearchConditionSql,
+  buildOverviewContributorSearchConditionSql,
+  buildOverviewPublisherSearchConditionSql,
   buildOverviewBatchConditionSql,
   buildOverviewStatusConditionSql,
   buildOverviewTagConditionSql,
@@ -433,7 +434,8 @@ function normalizeCollectionDocumentSortField(sortField?: string): CollectionDoc
 interface CollectionDocumentSqlParams {
   collectionId: string
   search?: string
-  author?: string
+  contributor?: string
+  publisher?: string
   tagIds?: string[]
   statuses?: StatusOption[]
   documentType?: DocumentTypeOption
@@ -451,8 +453,12 @@ interface CollectionDocumentSqlParams {
 function buildCollectionDocumentAdvancedFilterSql(params: CollectionDocumentSqlParams): Prisma.Sql {
   const filterConditions: Prisma.Sql[] = []
 
-  if (params.author?.trim()) {
-    filterConditions.push(buildOverviewAuthorSearchConditionSql(params.author))
+  if (params.contributor?.trim()) {
+    filterConditions.push(buildOverviewContributorSearchConditionSql(params.contributor))
+  }
+
+  if (params.publisher?.trim()) {
+    filterConditions.push(buildOverviewPublisherSearchConditionSql(params.publisher))
   }
 
   if (params.tagIds) {
@@ -622,7 +628,8 @@ export async function getDocumentsForCollection(
       collectionId,
       mode: 'in',
       ...params,
-      author: normalizeTextFilter(params?.author),
+      contributor: normalizeTextFilter(params?.contributor),
+      publisher: normalizeTextFilter(params?.publisher),
       tagIds: await resolveTagSearchIds(normalizeTextFilter(params?.tag), client),
       statuses: normalizeStatuses(params?.statuses),
       documentType: normalizeDocumentType(params?.documentType),
@@ -645,7 +652,8 @@ export async function getDocumentsNotInCollection(
       collectionId,
       mode: 'out',
       ...params,
-      author: normalizeTextFilter(params?.author),
+      contributor: normalizeTextFilter(params?.contributor),
+      publisher: normalizeTextFilter(params?.publisher),
       tagIds: await resolveTagSearchIds(normalizeTextFilter(params?.tag), client),
       statuses: normalizeStatuses(params?.statuses),
       documentType: normalizeDocumentType(params?.documentType),

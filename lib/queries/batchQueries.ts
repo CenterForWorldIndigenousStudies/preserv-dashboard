@@ -88,7 +88,8 @@ export function parseBatchQueryParams(params: Record<string, string | string[] |
   const sortDirection = firstSearchParam(params.sortDirection)
   const cursorDirection = firstSearchParam(params.cursorDirection)
   const filters = {
-    author: normalizeTextFilter(firstSearchParam(params.author)),
+    contributor: normalizeTextFilter(firstSearchParam(params.contributor)),
+    publisher: normalizeTextFilter(firstSearchParam(params.publisher)),
     tag: normalizeTextFilter(firstSearchParam(params.tag)),
     statuses: parseStatusesParam(params.statuses),
     lifecycleStatuses: parseStatusesParam(params.lifecycleStatuses),
@@ -328,7 +329,7 @@ const batchDetailSelect = {
   },
 } as const
 
-function getAuthorSearchTokens(searchTerm: string): string[] {
+function getSearchTokens(searchTerm: string): string[] {
   return Array.from(
     new Set(
       searchTerm
@@ -343,25 +344,43 @@ function getAuthorSearchTokens(searchTerm: string): string[] {
   )
 }
 
-function buildBatchDocumentWhere(
-  filters: BatchQueryFilters,
-  tagIds: string[] | undefined,
-): Prisma.documentsWhereInput | undefined {
+function buildBatchContributorAndPublisherConditions(filters: BatchQueryFilters): Prisma.documentsWhereInput[] {
   const conditions: Prisma.documentsWhereInput[] = []
 
-  if (filters.author?.trim()) {
-    const authorTokens = getAuthorSearchTokens(filters.author)
-    if (authorTokens.length > 0) {
+  if (filters.contributor?.trim()) {
+    const contributorTokens = getSearchTokens(filters.contributor)
+    if (contributorTokens.length > 0) {
       conditions.push({
         document_to_contributors: {
           some: {
-            role: 'author',
-            OR: authorTokens.map((token) => ({ contributors: { name: { contains: token } } })),
+            OR: contributorTokens.map((token) => ({ contributors: { name: { contains: token } } })),
           },
         },
       })
     }
   }
+
+  if (filters.publisher?.trim()) {
+    const publisherTokens = getSearchTokens(filters.publisher)
+    if (publisherTokens.length > 0) {
+      conditions.push({
+        document_to_publishers: {
+          some: {
+            OR: publisherTokens.map((token) => ({ publishers: { name: { contains: token } } })),
+          },
+        },
+      })
+    }
+  }
+
+  return conditions
+}
+
+function buildBatchDocumentWhere(
+  filters: BatchQueryFilters,
+  tagIds: string[] | undefined,
+): Prisma.documentsWhereInput | undefined {
+  const conditions: Prisma.documentsWhereInput[] = buildBatchContributorAndPublisherConditions(filters)
 
   if (tagIds) {
     conditions.push({

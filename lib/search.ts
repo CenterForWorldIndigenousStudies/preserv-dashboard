@@ -14,7 +14,8 @@ export type DocumentTypeOption = (typeof DOCUMENT_TYPE_OPTIONS)[number]
 export type { AccessLevelOption } from '@constants/accessLevels'
 
 export interface AdvancedSearchFilters {
-  author?: string
+  contributor?: string
+  publisher?: string
   tag?: string
   statuses?: StatusOption[]
   lifecycleStatuses?: StatusOption[]

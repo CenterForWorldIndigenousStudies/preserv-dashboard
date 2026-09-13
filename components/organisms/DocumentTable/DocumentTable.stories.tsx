@@ -132,7 +132,7 @@ export const FullAdvancedSearch: Story = {
     config: buildConfig({
       advancedSearch: {
         filters: {
-          author: 'Rÿser',
+          contributor: 'Rÿser',
           tag: 'collection-tag',
           statuses: ['APPROVED'],
           documentType: 'unique',

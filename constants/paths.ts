@@ -30,6 +30,18 @@ export const DB_SCHEMA_PATH = '/db' as const
 
 export const DOCUMENTS_API_PATH = `${API_PATH}/documents` as const
 export const DOCUMENTS_PATH = '/documents' as const
+export const getDocumentsBatchFilterPath = (batchName: string, returnHref?: string, returnLabel?: string): string => {
+  const searchParams = new URLSearchParams({ batch: batchName })
+
+  if (returnHref) {
+    searchParams.set('from', returnHref)
+  }
+  if (returnLabel) {
+    searchParams.set('fromLabel', returnLabel)
+  }
+
+  return `${DOCUMENTS_PATH}?${searchParams.toString()}`
+}
 export const getDocumentDetailPath = (documentId: string, returnHref?: string, returnLabel?: string): string => {
   const searchParams = new URLSearchParams()
 
@@ -44,8 +56,17 @@ export const getDocumentDetailPath = (documentId: string, returnHref?: string, r
   return `${DOCUMENTS_PATH}/${encodeURIComponent(documentId)}${search ? `?${search}` : ''}`
 }
 
+export const getDocumentDiagnosticsPath = (documentId: string, returnHref?: string, returnLabel?: string): string =>
+  `${getDocumentDetailPath(documentId, returnHref, returnLabel)}#processing-diagnostics`
+
 export const getDocumentCollectionsPath = (documentId: string): string =>
   `${DOCUMENTS_API_PATH}/${encodeURIComponent(documentId)}/collections`
+
+export const getDocumentEditPath = (documentId: string): string =>
+  `${DOCUMENTS_API_PATH}/${encodeURIComponent(documentId)}/edit`
+
+export const getDocumentEditAuthorizationPath = (documentId: string): string =>
+  `${DOCUMENTS_API_PATH}/${encodeURIComponent(documentId)}/edit-access`
 
 export const FAILED_PATH = `/failures` as const
 
@@ -86,3 +107,6 @@ export const TAG_SEARCH_PATH = `${TAGS_PATH}/search` as const
 
 export const getDocumentTagsPath = (documentId: string): string =>
   `${DOCUMENTS_API_PATH}/${encodeURIComponent(documentId)}${TAGS_PAGE_PATH}`
+
+export const getDocumentRelationshipSearchPath = (kind: 'contributor' | 'publisher'): string =>
+  `${API_PATH}/${kind}s/search`

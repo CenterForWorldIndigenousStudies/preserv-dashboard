@@ -90,7 +90,7 @@ describe('DocumentTable', () => {
   })
 
   it('renders Advanced Search from the page configuration', () => {
-    const filters: AdvancedSearchFilters = { author: 'Author' }
+    const filters: AdvancedSearchFilters = { contributor: 'Contributor' }
     const onApply = vi.fn()
     const config = buildConfig({
       advancedSearch: {

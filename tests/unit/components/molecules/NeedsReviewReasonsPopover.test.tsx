@@ -21,13 +21,20 @@ const groups = [
 
 let mountedRoot: Root | undefined
 
-function renderPopover(reasonGroups = groups, trigger?: ReactNode): HTMLElement {
+function renderPopover(reasonGroups = groups, trigger?: ReactNode, diagnosticsHref?: string): HTMLElement {
   const container = document.createElement('div')
   document.body.appendChild(container)
   mountedRoot = createRoot(container)
 
   act(() => {
-    mountedRoot?.render(<NeedsReviewReasonsPopover documentId={'doc-1'} groups={reasonGroups} trigger={trigger} />)
+    mountedRoot?.render(
+      <NeedsReviewReasonsPopover
+        documentId={'doc-1'}
+        groups={reasonGroups}
+        trigger={trigger}
+        diagnosticsHref={diagnosticsHref}
+      />,
+    )
   })
 
   return container
@@ -79,6 +86,23 @@ describe('NeedsReviewReasonsPopover', () => {
 
     expect(trigger?.textContent).toBe('NEEDS_REVIEW')
     expect(trigger?.getAttribute('aria-label')).toBe('View 3 needs review reasons for document doc-1')
+  })
+
+  it('offers a link to pipeline diagnostics when a diagnostics destination exists', () => {
+    const container = renderPopover(groups, undefined, '/documents/doc-1#processing-diagnostics')
+    const trigger = container.querySelector<HTMLButtonElement>('button')
+
+    act(() => {
+      trigger?.click()
+    })
+
+    const popoverId = trigger?.getAttribute('aria-controls')
+    const popover = document.getElementById(popoverId ?? '')
+    const diagnosticsLink = Array.from(popover?.querySelectorAll('a') ?? []).find(
+      (link) => link.textContent === 'View pipeline diagnostics',
+    )
+
+    expect(diagnosticsLink?.getAttribute('href')).toBe('/documents/doc-1#processing-diagnostics')
   })
 
   it('renders an em dash when no reasons are available', () => {

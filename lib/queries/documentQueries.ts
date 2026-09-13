@@ -21,7 +21,6 @@ import {
   type AdvancedSearchFilters,
 } from '@lib/search'
 import type {
-  AuditEntry,
   Document,
   DocumentDetail,
   DocumentQuality,
@@ -29,7 +28,6 @@ import type {
   DocumentReadiness,
   VersionFamily,
   VersionFamilyDocument,
-  ReviewItem,
 } from 'types/documents'
 import type { DocumentsPageResult, PagedResult } from 'types/pagination'
 
@@ -92,7 +90,8 @@ export async function getAllDocuments(
       pageSize,
       orderBy: params.orderBy,
       sortDirection: params.sortDirection,
-      search: normalizeTextFilter(params.search ?? params.author),
+      contributor: normalizeTextFilter(params.contributor ?? params.search),
+      publisher: normalizeTextFilter(params.publisher),
       tagIds: await resolveTagSearchIds(normalizeTextFilter(params.tag), client),
       statuses: normalizeStatuses(params.statuses),
       documentType: normalizeDocumentType(params.documentType),
@@ -137,6 +136,47 @@ export function normalizeDocumentAccessLevels(levels: readonly (string | null | 
     .sort((left, right) => left.localeCompare(right))
 }
 
+function formatAuditValue(rawValue: string | null): string | null {
+  if (rawValue === null) {
+    return null
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(rawValue)
+    if (parsed && typeof parsed === 'object' && 'value' in parsed) {
+      const value = (parsed as { value?: unknown }).value
+      if (value === null || value === undefined) {
+        return null
+      }
+      return typeof value === 'string' ? value : JSON.stringify(value)
+    }
+  } catch {
+    return rawValue
+  }
+
+  return rawValue
+}
+
+function getAuditFieldName(previousValue: string | null, newValue: string | null, editSummary: string | null): string {
+  for (const rawValue of [previousValue, newValue]) {
+    if (!rawValue) continue
+
+    try {
+      const parsed: unknown = JSON.parse(rawValue)
+      if (parsed && typeof parsed === 'object' && 'fieldName' in parsed) {
+        const fieldName = (parsed as { fieldName?: unknown }).fieldName
+        if (typeof fieldName === 'string' && fieldName.length > 0) {
+          return fieldName
+        }
+      }
+    } catch {
+      continue
+    }
+  }
+
+  return editSummary ?? 'Document edit'
+}
+
 export async function getDocumentDetail(documentId: string): Promise<DocumentDetail | null> {
   const document = await db.documents.findUnique({
     where: { id: documentId },
@@ -146,86 +186,107 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
     return null
   }
 
-  const [quality, versions, metadata, batches, contributors, tags, canonicalGroup, variantMemberships, accessRows] =
-    await Promise.all([
-      db.document_quality.findUnique({
-        where: { document_id: documentId },
-      }),
-      db.document_versions.findMany({
-        where: { document_id: documentId },
-        orderBy: { created_at: 'desc' },
-      }),
-      db.document_to_metadata.findMany({
-        where: { document_id: documentId },
-        include: { metadata: true },
-        orderBy: { metadata: { name: 'asc' } },
-      }),
-      db.document_to_batches.findMany({
-        where: { document_id: documentId },
-        include: { batches: true },
-      }),
-      db.document_to_contributors.findMany({
-        where: { document_id: documentId },
-        include: { contributors: true },
-      }),
-      db.document_to_tags.findMany({
-        where: { document_id: documentId },
-        include: { tags: true },
-      }),
-      db.version_groups.findUnique({
-        where: { canonical_document_id: documentId },
-        include: {
-          documents: {
-            include: {
-              document_to_metadata: {
-                include: { metadata: true },
-              },
-              document_to_tags: {
-                include: { tags: true },
-              },
+  const [
+    quality,
+    versions,
+    metadata,
+    batches,
+    contributors,
+    publishers,
+    tags,
+    canonicalGroup,
+    variantMemberships,
+    accessRows,
+    stateHistoryRows,
+    auditRows,
+  ] = await Promise.all([
+    db.document_quality.findUnique({
+      where: { document_id: documentId },
+    }),
+    db.document_versions.findMany({
+      where: { document_id: documentId },
+      orderBy: { created_at: 'desc' },
+    }),
+    db.document_to_metadata.findMany({
+      where: { document_id: documentId },
+      include: { metadata: true },
+      orderBy: { metadata: { name: 'asc' } },
+    }),
+    db.document_to_batches.findMany({
+      where: { document_id: documentId },
+      include: {
+        batches: {
+          include: {
+            _count: { select: { document_to_batches: true } },
+          },
+        },
+      },
+    }),
+    db.document_to_contributors.findMany({
+      where: { document_id: documentId },
+      include: { contributors: true },
+    }),
+    db.document_to_publishers.findMany({
+      where: { document_id: documentId },
+      include: { publishers: true },
+    }),
+    db.document_to_tags.findMany({
+      where: { document_id: documentId },
+      include: { tags: true },
+    }),
+    db.version_groups.findUnique({
+      where: { canonical_document_id: documentId },
+      include: {
+        documents: {
+          include: {
+            document_to_metadata: {
+              include: { metadata: true },
+            },
+            document_to_tags: {
+              include: { tags: true },
             },
           },
-          document_versions: {
-            include: {
-              documents: {
-                include: {
-                  document_to_metadata: {
-                    include: { metadata: true },
-                  },
-                  document_to_tags: {
-                    include: { tags: true },
-                  },
+        },
+        document_versions: {
+          include: {
+            documents: {
+              include: {
+                document_to_metadata: {
+                  include: { metadata: true },
+                },
+                document_to_tags: {
+                  include: { tags: true },
                 },
               },
             },
           },
         },
-      }),
-      db.document_versions.findMany({
-        where: { document_id: documentId },
-        include: {
-          version_groups: {
-            include: {
-              documents: {
-                include: {
-                  document_to_metadata: {
-                    include: { metadata: true },
-                  },
-                  document_to_tags: {
-                    include: { tags: true },
-                  },
+      },
+    }),
+    db.document_versions.findMany({
+      where: { document_id: documentId },
+      include: {
+        version_groups: {
+          include: {
+            documents: {
+              include: {
+                document_to_metadata: {
+                  include: { metadata: true },
+                },
+                document_to_tags: {
+                  include: { tags: true },
                 },
               },
-              document_versions: {
-                include: {
-                  documents: {
-                    include: {
-                      document_to_metadata: {
-                        include: { metadata: true },
-                      },
-                      document_to_tags: {
-                        include: { tags: true },
-                      },
+            },
+            document_versions: {
+              include: {
+                documents: {
+                  include: {
+                    document_to_metadata: {
+                      include: { metadata: true },
+                    },
+                    document_to_tags: {
+                      include: { tags: true },
                     },
                   },
                 },
@@ -233,13 +294,22 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
             },
           },
         },
-        orderBy: { created_at: 'desc' },
-      }),
-      db.document_access.findMany({
-        where: { document_id: documentId },
-        select: { access_levels: { select: { level_name: true } } },
-      }),
-    ])
+      },
+      orderBy: { created_at: 'desc' },
+    }),
+    db.document_access.findMany({
+      where: { document_id: documentId },
+      select: { access_levels: { select: { level_name: true } } },
+    }),
+    db.state_history.findMany({
+      where: { document_id: documentId },
+      orderBy: [{ changed_at: 'desc' }, { id: 'desc' }],
+    }),
+    db.edit_history.findMany({
+      where: { entity_table: 'documents', entity_id: documentId },
+      orderBy: [{ edited_at: 'desc' }, { id: 'desc' }],
+    }),
+  ])
 
   const access_levels = normalizeDocumentAccessLevels(accessRows.map((row) => row.access_levels.level_name))
   const readinessResult = await evaluateDocumentReadiness(documentId).catch(() => null)
@@ -390,6 +460,8 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
       document_id: String(b.document_id),
       batch_id: String(b.batch_id),
       added_at: b.added_at ?? null,
+      batch_started_at: b.batches.started_at ?? null,
+      batch_document_count: b.batches._count?.document_to_batches ?? 1,
       batch_origin: b.batch_origin ?? null,
       cost: calculateTotalProcessingCost(b.processing_details, [b]),
       processing_time_seconds: b.processing_time_seconds ?? null,
@@ -398,6 +470,7 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
       batch_legacy_id: b.batches.id_legacy ?? null,
       batch_name: b.batches.name ?? null,
       batch_status: b.batches.lifecycle_status ?? null,
+      batch_publication_status: b.batches.publication_status ?? null,
     })),
     document_to_contributors: contributors.map((a) => ({
       id: String(a.id),
@@ -407,6 +480,13 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
       type: a.type ?? null,
       role: a.role,
       notes: a.notes ?? null,
+    })),
+    document_to_publishers: publishers.map((p) => ({
+      id: String(p.id),
+      document_id: String(p.document_id),
+      publisher_id: String(p.publisher_id),
+      publisher_name: p.publishers.name,
+      notes: p.notes ?? null,
     })),
     document_to_tags: tags.map((t) => ({
       id: String(t.id),
@@ -419,7 +499,21 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
         notes: t.tags.notes ?? null,
       },
     })),
-    audits: [] as AuditEntry[],
-    reviews: [] as ReviewItem[],
+    audits: auditRows.map((audit) => ({
+      document_id: documentId,
+      field_name: getAuditFieldName(audit.previous_value, audit.new_value, audit.edit_summary),
+      source_name: 'Document Details',
+      editor_email: audit.editor_email ?? null,
+      before_value: formatAuditValue(audit.previous_value),
+      after_value: formatAuditValue(audit.new_value),
+      changed_at: audit.edited_at?.toISOString() ?? '',
+    })),
+    state_history: stateHistoryRows.map((state) => ({
+      id: String(state.id),
+      document_id: String(state.document_id),
+      previous_state: state.previous_state ?? null,
+      new_state: state.new_state ?? null,
+      changed_at: state.changed_at?.toISOString() ?? '',
+    })),
   }
 }

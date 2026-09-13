@@ -96,7 +96,7 @@ describe('getReadyForLibraryAction', () => {
 
   it('forwards table filters to the ready-for-library query', async () => {
     const query = {
-      author: 'Author',
+      contributor: 'Contributor',
       statuses: ['APPROVED'],
       collection: 'Collection',
     }

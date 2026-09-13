@@ -1,32 +1,17 @@
 import type { ReactNode } from 'react'
-import { Badge, type BadgeVariant } from '@atoms/Badges/Badge'
-import { DOCUMENT_STATES } from '@constants/documentStates'
+
+import { StatusPill, statusVariantMap } from '@atoms/Badges/StatusPill'
 
 interface StateBadgeProps {
   state?: string
   className?: string
 }
 
-export const stateVariantMap = {
-  [DOCUMENT_STATES.APPROVED]: 'success',
-  [DOCUMENT_STATES.FAILED]: 'danger',
-  [DOCUMENT_STATES.INGESTED_FEDORA]: 'success',
-  [DOCUMENT_STATES.REJECTED]: 'danger',
-  [DOCUMENT_STATES.NEEDS_REVIEW]: 'info',
-} as const
+export const stateVariantMap = statusVariantMap
 
 /**
  * Atom: Semantic wrapper around Badge that maps state strings to variants.
  */
 export function StateBadge({ state, className = '' }: StateBadgeProps): ReactNode {
-  const normalized = (state ?? 'unknown').toLowerCase()
-  const variant: BadgeVariant =
-    stateVariantMap[(normalized ?? '').toLowerCase() as keyof typeof stateVariantMap] ?? 'neutral'
-  const componentClass = `${className}`.trim()
-
-  return (
-    <Badge className={componentClass} variant={variant}>
-      {normalized}
-    </Badge>
-  )
+  return <StatusPill status={state} className={`${className}`.trim()} />
 }

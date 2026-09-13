@@ -9,9 +9,36 @@ export interface CreateEditHistoryEntryParams {
   previousValue: object | null
   newValue: object | null
   editSummary: string
+  editorEmail?: string
+}
+
+export interface CreateDocumentEditHistoryEntryParams {
+  documentId: string
+  fieldName: string
+  previousValue: unknown
+  newValue: unknown
+  editorEmail: string
+  editSummary: string
 }
 
 export type EditHistoryClient = PrismaClient | Prisma.TransactionClient
+
+export async function createDocumentEditHistoryEntry(
+  client: EditHistoryClient,
+  params: CreateDocumentEditHistoryEntryParams,
+): Promise<void> {
+  await client.edit_history.create({
+    data: {
+      id: crypto.randomUUID(),
+      entity_id: params.documentId,
+      entity_table: 'documents',
+      previous_value: JSON.stringify({ fieldName: params.fieldName, value: params.previousValue }),
+      new_value: JSON.stringify({ fieldName: params.fieldName, value: params.newValue }),
+      editor_email: params.editorEmail,
+      edit_summary: params.editSummary,
+    },
+  })
+}
 
 /** Mark submitted batches containing a changed document as non-rerunnable. */
 export async function markDocumentBatchesPublicationLocked(
@@ -67,7 +94,7 @@ export async function createEditHistoryEntry(
   const client = maybeParams ? (clientOrParams as EditHistoryClient) : db
   const params = maybeParams ?? (clientOrParams as CreateEditHistoryEntryParams)
   const session = await getDashboardSession()
-  const editorEmail = session?.user?.email ?? 'unknown@system.local'
+  const editorEmail = params.editorEmail ?? session?.user?.email ?? 'unknown@system.local'
 
   await client.edit_history.create({
     data: {

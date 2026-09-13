@@ -13,6 +13,21 @@ describe('DocumentReadinessDiagnostics', () => {
           unmetRequirements: ['dc_subject'],
           reasonGroups: [],
         }}
+        pipelineEvents={[
+          {
+            runKey: 'ocr-run',
+            service: 'ocr_processor',
+            status: 'failed',
+            timestamp: '2026-09-11T10:00:00Z',
+            message: 'OCR timed out.',
+            requestId: 'request-1',
+            batchId: 'batch-1',
+            documentId: 'document-1',
+            details: null,
+            severity: 'error',
+          },
+        ]}
+        pipelineBatchLinks={{ 'batch-1': { name: 'September ingest', href: '/batches/batch-1' } }}
       />,
     )
 
@@ -22,5 +37,8 @@ describe('DocumentReadinessDiagnostics', () => {
     expect(markup).toContain('Preservation candidate')
     expect(markup).toContain('Unmet requirements')
     expect(markup).toContain('grid-template-columns:repeat(4, minmax(0, 1fr))')
+    expect(markup).toContain('Pipeline Event History')
+    expect(markup).toContain('OCR timed out.')
+    expect(markup).toContain('September ingest')
   })
 })

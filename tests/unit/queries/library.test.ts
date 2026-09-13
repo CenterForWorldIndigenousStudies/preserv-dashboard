@@ -144,7 +144,8 @@ describe('getLibraryDocuments', () => {
     mockQueryRaw.mockResolvedValueOnce([{ total: 0 }]).mockResolvedValueOnce([])
 
     await getLibraryDocuments({
-      author: 'Matching Author',
+      contributor: 'Matching Contributor',
+      publisher: 'Matching Publisher',
       tag: 'collection-tag',
       statuses: ['APPROVED'],
       documentType: 'duplicate',

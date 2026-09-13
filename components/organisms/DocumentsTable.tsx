@@ -112,6 +112,7 @@ export function DocumentsTable({ initialData, initialQuery, filterOptions }: Doc
     accessLevel,
     batch,
     collection,
+    contributor,
     createdFrom,
     createdTo,
     documentType,
@@ -123,6 +124,7 @@ export function DocumentsTable({ initialData, initialQuery, filterOptions }: Doc
     searchParams,
     statuses,
     tag,
+    publisher,
     setGlobalFilter,
     setOverviewFilters,
     setPageSize,
@@ -137,7 +139,8 @@ export function DocumentsTable({ initialData, initialQuery, filterOptions }: Doc
   }, [pathname, searchParams])
   const currentFilters: AdvancedSearchFilters = useMemo(
     () => ({
-      author: globalFilter || undefined,
+      contributor: contributor || undefined,
+      publisher: publisher || undefined,
       tag: tag || undefined,
       statuses: statuses ?? [],
       documentType,
@@ -147,7 +150,7 @@ export function DocumentsTable({ initialData, initialQuery, filterOptions }: Doc
       collection: collection || undefined,
       accessLevel,
     }),
-    [accessLevel, batch, collection, createdFrom, createdTo, documentType, globalFilter, statuses, tag],
+    [accessLevel, batch, collection, contributor, createdFrom, createdTo, documentType, publisher, statuses, tag],
   )
   const columns = useMemo(() => buildOverviewColumns(preservedOverviewHref), [preservedOverviewHref])
   const tableConfig: DocumentTableConfig<Document, AdvancedSearchFilters> = {
@@ -161,7 +164,8 @@ export function DocumentsTable({ initialData, initialQuery, filterOptions }: Doc
           orderBy: query.orderBy as DocumentsQueryParams['orderBy'],
           sortDirection: query.sortDirection,
           search: query.search,
-          author: query.filters.author ?? query.search,
+          contributor: query.filters.contributor ?? query.search,
+          publisher: query.filters.publisher,
           tag: query.filters.tag,
           statuses: query.filters.statuses,
           documentType: query.filters.documentType,

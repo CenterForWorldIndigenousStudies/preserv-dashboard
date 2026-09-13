@@ -62,7 +62,7 @@ function queryText(index = 0): string {
 }
 
 // ---------------------------------------------------------------------------
-// buildSearchWhere — verify author-only search logic via getAllDocuments
+// buildSearchWhere — verify contributor and publisher search logic via getAllDocuments
 // ---------------------------------------------------------------------------
 describe('buildSearchWhere (via getAllDocuments)', () => {
   beforeAll(() => {
@@ -85,11 +85,11 @@ describe('buildSearchWhere (via getAllDocuments)', () => {
     expect(queryText(0)).not.toContain('WHERE (')
   })
 
-  it('applies an author-only EXISTS clause', async () => {
+  it('applies a contributor-only EXISTS clause', async () => {
     mockQueryRaw.mockReset()
     mockQueryRaw.mockResolvedValueOnce([])
 
-    await getAllDocuments({ search: 'test' })
+    await getAllDocuments({ contributor: 'test' })
 
     const sql = queryText(0)
     expect(sql).toContain('EXISTS (')
@@ -101,14 +101,36 @@ describe('buildSearchWhere (via getAllDocuments)', () => {
     expect(sql).not.toContain('d.id_legacy LIKE')
   })
 
-  it('tokenizes and trims the author search term before applying the filter', async () => {
+  it('tokenizes and trims the contributor search term before applying the filter', async () => {
     mockQueryRaw.mockReset()
     mockQueryRaw.mockResolvedValueOnce([])
 
-    await getAllDocuments({ search: '  Rudy, Rÿser  ' })
+    await getAllDocuments({ contributor: '  Rudy, Rÿser  ' })
 
     const call = queryCall(0)
     expect(call.values.slice(0, 2)).toEqual(['%rudy%', '%ryser%'])
+  })
+
+  it('applies a publisher EXISTS clause', async () => {
+    mockQueryRaw.mockReset()
+    mockQueryRaw.mockResolvedValueOnce([])
+
+    await getAllDocuments({ publisher: 'Example Press' })
+
+    const sql = queryText(0)
+    expect(sql).toContain('FROM document_to_publishers dtp')
+    expect(sql).toContain('INNER JOIN publishers p ON p.id = dtp.publisher_id')
+  })
+
+  it('combines contributor and publisher filters', async () => {
+    mockQueryRaw.mockReset()
+    mockQueryRaw.mockResolvedValueOnce([])
+
+    await getAllDocuments({ contributor: 'Ada', publisher: 'Example Press' })
+
+    const sql = queryText(0)
+    expect(sql).toContain('FROM document_to_contributors dtc')
+    expect(sql).toContain('FROM document_to_publishers dtp')
   })
 })
 
@@ -153,7 +175,8 @@ describe('getReadyForLibraryDocuments advanced filters', () => {
 
   it('applies the full Advanced Search filter set to ready candidates before returning items', async () => {
     await getReadyForLibraryDocuments({
-      author: 'Matching Author',
+      contributor: 'Matching Contributor',
+      publisher: 'Matching Publisher',
       tag: 'collection-tag',
       statuses: ['APPROVED'],
       documentType: 'duplicate',
@@ -167,6 +190,7 @@ describe('getReadyForLibraryDocuments advanced filters', () => {
     const sql = queryText(1)
     expect(sql).toContain('d.id IN')
     expect(sql).toContain('FROM document_to_contributors dtc')
+    expect(sql).toContain('FROM document_to_publishers dtp')
     expect(sql).toContain('FROM document_to_tags dtt')
     expect(sql).toContain('FROM document_to_batches dtb')
     expect(sql).toContain('d.created_at >=')
@@ -570,6 +594,8 @@ describe('getNeedsReviewDocuments', () => {
             document_splitter_1: ['Boundary requires review.'],
           },
         }),
+        value_type: 'json',
+        metadata: { name: 'needs_review' },
       },
     ])
 
@@ -586,9 +612,14 @@ describe('getNeedsReviewDocuments', () => {
     expect(mockDocumentMetadataFindMany).toHaveBeenCalledWith({
       where: {
         document_id: { in: ['doc-1'] },
-        metadata: { name: 'needs_review' },
+        metadata: { name: { in: ['needs_review', 'comment_pipeline'] } },
       },
-      select: { document_id: true, value: true },
+      select: {
+        document_id: true,
+        value: true,
+        value_type: true,
+        metadata: { select: { name: true } },
+      },
     })
   })
 

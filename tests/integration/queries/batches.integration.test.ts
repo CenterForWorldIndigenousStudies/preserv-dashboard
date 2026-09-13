@@ -114,7 +114,11 @@ describeDbIntegration('batch queries (integration)', () => {
       const duplicateTagId = duplicateTag.id
 
       const contributor = await tx.contributors.create({
-        data: { id: randomUUID(), name: 'Ada Integration Author' },
+        data: { id: randomUUID(), name: 'Ada Integration Contributor' },
+        select: { id: true },
+      })
+      const publisher = await tx.publishers.create({
+        data: { id: randomUUID(), name: 'Integration Publisher' },
         select: { id: true },
       })
       const collectionTag = await tx.tags.create({
@@ -148,7 +152,8 @@ describeDbIntegration('batch queries (integration)', () => {
         id: string
         createdAt: Date
         batchId: string
-        authorId?: string
+        contributorId?: string
+        includePublisher?: boolean
         includeCollection?: boolean
         includeSearchTag?: boolean
         includeDuplicate?: boolean
@@ -186,14 +191,24 @@ describeDbIntegration('batch queries (integration)', () => {
           },
         })
 
-        if (options.authorId) {
+        if (options.contributorId) {
           await tx.document_to_contributors.create({
             data: {
               id: randomUUID(),
               document_id: options.id,
-              contributor_id: options.authorId,
+              contributor_id: options.contributorId,
               type: 'PRIMARY',
               role: 'author',
+            },
+          })
+        }
+
+        if (options.includePublisher) {
+          await tx.document_to_publishers.create({
+            data: {
+              id: randomUUID(),
+              document_id: options.id,
+              publisher_id: publisher.id,
             },
           })
         }
@@ -217,7 +232,8 @@ describeDbIntegration('batch queries (integration)', () => {
         id: `d${token}match`.slice(0, 36),
         createdAt: new Date('2026-03-15T12:00:00.000Z'),
         batchId: matchingBatch.id,
-        authorId: contributor.id,
+        contributorId: contributor.id,
+        includePublisher: true,
         includeCollection: true,
         includeSearchTag: true,
         includeDuplicate: true,
@@ -233,7 +249,8 @@ describeDbIntegration('batch queries (integration)', () => {
       })
 
       const filters = [
-        { label: 'author', filter: { author: 'Ada Integration Author' } },
+        { label: 'contributor', filter: { contributor: 'Ada Integration Contributor' } },
+        { label: 'publisher', filter: { publisher: 'Integration Publisher' } },
         { label: 'tag', filter: { tag: 'Batch Filter Tag' } },
         { label: 'statuses', filter: { statuses: ['APPROVED'] } },
         { label: 'document type', filter: { documentType: 'duplicate' as const } },
@@ -260,7 +277,8 @@ describeDbIntegration('batch queries (integration)', () => {
         page: 1,
         pageSize: 25,
         filters: {
-          author: 'Ada Integration Author',
+          contributor: 'Ada Integration Contributor',
+          publisher: 'Integration Publisher',
           tag: 'Batch Filter Tag',
           statuses: ['APPROVED'],
           documentType: 'duplicate' as const,

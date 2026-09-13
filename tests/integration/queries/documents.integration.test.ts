@@ -8,7 +8,11 @@ vi.mock('@lib/editHistory', () => ({
   markDocumentBatchesPublicationLocked: vi.fn(),
 }))
 
-import { applyReviewQueueDecisionInTransaction, getNeedsReviewDocuments, getNeedsReviewDocumentsCount } from '@lib/queries/reviewQueueQueries'
+import {
+  applyReviewQueueDecisionInTransaction,
+  getNeedsReviewDocuments,
+  getNeedsReviewDocumentsCount,
+} from '@lib/queries/reviewQueueQueries'
 import { getAllDocuments, getDocuments } from '@lib/queries/documentQueries'
 import { getReadyForLibraryDocuments } from '@lib/queries/readyForLibraryQueries'
 import { resetTestDatabase, shouldSkipDashboardIntegrationSuite } from '../support/test-db'
@@ -497,6 +501,18 @@ describeDbIntegration('documents queries (integration)', () => {
     return contributor
   }
 
+  const createTestPublisher = async (tx: Prisma.TransactionClient, name: string): Promise<{ id: string }> => {
+    const { token } = makeIds()
+    const publisher = await tx.publishers.create({
+      data: {
+        id: `p${token}`,
+        name,
+      },
+      select: { id: true },
+    })
+    return publisher
+  }
+
   const createTestBatch = async (tx: Prisma.TransactionClient, name: string): Promise<{ id: string }> => {
     const { token } = makeIds()
     const batch = await tx.batches.create({
@@ -554,6 +570,20 @@ describeDbIntegration('documents queries (integration)', () => {
         contributor_id: contributorId,
         type: 'PRIMARY',
         role: 'author',
+      },
+    })
+  }
+
+  const linkPublisherToDocument = async (
+    tx: Prisma.TransactionClient,
+    documentId: string,
+    publisherId: string,
+  ): Promise<void> => {
+    await tx.document_to_publishers.create({
+      data: {
+        id: `dp-${documentId}-${publisherId}`.slice(0, 36),
+        document_id: documentId,
+        publisher_id: publisherId,
       },
     })
   }
@@ -683,13 +713,13 @@ describeDbIntegration('documents queries (integration)', () => {
       })
     })
 
-    it('filters by author search term', async () => {
+    it('filters by contributor search term', async () => {
       await withRollbackTransaction(async (tx) => {
         const doc = await createTestDocument(tx, { name: 'UNIQUE_SEARCH_TERM_123xyz' })
         const contributor = await createTestContributor(tx, 'UNIQUE_SEARCH_TERM_123xyz Author')
         await linkContributorToDocument(tx, doc.id, contributor.id)
 
-        const result = await getAllDocuments({ search: 'UNIQUE_SEARCH_TERM_123xyz' }, tx)
+        const result = await getAllDocuments({ contributor: 'UNIQUE_SEARCH_TERM_123xyz' }, tx)
 
         const found = result.data.find((d) => d.id === doc.id)
         expect(found).toBeDefined()
@@ -701,7 +731,10 @@ describeDbIntegration('documents queries (integration)', () => {
         const docA = await createTestDocument(tx, { name: 'SORT_PAIR_SOURCE A' })
         const docB = await createTestDocument(tx, { name: 'SORT_PAIR_SOURCE B' })
         const contributor = await createTestContributor(tx, 'SORT_PAIR_SOURCE Author')
-        await Promise.all([linkContributorToDocument(tx, docA.id, contributor.id), linkContributorToDocument(tx, docB.id, contributor.id)])
+        await Promise.all([
+          linkContributorToDocument(tx, docA.id, contributor.id),
+          linkContributorToDocument(tx, docB.id, contributor.id),
+        ])
 
         await tx.document_to_metadata.createMany({
           data: [
@@ -780,10 +813,12 @@ describeDbIntegration('documents queries (integration)', () => {
         const matchingDoc = await createTestDocument(tx, { name: 'ADVANCED_SEARCH_MATCH' })
         const nonMatchingDoc = await createTestDocument(tx, { name: 'ADVANCED_SEARCH_MISS' })
         const contributor = await createTestContributor(tx, 'Mary Filter Person')
+        const publisher = await createTestPublisher(tx, 'Overview Advanced Publisher')
         const batch = await createTestBatch(tx, 'Overview Advanced Batch')
         const collectionTag = await createTestTag(tx, 'Overview Advanced Collection')
 
         await linkContributorToDocument(tx, matchingDoc.id, contributor.id)
+        await linkPublisherToDocument(tx, matchingDoc.id, publisher.id)
         await tx.document_to_batches.create({
           data: {
             id: `ab-${matchingDoc.id}`,
@@ -833,7 +868,8 @@ describeDbIntegration('documents queries (integration)', () => {
         const result = await getAllDocuments(
           {
             pageSize: 100,
-            search: 'Mary Filter',
+            contributor: 'Mary Filter',
+            publisher: 'Overview Advanced Publisher',
             statuses: ['APPROVED'],
             documentType: 'duplicate',
             batch: 'Advanced Batch',

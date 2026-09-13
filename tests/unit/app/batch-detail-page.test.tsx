@@ -95,7 +95,10 @@ describe('BatchDetailPage', () => {
     const markup = renderToStaticMarkup(
       await BatchDetailPage({
         params: Promise.resolve({ batchId: 'batch-1' }),
-        searchParams: Promise.resolve({}),
+        searchParams: Promise.resolve({
+          from: '/documents/doc-1',
+          fromLabel: 'document Document One',
+        }),
       }),
     )
 
@@ -116,7 +119,7 @@ describe('BatchDetailPage', () => {
     expect(markup).toContain('Targeted reprocessing')
     expect(markup).toContain('batch-purpose: Why this batch was created.')
     expect(markup).toContain('$0.123456')
-    expect(markup).toContain('Return to Batches')
+    expect(markup).toContain('Return to document Document One')
     expect(mockGetBatchDetail).toHaveBeenCalledWith('batch-1')
     expect(mockGetPipelineExecutionSnapshot).toHaveBeenCalledWith('batch-1')
   })

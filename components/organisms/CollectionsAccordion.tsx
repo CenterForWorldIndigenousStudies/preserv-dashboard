@@ -39,7 +39,8 @@ interface CollectionManagerState {
 const COLLECTION_EXPANDED_PARAM = 'expanded'
 
 type CollectionFilterKey =
-  | 'author'
+  | 'contributor'
+  | 'publisher'
   | 'tag'
   | 'statuses'
   | 'documentType'
@@ -55,7 +56,8 @@ function buildCollectionQueryParamKey(
     | 'page'
     | 'pageSize'
     | 'search'
-    | 'author'
+    | 'contributor'
+    | 'publisher'
     | 'tag'
     | 'statuses'
     | 'documentType'
@@ -96,8 +98,11 @@ function parseCollectionTableInitialQuery(
   const search = normalizeTextFilter(
     searchParams.get(buildCollectionQueryParamKey(collectionId, 'search')) ?? undefined,
   )
-  const author = normalizeTextFilter(
-    searchParams.get(buildCollectionQueryParamKey(collectionId, 'author')) ?? undefined,
+  const contributor = normalizeTextFilter(
+    searchParams.get(buildCollectionQueryParamKey(collectionId, 'contributor')) ?? undefined,
+  )
+  const publisher = normalizeTextFilter(
+    searchParams.get(buildCollectionQueryParamKey(collectionId, 'publisher')) ?? undefined,
   )
   const tag = normalizeTextFilter(searchParams.get(buildCollectionQueryParamKey(collectionId, 'tag')) ?? undefined)
   const batch = normalizeTextFilter(searchParams.get(buildCollectionQueryParamKey(collectionId, 'batch')) ?? undefined)
@@ -124,7 +129,8 @@ function parseCollectionTableInitialQuery(
     orderBy: searchParams.get(buildCollectionQueryParamKey(collectionId, 'orderBy')) ?? undefined,
     sortDirection: sortDirection === 'asc' ? 'asc' : sortDirection === 'desc' ? 'desc' : undefined,
     filters: {
-      author,
+      contributor,
+      publisher,
       tag,
       statuses,
       documentType,
@@ -170,7 +176,8 @@ function serializeCollectionsState(
       nextParams.set(buildCollectionQueryParamKey(collectionId, 'search'), query.search)
     }
     const filterParams: Array<[CollectionFilterKey, string | undefined]> = [
-      ['author', query.filters.author],
+      ['contributor', query.filters.contributor !== query.search ? query.filters.contributor : undefined],
+      ['publisher', query.filters.publisher],
       ['tag', query.filters.tag],
       ['statuses', serializeStatusesParam(query.filters.statuses)],
       ['documentType', query.filters.documentType === 'all' ? undefined : query.filters.documentType],

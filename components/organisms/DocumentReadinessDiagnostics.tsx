@@ -2,20 +2,31 @@ import { Box, List, ListItem, Paper, Typography } from '@mui/material'
 
 import { DetailFieldGrid } from '@molecules/DetailFieldGrid'
 import { NeedsReviewReasons } from '@molecules/NeedsReviewReasons'
+import { PipelineEventHistory } from '@molecules/PipelineEventHistory'
+import type { PipelineDiagnosticEvent, PipelineEventBatchLink } from 'types/commentPipeline'
 import type { DocumentReadiness } from 'types/documents'
 import type { NeedsReviewReasonGroup } from 'types/needsReview'
 
 interface DocumentReadinessDiagnosticsProps {
   readiness?: DocumentReadiness | null
   activeReviewReasons?: NeedsReviewReasonGroup[]
+  pipelineEvents?: PipelineDiagnosticEvent[]
+  pipelineBatchLinks?: Record<string, PipelineEventBatchLink>
 }
 
 export function DocumentReadinessDiagnostics({
   readiness,
   activeReviewReasons = [],
+  pipelineEvents = [],
+  pipelineBatchLinks = {},
 }: DocumentReadinessDiagnosticsProps): React.ReactElement {
   return (
-    <Paper component={'section'} elevation={0} sx={{ bgcolor: 'background.paper', p: { xs: 2.5, md: 3 } }}>
+    <Paper
+      id={'processing-diagnostics'}
+      component={'section'}
+      elevation={0}
+      sx={{ bgcolor: 'background.paper', p: { xs: 2.5, md: 3 } }}
+    >
       <Typography component={'h2'} variant={'h5'} color={'text.primary'}>
         {'Processing Diagnostics'}
       </Typography>
@@ -73,6 +84,12 @@ export function DocumentReadinessDiagnostics({
           </Box>
         </Box>
       ) : null}
+
+      <PipelineEventHistory
+        events={pipelineEvents}
+        batchLinks={pipelineBatchLinks}
+        defaultExpanded={activeReviewReasons.length > 0}
+      />
     </Paper>
   )
 }

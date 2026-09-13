@@ -1,14 +1,14 @@
-import type { ReactElement, ReactNode } from 'react'
+import type { ReactElement } from 'react'
 import { Stack } from '@mui/material'
 import { notFound } from 'next/navigation'
 
 import { ReturnToPreviousPage } from '@atoms/ReturnToPreviousPage'
-import { Cost } from '@atoms/Cost'
 import { PAGE_LABELS } from '@constants/pageLabels'
 import { BATCHES_PATH } from '@constants/paths'
 import { BatchOverviewFields } from '@molecules/BatchOverviewFields'
 import { BatchProcessingDetails } from '@organisms/BatchProcessingDetails'
 import { MetadataTable } from '@molecules/MetadataTable'
+import { MetadataValue } from '@molecules/MetadataValue'
 import { ProcessBatchProgress } from '@organisms/ProcessBatchProgress'
 import { DetailPageSection } from '@organisms/DetailPageSection'
 import { PageHeader } from '@organisms/PageHeader'
@@ -16,9 +16,6 @@ import { getBatchDetail } from '@lib/queries/batchQueries'
 import { getPipelineExecutionSnapshot } from '@lib/queries/pipelineExecutionQueries'
 import { getReprocessingDraft } from '@lib/queries/reprocessingDraftQueries'
 import { ReprocessingDraftWorkspace } from '@organisms/ReprocessingDraftWorkspace'
-import type { MetadataField } from 'types/metadata'
-import { parseMetadataValue } from '@lib/metadata'
-import { DateAtom } from '@atoms/Date'
 
 export const dynamic = 'force-dynamic'
 
@@ -59,24 +56,6 @@ export default async function BatchDetailPage({ params, searchParams }: BatchDet
 
   const requestedStages = executionSnapshot.batch?.pipelineRequestedStages ?? (draft ? [draft.restartStage] : [])
 
-  function renderMetadataValue(field: MetadataField): ReactNode {
-    if (field.name === 'cost_saved') {
-      return <Cost value={parseMetadataValue(field.value, field.value_type).display} />
-    }
-
-    const parsed = parseMetadataValue(field.value, field.value_type)
-
-    if (
-      ['binary_processing_datetime', 'duplicates_removed_timestamp', 'discrepancy_correction_timestamp'].includes(
-        field.name,
-      )
-    ) {
-      return <DateAtom value={parsed.display as number} />
-    }
-
-    return parsed.display
-  }
-
   return (
     <Stack spacing={4} sx={{ width: '100%' }}>
       <ReturnToPreviousPage
@@ -105,7 +84,7 @@ export default async function BatchDetailPage({ params, searchParams }: BatchDet
       </DetailPageSection>
 
       <DetailPageSection title={'Metadata'}>
-        <MetadataTable fields={detail.metadata} renderValue={renderMetadataValue} />
+        <MetadataTable fields={detail.metadata} renderValue={(field) => <MetadataValue field={field} />} />
       </DetailPageSection>
 
       {draft ? <ReprocessingDraftWorkspace initialDraft={draft} /> : null}

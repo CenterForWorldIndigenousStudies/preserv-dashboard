@@ -33,7 +33,8 @@ export function parseReadyForLibraryQueryParams(
   const pageSize = Number(firstSearchParam(params.pageSize))
   const sortDirection = firstSearchParam(params.sortDirection)
   const search = normalizeTextFilter(firstSearchParam(params.search))
-  const author = normalizeTextFilter(firstSearchParam(params.author))
+  const contributor = normalizeTextFilter(firstSearchParam(params.contributor))
+  const publisher = normalizeTextFilter(firstSearchParam(params.publisher))
   const tag = normalizeTextFilter(firstSearchParam(params.tag))
   const batch = normalizeTextFilter(firstSearchParam(params.batch))
   const collection = normalizeTextFilter(firstSearchParam(params.collection))
@@ -50,7 +51,8 @@ export function parseReadyForLibraryQueryParams(
     orderBy: firstSearchParam(params.orderBy),
     sortDirection: sortDirection === 'asc' ? 'asc' : sortDirection === 'desc' ? 'desc' : undefined,
     filters: {
-      author,
+      contributor: contributor ?? search,
+      publisher,
       tag,
       statuses,
       documentType,
@@ -201,7 +203,8 @@ export async function getReadyForLibraryDocuments(
     {
       page: 1,
       pageSize: approvedWithAccess.length,
-      search: normalizeTextFilter(params.author),
+      contributor: normalizeTextFilter(params.contributor ?? params.search),
+      publisher: normalizeTextFilter(params.publisher),
       tagIds,
       statuses: normalizedStatuses ?? ['APPROVED'],
       documentType: normalizeDocumentType(params.documentType),

@@ -34,7 +34,9 @@ If you want the document processing page working locally as well, you also need:
 
 ## Setup
 
-1. Install the tool versions defined in [`.tool-versions`](../../.tool-versions). This repo is set up to work with [`asdf`](https://asdf-vm.com/), which supports Linux and macOS. On Windows, install matching versions through the appropriate Windows tooling.
+1. Install the tool versions defined in [`.tool-versions`](../../.tool-versions).
+  This repo is set up to work with [`asdf`](https://asdf-vm.com/), which supports Linux and macOS.
+  On Windows, install matching versions through the appropriate Windows tooling.
 
    ```bash
    asdf install
@@ -148,5 +150,6 @@ Additional project documentation:
 - [Structural class naming](../../documentation/dashboard/styles/SEMANTIC_CLASSES.md)
 - [Database connection guidance](../../documentation/dashboard/db/CONNECTING_TO_DB.md)
 - [Database reference](../../documentation/db/PRESERVATION_DB.md)
+- [Document Details editing guide](../../documentation/dashboard/DOCUMENT_DETAILS_EDITING.md)
 - [Testing overview](../../documentation/dashboard/testing/TESTING.md)
 - [AI assistant guidance](AGENTS.md)

@@ -7,8 +7,10 @@ import type { MRT_ColumnDef } from 'material-react-table'
 import { getBatchesAction } from '@actions/batches'
 import { Cost } from '@atoms/Cost'
 import { DateAtom } from '@atoms/Date'
-import { Badge } from '@atoms/Badges/Badge'
-import { getBatchDetailPath } from '@constants/paths'
+import { ProcessingTime } from '@atoms/ProcessingTime'
+import { StatusPill } from '@atoms/Badges/StatusPill'
+import Link from 'next/link'
+import { getBatchDetailPath, getDocumentsBatchFilterPath } from '@constants/paths'
 import { PAGE_LABELS } from '@constants/pageLabels'
 import { DocumentTable } from '@organisms/DocumentTable/DocumentTable'
 import type { DocumentTableConfig, DocumentTableFetchResult, DocumentTableQuery } from '@organisms/DocumentTable/types'
@@ -49,7 +51,8 @@ export function BatchesTable({ initialData, initialQuery, filterOptions }: Batch
     nextParams.set('page', String(controller.query.page))
     nextParams.set('pageSize', String(controller.query.pageSize))
     syncSearchParam(nextParams, 'search', controller.query.search)
-    syncSearchParam(nextParams, 'author', controller.query.filters.author)
+    syncSearchParam(nextParams, 'contributor', controller.query.filters.contributor)
+    syncSearchParam(nextParams, 'publisher', controller.query.filters.publisher)
     syncSearchParam(nextParams, 'tag', controller.query.filters.tag)
     syncSearchParam(nextParams, 'statuses', serializeStatusesParam(controller.query.filters.statuses))
     syncSearchParam(nextParams, 'lifecycleStatuses', serializeStatusesParam(controller.query.filters.lifecycleStatuses))
@@ -105,17 +108,7 @@ export function BatchesTable({ initialData, initialQuery, filterOptions }: Batch
         size: 170,
         enableSorting: false,
         Cell: ({ row }) => (
-          <Badge
-            variant={
-              row.original.lifecycleStatus === 'failed'
-                ? 'danger'
-                : row.original.lifecycleStatus === 'complete'
-                  ? 'success'
-                  : 'neutral'
-            }
-          >
-            {row.original.lifecycleStatus ?? 'Unknown'}
-          </Badge>
+          <StatusPill status={row.original.lifecycleStatus} />
         ),
       },
       {
@@ -128,6 +121,17 @@ export function BatchesTable({ initialData, initialQuery, filterOptions }: Batch
         accessorKey: 'documentCount',
         header: 'Documents',
         size: 130,
+        Cell: ({ row }) => {
+          const batchName = row.original.name?.trim() || row.original.id
+          return (
+            <Link
+              href={getDocumentsBatchFilterPath(batchName, currentBatchListHref, PAGE_LABELS.batches)}
+              style={{ color: 'var(--cwis-action-primary)' }}
+            >
+              {row.original.documentCount}
+            </Link>
+          )
+        },
       },
       {
         accessorKey: 'totalCost',
@@ -139,6 +143,7 @@ export function BatchesTable({ initialData, initialQuery, filterOptions }: Batch
         accessorKey: 'processingTime',
         header: 'Processing Time',
         size: 180,
+        Cell: ({ row }) => <ProcessingTime value={row.original.processingTime} />,
       },
     ],
     [currentBatchListHref],

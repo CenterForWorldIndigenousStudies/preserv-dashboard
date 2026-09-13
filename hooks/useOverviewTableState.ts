@@ -38,24 +38,28 @@ function defaultQueryValue<T>(value: T | undefined, fallback: T): T {
 }
 
 function buildComparableQueryShape(queryParams: DocumentsQueryParams | undefined): string {
+  const normalizedQueryParams = queryParams ?? {}
+
   return JSON.stringify([
-    normalizePageNumber(queryParams?.page),
-    defaultQueryValue(queryParams?.pageSize, 25),
-    queryParams?.orderBy,
-    queryParams?.sortDirection,
-    queryParams?.search,
-    queryParams?.tag,
-    serializeStatusesParam(queryParams?.statuses),
-    queryParams?.documentType,
-    queryParams?.batch,
-    queryParams?.createdFrom,
-    queryParams?.createdTo,
-    queryParams?.collection,
-    queryParams?.accessLevel,
-    queryParams?.requireValidationStatus ?? false,
-    queryParams?.cursorValue,
-    queryParams?.cursorId,
-    queryParams?.cursorDirection,
+    normalizePageNumber(normalizedQueryParams.page),
+    defaultQueryValue(normalizedQueryParams.pageSize, 25),
+    normalizedQueryParams.orderBy,
+    normalizedQueryParams.sortDirection,
+    normalizedQueryParams.search,
+    normalizedQueryParams.contributor,
+    normalizedQueryParams.publisher,
+    normalizedQueryParams.tag,
+    serializeStatusesParam(normalizedQueryParams.statuses),
+    normalizedQueryParams.documentType,
+    normalizedQueryParams.batch,
+    normalizedQueryParams.createdFrom,
+    normalizedQueryParams.createdTo,
+    normalizedQueryParams.collection,
+    normalizedQueryParams.accessLevel,
+    normalizedQueryParams.requireValidationStatus ?? false,
+    normalizedQueryParams.cursorValue,
+    normalizedQueryParams.cursorId,
+    normalizedQueryParams.cursorDirection,
   ])
 }
 
@@ -70,6 +74,12 @@ function syncSearchParam(nextParams: URLSearchParams, key: string, value: string
 
 function syncOverviewFilterSearchParams(nextParams: URLSearchParams, queryParams: DocumentsQueryParams): void {
   syncSearchParam(nextParams, 'search', queryParams.search)
+  syncSearchParam(
+    nextParams,
+    'contributor',
+    queryParams.contributor !== queryParams.search ? queryParams.contributor : undefined,
+  )
+  syncSearchParam(nextParams, 'publisher', queryParams.publisher)
   syncSearchParam(nextParams, 'tag', queryParams.tag)
   syncSearchParam(nextParams, 'statuses', serializeStatusesParam(queryParams.statuses))
   syncSearchParam(
@@ -115,6 +125,8 @@ export function useOverviewTableState(initialQuery?: DocumentsQueryParams) {
   const [pageSize, setPageSize] = useState(initialQuery?.pageSize ?? 25)
   const [sorting, setSorting] = useState<MRT_SortingState>(buildInitialSorting(initialQuery))
   const [globalFilter, setGlobalFilter] = useState(initialQuery?.search ?? '')
+  const [contributor, setContributor] = useState(initialQuery?.contributor)
+  const [publisher, setPublisher] = useState(initialQuery?.publisher)
   const [tag, setTag] = useState(initialQuery?.tag)
   const [statuses, setStatuses] = useState(initialQuery?.statuses)
   const [documentType, setDocumentType] = useState(initialQuery?.documentType ?? 'all')
@@ -136,7 +148,8 @@ export function useOverviewTableState(initialQuery?: DocumentsQueryParams) {
       orderBy: sorting[0]?.id as DocumentsQueryParams['orderBy'],
       sortDirection: sorting[0] ? (sorting[0].desc ? 'desc' : 'asc') : undefined,
       search: globalFilter || undefined,
-      author: globalFilter || undefined,
+      contributor,
+      publisher,
       tag,
       statuses,
       documentType,
@@ -154,6 +167,7 @@ export function useOverviewTableState(initialQuery?: DocumentsQueryParams) {
       accessLevel,
       batch,
       collection,
+      contributor,
       createdFrom,
       createdTo,
       cursorDirection,
@@ -163,6 +177,7 @@ export function useOverviewTableState(initialQuery?: DocumentsQueryParams) {
       globalFilter,
       page,
       pageSize,
+      publisher,
       sorting,
       statuses,
       tag,
@@ -228,12 +243,17 @@ export function useOverviewTableState(initialQuery?: DocumentsQueryParams) {
     searchParams,
     statuses,
     tag,
+    contributor,
+    publisher,
     setGlobalFilter: (nextValue: string) => {
       setGlobalFilter(nextValue)
+      setContributor(nextValue.trim() || undefined)
       resetToFirstPage()
     },
     setOverviewFilters: (filters: AdvancedSearchFilters) => {
-      setGlobalFilter(filters.author ?? '')
+      setGlobalFilter(filters.contributor ?? '')
+      setContributor(filters.contributor)
+      setPublisher(filters.publisher)
       setTag(filters.tag)
       setStatuses(filters.statuses)
       setDocumentType(filters.documentType ?? 'all')

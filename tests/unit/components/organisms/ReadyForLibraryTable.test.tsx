@@ -94,4 +94,42 @@ describe('ReadyForLibraryTable', () => {
     )
     expect(mocks.documentTableProps?.config).toBeDefined()
   })
+
+  it('renders validation status with the shared human-readable status pill', () => {
+    renderToStaticMarkup(
+      <ReadyForLibraryTable
+        initialData={{
+          data: [],
+          totalCount: 0,
+          pageInfo: {
+            pageSize: 50,
+            hasNextPage: false,
+            hasPreviousPage: false,
+            startCursor: null,
+            endCursor: null,
+          },
+        }}
+        initialQuery={{ page: 1, pageSize: 50, filters: {} }}
+        filterOptions={filterOptions}
+      />,
+    )
+
+    const config = mocks.documentTableProps?.config as {
+      definition: {
+        columns: Array<{
+          accessorKey?: string
+          Cell?: (args: unknown) => ReactNode
+        }>
+      }
+    }
+    const validationStatusCell = config.definition.columns.find(
+      ({ accessorKey }) => accessorKey === 'validation_status',
+    )?.Cell
+    const markup = renderToStaticMarkup(
+      <>{validationStatusCell?.({ renderedCellValue: 'NEEDS_REVIEW' })}</>,
+    )
+
+    expect(markup).toContain('Needs Review')
+    expect(markup).not.toContain('>NEEDS_REVIEW<')
+  })
 })

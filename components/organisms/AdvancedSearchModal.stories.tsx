@@ -8,7 +8,8 @@ import type { AdvancedSearchFilters, FilterOptions } from '@lib/search'
 import { AdvancedSearchModal } from './AdvancedSearchModal'
 
 const defaultFilters: AdvancedSearchFilters = {
-  author: '',
+  contributor: '',
+  publisher: '',
   statuses: [],
   lifecycleStatuses: [],
   publicationStatuses: [],
@@ -45,7 +46,8 @@ export const Default: Story = {}
 export const WithActiveFilters: Story = {
   args: {
     filters: {
-      author: 'Maria Gonzalez',
+      contributor: 'Maria Gonzalez',
+      publisher: 'Example Press',
       statuses: ['NEEDS_REVIEW', 'APPROVED'],
       lifecycleStatuses: ['FAILED'],
       publicationStatuses: ['NOT_STARTED'],

@@ -23,3 +23,20 @@ export function calculateCurrentProcessingTime(details: Readonly<Record<string, 
 
   return hasDuration ? totalMilliseconds / 1000 : null
 }
+
+export function formatProcessingTime(value: unknown): string {
+  if (value === null || value === undefined || value === '') {
+    return '—'
+  }
+
+  if (typeof value !== 'number' && typeof value !== 'string') {
+    return '—'
+  }
+
+  const seconds = Number(value)
+  if (!Number.isFinite(seconds) || seconds < 0) {
+    return typeof value === 'string' ? value : '—'
+  }
+
+  return `${seconds} second${seconds === 1 ? '' : 's'}`
+}

@@ -1,5 +1,5 @@
 import { Suspense, type ReactElement } from 'react'
-import { Card, CardContent, Stack, Typography } from '@mui/material'
+import { Stack, Typography } from '@mui/material'
 
 import { NeedsReviewReasons } from '@molecules/NeedsReviewReasons'
 import { PageHeader } from '@organisms/PageHeader'
@@ -9,15 +9,12 @@ import type { DocumentTableFetchResult, DocumentTableQuery } from '@organisms/Do
 import { getDocumentFilterOptions } from '@lib/queries/queries'
 import { getReadyForLibraryDocuments, parseReadyForLibraryQueryParams } from '@lib/queries/readyForLibraryQueries'
 import type { DocumentsQueryParams } from '@lib/queries/documentQueries'
-import { getUniqueDocumentCountByAuthor } from '@lib/readyForLibraryAuthorMetrics'
 import type { AdvancedSearchFilters } from '@lib/search'
 import { PAGE_LABELS } from '@constants/pageLabels'
 import { READY_FOR_LIBRARY_READINESS_EXPLANATION_ID } from '@constants/pageContent'
 import type { ReadyForLibraryItem } from 'types/documents'
 
 export const dynamic = 'force-dynamic'
-
-const FEATURED_AUTHOR_NAME = 'Ryser, Rudolph C.'
 
 const READINESS_EXPLANATION_GROUPS = {
   'Why documents appear here': ['Validation status is APPROVED.', 'An access level is set.'],
@@ -30,30 +27,6 @@ const READINESS_EXPLANATION_GROUPS = {
     'Collection linkage, Fedora collection mapping, duplicate and review exclusions, and other ingest checks may still block handoff.',
     'Drive, Fedora, and Workbench conditions are still evaluated at execution time.',
   ],
-}
-
-function AuthorCountCard({ authorName, count }: { authorName: string; count: number }) {
-  return (
-    <Card component={'section'} sx={{ border: '1px solid', borderColor: 'rgba(53, 88, 52, 0.15)' }}>
-      <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
-        <Typography
-          variant={'caption'}
-          sx={{ color: 'text.secondary', letterSpacing: '0.15em', textTransform: 'uppercase' }}
-        >
-          {'Featured author'}
-        </Typography>
-        <Typography variant={'h6'} sx={{ color: 'text.primary', mt: 1 }}>
-          {authorName}
-        </Typography>
-        <Typography component={'p'} variant={'h3'} sx={{ color: 'text.primary', mt: 1.5 }}>
-          {count}
-        </Typography>
-        <Typography variant={'body2'} color={'text.secondary'} sx={{ mt: 0.5 }}>
-          {'Unique documents linked to this author'}
-        </Typography>
-      </CardContent>
-    </Card>
-  )
 }
 
 function ReadyForLibraryReadinessExplanation() {
@@ -147,7 +120,7 @@ function buildReadyForLibraryInitialData(
 async function ReadyForLibraryContent({ searchParams }: ReadyForLibraryPageProps) {
   const resolvedSearchParams = await searchParams
   const initialQuery = parseReadyForLibraryQueryParams(resolvedSearchParams)
-  const [result, filterOptions, featuredAuthorDocumentCount] = await Promise.all([
+  const [result, filterOptions] = await Promise.all([
     getReadyForLibraryDocuments({
       ...initialQuery.filters,
       page: initialQuery.page,
@@ -157,15 +130,11 @@ async function ReadyForLibraryContent({ searchParams }: ReadyForLibraryPageProps
       sortDirection: initialQuery.sortDirection,
     }),
     getDocumentFilterOptions(),
-    getUniqueDocumentCountByAuthor(FEATURED_AUTHOR_NAME),
   ])
   const initialData = buildReadyForLibraryInitialData(result, initialQuery)
 
   return (
-    <>
-      <AuthorCountCard authorName={FEATURED_AUTHOR_NAME} count={featuredAuthorDocumentCount} />
-      <ReadyForLibraryTable initialData={initialData} initialQuery={initialQuery} filterOptions={filterOptions} />
-    </>
+    <ReadyForLibraryTable initialData={initialData} initialQuery={initialQuery} filterOptions={filterOptions} />
   )
 }
 

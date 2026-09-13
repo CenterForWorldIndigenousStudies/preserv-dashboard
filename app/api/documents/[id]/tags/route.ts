@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Prisma } from '@lib/prisma/generated/client'
-import { createEditHistoryEntry, markDocumentBatchesPublicationLocked } from '@lib/editHistory'
+import { getDashboardSession } from '@root/auth'
+import {
+  createDocumentEditHistoryEntry,
+  createEditHistoryEntry,
+  markDocumentBatchesPublicationLocked,
+} from '@lib/editHistory'
 import { db } from '@lib/db'
 import { buildNameHash } from '@lib/tagHash'
 import { getProtectedTagDeletionMessage, isProtectedTagName, normalizeTagName } from '@lib/tagUtils'
@@ -24,6 +29,12 @@ interface RemoveDocumentTagRequestBody {
 
 export async function POST(request: NextRequest, context: RouteContext): Promise<NextResponse> {
   try {
+    const session = await getDashboardSession()
+    const editorEmail = session?.user?.email?.trim()
+    if (!editorEmail) {
+      return NextResponse.json({ error: 'Authentication is required.' }, { status: 401 })
+    }
+
     const { id: documentId } = await context.params
     const body = (await request.json()) as AddDocumentTagRequestBody
     const tagId = typeof body.tagId === 'string' ? body.tagId : undefined
@@ -65,6 +76,7 @@ export async function POST(request: NextRequest, context: RouteContext): Promise
             previousValue: null,
             newValue: tag,
             editSummary: `Created tag "${tag.name}"`,
+            editorEmail,
           })
         }
       }
@@ -99,11 +111,12 @@ export async function POST(request: NextRequest, context: RouteContext): Promise
         include: { tags: true },
       })
 
-      await createEditHistoryEntry(tx, {
-        entityTable: 'document_to_tags',
-        entityId: createdLink.id,
+      await createDocumentEditHistoryEntry(tx, {
+        documentId,
+        fieldName: `tag:${tag.id}`,
         previousValue: null,
-        newValue: createdLink,
+        newValue: { id: tag.id, name: tag.name, notes: createdLink.notes },
+        editorEmail,
         editSummary: `Added tag "${tag.name}" to document`,
       })
       await markDocumentBatchesPublicationLocked(tx, documentId)
@@ -128,6 +141,12 @@ export async function POST(request: NextRequest, context: RouteContext): Promise
 
 export async function DELETE(request: NextRequest, context: RouteContext): Promise<NextResponse> {
   try {
+    const session = await getDashboardSession()
+    const editorEmail = session?.user?.email?.trim()
+    if (!editorEmail) {
+      return NextResponse.json({ error: 'Authentication is required.' }, { status: 401 })
+    }
+
     const { id: documentId } = await context.params
     const body = (await request.json()) as RemoveDocumentTagRequestBody
     const tagId = typeof body.tagId === 'string' ? body.tagId : ''
@@ -158,11 +177,12 @@ export async function DELETE(request: NextRequest, context: RouteContext): Promi
         where: { id: documentTag.id },
       })
 
-      await createEditHistoryEntry(tx, {
-        entityTable: 'document_to_tags',
-        entityId: documentTag.id,
-        previousValue: documentTag,
+      await createDocumentEditHistoryEntry(tx, {
+        documentId,
+        fieldName: `tag:${documentTag.tag_id}`,
+        previousValue: { id: documentTag.tag_id, name: documentTag.tags.name, notes: documentTag.notes },
         newValue: null,
+        editorEmail,
         editSummary: `Removed tag "${documentTag.tags.name}" from document`,
       })
       await markDocumentBatchesPublicationLocked(tx, documentId)
@@ -183,6 +203,7 @@ export async function DELETE(request: NextRequest, context: RouteContext): Promi
               previousValue: tagRecord,
               newValue: null,
               editSummary: `Deleted tag "${tagRecord.name}"`,
+              editorEmail,
             })
             deletedTag = true
           }

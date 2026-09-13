@@ -1,32 +1,18 @@
-import type { ReactElement } from 'react'
+'use client'
+
+import { useMemo, type ReactElement } from 'react'
+import Box from '@mui/material/Box'
+import type { MRT_ColumnDef } from 'material-react-table'
 import Link from 'next/link'
 
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material'
-
+import { DateAtom } from '@atoms/Date'
 import { Cost } from '@atoms/Cost'
-import { getBatchDetailPath } from '@constants/paths'
+import { ProcessingTime } from '@atoms/ProcessingTime'
+import { StatusPill } from '@atoms/Badges/StatusPill'
+import { getBatchDetailPath, getDocumentsBatchFilterPath } from '@constants/paths'
+import { EntityNameBlock } from '@molecules/EntityNameBlock'
+import { DetailDataTable } from '@organisms/DetailDataTable'
 import type { DocumentToBatch } from 'types/documents'
-
-const tableHeaderCellSx = {
-  backgroundColor: 'background.default',
-  borderBottom: '2px solid',
-  borderBottomColor: 'primary.main',
-  color: 'text.primary',
-  fontSize: '0.75rem',
-  fontWeight: 600,
-  letterSpacing: '0.1em',
-  px: 1.5,
-  py: 1,
-  textTransform: 'uppercase' as const,
-}
-
-const tableBodyCellSx = {
-  borderBottom: '1px solid',
-  borderColor: 'divider',
-  px: 1.5,
-  py: 1.5,
-  verticalAlign: 'top',
-}
 
 interface DocumentBatchAssociationsProps {
   batchAssociations: DocumentToBatch[]
@@ -39,54 +25,77 @@ export function DocumentBatchAssociations({
   batchReturnHref,
   batchReturnLabel,
 }: DocumentBatchAssociationsProps): ReactElement {
-  if (batchAssociations.length === 0) {
-    return (
-      <Typography variant={'body2'} color={'text.secondary'} sx={{ mt: 3 }}>
-        {'No batches are associated with this document.'}
-      </Typography>
-    )
-  }
+  const columns = useMemo<MRT_ColumnDef<DocumentToBatch>[]>(
+    () => [
+      {
+        id: 'batch',
+        accessorFn: (row) => row.batch_name ?? row.batch_legacy_id ?? row.batch_id,
+        header: 'Batch',
+        size: 360,
+        Cell: ({ row }) => (
+          <EntityNameBlock
+            name={row.original.batch_name}
+            id={row.original.batch_id}
+            legacyId={row.original.batch_legacy_id}
+            fallbackName={'Untitled batch'}
+            href={getBatchDetailPath(row.original.batch_id, batchReturnHref, batchReturnLabel)}
+          />
+        ),
+      },
+      {
+        accessorKey: 'batch_status',
+        header: 'Status',
+        size: 150,
+        Cell: ({ row }) => <StatusPill status={row.original.batch_status} />,
+      },
+      {
+        accessorKey: 'batch_started_at',
+        header: 'Started',
+        size: 180,
+        Cell: ({ row }) => <DateAtom value={row.original.batch_started_at} />,
+      },
+      {
+        id: 'documentCount',
+        accessorFn: (row) => row.batch_document_count,
+        header: 'Documents',
+        size: 130,
+        Cell: ({ row }) => {
+          const batchName = row.original.batch_name?.trim() || row.original.batch_legacy_id || row.original.batch_id
+          return (
+            <Link
+              href={getDocumentsBatchFilterPath(batchName, batchReturnHref, batchReturnLabel)}
+              style={{ color: 'var(--cwis-action-primary)' }}
+            >
+              {row.original.batch_document_count}
+            </Link>
+          )
+        },
+      },
+      {
+        id: 'cost',
+        accessorFn: (row) => (row.cost === null ? undefined : Number(row.cost)),
+        header: 'Document Cost',
+        size: 160,
+        Cell: ({ row }) => <Cost value={row.original.cost} />,
+      },
+      {
+        accessorKey: 'processing_time_seconds',
+        header: 'Processing Time',
+        size: 180,
+        Cell: ({ row }) => <ProcessingTime value={row.original.processing_time_seconds} />,
+      },
+    ],
+    [batchReturnHref, batchReturnLabel],
+  )
 
   return (
-    <TableContainer sx={{ mt: 3, overflowX: 'auto' }}>
-      <Table size={'small'} sx={{ minWidth: 760 }}>
-        <TableHead>
-          <TableRow>
-            <TableCell scope={'col'} sx={tableHeaderCellSx}>
-              {'Batch'}
-            </TableCell>
-            <TableCell scope={'col'} sx={tableHeaderCellSx}>
-              {'Batch Origin'}
-            </TableCell>
-            <TableCell scope={'col'} sx={tableHeaderCellSx}>
-              {'Processing Time'}
-            </TableCell>
-            <TableCell scope={'col'} sx={tableHeaderCellSx}>
-              {'Status'}
-            </TableCell>
-            <TableCell scope={'col'} sx={tableHeaderCellSx}>
-              {'Document Cost'}
-            </TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {batchAssociations.map((batchLink) => (
-            <TableRow key={batchLink.id}>
-              <TableCell sx={{ ...tableBodyCellSx, fontWeight: 500 }}>
-                <Link href={getBatchDetailPath(batchLink.batch_id, batchReturnHref, batchReturnLabel)}>
-                  {batchLink.batch_name ?? batchLink.batch_legacy_id ?? batchLink.batch_id}
-                </Link>
-              </TableCell>
-              <TableCell sx={tableBodyCellSx}>{batchLink.batch_origin ?? '—'}</TableCell>
-              <TableCell sx={tableBodyCellSx}>{batchLink.processing_time_seconds ?? '—'}</TableCell>
-              <TableCell sx={tableBodyCellSx}>{batchLink.batch_status ?? '—'}</TableCell>
-              <TableCell sx={tableBodyCellSx}>
-                <Cost value={batchLink.cost} />
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
+    <Box sx={{ mt: 3 }}>
+      <DetailDataTable
+        columns={columns}
+        data={batchAssociations}
+        emptyMessage={'No batches are associated with this document.'}
+        enableSorting
+      />
+    </Box>
   )
 }

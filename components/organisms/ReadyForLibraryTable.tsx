@@ -9,6 +9,7 @@ import { getReadyForLibraryAction } from '@actions/ready-for-library'
 import { getDocumentDetailPath } from '@constants/paths'
 import { PAGE_LABELS } from '@constants/pageLabels'
 import { DateAtom } from '@atoms/Date'
+import { StatusPill } from '@atoms/Badges/StatusPill'
 import { DocumentReprocessingActions } from '@molecules/DocumentReprocessingActions'
 import { DocumentTable } from '@organisms/DocumentTable/DocumentTable'
 import { useDocumentTableController } from '@organisms/DocumentTable/useDocumentTableController'
@@ -96,7 +97,14 @@ export function ReadyForLibraryTable({
     nextParams.set('page', String(controller.query.page))
     nextParams.set('pageSize', String(controller.query.pageSize))
     syncReadyForLibrarySearchParam(nextParams, 'search', controller.query.search)
-    syncReadyForLibrarySearchParam(nextParams, 'author', controller.query.filters.author)
+    syncReadyForLibrarySearchParam(
+      nextParams,
+      'contributor',
+      controller.query.filters.contributor !== controller.query.search
+        ? controller.query.filters.contributor
+        : undefined,
+    )
+    syncReadyForLibrarySearchParam(nextParams, 'publisher', controller.query.filters.publisher)
     syncReadyForLibrarySearchParam(nextParams, 'tag', controller.query.filters.tag)
     syncReadyForLibrarySearchParam(nextParams, 'statuses', serializeStatusesParam(controller.query.filters.statuses))
     syncReadyForLibrarySearchParam(
@@ -148,7 +156,10 @@ export function ReadyForLibraryTable({
         accessorKey: 'validation_status',
         header: 'Validation Status',
         size: 160,
-        Cell: ({ renderedCellValue }) => String((renderedCellValue as string | null) ?? '—'),
+        Cell: ({ renderedCellValue }) => {
+          const value = String((renderedCellValue as string | null) ?? '').trim()
+          return value ? <StatusPill status={value} /> : '—'
+        },
       },
       {
         accessorKey: 'validation_timestamp',

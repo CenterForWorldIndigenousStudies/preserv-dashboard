@@ -1,9 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
-const { mockFindFirst, mockTransaction } = vi.hoisted(() => ({
+const { mockFindFirst, mockTransaction, mockGetDashboardSession } = vi.hoisted(() => ({
   mockFindFirst: vi.fn(),
   mockTransaction: vi.fn(),
+  mockGetDashboardSession: vi.fn(),
 }))
 
 vi.mock('@lib/db', () => ({
@@ -15,8 +16,12 @@ vi.mock('@lib/db', () => ({
   },
 }))
 
+vi.mock('@root/auth', () => ({ getDashboardSession: mockGetDashboardSession }))
+
 vi.mock('@lib/editHistory', () => ({
+  createDocumentEditHistoryEntry: vi.fn(),
   createEditHistoryEntry: vi.fn(),
+  markDocumentBatchesPublicationLocked: vi.fn(),
 }))
 
 import { DELETE } from '@api/documents/[id]/tags/route'
@@ -28,6 +33,7 @@ describe('document tags delete route', () => {
   })
 
   it('blocks protected system deletion while still using the document-tag endpoint', async () => {
+    mockGetDashboardSession.mockResolvedValue({ user: { email: 'editor@example.test' } })
     mockFindFirst.mockResolvedValue({
       id: 'document-tag-1',
       document_id: 'doc-1',

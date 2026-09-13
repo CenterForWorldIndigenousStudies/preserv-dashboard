@@ -1,7 +1,9 @@
 import type { ReactElement, ReactNode } from 'react'
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material'
 
-import { MetadataNameWithNotes } from '@molecules/MetadataNameWithNotes'
+import { MetadataNameWithNotes } from '@atoms/MetadataNameWithNotes'
+import { EditableMetadataValueCell } from '@molecules/EditableMetadataValueCell'
+import { isEditableDocumentMetadataField } from '@constants/documentEditing'
 import { parseMetadataValue } from '@lib/metadata'
 import type { MetadataField } from 'types/metadata'
 
@@ -31,6 +33,7 @@ interface MetadataTableProps {
   emptyMessage?: string
   minWidth?: number
   renderValue?: (field: MetadataField) => ReactNode
+  editable?: boolean
 }
 
 export function MetadataTable({
@@ -38,6 +41,7 @@ export function MetadataTable({
   emptyMessage = 'No metadata available.',
   minWidth = 560,
   renderValue = (field) => parseMetadataValue(field.value, field.value_type).display,
+  editable = true,
 }: MetadataTableProps): ReactElement {
   if (fields.length === 0) {
     return (
@@ -64,9 +68,16 @@ export function MetadataTable({
           {fields.map((field, index) => (
             <TableRow key={`${field.name}-${index}`}>
               <TableCell component={'th'} scope={'row'} sx={{ ...tableBodyCellSx, fontWeight: 500 }}>
-                <MetadataNameWithNotes name={field.name} notes={field.notes} />
+                <MetadataNameWithNotes name={field.name} displayName={field.displayName} notes={field.notes} />
               </TableCell>
-              <TableCell sx={tableBodyCellSx}>{renderValue(field)}</TableCell>
+              <TableCell sx={tableBodyCellSx}>
+                <EditableMetadataValueCell
+                  field={field}
+                  editable={editable && isEditableDocumentMetadataField(field.name)}
+                >
+                  {renderValue(field)}
+                </EditableMetadataValueCell>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>

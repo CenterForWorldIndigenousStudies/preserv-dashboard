@@ -50,6 +50,8 @@ function parseReviewQueueQueryParams(params: Record<string, string | string[] | 
   const orderBy = firstSearchParam(params.orderBy) as DocumentsQueryParams['orderBy']
   const sortDirection = firstSearchParam(params.sortDirection) as DocumentsQueryParams['sortDirection']
   const search = normalizeTextFilter(firstSearchParam(params.search))
+  const contributor = normalizeTextFilter(firstSearchParam(params.contributor))
+  const publisher = normalizeTextFilter(firstSearchParam(params.publisher))
   const tag = normalizeTextFilter(firstSearchParam(params.tag))
   const batch = normalizeTextFilter(firstSearchParam(params.batch))
   const collection = normalizeTextFilter(firstSearchParam(params.collection))
@@ -68,7 +70,8 @@ function parseReviewQueueQueryParams(params: Record<string, string | string[] | 
     orderBy,
     sortDirection: sortDirection === 'asc' ? 'asc' : sortDirection === 'desc' ? 'desc' : undefined,
     search,
-    author: search,
+    contributor: contributor ?? search,
+    publisher,
     tag,
     statuses,
     documentType,

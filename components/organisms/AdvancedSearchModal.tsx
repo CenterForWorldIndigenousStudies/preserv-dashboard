@@ -172,7 +172,8 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
 
   const activeFilterCount = useMemo(() => {
     let count = 0
-    if (filters.author) count += 1
+    if (filters.contributor) count += 1
+    if (filters.publisher) count += 1
     if (filters.tag) count += 1
     if (filters.statuses?.length) count += 1
     if (filters.lifecycleStatuses?.length) count += 1
@@ -196,7 +197,8 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
 
   const applyFilters = useCallback(() => {
     onApply({
-      author: draftFilters.author?.trim() || undefined,
+      contributor: draftFilters.contributor?.trim() || undefined,
+      publisher: draftFilters.publisher?.trim() || undefined,
       tag: draftFilters.tag?.trim() || undefined,
       statuses: draftFilters.statuses?.length ? draftFilters.statuses : undefined,
       lifecycleStatuses: draftFilters.lifecycleStatuses?.length ? draftFilters.lifecycleStatuses : undefined,
@@ -341,12 +343,23 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
             }}
           >
             <TextField
-              label={'Author'}
-              value={draftFilters.author ?? ''}
+              label={'Contributor'}
+              value={draftFilters.contributor ?? ''}
               onChange={(event) =>
-                setDraftFilters((previousFilters) => ({ ...previousFilters, author: event.target.value }))
+                setDraftFilters((previousFilters) => ({ ...previousFilters, contributor: event.target.value }))
               }
-              placeholder={'Partial author name'}
+              placeholder={'Partial contributor name'}
+              fullWidth
+              sx={{ mt: 0.5 }}
+            />
+
+            <TextField
+              label={'Publisher'}
+              value={draftFilters.publisher ?? ''}
+              onChange={(event) =>
+                setDraftFilters((previousFilters) => ({ ...previousFilters, publisher: event.target.value }))
+              }
+              placeholder={'Partial publisher name'}
               fullWidth
               sx={{ mt: 0.5 }}
             />

@@ -138,6 +138,22 @@ export function normalizeNeedsReviewValue(value: unknown): NeedsReviewReasonGrou
     : []
 }
 
+export function appendNeedsReviewReason(value: unknown, reason: string): Record<string, string[]> {
+  const normalizedReason = reason.trim()
+  const groups = normalizeNeedsReviewValue(value)
+  const result: Record<string, string[]> = {}
+
+  for (const group of groups) {
+    result[group.serviceKey] = [...(result[group.serviceKey] ?? []), ...group.reasons]
+  }
+
+  if (normalizedReason && !result.document_edit?.includes(normalizedReason)) {
+    result.document_edit = [...(result.document_edit ?? []), normalizedReason]
+  }
+
+  return result
+}
+
 export function composeReviewQueueReasons(value: unknown, validationStatus: string | null | undefined) {
   const explicitReasons = normalizeNeedsReviewValue(value)
   if (explicitReasons.length > 0) {

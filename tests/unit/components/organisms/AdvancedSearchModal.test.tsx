@@ -56,7 +56,8 @@ import type { AdvancedSearchFilters, FilterOptions } from '@lib/search'
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 const defaultFilters: AdvancedSearchFilters = {
-  author: '',
+  contributor: '',
+  publisher: '',
   tag: '',
   statuses: [],
   documentType: 'all',
@@ -171,6 +172,44 @@ describe('AdvancedSearchModal', () => {
     })
 
     expect(onApply).toHaveBeenCalledWith(expect.objectContaining({ tag: 'close tag match', batch: 'partial batch' }))
+  })
+
+  it('applies contributor and publisher text filters', () => {
+    mockUseTagSearch.mockReturnValue({ suggestions: [], isLoading: false, error: null })
+    mockUseBatchSearch.mockReturnValue({ suggestions: [], exactMatch: null, isLoading: false, error: null })
+    const onApply = vi.fn()
+    const container = renderModal(onApply)
+
+    act(() => {
+      container.querySelector<HTMLButtonElement>('button')?.click()
+    })
+
+    const contributorInput = document.body.querySelector<HTMLInputElement>(
+      'input[placeholder="Partial contributor name"]',
+    )
+    const publisherInput = document.body.querySelector<HTMLInputElement>('input[placeholder="Partial publisher name"]')
+    if (!contributorInput || !publisherInput) {
+      throw new Error('Expected Advanced Search Contributor and Publisher inputs')
+    }
+
+    act(() => {
+      const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+      valueSetter?.call(contributorInput, 'Ada Example')
+      contributorInput.dispatchEvent(new Event('input', { bubbles: true }))
+      valueSetter?.call(publisherInput, 'Example Press')
+      publisherInput.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+
+    const applyButton = Array.from(document.body.querySelectorAll('button')).find(
+      (button) => button.textContent === 'Apply Filters',
+    )
+    act(() => {
+      applyButton?.click()
+    })
+
+    expect(onApply).toHaveBeenCalledWith(
+      expect.objectContaining({ contributor: 'Ada Example', publisher: 'Example Press' }),
+    )
   })
 
   it('shows batch lifecycle and publication status filters when provided', () => {
