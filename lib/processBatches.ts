@@ -162,7 +162,7 @@ function withRequestedStages(details: RawProcessBatchDetails, requestedStages: s
     ...details,
     pipeline: {
       ...(details.pipeline ?? {}),
-      requested_stages: requestedStages,
+      requestedStages,
     },
   }
 }
@@ -187,7 +187,7 @@ export async function setProcessBatchPipelineConfig(batchId: string, pipelineCon
         ...withRequestedStages(details, requestedStages),
         pipeline: {
           ...(details.pipeline ?? {}),
-          requested_stages: requestedStages,
+          requestedStages,
           config: pipelineConfig,
         },
       }),
@@ -237,7 +237,7 @@ async function updateProcessStageCallbackReceived(
       ...currentStageDetails,
       callback: {
         ...(currentStageDetails.callback ?? {}),
-        received_at: receivedAt,
+        receivedAt,
       },
     },
   }
@@ -295,16 +295,16 @@ export async function recordProcessStageFailure(
     [stageDetailKey]: {
       ...currentStageDetails,
       status: 'failed',
-      request_id: requestId,
-      operation_id: operationId,
-      execution_mode: executionMode,
+      requestId,
+      operationId,
+      executionMode,
       error: errorMessage,
-      last_transition_at: completedAt,
+      lastTransitionAt: completedAt,
       callback: {
         ...(currentStageDetails.callback ?? {}),
-        received_at: receivedAt,
-        error_type: errorType,
-        error_message: errorMessage,
+        receivedAt,
+        errorType,
+        errorMessage,
       },
     },
   }
@@ -356,26 +356,26 @@ export async function recordMetadataExtractorCompletion(
   }
 
   const details = parseProcessingDetails(batch.processing_details)
-  const currentStage = details.metadata_extractor
+  const currentStage = details.metadataExtractor
   const currentStageDetails = currentStage && typeof currentStage === 'object' ? currentStage : {}
 
   const nextDetails: RawProcessBatchDetails = {
     ...details,
-    metadata_extractor: {
+    metadataExtractor: {
       ...currentStageDetails,
       status: 'completed',
-      request_id: requestId,
-      requested_by_app: 'preserv-dashboard',
-      initiated_at: initiatedAt,
-      started_at: initiatedAt,
-      completed_at: completedAt,
-      last_transition_at: completedAt,
-      processed_count: processedCount,
-      extracted_count: extractedCount,
-      failed_count: failedCount,
-      current_pass: 1,
-      max_passes: 1,
-      completed_passes: [1],
+      requestId,
+      requestedByApp: 'preserv-dashboard',
+      initiatedAt,
+      startedAt: initiatedAt,
+      completedAt,
+      lastTransitionAt: completedAt,
+      processedCount,
+      extractedCount,
+      failedCount,
+      currentPass: 1,
+      maxPasses: 1,
+      completedPasses: [1],
     },
   }
 

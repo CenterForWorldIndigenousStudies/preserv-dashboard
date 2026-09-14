@@ -1,4 +1,4 @@
-const CURRENT_COST_FIELDS = new Set(['ai_cost_usd', 'estimated_cost_usd'])
+const CURRENT_COST_FIELDS = new Set(['aiCostUsd', 'estimatedCostUsd'])
 
 interface CurrentCostSummary {
   total: number
@@ -79,17 +79,17 @@ function parseCurrentProcessingDetails(value: unknown): unknown {
   }
 }
 
-function getNormalizedSummaryCost(value: unknown): number | null {
+function getNormalizedLegacyImportCost(value: unknown): number | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return null
   }
 
-  const summary = (value as { summary?: unknown }).summary
-  if (!summary || typeof summary !== 'object' || Array.isArray(summary)) {
+  const legacyImport = (value as { legacyImport?: unknown }).legacyImport
+  if (!legacyImport || typeof legacyImport !== 'object' || Array.isArray(legacyImport)) {
     return null
   }
 
-  const cost = Number((summary as { cost_usd?: unknown }).cost_usd)
+  const cost = Number((legacyImport as { costUsd?: unknown }).costUsd)
   return Number.isFinite(cost) && cost >= 0 ? cost : null
 }
 
@@ -103,9 +103,9 @@ export function calculateTotalProcessingCost(
     return formatCost(currentCost.total)
   }
 
-  const normalizedSummaryCost = getNormalizedSummaryCost(parsedDetails)
-  if (normalizedSummaryCost !== null) {
-    return formatCost(normalizedSummaryCost)
+  const normalizedLegacyImportCost = getNormalizedLegacyImportCost(parsedDetails)
+  if (normalizedLegacyImportCost !== null) {
+    return formatCost(normalizedLegacyImportCost)
   }
 
   const legacyTotal = legacyDocumentCosts.reduce((total, row) => {

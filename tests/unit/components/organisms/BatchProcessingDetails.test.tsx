@@ -50,10 +50,10 @@ describe('BatchProcessingDetails', () => {
     expect(markup).toContain('documents/second')
   })
 
-  it('formats normalized summary costs consistently with other dashboard costs', () => {
+  it('formats contract-defined costs consistently with other dashboard costs', () => {
     const markup = renderToStaticMarkup(
       <BatchProcessingDetails
-        properties={[{ key: 'summary', value: { cost_usd: 2.5, cost_saved_usd: 0.5 } }]}
+        properties={[{ key: 'legacyImport', value: { costUsd: 2.5, costSavedUsd: 0.5 } }]}
       />,
     )
 

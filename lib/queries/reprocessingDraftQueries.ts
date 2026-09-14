@@ -29,15 +29,15 @@ const REPROCESSABLE_START_STAGES = new Set<CallbackStageKey>([
   'metadata_extractor',
 ])
 
-const DRAFT_DETAILS_KEY = 'reprocessing_draft'
+const DRAFT_DETAILS_KEY = 'reprocessingDraft'
 
 interface StoredDraftDetails {
-  restart_stage?: unknown
+  restartStage?: unknown
   reason?: unknown
-  collection_name?: unknown
-  collection_notes?: unknown
-  created_by?: unknown
-  updated_by?: unknown
+  collectionName?: unknown
+  collectionNotes?: unknown
+  createdBy?: unknown
+  updatedBy?: unknown
 }
 
 function parseDetails(value: string | null): Record<string, unknown> {
@@ -79,7 +79,7 @@ function summaryFromRow(row: {
   document_to_batches: unknown[]
 }): ReprocessingDraftSummary {
   const metadata = draftMetadata(parseDetails(row.processing_details))
-  const restartStage = restartStageValue(metadata.restart_stage)
+  const restartStage = restartStageValue(metadata.restartStage)
   if (!restartStage) {
     throw new Error(`Draft batch ${row.id} has no valid restart stage.`)
   }
@@ -87,15 +87,15 @@ function summaryFromRow(row: {
   return {
     id: row.id,
     name: row.name?.trim() || row.id,
-    collectionName: textValue(metadata.collection_name),
-    collectionNotes: textValue(metadata.collection_notes),
+    collectionName: textValue(metadata.collectionName),
+    collectionNotes: textValue(metadata.collectionNotes),
     restartStage,
     reason: textValue(metadata.reason) ?? '',
     documentCount: row.document_to_batches.length,
     createdAt: isoDate(row.created_at),
     updatedAt: isoDate(row.updated_at),
-    createdBy: textValue(metadata.created_by),
-    updatedBy: textValue(metadata.updated_by),
+    createdBy: textValue(metadata.createdBy),
+    updatedBy: textValue(metadata.updatedBy),
   }
 }
 
@@ -139,17 +139,17 @@ function buildDraftProcessingDetails(input: {
   updatedBy?: string | null
 }): string {
   return JSON.stringify({
-    reprocessing_draft: {
-      restart_stage: input.restartStage,
+    reprocessingDraft: {
+      restartStage: input.restartStage,
       reason: input.reason,
-      collection_name: input.collectionName,
-      collection_notes: input.collectionNotes,
-      created_by: input.createdBy ?? null,
-      updated_by: input.updatedBy ?? input.createdBy ?? null,
+      collectionName: input.collectionName,
+      collectionNotes: input.collectionNotes,
+      createdBy: input.createdBy ?? null,
+      updatedBy: input.updatedBy ?? input.createdBy ?? null,
     },
     pipeline: {
-      execution_mode: 'reprocess',
-      requested_stages: [input.restartStage],
+      executionMode: 'reprocess',
+      requestedStages: [input.restartStage],
     },
   })
 }
@@ -158,9 +158,9 @@ function draftAuditValue(name: string | null, processingDetails: string | null):
   const metadata = draftMetadata(parseDetails(processingDetails))
   return {
     name: textValue(name),
-    collection_name: textValue(metadata.collection_name),
-    collection_notes: textValue(metadata.collection_notes),
-    restart_stage: restartStageValue(metadata.restart_stage),
+    collectionName: textValue(metadata.collectionName),
+    collectionNotes: textValue(metadata.collectionNotes),
+    restartStage: restartStageValue(metadata.restartStage),
     reason: textValue(metadata.reason),
   }
 }
@@ -515,11 +515,11 @@ export async function updateReprocessingDraft(
       if (existingName) return { ok: false, error: `Batch name “${name}” already exists.` }
       const current = draftMetadata(parseDetails(draft.processing_details))
       const processingDetails = buildDraftProcessingDetails({
-        restartStage: restartStageValue(current.restart_stage) ?? 'document_splitter',
+        restartStage: restartStageValue(current.restartStage) ?? 'document_splitter',
         reason,
         collectionName: textValue(input.collectionName),
         collectionNotes: textValue(input.collectionNotes),
-        createdBy: textValue(current.created_by),
+        createdBy: textValue(current.createdBy),
         updatedBy: input.updatedBy,
       })
       const previousValue = draftAuditValue(draft.name, draft.processing_details)

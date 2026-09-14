@@ -153,6 +153,15 @@ function getTotalProcessingTime(
     return currentProcessingTime
   }
 
+  const legacyImport = details.legacyImport
+  const legacyProcessingTime =
+    legacyImport && typeof legacyImport === 'object' && !Array.isArray(legacyImport)
+      ? Number((legacyImport as { processingTimeSeconds?: unknown }).processingTimeSeconds)
+      : Number.NaN
+  if (Number.isFinite(legacyProcessingTime) && legacyProcessingTime >= 0) {
+    return legacyProcessingTime
+  }
+
   const summary = details.summary
   const normalizedSummaryTime =
     summary && typeof summary === 'object' && !Array.isArray(summary)
@@ -177,6 +186,15 @@ function getDocumentCount(row: BatchDatabaseRow, details: Record<string, unknown
   const totalDocuments = Number(details.total_documents)
   if (Number.isFinite(totalDocuments) && totalDocuments >= 0) {
     return totalDocuments
+  }
+
+  const legacyImport = details.legacyImport
+  const legacyTotalFiles =
+    legacyImport && typeof legacyImport === 'object' && !Array.isArray(legacyImport)
+      ? Number((legacyImport as { totalFiles?: unknown }).totalFiles)
+      : Number.NaN
+  if (Number.isFinite(legacyTotalFiles) && legacyTotalFiles >= 0) {
+    return legacyTotalFiles
   }
 
   const summary = details.summary

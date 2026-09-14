@@ -23,6 +23,7 @@ export interface NestedValueRendererProps {
    */
   fallbackLabel?: string
   renderValue?: (key: string, value: unknown) => ReactNode | undefined
+  renderLabel?: (key: string) => ReactNode | undefined
 }
 
 // ---------------------------------------------------------------------------
@@ -74,6 +75,7 @@ export function NestedValueRenderer({
   sectionVariant = 'caption',
   fallbackLabel = 'value',
   renderValue,
+  renderLabel,
 }: NestedValueRendererProps): React.ReactElement | null {
   // Stop recursing at maxDepth — render as JSON string instead
   if (level > maxDepth) {
@@ -97,7 +99,14 @@ export function NestedValueRenderer({
       <>
         {items.map((item, index) => {
           if (isPrimitiveValue(item)) {
-            return <KeyValueRow key={`${level}-${index}`} label={`[${index}]`} value={item} level={level} />
+            return (
+              <KeyValueRow
+                key={`${level}-${index}`}
+                label={renderLabel?.(`[${index}]`) ?? `[${index}]`}
+                value={item}
+                level={level}
+              />
+            )
           }
 
           return (
@@ -111,13 +120,14 @@ export function NestedValueRenderer({
                   letterSpacing: '0.08em',
                 })}
               >
-                [{index}]
+                {renderLabel?.(`[${index}]`) ?? `[${index}]`}
               </Typography>
               <NestedValueRenderer
                 value={item}
                 level={level + 1}
                 maxDepth={maxDepth}
                 renderValue={renderValue}
+                renderLabel={renderLabel}
               />
             </Box>
           )
@@ -140,7 +150,7 @@ export function NestedValueRenderer({
             return (
               <KeyValueRow
                 key={`${level}-${nestedKey}`}
-                label={nestedKey}
+                label={renderLabel?.(nestedKey) ?? nestedKey}
                 value={renderValue?.(nestedKey, nestedValue) ?? nestedValue}
                 level={level}
               />
@@ -158,13 +168,14 @@ export function NestedValueRenderer({
                   letterSpacing: '0.08em',
                 })}
               >
-                {nestedKey}
+                {renderLabel?.(nestedKey) ?? nestedKey}
               </Typography>
               <NestedValueRenderer
                 value={nestedValue}
                 level={level + 1}
                 maxDepth={maxDepth}
                 renderValue={renderValue}
+                renderLabel={renderLabel}
               />
             </Box>
           )

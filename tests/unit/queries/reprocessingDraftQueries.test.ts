@@ -48,13 +48,13 @@ describe('reprocessing draft queries', () => {
         name: 'Review retry one',
         lifecycle_status: 'draft',
         processing_details: JSON.stringify({
-          reprocessing_draft: {
-            restart_stage: 'ocr_processor',
+          reprocessingDraft: {
+            restartStage: 'ocr_processor',
             reason: 'Low OCR confidence',
-            collection_name: 'Collection A',
-            collection_notes: 'Review set',
-            created_by: 'reviewer@example.com',
-            updated_by: 'reviewer@example.com',
+            collectionName: 'Collection A',
+            collectionNotes: 'Review set',
+            createdBy: 'reviewer@example.com',
+            updatedBy: 'reviewer@example.com',
           },
         }),
         created_at: new Date('2026-09-03T10:00:00.000Z'),
@@ -89,7 +89,7 @@ describe('reprocessing draft queries', () => {
         id: 'draft-1',
         name: 'Retry batch',
         lifecycle_status: 'draft',
-        processing_details: JSON.stringify({ reprocessing_draft: { restart_stage: 'page_rotator', reason: 'Retry' } }),
+        processing_details: JSON.stringify({ reprocessingDraft: { restartStage: 'page_rotator', reason: 'Retry' } }),
         created_at: new Date('2026-09-03T10:00:00.000Z'),
         updated_at: new Date('2026-09-03T10:00:00.000Z'),
         document_to_batches: [{ document_id: 'doc-1' }],
@@ -163,12 +163,12 @@ describe('reprocessing draft queries', () => {
       id: 'draft-1',
       name: 'Old name',
       processing_details: JSON.stringify({
-        reprocessing_draft: {
-          restart_stage: 'ocr_processor',
-          reason: 'Old reason',
-          collection_name: 'Old collection',
-          collection_notes: 'Old notes',
-          created_by: 'creator@example.com',
+          reprocessingDraft: {
+            restartStage: 'ocr_processor',
+            reason: 'Old reason',
+            collectionName: 'Old collection',
+            collectionNotes: 'Old notes',
+            createdBy: 'creator@example.com',
         },
       }),
       created_at: new Date('2026-09-03T10:00:00.000Z'),

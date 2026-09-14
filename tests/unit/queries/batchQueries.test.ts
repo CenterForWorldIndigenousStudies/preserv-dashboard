@@ -235,7 +235,7 @@ describe('batch query contracts', () => {
     })
   })
 
-  it('maps a batch to a display-ready list item', async () => {
+  it('maps a legacy batch to a display-ready list item', async () => {
     mockBatchesCount.mockResolvedValue(1)
     mockBatchesFindMany.mockResolvedValue([
       {
@@ -244,10 +244,11 @@ describe('batch query contracts', () => {
         id_legacy: 'LEGACY-BATCH-1',
         started_at: new Date('2026-07-09T00:00:00.000Z'),
         processing_details: JSON.stringify({
-          summary: {
-            document_count: 5,
-            cost_usd: 8.75,
-            processing_time_seconds: 37,
+          legacyImport: {
+            status: 'historical',
+            totalFiles: 5,
+            costUsd: 8.75,
+            processingTimeSeconds: 37,
           },
         }),
         document_to_batches: [
@@ -267,6 +268,8 @@ describe('batch query contracts', () => {
       documentCount: 5,
       totalCost: '$8.75',
       processingTime: 37,
+      lifecycleStatus: undefined,
+      publicationStatus: undefined,
     }
 
     expect(result.data).toEqual([expected])
@@ -376,9 +379,9 @@ describe('batch query contracts', () => {
       started_by: 'mary@example.org',
       started_at: new Date('2026-07-09T00:00:00.000Z'),
       processing_details: JSON.stringify({
-        document_splitter_pass_1: { ai_cost_usd: 0.123456 },
-        document_splitter_pass_2: { ai_cost_usd: 0.000001 },
-        metadata_extractor: { ai_usage: { estimated_cost_usd: 0.004321 } },
+        documentSplitterPass1: { aiCostUsd: 0.123456 },
+        documentSplitterPass2: { aiCostUsd: 0.000001 },
+        metadataExtractor: { aiUsage: { estimatedCostUsd: 0.004321 } },
       }),
       document_to_batches: [{ cost: 12.5, processing_time_seconds: 42 }],
     })
@@ -396,9 +399,9 @@ describe('batch query contracts', () => {
       started_by: 'mary@example.org',
       started_at: new Date('2026-07-09T00:00:00.000Z'),
       processing_details: JSON.stringify({
-        data_ingester: { duration_ms: 1200 },
-        document_splitter_pass_1: { duration_ms: 2300 },
-        metadata_extractor: { duration_ms: 500 },
+        dataIngester: { durationMs: 1200 },
+        documentSplitterPass1: { durationMs: 2300 },
+        metadataExtractor: { durationMs: 500 },
       }),
       document_to_batches: [{ cost: 12.5, processing_time_seconds: 42 }],
     })

@@ -7,132 +7,128 @@ export interface RawProcessStageCollectionDetails {
 }
 
 export interface RawProcessStageCallbackDetails {
-  delivery_status?: string | null
-  notified_at?: unknown
-  received_at?: unknown
-  http_status?: unknown
-  error_type?: string | null
-  error_message?: string | null
+  deliveryStatus?: string | null
+  notifiedAt?: unknown
+  receivedAt?: unknown
+  httpStatus?: unknown
+  errorType?: string | null
+  errorMessage?: string | null
 }
 
 export interface RawProcessStageDetails {
   status?: string | null
   mode?: string | null
-  request_id?: string | null
-  operation_id?: string | null
-  idempotency_key?: string | null
-  execution_mode?: string | null
-  requested_by_app?: string | null
-  initiated_at?: unknown
-  started_at?: unknown
-  completed_at?: unknown
-  last_transition_at?: unknown
-  source_folder_ids?: unknown
+  requestId?: string | null
+  operationId?: string | null
+  idempotencyKey?: string | null
+  executionMode?: string | null
+  requestedByApp?: string | null
+  initiatedAt?: unknown
+  startedAt?: unknown
+  completedAt?: unknown
+  lastTransitionAt?: unknown
+  sourceFolderIds?: unknown
+  processedCount?: unknown
+  ingestedCount?: unknown
+  duplicateCount?: unknown
+  exactDuplicateCount?: unknown
+  skippedSameOriginCount?: unknown
+  splitCount?: unknown
+  childCount?: unknown
+  passedThroughCount?: unknown
+  rotatedCount?: unknown
+  normalizedCount?: unknown
+  ocrCompletedCount?: unknown
+  extractedCount?: unknown
+  needsReviewCount?: unknown
+  versionedCount?: unknown
+  resolvedCount?: unknown
+  skippedCount?: unknown
+  reviewNeededCount?: unknown
+  failedCount?: unknown
+  currentPass?: unknown
+  maxPasses?: unknown
+  completedPasses?: unknown
   collection?: RawProcessStageCollectionDetails | null
-  processed_count?: unknown
-  ingested_count?: unknown
-  duplicate_count?: unknown
-  exact_duplicate_count?: unknown
-  skipped_same_origin_count?: unknown
-  split_count?: unknown
-  child_count?: unknown
-  passed_through_count?: unknown
-  rotated_count?: unknown
-  normalized_count?: unknown
-  ocr_completed_count?: unknown
-  extracted_count?: unknown
-  needs_review_count?: unknown
-  versioned_count?: unknown
-  resolved_count?: unknown
-  skipped_count?: unknown
-  review_needed_count?: unknown
-  failed_count?: unknown
-  current_pass?: unknown
-  max_passes?: unknown
-  completed_passes?: unknown
   callback?: RawProcessStageCallbackDetails | null
   error?: string | null
-  openai_batch?: RawOpenAIBatchDetails | null
+  openaiBatch?: RawOpenAIBatchDetails | null
 }
 
 export interface RawOpenAIBatchWaveDetails {
   status?: string | null
-  openai_batch_id?: string | null
-  submitted_at?: unknown
-  checked_at?: unknown
-  completed_at?: unknown
-  processed_count?: unknown
-  succeeded_count?: unknown
-  failed_count?: unknown
+  openaiBatchId?: string | null
+  submittedAt?: unknown
+  checkedAt?: unknown
+  completedAt?: unknown
+  processedCount?: unknown
+  succeededCount?: unknown
+  failedCount?: unknown
   failures?: RawDocumentFailure[] | null
 }
 
 export interface RawOpenAIBatchDetails {
-  wave_1?: RawOpenAIBatchWaveDetails | null
-  wave_2?: RawOpenAIBatchWaveDetails | null
+  wave1?: RawOpenAIBatchWaveDetails | null
+  wave2?: RawOpenAIBatchWaveDetails | null
 }
 
 export interface RawDocumentFailure {
-  document_id?: string | null
+  documentId?: string | null
   filename?: string | null
   reason?: string | null
 }
 
 export interface RawProcessPipelineDetails {
-  execution_mode?: unknown
+  executionMode?: unknown
   source?: {
     system?: unknown
     name?: unknown
-    legacy_batch_id?: unknown
-    registry_version?: unknown
+    legacyBatchId?: unknown
+    registryVersion?: unknown
   } | null
-  requested_stages?: unknown
+  requestedStages?: unknown
   config?: unknown
-  current_execution?: RawPipelineExecutionDetails | null
-  execution_history?: RawPipelineExecutionDetails[] | null
-}
-
-export interface RawLegacyImportBatchDetails {
-  completed_at?: unknown
+  currentExecution?: RawPipelineExecutionDetails | null
+  executionHistory?: RawPipelineExecutionDetails[] | null
 }
 
 export interface RawLegacyImportDetails {
   status?: unknown
-  batch?: RawLegacyImportBatchDetails | null
+  binaryProcessingDatetime?: unknown
+  costSavedUsd?: unknown
+  costUsd?: unknown
+  totalFiles?: unknown
+  uniqueFiles?: unknown
+  duplicateFiles?: unknown
+  processingTimeSeconds?: unknown
+  startedAt?: unknown
+  completedAt?: unknown
+  [key: string]: unknown
 }
 
 export interface RawPipelineExecutionDetails {
-  execution_mode?: unknown
-  operation_id?: unknown
-  idempotency_key?: unknown
+  executionMode?: unknown
+  operationId?: unknown
+  idempotencyKey?: unknown
+  sourceDocumentIds?: unknown
   stage?: unknown
   reason?: unknown
-  source_document_ids?: unknown
 }
 
 export interface RawProcessBatchDetails {
   pipeline?: RawProcessPipelineDetails | null
-  summary?: {
-    document_count?: unknown
-    processing_time_seconds?: unknown
-    cost_usd?: unknown
-    cost_saved_usd?: unknown
-    duplicate_file_count?: unknown
-    duplicate_group_count?: unknown
-  } | null
-  legacy_import?: RawLegacyImportDetails | null
-  data_ingester?: RawProcessStageDetails | null
-  ingester?: RawProcessStageDetails | null
-  document_splitter_pass_1?: RawProcessStageDetails | null
-  document_splitter_pass_2?: RawProcessStageDetails | null
-  document_splitter?: RawProcessStageDetails | null
-  page_rotator_pass_1?: RawProcessStageDetails | null
-  page_rotator_pass_2?: RawProcessStageDetails | null
-  page_rotator?: RawProcessStageDetails | null
-  ocr_processor?: RawProcessStageDetails | null
-  content_dedup?: RawProcessStageDetails | null
-  metadata_extractor?: RawProcessStageDetails | null
-  fedora_ingester?: RawProcessStageDetails | null
+  legacyImport?: RawLegacyImportDetails | null
+  dataIngester?: RawProcessStageDetails | null
+  documentSplitterPass1?: RawProcessStageDetails | null
+  documentSplitterPass2?: RawProcessStageDetails | null
+  documentSplitter?: RawProcessStageDetails | null
+  pageRotatorPass1?: RawProcessStageDetails | null
+  pageRotatorPass2?: RawProcessStageDetails | null
+  pageRotator?: RawProcessStageDetails | null
+  ocrProcessor?: RawProcessStageDetails | null
+  contentDedup?: RawProcessStageDetails | null
+  metadataExtractor?: RawProcessStageDetails | null
+  fedoraIngester?: RawProcessStageDetails | null
 }
 
 export interface PipelineCallbackBody {

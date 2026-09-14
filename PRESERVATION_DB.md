@@ -820,8 +820,7 @@ It is a durable orchestration/control table for the combined pipeline worker rat
 ### batch_rollbacks
 
 Durable rollback operation records.
-The batch row, processing details, costs, rollback record, and mutation ledger remain historical; batch-created operational rows are purged after
-compensation succeeds.
+The batch row, processing details, costs, rollback record, and mutation ledger remain historical; batch-created operational rows are purged after compensation succeeds.
 The retained batch is renamed with an `<original-name>-reverted-<reversion-number>` suffix.
 
 | Column | Type | Notes |

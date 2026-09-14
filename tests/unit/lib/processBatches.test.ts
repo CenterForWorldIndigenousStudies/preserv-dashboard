@@ -71,7 +71,7 @@ describe('processBatches', () => {
   it('reports a post-start Dashboard edit as rollback ineligibility', async () => {
     const startedAt = new Date('2026-05-29T04:00:00.000Z')
     mockFindUnique.mockResolvedValue({
-      ...buildBatchRow({ data_ingester: { status: 'completed' } }),
+      ...buildBatchRow({ dataIngester: { status: 'completed' } }),
       started_at: startedAt,
       lifecycle_status: 'complete',
       publication_status: 'not_started',
@@ -96,44 +96,44 @@ describe('processBatches', () => {
     mockFindUnique.mockResolvedValue(
       buildBatchRow({
         pipeline: {
-          requested_stages: ['document-splitter', 'page-rotator'],
+          requestedStages: ['document-splitter', 'page-rotator'],
         },
-        data_ingester: {
+        dataIngester: {
           status: 'completed',
-          request_id: 'request-1',
-          requested_by_app: 'preserv-dashboard',
-          initiated_at: 1780027200,
-          started_at: 1780027205,
-          completed_at: 1780027210,
-          last_transition_at: 1780027210,
-          processed_count: 12,
-          ingested_count: 11,
-          duplicate_count: 1,
-          skipped_same_origin_count: 1,
+          requestId: 'request-1',
+          requestedByApp: 'preserv-dashboard',
+          initiatedAt: 1780027200,
+          startedAt: 1780027205,
+          completedAt: 1780027210,
+          lastTransitionAt: 1780027210,
+          processedCount: 12,
+          ingestedCount: 11,
+          duplicateCount: 1,
+          skippedSameOriginCount: 1,
           callback: {
-            delivery_status: 'failed',
-            notified_at: 1780027211,
-            http_status: 500,
-            error_type: 'HTTPError',
-            error_message: 'Internal Server Error',
+            deliveryStatus: 'failed',
+            notifiedAt: 1780027211,
+            httpStatus: 500,
+            errorType: 'HTTPError',
+            errorMessage: 'Internal Server Error',
           },
         },
-        document_splitter_pass_1: {
+        documentSplitterPass1: {
           status: 'completed',
-          request_id: 'request-2',
-          current_pass: 1,
-          max_passes: 2,
-          completed_passes: [1],
-          split_count: 10,
-          child_count: 12,
+          requestId: 'request-2',
+          currentPass: 1,
+          maxPasses: 2,
+          completedPasses: [1],
+          splitCount: 10,
+          childCount: 12,
         },
-        page_rotator_pass_1: {
+        pageRotatorPass1: {
           status: 'queued',
-          request_id: 'request-3',
-          current_pass: 1,
-          max_passes: 2,
-          completed_passes: [],
-          rotated_count: 0,
+          requestId: 'request-3',
+          currentPass: 1,
+          maxPasses: 2,
+          completedPasses: [],
+          rotatedCount: 0,
         },
       }),
     )
@@ -165,8 +165,7 @@ describe('processBatches', () => {
   it('exposes legacy batches to the progress surface', async () => {
     mockFindUnique.mockResolvedValue({
       ...buildBatchRow({
-        pipeline: { execution_mode: 'legacy_import' },
-        legacy_import: { status: 'historical', batch: { completed_at: 1780027210 } },
+        legacyImport: { status: 'historical', processingTimeSeconds: 321 },
       }),
       lifecycle_status: 'publication_locked',
       publication_status: 'not_started',
@@ -192,19 +191,19 @@ describe('processBatches', () => {
     expect(batch?.pageRotator?.currentPass).toBe(1)
   })
 
-  it('infers completed splitter passes from pass-key statuses when completed_passes is absent', async () => {
+  it('infers completed splitter passes from pass-key statuses when completedPasses is absent', async () => {
     mockFindUnique.mockResolvedValue(
       buildBatchRow({
         pipeline: {
-          requested_stages: ['document-splitter', 'page-rotator'],
+          requestedStages: ['document-splitter', 'page-rotator'],
         },
-        document_splitter_pass_1: {
+        documentSplitterPass1: {
           status: 'completed',
-          request_id: 'request-2',
-          current_pass: 1,
-          max_passes: 2,
-          split_count: 10,
-          child_count: 12,
+          requestId: 'request-2',
+          currentPass: 1,
+          maxPasses: 2,
+          splitCount: 10,
+          childCount: 12,
         },
       }),
     )
@@ -216,10 +215,10 @@ describe('processBatches', () => {
     expect(batch?.documentSplitter?.completedPasses).toEqual([1])
   })
 
-  it('records ingester callback receipt under the data_ingester key', async () => {
+  it('records ingester callback receipt under the dataIngester key', async () => {
     mockFindUnique.mockResolvedValue(
       buildBatchRow({
-        data_ingester: {
+        dataIngester: {
           status: 'completed',
           callback: {
             url: 'http://localhost/callback',
@@ -232,11 +231,11 @@ describe('processBatches', () => {
     await markProcessStageCallbackReceived('batch-1', 'ingester', '2026-05-29T04:25:48.015Z')
 
     expect(getUpdatedProcessingDetails()).toEqual({
-      data_ingester: {
+      dataIngester: {
         status: 'completed',
         callback: {
           url: 'http://localhost/callback',
-          received_at: '2026-05-29T04:25:48.015Z',
+          receivedAt: '2026-05-29T04:25:48.015Z',
         },
       },
     })
@@ -245,13 +244,13 @@ describe('processBatches', () => {
   it('records callback receipt on the latest page-rotator pass key', async () => {
     mockFindUnique.mockResolvedValue(
       buildBatchRow({
-        page_rotator_pass_1: {
+        pageRotatorPass1: {
           status: 'completed',
           callback: {
             url: 'http://localhost/callback',
           },
         },
-        page_rotator_pass_2: {
+        pageRotatorPass2: {
           status: 'running',
           callback: {
             url: 'http://localhost/callback',
@@ -264,17 +263,17 @@ describe('processBatches', () => {
     await markProcessStageCallbackReceived('batch-2', 'page_rotator', '2026-05-29T04:30:00.000Z')
 
     expect(getUpdatedProcessingDetails()).toEqual({
-      page_rotator_pass_1: {
+      pageRotatorPass1: {
         status: 'completed',
         callback: {
           url: 'http://localhost/callback',
         },
       },
-      page_rotator_pass_2: {
+      pageRotatorPass2: {
         status: 'running',
         callback: {
           url: 'http://localhost/callback',
-          received_at: '2026-05-29T04:30:00.000Z',
+          receivedAt: '2026-05-29T04:30:00.000Z',
         },
       },
     })
@@ -284,7 +283,7 @@ describe('processBatches', () => {
     mockFindUnique.mockResolvedValue({
       ...buildBatchRow({
         pipeline: {
-          requested_stages: ['page-rotator', 'ocr-processor'],
+          requestedStages: ['page-rotator', 'ocr-processor'],
           config: {
             profileId: 'custom',
             mode: 'custom',
@@ -319,17 +318,17 @@ describe('processBatches', () => {
             ],
           },
         },
-        data_ingester: {
+        dataIngester: {
           status: 'completed',
-          completed_at: '2026-05-29T04:29:00.000Z',
+          completedAt: '2026-05-29T04:29:00.000Z',
         },
-        page_rotator_pass_1: {
+        pageRotatorPass1: {
           status: 'completed',
-          current_pass: 1,
-          max_passes: 1,
-          completed_passes: [1],
-          review_needed_count: 1,
-          completed_at: 1780029005,
+          currentPass: 1,
+          maxPasses: 1,
+          completedPasses: [1],
+          reviewNeededCount: 1,
+          completedAt: 1780029005,
           callback: {
             url: 'http://localhost/callback',
           },
@@ -346,12 +345,12 @@ describe('processBatches', () => {
     await markProcessStageCallbackReceived('batch-2', 'page_rotator', '2026-05-29T04:30:00.000Z')
 
     expect(getUpdatedProcessingDetails()).toMatchObject({
-      page_rotator_pass_1: {
+      pageRotatorPass1: {
         status: 'completed',
-        review_needed_count: 1,
+        reviewNeededCount: 1,
         callback: {
           url: 'http://localhost/callback',
-          received_at: '2026-05-29T04:30:00.000Z',
+          receivedAt: '2026-05-29T04:30:00.000Z',
         },
       },
     })
@@ -367,14 +366,14 @@ describe('processBatches', () => {
     mockFindUnique.mockResolvedValue(
       buildBatchRow({
         pipeline: {
-          requested_stages: ['metadata-extraction'],
+          requestedStages: ['metadata-extraction'],
         },
-        metadata_extractor: {
+        metadataExtractor: {
           status: 'completed',
-          request_id: 'request-7',
-          initiated_at: 1780027500,
-          completed_at: 1780027560,
-          processed_count: 4,
+          requestId: 'request-7',
+          initiatedAt: 1780027500,
+          completedAt: 1780027560,
+          processedCount: 4,
         },
       }),
     )
@@ -392,7 +391,7 @@ describe('processBatches', () => {
     mockFindUnique.mockResolvedValue(
       buildBatchRow({
         pipeline: {
-          requested_stages: ['metadata-extraction'],
+          requestedStages: ['metadata-extraction'],
           config: {
             profileId: 'custom',
             mode: 'custom',
@@ -419,22 +418,22 @@ describe('processBatches', () => {
             ],
           },
         },
-        metadata_extractor: {
+        metadataExtractor: {
           status: 'in_progress',
           mode: 'openai_batch',
-          openai_batch: {
-            wave_1: {
+          openaiBatch: {
+            wave1: {
               status: 'submitted',
-              openai_batch_id: 'provider-batch-1',
-              submitted_at: '2026-07-29T12:01:00.000Z',
-              succeeded_count: 0,
-              failed_count: 0,
+              openaiBatchId: 'provider-batch-1',
+              submittedAt: '2026-07-29T12:01:00.000Z',
+              succeededCount: 0,
+              failedCount: 0,
             },
-            wave_2: {
+            wave2: {
               status: 'not_started',
-              processed_count: 0,
-              succeeded_count: 0,
-              failed_count: 0,
+              processedCount: 0,
+              succeededCount: 0,
+              failedCount: 0,
             },
           },
         },
@@ -459,10 +458,10 @@ describe('processBatches', () => {
     expect(extractor?.openaiBatchWave2?.processedCount).toBe(0)
   })
 
-  it('records metadata extractor callback receipt under the metadata_extractor key', async () => {
+  it('records metadata extractor callback receipt under the metadataExtractor key', async () => {
     mockFindUnique.mockResolvedValue(
       buildBatchRow({
-        metadata_extractor: {
+        metadataExtractor: {
           status: 'completed',
           callback: {
             url: 'http://localhost/callback',
@@ -475,11 +474,11 @@ describe('processBatches', () => {
     await markProcessStageCallbackReceived('batch-3', 'metadata_extractor', '2026-05-29T04:35:00.000Z')
 
     expect(getUpdatedProcessingDetails()).toEqual({
-      metadata_extractor: {
+      metadataExtractor: {
         status: 'completed',
         callback: {
           url: 'http://localhost/callback',
-          received_at: '2026-05-29T04:35:00.000Z',
+          receivedAt: '2026-05-29T04:35:00.000Z',
         },
       },
     })
@@ -489,7 +488,7 @@ describe('processBatches', () => {
     mockFindUnique.mockResolvedValue({
       ...buildBatchRow({
         pipeline: {
-          requested_stages: ['metadata-extraction'],
+          requestedStages: ['metadata-extraction'],
           config: {
             profileId: 'custom',
             mode: 'custom',
@@ -514,9 +513,9 @@ describe('processBatches', () => {
             ],
           },
         },
-        data_ingester: {
+        dataIngester: {
           status: 'completed',
-          completed_at: '2026-05-29T04:39:55.000Z',
+          completedAt: '2026-05-29T04:39:55.000Z',
         },
       }),
       started_at: new Date('2026-05-29T04:39:50.000Z'),
@@ -538,22 +537,22 @@ describe('processBatches', () => {
 
     expect(getUpdatedProcessingDetails()).toMatchObject({
       pipeline: {
-        requested_stages: ['metadata-extraction'],
+        requestedStages: ['metadata-extraction'],
       },
-      metadata_extractor: {
+      metadataExtractor: {
         status: 'completed',
-        request_id: 'request-9',
-        requested_by_app: 'preserv-dashboard',
-        initiated_at: '2026-05-29T04:40:00.000Z',
-        started_at: '2026-05-29T04:40:00.000Z',
-        completed_at: '2026-05-29T04:40:05.000Z',
-        last_transition_at: '2026-05-29T04:40:05.000Z',
-        processed_count: 4,
-        extracted_count: 3,
-        failed_count: 1,
-        current_pass: 1,
-        max_passes: 1,
-        completed_passes: [1],
+        requestId: 'request-9',
+        requestedByApp: 'preserv-dashboard',
+        initiatedAt: '2026-05-29T04:40:00.000Z',
+        startedAt: '2026-05-29T04:40:00.000Z',
+        completedAt: '2026-05-29T04:40:05.000Z',
+        lastTransitionAt: '2026-05-29T04:40:05.000Z',
+        processedCount: 4,
+        extractedCount: 3,
+        failedCount: 1,
+        currentPass: 1,
+        maxPasses: 1,
+        completedPasses: [1],
       },
     })
     expect(mockUpdate).toHaveBeenCalledTimes(1)

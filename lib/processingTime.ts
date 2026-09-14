@@ -3,7 +3,7 @@ function getDurationMilliseconds(value: unknown): number | null {
     return null
   }
 
-  const duration = Number((value as { duration_ms?: unknown }).duration_ms)
+  const duration = Number((value as { durationMs?: unknown }).durationMs)
   return Number.isFinite(duration) && duration >= 0 ? duration : null
 }
 

@@ -78,14 +78,14 @@ describeDbIntegration('ingester callback smoke (integration)', () => {
         name: 'Smoke Test Batch',
         started_by: 'test@example.com',
         processing_details: JSON.stringify({
-          data_ingester: {
+          dataIngester: {
             status: 'completed',
-            request_id: 'ingester-request-1',
-            requested_by_app: 'preserv-dashboard',
-            initiated_at: '2026-07-03T12:30:00.000Z',
-            started_at: '2026-07-03T12:30:00.000Z',
-            completed_at: '2026-07-03T12:34:00.000Z',
-            last_transition_at: '2026-07-03T12:34:00.000Z',
+            requestId: 'ingester-request-1',
+            requestedByApp: 'preserv-dashboard',
+            initiatedAt: '2026-07-03T12:30:00.000Z',
+            startedAt: '2026-07-03T12:30:00.000Z',
+            completedAt: '2026-07-03T12:34:00.000Z',
+            lastTransitionAt: '2026-07-03T12:34:00.000Z',
           },
         }),
       },
@@ -205,12 +205,12 @@ describeDbIntegration('ingester callback smoke (integration)', () => {
       },
     })
     const processingDetails = JSON.parse(storedBatch.processing_details) as {
-      pipeline?: { requested_stages?: string[]; config?: unknown }
-      data_ingester?: { callback?: { received_at?: unknown } }
+      pipeline?: { requestedStages?: string[]; config?: unknown }
+      dataIngester?: { callback?: { receivedAt?: unknown } }
     }
 
-    expect(processingDetails.pipeline?.requested_stages).toEqual(['document-splitter'])
+    expect(processingDetails.pipeline?.requestedStages).toEqual(['document-splitter'])
     expect(processingDetails.pipeline?.config).toEqual(pipelineConfig)
-    expect(processingDetails.data_ingester?.callback?.received_at).toBe(callbackReceivedAtUnix)
+    expect(processingDetails.dataIngester?.callback?.receivedAt).toBe(callbackReceivedAtUnix)
   })
 })

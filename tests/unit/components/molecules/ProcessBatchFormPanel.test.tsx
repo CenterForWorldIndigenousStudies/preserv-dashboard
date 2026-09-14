@@ -22,7 +22,7 @@ vi.mock('@molecules/SearchEntityBox', () => ({
   ),
 }))
 
-import { ProcessBatchFormPanel } from '@molecules/ProcessBatchFormPanel'
+import { DEFAULT_SUBMIT_LABEL, ProcessBatchFormPanel } from '@molecules/ProcessBatchFormPanel'
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 let mountedRoot: Root | undefined
@@ -80,17 +80,17 @@ describe('ProcessBatchFormPanel', () => {
     expect(container.querySelector('[data-testid="batch-search-box"]')?.getAttribute('data-option-count')).toBe('0')
   })
 
-  it('keeps Ingest enabled for a new batch name when other conditions allow submit', () => {
+  it('keeps submit button enabled for a new batch name when other conditions allow submit', () => {
     const container = renderPanel({
       batchName: 'New batch',
       batchNameExists: false,
       canSubmit: true,
     })
 
-    const ingestButton = Array.from(container.querySelectorAll('button')).find(
-      (button) => button.textContent === 'Ingest',
+    const submitButton = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent === DEFAULT_SUBMIT_LABEL,
     )
 
-    expect(ingestButton?.disabled).toBe(false)
+    expect(submitButton?.disabled).toBe(false)
   })
 })

@@ -63,16 +63,18 @@ function parseStageCallbackFields(
   | 'callbackErrorType'
   | 'callbackErrorMessage'
 > {
+  const callbackHttpStatus = stage.callback?.httpStatus
+
   return {
-    callbackDeliveryStatus: normalizeText(stage.callback?.delivery_status ?? null),
-    callbackNotifiedAt: parseTimestamp(stage.callback?.notified_at ?? null),
-    callbackReceivedAt: parseTimestamp(stage.callback?.received_at ?? null),
+    callbackDeliveryStatus: normalizeText(stage.callback?.deliveryStatus),
+    callbackNotifiedAt: parseTimestamp(stage.callback?.notifiedAt),
+    callbackReceivedAt: parseTimestamp(stage.callback?.receivedAt),
     callbackHttpStatus:
-      typeof stage.callback?.http_status === 'number' && Number.isFinite(stage.callback.http_status)
-        ? stage.callback.http_status
+      typeof callbackHttpStatus === 'number' && Number.isFinite(callbackHttpStatus)
+        ? callbackHttpStatus
         : null,
-    callbackErrorType: normalizeText(stage.callback?.error_type ?? null),
-    callbackErrorMessage: normalizeText(stage.callback?.error_message ?? null),
+    callbackErrorType: normalizeText(stage.callback?.errorType),
+    callbackErrorMessage: normalizeText(stage.callback?.errorMessage),
   }
 }
 
@@ -100,24 +102,24 @@ function parseStageCountFields(
   | 'failedCount'
 > {
   return {
-    processedCount: parseNumber(stage.processed_count),
-    ingestedCount: parseNumber(stage.ingested_count),
-    duplicateCount: parseNumber(stage.duplicate_count),
-    exactDuplicateCount: parseNumber(stage.exact_duplicate_count),
-    skippedSameOriginCount: parseNumber(stage.skipped_same_origin_count),
-    splitCount: parseNumber(stage.split_count),
-    childCount: parseNumber(stage.child_count),
-    passedThroughCount: parseNumber(stage.passed_through_count),
-    rotatedCount: parseNumber(stage.rotated_count),
-    normalizedCount: parseNumber(stage.normalized_count),
-    ocrCompletedCount: parseNumber(stage.ocr_completed_count),
-    extractedCount: parseNumber(stage.extracted_count),
-    needsReviewCount: parseNumber(stage.needs_review_count),
-    versionedCount: parseNumber(stage.versioned_count),
-    resolvedCount: parseNumber(stage.resolved_count),
-    skippedCount: parseNumber(stage.skipped_count),
-    reviewNeededCount: parseNumber(stage.review_needed_count),
-    failedCount: parseNumber(stage.failed_count),
+    processedCount: parseNumber(stage.processedCount),
+    ingestedCount: parseNumber(stage.ingestedCount),
+    duplicateCount: parseNumber(stage.duplicateCount),
+    exactDuplicateCount: parseNumber(stage.exactDuplicateCount),
+    skippedSameOriginCount: parseNumber(stage.skippedSameOriginCount),
+    splitCount: parseNumber(stage.splitCount),
+    childCount: parseNumber(stage.childCount),
+    passedThroughCount: parseNumber(stage.passedThroughCount),
+    rotatedCount: parseNumber(stage.rotatedCount),
+    normalizedCount: parseNumber(stage.normalizedCount),
+    ocrCompletedCount: parseNumber(stage.ocrCompletedCount),
+    extractedCount: parseNumber(stage.extractedCount),
+    needsReviewCount: parseNumber(stage.needsReviewCount),
+    versionedCount: parseNumber(stage.versionedCount),
+    resolvedCount: parseNumber(stage.resolvedCount),
+    skippedCount: parseNumber(stage.skippedCount),
+    reviewNeededCount: parseNumber(stage.reviewNeededCount),
+    failedCount: parseNumber(stage.failedCount),
   }
 }
 
@@ -139,18 +141,18 @@ function parseOpenAIBatchWave(
 
   return {
     status: normalizeText(wave.status),
-    openaiBatchId: normalizeText(wave.openai_batch_id),
-    submittedAt: parseTimestamp(wave.submitted_at),
-    checkedAt: parseTimestamp(wave.checked_at),
-    completedAt: parseTimestamp(wave.completed_at),
-    processedCount: parseNumber(wave.processed_count),
-    succeededCount: parseNumber(wave.succeeded_count),
-    failedCount: parseNumber(wave.failed_count),
+    openaiBatchId: normalizeText(wave.openaiBatchId),
+    submittedAt: parseTimestamp(wave.submittedAt),
+    checkedAt: parseTimestamp(wave.checkedAt),
+    completedAt: parseTimestamp(wave.completedAt),
+    processedCount: parseNumber(wave.processedCount),
+    succeededCount: parseNumber(wave.succeededCount),
+    failedCount: parseNumber(wave.failedCount),
     failures: parseFailures(wave.failures),
   }
 }
 
-function parseFailureText(record: Record<string, unknown>, key: 'document_id' | 'filename' | 'reason'): string | null {
+function parseFailureText(record: Record<string, unknown>, key: 'documentId' | 'filename' | 'reason'): string | null {
   const value = record[key]
   if (typeof value === 'string') {
     return value
@@ -181,7 +183,7 @@ function parseFailures(value: unknown): NormalizedDocumentFailure[] {
       const record = item as Record<string, unknown>
 
       return {
-        documentId: normalizeText(parseFailureText(record, 'document_id')),
+        documentId: normalizeText(parseFailureText(record, 'documentId')),
         filename: normalizeText(parseFailureText(record, 'filename')),
         reason: normalizeText(parseFailureText(record, 'reason')),
       }
@@ -194,50 +196,57 @@ export function normalizeStage(stage: RawProcessStageDetails | null | undefined)
     return null
   }
 
-  const completedPasses = parseStringArray(stage.completed_passes)
+  const completedPasses = parseStringArray(stage.completedPasses)
     .map((value) => Number(value))
     .filter(Number.isFinite)
 
   return {
     status: normalizeText(stage.status),
     mode: normalizeText(stage.mode),
-    requestId: normalizeText(stage.request_id ?? null),
-    operationId: normalizeText(stage.operation_id ?? null),
-    idempotencyKey: normalizeText(stage.idempotency_key ?? null),
-    executionMode: normalizeText(stage.execution_mode ?? null),
-    requestedByApp: normalizeText(stage.requested_by_app ?? null),
-    initiatedAt: parseTimestamp(stage.initiated_at ?? null),
-    startedAt: parseTimestamp(stage.started_at ?? null),
-    completedAt: parseTimestamp(stage.completed_at ?? null),
-    lastTransitionAt: parseTimestamp(stage.last_transition_at ?? null),
+    requestId: normalizeText(stage.requestId),
+    operationId: normalizeText(stage.operationId),
+    idempotencyKey: normalizeText(stage.idempotencyKey),
+    executionMode: normalizeText(stage.executionMode),
+    requestedByApp: normalizeText(stage.requestedByApp),
+    initiatedAt: parseTimestamp(stage.initiatedAt),
+    startedAt: parseTimestamp(stage.startedAt),
+    completedAt: parseTimestamp(stage.completedAt),
+    lastTransitionAt: parseTimestamp(stage.lastTransitionAt),
     error: normalizeText(stage.error),
     ...parseStageCallbackFields(stage),
     ...parseStageCountFields(stage),
-    currentPass: parseNumber(stage.current_pass) || 1,
-    maxPasses: parseNumber(stage.max_passes) || 1,
+    currentPass: parseNumber(stage.currentPass) || 1,
+    maxPasses: parseNumber(stage.maxPasses) || 1,
     completedPasses,
-    sourceFolderIds: parseStringArray(stage.source_folder_ids),
+    sourceFolderIds: parseStringArray(stage.sourceFolderIds),
     ...parseStageCollectionFields(stage),
-    openaiBatchWave1: parseOpenAIBatchWave(stage.openai_batch?.wave_1),
-    openaiBatchWave2: parseOpenAIBatchWave(stage.openai_batch?.wave_2),
+    openaiBatchWave1: parseOpenAIBatchWave(stage.openaiBatch?.wave1),
+    openaiBatchWave2: parseOpenAIBatchWave(stage.openaiBatch?.wave2),
   }
 }
 
 function normalizePipelineExecution(
-  execution: RawProcessPipelineDetails['current_execution'],
+  execution: RawProcessPipelineDetails['currentExecution'],
 ): NormalizedPipelineExecution | null {
   if (!execution || typeof execution !== 'object') {
     return null
   }
 
   return {
-    executionMode: normalizeText(execution.execution_mode),
-    operationId: normalizeText(execution.operation_id),
-    idempotencyKey: normalizeText(execution.idempotency_key),
+    executionMode: normalizeText(execution.executionMode),
+    operationId: normalizeText(execution.operationId),
+    idempotencyKey: normalizeText(execution.idempotencyKey),
     stage: normalizeText(execution.stage),
     reason: normalizeText(execution.reason),
-    sourceDocumentIds: parseStringArray(execution.source_document_ids),
+    sourceDocumentIds: parseStringArray(execution.sourceDocumentIds),
   }
+}
+
+function stagePrefix(prefix: PassStagePrefix): string {
+  if (prefix === 'document_splitter') {
+    return 'documentSplitterPass'
+  }
+  return 'pageRotatorPass'
 }
 
 export function getPassStageEntries(
@@ -245,13 +254,14 @@ export function getPassStageEntries(
   prefix: PassStagePrefix,
 ): Array<{ key: string; passNumber: number; details: RawProcessStageDetails }> {
   const entries: Array<{ key: string; passNumber: number; details: RawProcessStageDetails }> = []
+  const keyPrefix = stagePrefix(prefix)
 
   for (const [key, value] of Object.entries(details)) {
-    if (!key.startsWith(`${prefix}_pass_`) || !value || typeof value !== 'object') {
+    if (!key.startsWith(keyPrefix) || !value || typeof value !== 'object') {
       continue
     }
 
-    const rawPass = key.slice(`${prefix}_pass_`.length)
+    const rawPass = key.slice(keyPrefix.length)
     const passNumber = Number(rawPass)
     if (!Number.isFinite(passNumber) || passNumber < 1) {
       continue
@@ -269,7 +279,8 @@ export function normalizePassStage(
 ): NormalizedProcessStageStatus | null {
   const entries = getPassStageEntries(details, prefix)
   const latestEntry = entries.at(-1)
-  const latestStage = latestEntry?.details ?? details[prefix] ?? null
+  const directKey = prefix === 'document_splitter' ? 'documentSplitter' : 'pageRotator'
+  const latestStage = latestEntry?.details ?? details[directKey] ?? null
   const parsed = normalizeStage(latestStage)
   if (!parsed) {
     return null
@@ -288,8 +299,14 @@ export function normalizePassStage(
 
   return {
     ...parsed,
-    currentPass: parseNumber(latestEntry?.details.current_pass) || latestEntry?.passNumber || parsed.currentPass,
-    maxPasses: parseNumber(latestEntry?.details.max_passes) || entries.length || parsed.maxPasses,
+    currentPass:
+      parseNumber(latestEntry?.details.currentPass) ||
+      latestEntry?.passNumber ||
+      parsed.currentPass,
+    maxPasses:
+      parseNumber(latestEntry?.details.maxPasses) ||
+      entries.length ||
+      parsed.maxPasses,
     completedPasses: parsed.completedPasses.length > 0 ? parsed.completedPasses : inferredCompletedPasses,
   }
 }
@@ -308,19 +325,24 @@ export function parseProcessingDetails(raw: string | null): RawProcessBatchDetai
 }
 
 export function normalizeProcessBatchDetails(details: RawProcessBatchDetails): NormalizedProcessBatchDetails {
+  const hasLegacyImport = details.legacyImport !== null && details.legacyImport !== undefined
+  const pipeline = details.pipeline
+
   return {
-    pipelineExecutionMode: normalizeText(details.pipeline?.execution_mode),
-    legacyImportStatus: normalizeText(details.legacy_import?.status),
-    pipelineRequestedStages: parseStringArray(details.pipeline?.requested_stages),
-    pipelineConfig: parsePipelineConfig(details.pipeline?.config),
-    currentExecution: normalizePipelineExecution(details.pipeline?.current_execution),
-    ingester: normalizeStage(details.data_ingester ?? details.ingester),
+    pipelineExecutionMode:
+      normalizeText(pipeline?.executionMode) ??
+      (hasLegacyImport ? 'legacy_import' : null),
+    legacyImportStatus: normalizeText(details.legacyImport?.status),
+    pipelineRequestedStages: parseStringArray(pipeline?.requestedStages),
+    pipelineConfig: parsePipelineConfig(pipeline?.config),
+    currentExecution: normalizePipelineExecution(pipeline?.currentExecution),
+    ingester: normalizeStage(details.dataIngester),
     documentSplitter: normalizePassStage(details, 'document_splitter'),
     pageRotator: normalizePassStage(details, 'page_rotator'),
-    ocrProcessor: normalizeStage(details.ocr_processor),
-    contentDedup: normalizeStage(details.content_dedup),
-    metadataExtractor: normalizeStage(details.metadata_extractor),
-    fedoraIngester: normalizeStage(details.fedora_ingester),
+    ocrProcessor: normalizeStage(details.ocrProcessor),
+    contentDedup: normalizeStage(details.contentDedup),
+    metadataExtractor: normalizeStage(details.metadataExtractor),
+    fedoraIngester: normalizeStage(details.fedoraIngester),
   }
 }
 
@@ -328,20 +350,21 @@ const DIRECT_STAGE_DETAIL_KEYS: Record<
   Exclude<CallbackStageKey, 'ingester' | 'document_splitter' | 'page_rotator'>,
   keyof RawProcessBatchDetails
 > = {
-  ocr_processor: 'ocr_processor',
-  content_dedup: 'content_dedup',
-  metadata_extractor: 'metadata_extractor',
-  fedora_ingester: 'fedora_ingester',
+  ocr_processor: 'ocrProcessor',
+  content_dedup: 'contentDedup',
+  metadata_extractor: 'metadataExtractor',
+  fedora_ingester: 'fedoraIngester',
 }
 
 export function resolveStageDetailKey(details: RawProcessBatchDetails, stageKey: CallbackStageKey): string | null {
   if (stageKey === 'ingester') {
-    return details.data_ingester ? 'data_ingester' : details.ingester ? 'ingester' : null
+    return details.dataIngester ? 'dataIngester' : null
   }
 
   if (stageKey === 'document_splitter' || stageKey === 'page_rotator') {
     const latestEntry = getPassStageEntries(details, stageKey).at(-1)
-    return latestEntry?.key ?? (details[stageKey] ? stageKey : null)
+    const directKey = stageKey === 'document_splitter' ? 'documentSplitter' : 'pageRotator'
+    return latestEntry?.key ?? (details[directKey] ? directKey : null)
   }
 
   const directKey = DIRECT_STAGE_DETAIL_KEYS[stageKey]

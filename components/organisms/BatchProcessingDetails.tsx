@@ -5,8 +5,12 @@ import { Box, Stack, Typography } from '@mui/material'
 
 import { AccordionPanel } from '@molecules/AccordionPanel'
 import { Cost } from '@atoms/Cost'
+import { DateAtom } from '@atoms/Date'
+import { MetadataNameWithNotes } from '@atoms/MetadataNameWithNotes'
 import { KeyValueRow } from '@molecules/KeyValueRow'
 import { NestedValueRenderer } from '@molecules/NestedValueRenderer'
+import { getProcessingDetailsPropertyDefinition } from '@lib/processingDetails'
+import { formatProcessingTime } from '@lib/processingTime'
 import type { BatchProperty } from 'types/batches'
 
 interface BatchProcessingDetailsProps {
@@ -18,8 +22,31 @@ function isStructuredValue(value: unknown): boolean {
   return typeof value === 'object' && value !== null
 }
 
-function renderProcessingValue(key: string, value: unknown): ReactElement | undefined {
-  return key === 'cost_usd' || key === 'cost_saved_usd' ? <Cost value={value} /> : undefined
+function renderProcessingValue(key: string, value: unknown): ReactElement | string | undefined {
+  const valueType = getProcessingDetailsPropertyDefinition(key)?.valueType
+  if (valueType === 'currencyUsd') {
+    return <Cost value={value} />
+  }
+  if (valueType === 'unixTimestamp') {
+    return typeof value === 'number' || typeof value === 'string' ? <DateAtom value={value} /> : undefined
+  }
+  if (valueType === 'durationSeconds') {
+    return formatProcessingTime(value)
+  }
+  if (valueType === 'durationMilliseconds') {
+    const milliseconds = Number(value)
+    return Number.isFinite(milliseconds) ? formatProcessingTime(milliseconds / 1000) : undefined
+  }
+  return undefined
+}
+
+function renderProcessingLabel(key: string): ReactElement | string {
+  const definition = getProcessingDetailsPropertyDefinition(key)
+  return definition ? (
+    <MetadataNameWithNotes name={key} displayName={definition.label} notes={definition.description} />
+  ) : (
+    key
+  )
 }
 
 export function BatchProcessingDetails({ properties, showHeading = true }: BatchProcessingDetailsProps): ReactElement {
@@ -41,7 +68,7 @@ export function BatchProcessingDetails({ properties, showHeading = true }: Batch
               return (
                 <KeyValueRow
                   key={`${property.key}-${index}`}
-                  label={property.key}
+                  label={renderProcessingLabel(property.key)}
                   value={property.key === 'Total Cost' ? <Cost value={property.value} /> : property.value}
                 />
               )
@@ -60,13 +87,17 @@ export function BatchProcessingDetails({ properties, showHeading = true }: Batch
                       letterSpacing: '0.08em',
                     }}
                   >
-                    {property.key}
+                    {renderProcessingLabel(property.key)}
                   </Typography>
                 }
                 summarySx={{ px: 1.5, '& .MuiAccordionSummary-content': { my: 1 } }}
                 detailsSx={{ px: 1.5, pt: 0, pb: 1.5 }}
               >
-                <NestedValueRenderer value={property.value} renderValue={renderProcessingValue} />
+                <NestedValueRenderer
+                  value={property.value}
+                  renderValue={renderProcessingValue}
+                  renderLabel={renderProcessingLabel}
+                />
               </AccordionPanel>
             )
           })}

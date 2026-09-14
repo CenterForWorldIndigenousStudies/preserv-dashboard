@@ -421,7 +421,7 @@ describe('getDocumentDetail version family mapping', () => {
         cost: '9.99',
         processing_time_seconds: 12,
         processing_details: JSON.stringify({
-          pipeline: { stages: { ocr_processor: { ai_cost_usd: 0.42 } } },
+          ocrProcessor: { aiCostUsd: 0.42 },
         }),
         ocr_quality_low: null,
         ocr_quality_medium: null,
@@ -429,7 +429,7 @@ describe('getDocumentDetail version family mapping', () => {
           id_legacy: null,
           name: 'Current batch',
           lifecycle_status: 'running',
-          processing_details: JSON.stringify({ pipeline: { stages: { ocr_processor: { ai_cost_usd: 9.99 } } } }),
+          processing_details: JSON.stringify({ ocrProcessor: { aiCostUsd: 9.99 } }),
         },
       },
       {
@@ -447,7 +447,7 @@ describe('getDocumentDetail version family mapping', () => {
           id_legacy: 'legacy-batch',
           name: 'Legacy batch',
           lifecycle_status: 'publication_locked',
-          processing_details: JSON.stringify({ pipeline: { stages: { ocr_processor: { ai_cost_usd: 8.88 } } } }),
+          processing_details: JSON.stringify({ ocrProcessor: { aiCostUsd: 8.88 } }),
         },
       },
     ])

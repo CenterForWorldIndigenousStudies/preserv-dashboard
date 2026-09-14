@@ -33,6 +33,11 @@ function handleTextChange(callback: (value: string) => void): (event: ChangeEven
   }
 }
 
+const DEFAULT_DESCRIPTION =
+  'Choose source folders, add an optional collection, and start the document-processing pipeline.'
+const DEFAULT_TITLE = 'Create a new batch'
+export const DEFAULT_SUBMIT_LABEL = 'Process'
+
 export function ProcessBatchFormPanel({
   batchName,
   collectionName,
@@ -49,9 +54,9 @@ export function ProcessBatchFormPanel({
   onCollectionNotesChange,
   onSubmit,
   onRefresh,
-  title = 'Create a new batch',
-  description = 'Choose source folders, add an optional collection, and start the document-processing pipeline.',
-  submitLabel = 'Ingest',
+  title = DEFAULT_TITLE,
+  description = DEFAULT_DESCRIPTION,
+  submitLabel = DEFAULT_SUBMIT_LABEL,
   showRefresh = true,
 }: ProcessBatchFormPanelProps): ReactElement {
   return (
@@ -102,7 +107,7 @@ export function ProcessBatchFormPanel({
           />
         </Stack>
 
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
           <Button type={'button'} onClick={onSubmit} disabled={!canSubmit} loading={isSubmitting}>
             {submitLabel}
           </Button>

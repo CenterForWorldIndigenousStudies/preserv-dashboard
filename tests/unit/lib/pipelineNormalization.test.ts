@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 
 import { normalizeProcessBatchDetails, parseProcessingDetails } from '@lib/pipelineNormalization'
+import type { RawProcessBatchDetails } from 'types/pipelineContracts'
 
 describe('pipelineNormalization', () => {
   test('parses empty processing details safely', () => {
@@ -9,30 +10,42 @@ describe('pipelineNormalization', () => {
     expect(parseProcessingDetails('not-json')).toEqual({})
   })
 
-  test('uses data_ingester and pass-based splitter/rotator keys', () => {
+  test('identifies flattened legacy imports without a pipeline section', () => {
+    const normalized = normalizeProcessBatchDetails({
+      legacyImport: {
+        status: 'historical',
+        processingTimeSeconds: 321,
+      },
+    })
+
+    expect(normalized.pipelineExecutionMode).toBe('legacy_import')
+    expect(normalized.legacyImportStatus).toBe('historical')
+  })
+
+  test('uses canonical dataIngester and pass-based splitter/rotator keys', () => {
     const normalized = normalizeProcessBatchDetails({
       pipeline: {
-        requested_stages: ['document-splitter', 'page-rotator'],
+        requestedStages: ['document-splitter', 'page-rotator'],
       },
-      data_ingester: {
+      dataIngester: {
         status: 'completed',
-        started_at: 1717000000,
-        completed_at: 1717000060,
+        startedAt: 1717000000,
+        completedAt: 1717000060,
       },
-      document_splitter_pass_1: {
+      documentSplitterPass1: {
         status: 'completed',
-        current_pass: 1,
-        max_passes: 2,
+        currentPass: 1,
+        maxPasses: 2,
       },
-      document_splitter_pass_2: {
+      documentSplitterPass2: {
         status: 'running',
-        current_pass: 2,
-        max_passes: 2,
+        currentPass: 2,
+        maxPasses: 2,
       },
-      page_rotator_pass_1: {
+      pageRotatorPass1: {
         status: 'queued',
-        current_pass: 1,
-        max_passes: 2,
+        currentPass: 1,
+        maxPasses: 2,
       },
     })
 
@@ -44,10 +57,48 @@ describe('pipelineNormalization', () => {
     expect(normalized.pageRotator?.status).toBe('queued')
   })
 
-  test('infers completed passes when explicit completed_passes is absent', () => {
+  test('reads canonical camelCase processing-details keys', () => {
     const normalized = normalizeProcessBatchDetails({
-      document_splitter_pass_1: { status: 'completed' },
-      document_splitter_pass_2: { status: 'queued' },
+      pipeline: {
+        executionMode: 'normal',
+        requestedStages: ['ocr-processor'],
+      },
+      ocrProcessor: {
+        status: 'running',
+        requestId: 'request-10',
+        startedAt: 1717000300,
+      },
+      documentSplitterPass1: {
+        status: 'completed',
+        currentPass: 1,
+        maxPasses: 2,
+      },
+    })
+
+    expect(normalized.pipelineExecutionMode).toBe('normal')
+    expect(normalized.pipelineRequestedStages).toEqual(['ocr-processor'])
+    expect(normalized.ocrProcessor?.requestId).toBe('request-10')
+    expect(normalized.documentSplitter?.currentPass).toBe(1)
+  })
+
+  test('does not interpret snake_case processing-details keys', () => {
+    const normalized = normalizeProcessBatchDetails(
+      JSON.parse(
+        JSON.stringify({
+          pipeline: { requested_stages: ['ocr-processor'] },
+          data_ingester: { status: 'completed', started_at: 1717000000 },
+        }),
+      ) as RawProcessBatchDetails,
+    )
+
+    expect(normalized.pipelineRequestedStages).toEqual([])
+    expect(normalized.ingester).toBeNull()
+  })
+
+  test('infers completed passes when explicit completedPasses is absent', () => {
+    const normalized = normalizeProcessBatchDetails({
+      documentSplitterPass1: { status: 'completed' },
+      documentSplitterPass2: { status: 'queued' },
     })
 
     expect(normalized.documentSplitter?.completedPasses).toEqual([1])
@@ -55,8 +106,8 @@ describe('pipelineNormalization', () => {
 
   test('does not infer completed passes from review_needed status', () => {
     const normalized = normalizeProcessBatchDetails({
-      document_splitter_pass_1: { status: 'review_needed' },
-      document_splitter_pass_2: { status: 'queued' },
+      documentSplitterPass1: { status: 'review_needed' },
+      documentSplitterPass2: { status: 'queued' },
     })
 
     expect(normalized.documentSplitter?.completedPasses).toEqual([])
@@ -64,13 +115,13 @@ describe('pipelineNormalization', () => {
 
   test('parses callback receipt fields from unix timestamps', () => {
     const normalized = normalizeProcessBatchDetails({
-      data_ingester: {
+      dataIngester: {
         status: 'completed',
         callback: {
-          delivery_status: 'succeeded',
-          notified_at: 1717000100,
-          received_at: '1717000200',
-          http_status: 204,
+          deliveryStatus: 'succeeded',
+          notifiedAt: 1717000100,
+          receivedAt: '1717000200',
+          httpStatus: 204,
         },
       },
     })
@@ -84,13 +135,13 @@ describe('pipelineNormalization', () => {
   test('parses metadata extractor stage details', () => {
     const normalized = normalizeProcessBatchDetails({
       pipeline: {
-        requested_stages: ['content-dedup', 'metadata-extraction'],
+        requestedStages: ['content-dedup', 'metadata-extraction'],
       },
-      metadata_extractor: {
+      metadataExtractor: {
         status: 'running',
-        request_id: 'request-9',
-        started_at: 1717000300,
-        completed_at: null,
+        requestId: 'request-9',
+        startedAt: 1717000300,
+        completedAt: null,
       },
     })
 

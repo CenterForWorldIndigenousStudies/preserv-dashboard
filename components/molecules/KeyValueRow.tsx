@@ -9,7 +9,7 @@ export { isPrimitiveValue }
 // ---------------------------------------------------------------------------
 
 export interface KeyValueRowProps {
-  label: string
+  label: ReactNode
   value: unknown
   level?: number
   /**
