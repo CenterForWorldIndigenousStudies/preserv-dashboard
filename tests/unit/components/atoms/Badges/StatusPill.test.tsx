@@ -19,4 +19,12 @@ describe('StatusPill', () => {
     expect(markup).toContain('background-color:rgba(2, 136, 209, 1)')
     expect(markup).not.toContain('background-color:rgba(211, 47, 47, 0.15)')
   })
+
+  it('supports pipeline stage statuses through the canonical status pill', () => {
+    const markup = renderToStaticMarkup(<StatusPill status={'review_needed'} />)
+
+    expect(statusVariantMap.review_needed).toBe('danger')
+    expect(markup).toContain('Review Needed')
+    expect(markup).toContain('background-color:rgba(211, 47, 47, 0.15)')
+  })
 })

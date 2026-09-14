@@ -1,7 +1,8 @@
-import type { ReactElement } from 'react'
+import { useState, type ReactElement } from 'react'
 import { Alert, Box, Checkbox, FormControlLabel, List, ListItem, Paper, Stack, Typography } from '@mui/material'
 
 import { Button } from '@atoms/Button'
+import { AccordionPanel } from '@molecules/AccordionPanel'
 import type { DriveFolderOption } from '@lib/googleDrive'
 
 interface GoogleDriveFolderTreeProps {
@@ -12,39 +13,60 @@ interface GoogleDriveFolderTreeProps {
   expandedFolderIds: Record<string, boolean>
   selectedFolderIds: Record<string, DriveFolderOption>
   error: string | null
+  expanded?: boolean
+  onExpandedChange?: (expanded: boolean) => void
   onToggleFolderSelection: (folder: DriveFolderOption) => void
   onToggleFolderExpansion: (folderId: string) => void
 }
 
+const DEFAULT_DESCRIPTION = 'Select one or more folders from the shared Google Drive workspace.'
+export const DEFAULT_TITLE = 'Browse Google Drive folders'
+
 export function GoogleDriveFolderTree({
-  title = 'Browse Google Drive folders',
-  description = 'Select one or more folders from the shared Google Drive workspace.',
+  title = DEFAULT_TITLE,
+  description = DEFAULT_DESCRIPTION,
   rootFolders,
   childFoldersByParent,
   expandedFolderIds,
   selectedFolderIds,
   error,
+  expanded,
+  onExpandedChange,
   onToggleFolderSelection,
   onToggleFolderExpansion,
 }: GoogleDriveFolderTreeProps): ReactElement {
+  const [internalExpanded, setInternalExpanded] = useState(true)
+  const isExpanded = expanded ?? internalExpanded
+
+  function handleExpandedChange(nextExpanded: boolean): void {
+    if (expanded === undefined) {
+      setInternalExpanded(nextExpanded)
+    }
+    onExpandedChange?.(nextExpanded)
+  }
+
   return (
-    <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, p: 3 }}>
-      <Stack spacing={2.5}>
-        <div>
+    <AccordionPanel
+      expanded={isExpanded}
+      onChange={(_, nextExpanded) => handleExpandedChange(nextExpanded)}
+      summary={
+        <Stack spacing={0.25} sx={{ minWidth: 0 }}>
           <Typography
             variant={'caption'}
             sx={{ color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.16em' }}
           >
             {'Google Drive'}
           </Typography>
-          <Typography component={'h2'} variant={'h5'} sx={{ mt: 1 }}>
+          <Typography component={'span'} variant={'h5'} sx={{ mt: 0.5 }}>
             {title}
           </Typography>
-          <Typography variant={'body2'} sx={{ mt: 1, color: 'text.secondary' }}>
+          <Typography component={'span'} variant={'body2'} sx={{ color: 'text.secondary' }}>
             {description}
           </Typography>
-        </div>
-
+        </Stack>
+      }
+    >
+      <Stack spacing={2.5}>
         {error ? <Alert severity={'error'}>{error}</Alert> : null}
 
         <Stack spacing={1.5}>
@@ -126,6 +148,6 @@ export function GoogleDriveFolderTree({
           })}
         </Stack>
       </Stack>
-    </Paper>
+    </AccordionPanel>
   )
 }

@@ -54,6 +54,7 @@ export function ProcessDocumentsWorkspace({ initialBatches, initialDraft = null 
   const [childFoldersByParent, setChildFoldersByParent] = useState<Record<string, DriveFolderOption[]>>({})
   const [expandedFolderIds, setExpandedFolderIds] = useState<Record<string, boolean>>({})
   const [selectedFolders, setSelectedFolders] = useState<Record<string, DriveFolderOption>>({})
+  const [isGoogleDriveExpanded, setIsGoogleDriveExpanded] = useState(true)
   const [foldersError, setFoldersError] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [acceptedResult, setAcceptedResult] = useState<{ batch_id: string; batch_name: string } | null>(null)
@@ -182,6 +183,7 @@ export function ProcessDocumentsWorkspace({ initialBatches, initialDraft = null 
           batch_id: submittedBatchId,
           batch_name: submittedBatchName,
         })
+        setIsGoogleDriveExpanded(false)
         setRecentBatches((current) =>
           upsertBatchStatus(
             current,
@@ -230,6 +232,7 @@ export function ProcessDocumentsWorkspace({ initialBatches, initialDraft = null 
         expandedFolderIds={expandedFolderIds}
         selectedFolders={selectedFolders}
         foldersError={foldersError}
+        googleDriveExpanded={isGoogleDriveExpanded}
         onBatchNameChange={setBatchName}
         onCollectionNameChange={setCollectionName}
         onCollectionNotesChange={setCollectionNotes}
@@ -250,6 +253,7 @@ export function ProcessDocumentsWorkspace({ initialBatches, initialDraft = null 
         onCloseStepsModal={() => {
           setIsPipelineStepsModalOpen(false)
         }}
+        onGoogleDriveExpandedChange={setIsGoogleDriveExpanded}
         onToggleFolderSelection={toggleFolderSelection}
         onToggleFolderExpansion={toggleFolderExpansion}
       />

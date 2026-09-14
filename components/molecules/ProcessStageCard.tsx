@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactElement } from 'react'
 import { Box, Stack, Typography } from '@mui/material'
 
-import { PipelineStageStatusBadge } from '@atoms/Badges/PipelineStageStatusBadge'
+import { StatusPill } from '@atoms/Badges/StatusPill'
 import { AccordionPanel } from '@molecules/AccordionPanel'
 import { MetadataExtractorOpenAIBatchActions } from '@molecules/MetadataExtractorOpenAIBatchActions'
 import { ProcessStageDetailList } from '@molecules/ProcessStageDetailList'
@@ -58,7 +58,7 @@ export function ProcessStageCard({
       summary={
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 2 }}>
           <Typography sx={{ fontWeight: 600, color: 'text.primary' }}>{label}</Typography>
-          <PipelineStageStatusBadge status={stage.status} />
+          <StatusPill status={stage.status} />
         </Box>
       }
       summarySx={{

@@ -30,6 +30,7 @@ interface ProcessBatchCreationWorkspaceProps {
   expandedFolderIds: Record<string, boolean>
   selectedFolders: Record<string, DriveFolderOption>
   foldersError: string | null
+  googleDriveExpanded: boolean
   onBatchNameChange: (value: string) => void
   onCollectionNameChange: (value: string) => void
   onCollectionNotesChange: (value: string) => void
@@ -40,6 +41,7 @@ interface ProcessBatchCreationWorkspaceProps {
   onProfileDraftChange: (draft: PipelineSelectionDraft) => void
   onOpenStepsModal: () => void
   onCloseStepsModal: () => void
+  onGoogleDriveExpandedChange: (expanded: boolean) => void
   onToggleFolderSelection: (folder: DriveFolderOption) => void
   onToggleFolderExpansion: (folderId: string) => void
 }
@@ -62,6 +64,7 @@ export function ProcessBatchCreationWorkspace({
   expandedFolderIds,
   selectedFolders,
   foldersError,
+  googleDriveExpanded,
   onBatchNameChange,
   onCollectionNameChange,
   onCollectionNotesChange,
@@ -72,6 +75,7 @@ export function ProcessBatchCreationWorkspace({
   onProfileDraftChange,
   onOpenStepsModal,
   onCloseStepsModal,
+  onGoogleDriveExpandedChange,
   onToggleFolderSelection,
   onToggleFolderExpansion,
 }: ProcessBatchCreationWorkspaceProps): ReactElement {
@@ -128,6 +132,8 @@ export function ProcessBatchCreationWorkspace({
         expandedFolderIds={expandedFolderIds}
         selectedFolderIds={selectedFolders}
         error={foldersError}
+        expanded={googleDriveExpanded}
+        onExpandedChange={onGoogleDriveExpandedChange}
         onToggleFolderSelection={onToggleFolderSelection}
         onToggleFolderExpansion={onToggleFolderExpansion}
       />

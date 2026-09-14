@@ -4,6 +4,7 @@ import type { ReactElement } from 'react'
 import { Box, Stack, Typography } from '@mui/material'
 
 import { AccordionPanel } from '@molecules/AccordionPanel'
+import { StatusPill } from '@atoms/Badges/StatusPill'
 import { Cost } from '@atoms/Cost'
 import { DateAtom } from '@atoms/Date'
 import { MetadataNameWithNotes } from '@atoms/MetadataNameWithNotes'
@@ -22,7 +23,32 @@ function isStructuredValue(value: unknown): boolean {
   return typeof value === 'object' && value !== null
 }
 
-function renderProcessingValue(key: string, value: unknown): ReactElement | string | undefined {
+const LEGACY_NOTEBOOK_KEYS = new Set([
+  'notebook1Registry',
+  'notebook2Binary',
+  'notebook3Ocr',
+  'notebook4Content',
+  'notebook5Structural',
+  'notebook6Metadata',
+  'notebook7Semantic',
+  'notebook8Collections',
+])
+
+function renderProcessingValue(
+  key: string,
+  value: unknown,
+  path: readonly string[] = [],
+): ReactElement | string | undefined {
+  if (
+    key === 'status' &&
+    path[0] === 'legacyImport' &&
+    path[1] !== undefined &&
+    LEGACY_NOTEBOOK_KEYS.has(path[1]) &&
+    typeof value === 'string'
+  ) {
+    return <StatusPill status={value} />
+  }
+
   const valueType = getProcessingDetailsPropertyDefinition(key)?.valueType
   if (valueType === 'currencyUsd') {
     return <Cost value={value} />
@@ -95,6 +121,7 @@ export function BatchProcessingDetails({ properties, showHeading = true }: Batch
               >
                 <NestedValueRenderer
                   value={property.value}
+                  path={[property.key]}
                   renderValue={renderProcessingValue}
                   renderLabel={renderProcessingLabel}
                 />

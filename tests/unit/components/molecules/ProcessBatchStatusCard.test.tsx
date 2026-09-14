@@ -134,7 +134,7 @@ describe('ProcessBatchStatusCard', () => {
     )
 
     expect(markup).toContain('OCR Processor')
-    expect(markup).toContain('pending')
+    expect(markup).toContain('Pending')
   })
 
   it('shows metadata extractor service details when extraction was requested but has not started yet', () => {
@@ -145,7 +145,7 @@ describe('ProcessBatchStatusCard', () => {
     )
 
     expect(markup).toContain('Metadata Extractor')
-    expect(markup).toContain('pending')
+    expect(markup).toContain('Pending')
   })
 
   it('shows historical progress instead of modern stage progress for legacy batches', () => {
@@ -244,7 +244,7 @@ describe('ProcessBatchStatusCard', () => {
 
     expect(markup).toContain('OCR Processor')
     expect(markup).toContain('1 document needs review')
-    expect(markup).toContain('completed')
+    expect(markup).toContain('Completed')
   })
 
 })

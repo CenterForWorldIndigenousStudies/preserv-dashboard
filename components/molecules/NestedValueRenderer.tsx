@@ -22,8 +22,9 @@ export interface NestedValueRendererProps {
    * Label used when the value itself is rendered as a key (non-object root).
    */
   fallbackLabel?: string
-  renderValue?: (key: string, value: unknown) => ReactNode | undefined
+  renderValue?: (key: string, value: unknown, path: readonly string[]) => ReactNode | undefined
   renderLabel?: (key: string) => ReactNode | undefined
+  path?: readonly string[]
 }
 
 // ---------------------------------------------------------------------------
@@ -76,6 +77,7 @@ export function NestedValueRenderer({
   fallbackLabel = 'value',
   renderValue,
   renderLabel,
+  path = [],
 }: NestedValueRendererProps): React.ReactElement | null {
   // Stop recursing at maxDepth — render as JSON string instead
   if (level > maxDepth) {
@@ -128,6 +130,7 @@ export function NestedValueRenderer({
                 maxDepth={maxDepth}
                 renderValue={renderValue}
                 renderLabel={renderLabel}
+                path={[...path, `[${index}]`]}
               />
             </Box>
           )
@@ -146,12 +149,13 @@ export function NestedValueRenderer({
     return (
       <>
         {entries.map(([nestedKey, nestedValue]) => {
+          const nestedPath = [...path, nestedKey]
           if (isPrimitiveValue(nestedValue)) {
             return (
               <KeyValueRow
                 key={`${level}-${nestedKey}`}
                 label={renderLabel?.(nestedKey) ?? nestedKey}
-                value={renderValue?.(nestedKey, nestedValue) ?? nestedValue}
+                value={renderValue?.(nestedKey, nestedValue, nestedPath) ?? nestedValue}
                 level={level}
               />
             )
@@ -176,6 +180,7 @@ export function NestedValueRenderer({
                 maxDepth={maxDepth}
                 renderValue={renderValue}
                 renderLabel={renderLabel}
+                path={nestedPath}
               />
             </Box>
           )

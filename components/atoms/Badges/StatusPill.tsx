@@ -4,12 +4,17 @@ import { Badge, type BadgeVariant } from '@atoms/Badges/Badge'
 import { GENERATED_DOCUMENT_STATES } from '@constants/generated/documentStates'
 
 export const statusVariantMap = {
+  accepted: 'neutral',
   [GENERATED_DOCUMENT_STATES.APPROVED]: 'success',
   complete: 'success',
+  completed: 'success',
   [GENERATED_DOCUMENT_STATES.FAILED]: 'danger',
   [GENERATED_DOCUMENT_STATES.INGESTED_FEDORA]: 'success',
   [GENERATED_DOCUMENT_STATES.REJECTED]: 'danger',
   [GENERATED_DOCUMENT_STATES.NEEDS_REVIEW]: 'info',
+  queued: 'neutral',
+  review_needed: 'danger',
+  running: 'info',
 } as const
 
 export interface StatusPillProps {

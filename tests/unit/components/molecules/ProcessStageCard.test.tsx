@@ -34,12 +34,18 @@ describe('ProcessStageCard', () => {
     document.body.replaceChildren()
   })
 
-  it.each(['accepted', 'queued', 'running', 'failed', 'review_needed'])('starts %s stages expanded with one summary label and a status badge', (status) => {
+  it.each([
+    ['accepted', 'Accepted'],
+    ['queued', 'Queued'],
+    ['running', 'Running'],
+    ['failed', 'Failed'],
+    ['review_needed', 'Review Needed'],
+  ])('starts %s stages expanded with one summary label and a status pill', (status, statusLabel) => {
     const container = renderStage(status)
 
     expect(container.querySelector('button[aria-expanded="true"]')).not.toBeNull()
     expect(Array.from(container.querySelectorAll('*')).filter((element) => element.textContent === 'Ingest')).toHaveLength(1)
-    expect(container.textContent).toContain(status)
+    expect(container.textContent).toContain(statusLabel)
   })
 
   it('closes an expanded stage when its status becomes completed', () => {

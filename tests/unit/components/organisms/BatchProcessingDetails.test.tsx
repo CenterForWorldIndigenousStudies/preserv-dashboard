@@ -61,6 +61,26 @@ describe('BatchProcessingDetails', () => {
     expect(markup).toContain('$0.50')
   })
 
+  it('renders legacy notebook statuses as status pills without changing the import status', () => {
+    const markup = renderToStaticMarkup(
+      <BatchProcessingDetails
+        properties={[
+          {
+            key: 'legacyImport',
+            value: {
+              status: 'historical',
+              notebook1Registry: { status: 'COMPLETED' },
+            },
+          },
+        ]}
+      />,
+    )
+
+    expect(markup).toContain('historical')
+    expect(markup).toContain('Completed')
+    expect(markup.match(/<span class="MuiChip-label/g)).toHaveLength(1)
+  })
+
   it('keeps malformed scalar text as text and reports empty details', () => {
     const scalarMarkup = renderToStaticMarkup(
       <BatchProcessingDetails properties={[{ key: 'raw_value', value: '{invalid json' }]} />,
