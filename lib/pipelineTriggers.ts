@@ -15,6 +15,7 @@ import {
   shouldFinalizePipelineReadiness,
 } from '@lib/pipelineExecution'
 import { finalizePipelineBatchReadiness } from '@lib/pipelineReadiness'
+import { markProcessBatchComplete } from '@lib/processBatches'
 import type { PipelineExecutionContextInput } from '@lib/pipelineExecutionContext'
 export {
   triggerContentDedup,
@@ -118,4 +119,5 @@ export async function finalizePipelineReadinessIfDue(batch: ProcessBatchStatus |
   }
 
   await finalizePipelineBatchReadiness(batch.batchId)
+  await markProcessBatchComplete(batch.batchId)
 }

@@ -257,6 +257,22 @@ export async function markProcessStageCallbackReceived(
   await updateProcessStageCallbackReceived(batchId, stageKey, receivedAt)
 }
 
+export async function markProcessBatchComplete(batchId: string): Promise<void> {
+  await db.batches.updateMany({
+    where: {
+      id: batchId,
+      lifecycle_status: {
+        in: [GENERATED_BATCH_LIFECYCLE_STATUSES.QUEUED, GENERATED_BATCH_LIFECYCLE_STATUSES.RUNNING],
+      },
+      publication_status: GENERATED_BATCH_PUBLICATION_STATUSES.NOT_STARTED,
+    },
+    data: {
+      lifecycle_status: GENERATED_BATCH_LIFECYCLE_STATUSES.COMPLETE,
+      updated_at: new Date(),
+    },
+  })
+}
+
 export interface ProcessStageFailureArgs {
   requestId: string
   operationId: string
@@ -317,7 +333,7 @@ export async function recordProcessStageFailure(
       !new Set<string>([
         GENERATED_BATCH_LIFECYCLE_STATUSES.ROLLBACK_REQUESTED,
         GENERATED_BATCH_LIFECYCLE_STATUSES.DRAINING,
-        GENERATED_BATCH_LIFECYCLE_STATUSES.REVERTING,
+        GENERATED_BATCH_LIFECYCLE_STATUSES.ROLLBACK_IN_PROGRESS,
         GENERATED_BATCH_LIFECYCLE_STATUSES.ROLLBACK_FAILED,
       ]).has(batch.lifecycle_status)
         ? { lifecycle_status: GENERATED_BATCH_LIFECYCLE_STATUSES.FAILED }

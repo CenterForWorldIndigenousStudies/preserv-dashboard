@@ -75,7 +75,6 @@ describe('ProcessBatchStatusCard', () => {
     )
 
     expect(markup).toContain('Rollback unavailable: a Dashboard edit was made after the batch started.')
-    expect(markup).not.toContain('Undo batch')
   })
 
   it('shows rollback failure details', () => {
@@ -109,9 +108,9 @@ describe('ProcessBatchStatusCard', () => {
       <ThemeProvider>
         <ProcessBatchStatusCard
           batch={buildBatchStatus({
-            lifecycleStatus: 'reverted',
+            lifecycleStatus: 'rolled_back',
             publicationStatus: 'not_started',
-            rollbackStatus: 'reverted',
+            rollbackStatus: 'rolled_back',
           })}
         />
       </ThemeProvider>,

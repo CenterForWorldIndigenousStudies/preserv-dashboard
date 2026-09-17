@@ -6,6 +6,7 @@ import { Alert, Button, Stack, TextField, Typography } from '@mui/material'
 import { requestBatchRollback, retryBatchRollback } from '@lib/batchRollback'
 import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
 import { GENERATED_BATCH_PUBLICATION_STATUSES } from '@constants/generated/batchPublicationStatuses'
+import { ConfirmationDialog } from '@molecules/ConfirmationDialog'
 
 interface BatchRollbackControlProps {
   batchId: string
@@ -15,6 +16,8 @@ interface BatchRollbackControlProps {
   rollbackStatus?: string | null
   onRollbackRequested?: () => void
 }
+
+type ConfirmationAction = 'rollback' | 'retry' | null
 
 function isRollbackRequestEligible({
   publicationStatus,
@@ -30,6 +33,7 @@ function isRollbackRequestEligible({
     new Set<string>([
       GENERATED_BATCH_LIFECYCLE_STATUSES.QUEUED,
       GENERATED_BATCH_LIFECYCLE_STATUSES.RUNNING,
+      GENERATED_BATCH_LIFECYCLE_STATUSES.COMPLETE,
       GENERATED_BATCH_LIFECYCLE_STATUSES.FAILED,
     ]).has(lifecycleStatus ?? '') &&
     !manualEditAfterStart &&
@@ -66,6 +70,7 @@ export function BatchRollbackControl({
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
+  const [confirmationAction, setConfirmationAction] = useState<ConfirmationAction>(null)
 
   const canRequest = isRollbackRequestEligible({
     publicationStatus,
@@ -76,10 +81,6 @@ export function BatchRollbackControl({
   const canRetry = isRollbackRetryEligible({ publicationStatus, lifecycleStatus, manualEditAfterStart, rollbackStatus })
 
   async function handleRetry() {
-    if (!window.confirm('Retry this batch rollback? Previously completed compensation will be kept.')) {
-      return
-    }
-
     setPending(true)
     setError(null)
     try {
@@ -93,16 +94,62 @@ export function BatchRollbackControl({
     }
   }
 
+  async function handleRollback() {
+    setPending(true)
+    setError(null)
+    try {
+      const rollback = await requestBatchRollback(batchId, reason)
+      setMessage(`Rollback ${rollback.status}. The batch will remain visible while it is processed.`)
+      onRollbackRequested?.()
+    } catch (caught: unknown) {
+      setError(caught instanceof Error ? caught.message : 'Rollback request failed.')
+    } finally {
+      setPending(false)
+    }
+  }
+
+  const confirmationDialog = (
+    <ConfirmationDialog
+      open={confirmationAction !== null}
+      title={confirmationAction === 'retry' ? 'Retry batch rollback?' : 'Roll back this batch?'}
+      message={
+        confirmationAction === 'retry'
+          ? 'Previously completed compensation will be kept.'
+          : 'Its queued work and reversible changes will be rolled back.'
+      }
+      confirmLabel={confirmationAction === 'retry' ? 'Retry rollback' : 'Rollback batch'}
+      cancelLabel={'Cancel'}
+      onConfirm={() => {
+        const action = confirmationAction
+        setConfirmationAction(null)
+        if (action === 'retry') {
+          void handleRetry()
+        } else if (action === 'rollback') {
+          void handleRollback()
+        }
+      }}
+      onCancel={() => setConfirmationAction(null)}
+    />
+  )
+
   if (canRetry) {
     return (
-      <Stack spacing={1.5}>
-        <Typography variant={'subtitle2'}>Retry rollback</Typography>
-        <Button variant={'outlined'} color={'warning'} onClick={() => void handleRetry()} disabled={pending}>
-          {pending ? 'Retrying rollback…' : 'Retry rollback'}
-        </Button>
-        {message ? <Alert severity={'info'}>{message}</Alert> : null}
-        {error ? <Alert severity={'error'}>{error}</Alert> : null}
-      </Stack>
+      <>
+        <Stack spacing={1.5}>
+          <Typography variant={'subtitle2'}>Retry rollback</Typography>
+          <Button
+            variant={'outlined'}
+            color={'warning'}
+            onClick={() => setConfirmationAction('retry')}
+            disabled={pending}
+          >
+            {pending ? 'Retrying rollback…' : 'Retry rollback'}
+          </Button>
+          {message ? <Alert severity={'info'}>{message}</Alert> : null}
+          {error ? <Alert severity={'error'}>{error}</Alert> : null}
+        </Stack>
+        {confirmationDialog}
+      </>
     )
   }
 
@@ -122,40 +169,30 @@ export function BatchRollbackControl({
     return null
   }
 
-  async function handleRollback() {
-    if (!window.confirm('Undo this batch? Its queued work and reversible changes will be rolled back.')) {
-      return
-    }
-
-    setPending(true)
-    setError(null)
-    try {
-      const rollback = await requestBatchRollback(batchId, reason)
-      setMessage(`Rollback ${rollback.status}. The batch will remain visible while it is processed.`)
-      onRollbackRequested?.()
-    } catch (caught: unknown) {
-      setError(caught instanceof Error ? caught.message : 'Rollback request failed.')
-    } finally {
-      setPending(false)
-    }
-  }
-
   return (
-    <Stack spacing={1.5}>
-      <Typography variant={'subtitle2'}>{'Undo batch'}</Typography>
-      <TextField
-        label={'Reason (optional)'}
-        value={reason}
-        onChange={(event) => setReason(event.target.value)}
-        multiline
-        minRows={2}
-        size={'small'}
-      />
-      <Button variant={'outlined'} color={'warning'} onClick={() => void handleRollback()} disabled={pending}>
-        {pending ? 'Requesting rollback…' : 'Undo batch'}
-      </Button>
-      {message ? <Alert severity={'info'}>{message}</Alert> : null}
-      {error ? <Alert severity={'error'}>{error}</Alert> : null}
-    </Stack>
+    <>
+      <Stack spacing={1.5}>
+        <Typography variant={'subtitle2'}>{'Rollback batch'}</Typography>
+        <TextField
+          label={'Reason (optional)'}
+          value={reason}
+          onChange={(event) => setReason(event.target.value)}
+          multiline
+          minRows={2}
+          size={'small'}
+        />
+        <Button
+          variant={'outlined'}
+          color={'warning'}
+          onClick={() => setConfirmationAction('rollback')}
+          disabled={pending}
+        >
+          {pending ? 'Requesting rollback…' : 'Rollback batch'}
+        </Button>
+        {message ? <Alert severity={'info'}>{message}</Alert> : null}
+        {error ? <Alert severity={'error'}>{error}</Alert> : null}
+      </Stack>
+      {confirmationDialog}
+    </>
   )
 }

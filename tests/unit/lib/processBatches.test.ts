@@ -1,9 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-const { mockEditHistoryFindFirst, mockFindUnique, mockUpdate } = vi.hoisted(() => ({
+const { mockEditHistoryFindFirst, mockFindUnique, mockUpdate, mockUpdateMany } = vi.hoisted(() => ({
   mockEditHistoryFindFirst: vi.fn(),
   mockFindUnique: vi.fn(),
   mockUpdate: vi.fn(),
+  mockUpdateMany: vi.fn(),
 }))
 
 vi.mock('@lib/db', () => ({
@@ -11,6 +12,7 @@ vi.mock('@lib/db', () => ({
     batches: {
       findUnique: mockFindUnique,
       update: mockUpdate,
+      updateMany: mockUpdateMany,
     },
     edit_history: {
       findFirst: mockEditHistoryFindFirst,
@@ -20,6 +22,7 @@ vi.mock('@lib/db', () => ({
 
 import {
   getProcessBatchStatus,
+  markProcessBatchComplete,
   markProcessStageCallbackReceived,
   recordMetadataExtractorCompletion,
 } from '@lib/processBatches'
@@ -66,6 +69,23 @@ function getUpdateArg(): {
 describe('processBatches', () => {
   afterEach(() => {
     vi.clearAllMocks()
+  })
+
+  it('marks only an active unpublished batch complete', async () => {
+    mockUpdateMany.mockResolvedValue({ count: 1 })
+
+    await markProcessBatchComplete('batch-1')
+
+    expect(mockUpdateMany.mock.calls[0]?.[0]).toMatchObject({
+      where: {
+        id: 'batch-1',
+        lifecycle_status: { in: ['queued', 'running'] },
+        publication_status: 'not_started',
+      },
+      data: {
+        lifecycle_status: 'complete',
+      },
+    })
   })
 
   it('reports a post-start Dashboard edit as rollback ineligibility', async () => {

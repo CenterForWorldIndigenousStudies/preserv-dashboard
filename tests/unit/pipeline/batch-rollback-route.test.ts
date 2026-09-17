@@ -16,6 +16,8 @@ describe('batch rollback proxy route', () => {
     vi.stubGlobal('fetch', vi.fn())
     process.env.PIPELINE_API_BASE_URL = 'http://localhost:8000'
     process.env.PIPELINE_TRIGGER_TOKEN = 'pipeline-trigger-token'
+    process.env.PIPELINE_CALLBACK_TOKEN = 'pipeline-callback-token'
+    process.env.DASHBOARD_BASE_URL = 'http://localhost:3000'
     mockGetDashboardSession.mockResolvedValue({ user: { email: 'operator@example.test' } })
   })
 
@@ -24,6 +26,8 @@ describe('batch rollback proxy route', () => {
     vi.clearAllMocks()
     delete process.env.PIPELINE_API_BASE_URL
     delete process.env.PIPELINE_TRIGGER_TOKEN
+    delete process.env.PIPELINE_CALLBACK_TOKEN
+    delete process.env.DASHBOARD_BASE_URL
   })
 
   it('rejects an unauthenticated operator', async () => {
@@ -70,5 +74,9 @@ describe('batch rollback proxy route', () => {
     expect(payload.requested_by).toBe('operator@example.test')
     expect(payload.reason).toBe('Needs review')
     expect(typeof payload.idempotency_key).toBe('string')
+    expect(payload.callback).toEqual({
+      url: 'http://localhost:3000/api/pipeline/rollback/callback',
+      token: 'pipeline-callback-token',
+    })
   })
 })

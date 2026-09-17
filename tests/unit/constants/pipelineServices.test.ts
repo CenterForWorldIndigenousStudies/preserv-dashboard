@@ -3,7 +3,11 @@ import { describe, expect, it } from 'vitest'
 import contract from '@contracts/pipeline-services.json'
 import * as pipelineServices from '@constants/pipelineServices'
 import { GENERATED_PIPELINE_SERVICES } from '@constants/generated/pipelineServices'
-import { getPipelineServiceDisplayName, pipelineServiceDisplayNames } from '@constants/pipelineServices'
+import {
+  getPipelineServiceDisplayName,
+  getPipelineServiceDisplayNameForService,
+  pipelineServiceDisplayNames,
+} from '@constants/pipelineServices'
 
 describe('pipeline service contract', () => {
   it('matches the synced service contract', () => {
@@ -18,5 +22,11 @@ describe('pipeline service contract', () => {
     expect(pipelineServiceDisplayNames.fedora_ingester).toBe('Fedora Ingester')
     expect(getPipelineServiceDisplayName('fedora_ingester_2')).toBe('Fedora Ingester Pass 2')
     expect(getPipelineServiceDisplayName('new_service')).toBe('New Service')
+  })
+
+  it('maps dashboard service identifiers to contract display names', () => {
+    expect(getPipelineServiceDisplayNameForService('document-splitter')).toBe('Document Splitter')
+    expect(getPipelineServiceDisplayNameForService('metadata-extraction')).toBe('Metadata Extractor')
+    expect(getPipelineServiceDisplayNameForService('ingester')).toBe('Data Ingester')
   })
 })

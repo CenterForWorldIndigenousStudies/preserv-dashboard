@@ -40,12 +40,15 @@ vi.mock('@molecules/ProcessBatchStatusCard', () => ({
   ProcessBatchStatusCard: ({
     batch,
     executionActions,
+    onRollbackRequested,
   }: {
     batch: ProcessBatchStatus
     executionActions?: ReactElement
+    onRollbackRequested?: () => void
   }) => (
     <div data-testid={'batch-progress'}>
       {batch.lifecycleStatus}
+      <button type={'button'} data-testid={'rollback-action'} onClick={onRollbackRequested} />
       {executionActions}
     </div>
   ),
@@ -139,6 +142,20 @@ describe('ProcessBatchProgress', () => {
       container.querySelector<HTMLButtonElement>('[data-testid="rerun-action"]')?.click()
     })
 
+    expect(FakeEventSource.instances).toHaveLength(2)
+    expect(FakeEventSource.instances[1]?.closed).toBe(false)
+  })
+
+  it('reconnects after a rollback is accepted', () => {
+    const initialBatch = createProcessBatch({ lifecycleStatus: 'running' })
+    const container = renderProgress(initialBatch)
+    const firstStream = FakeEventSource.instances[0]
+
+    act(() => {
+      container.querySelector<HTMLButtonElement>('[data-testid="rollback-action"]')?.click()
+    })
+
+    expect(firstStream?.closed).toBe(true)
     expect(FakeEventSource.instances).toHaveLength(2)
     expect(FakeEventSource.instances[1]?.closed).toBe(false)
   })

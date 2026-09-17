@@ -173,7 +173,7 @@ describe('pipelineExecution process-documents behavior', () => {
   })
 
   test('keeps an active rollback batch live until rollback reaches a terminal state', () => {
-    const batch = buildBatchStatus({ rollbackStatus: 'reverting' })
+    const batch = buildBatchStatus({ rollbackStatus: 'rollback_in_progress' })
 
     expect(isPipelineBatchTerminal(batch)).toBe(false)
     expect(isPipelineBatchTerminal({ ...batch, rollbackStatus: 'failed', lifecycleStatus: 'rollback_failed' })).toBe(
@@ -262,6 +262,20 @@ describe('pipelineExecution process-documents behavior', () => {
       }),
     ])
     expect(getNextEligibleExecutionStep(batch)?.service).toBe('ocr-processor')
+  })
+
+  test('includes the implicit data-ingester step for reprocessing executions', () => {
+    const batch = buildBatchStatus({
+      pipelineExecutionMode: 'reprocess',
+      pipelineConfig: null,
+      pipelineRequestedStages: ['ocr_processor'],
+      ingester: buildStageStatus({ status: 'completed' }),
+    })
+
+    expect(getOrchestratedExecutionPlan(batch).map((step) => step.service)).toEqual([
+      'ingester',
+      'ocr-processor',
+    ])
   })
 
   test('returns metadata extraction as next eligible step after content dedup completes', () => {

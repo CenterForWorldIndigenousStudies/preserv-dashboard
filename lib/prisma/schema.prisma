@@ -92,7 +92,7 @@ model batch_rollbacks {
   id                  String            @id @db.VarChar(36)
   batch_id            String            @unique(map: "uk_batch_rollbacks_batch_id") @db.VarChar(36)
   original_batch_name String?           @db.Text
-  reversion_number    Int               @default(1)
+  rollback_number     Int               @default(1)
   requested_by        String?           @db.VarChar(255)
   reason              String?           @db.Text
   idempotency_key     String?           @unique(map: "uk_batch_rollbacks_idempotency_key") @db.VarChar(255)
@@ -107,6 +107,7 @@ model batch_rollbacks {
   conflict_count      Int               @default(0)
   failed_count        Int               @default(0)
   last_failure        String?           @db.Text
+  callback_delivery   String?           @db.LongText
   created_at          DateTime?         @default(now()) @db.DateTime(0)
   updated_at          DateTime?         @default(now()) @db.DateTime(0)
   batch_mutations     batch_mutations[]

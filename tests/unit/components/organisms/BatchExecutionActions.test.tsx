@@ -28,10 +28,10 @@ function buildBatchStatus(overrides: Partial<ProcessBatchStatus> = {}): ProcessB
 }
 
 describe('BatchExecutionActions', () => {
-  it('disables rerun from stage for a reverted batch', () => {
+  it('disables rerun from stage for a rolled-back batch', () => {
     const markup = renderToStaticMarkup(
       <ThemeProvider>
-        <BatchExecutionActions batch={buildBatchStatus({ lifecycleStatus: 'reverted' })} />
+        <BatchExecutionActions batch={buildBatchStatus({ lifecycleStatus: 'rolled_back' })} />
       </ThemeProvider>,
     )
 

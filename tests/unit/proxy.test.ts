@@ -17,6 +17,7 @@ describe('dashboard proxy matcher', () => {
       '/api/pipeline/content-dedup/callback',
       '/api/pipeline/metadata-extractor/callback',
       '/api/pipeline/fedora-ingester/callback',
+      '/api/pipeline/rollback/callback',
     ]
 
     for (const callbackPath of callbackPaths) {

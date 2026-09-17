@@ -19,6 +19,8 @@ export type ServiceId =
   | 'metadata-extraction'
   | 'fedora-ingester'
 
+export const INGESTER_STAGE = 'ingester' as const
+
 export const DOCUMENT_SPLITTER_STAGE = 'document-splitter' as const
 export const PAGE_ROTATOR_STAGE = 'page-rotator' as const
 export const OCR_PROCESSOR_STAGE = 'ocr-processor' as const
@@ -82,10 +84,10 @@ export const NORMALIZE_PASS_2_SUB_OPTIONS: NormalizePassSubOption[] = [
 // All pipeline steps in execution order
 export const PIPELINE_STEPS: StepDefinition[] = [
   {
-    id: 'ingester',
+    id: INGESTER_STAGE,
     label: 'Ingest',
     description: 'Ingest documents from Google Drive source folders',
-    service: 'ingester',
+    service: INGESTER_STAGE,
     order: 0,
   },
   {

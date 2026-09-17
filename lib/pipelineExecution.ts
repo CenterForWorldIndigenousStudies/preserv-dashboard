@@ -2,22 +2,28 @@ import {
   CONTENT_DEDUP_STAGE,
   DOCUMENT_SPLITTER_STAGE,
   FEDORA_INGESTER_STAGE,
+  INGESTER_STAGE,
   METADATA_EXTRACTOR_STAGE,
   OCR_PROCESSOR_STAGE,
   PAGE_ROTATOR_STAGE,
+  getStepDefinition,
 } from '@constants/pipeline'
+import { getPipelineServiceDisplayNameForService } from '@constants/pipelineServices'
 import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
 import { GENERATED_BATCH_PUBLICATION_STATUSES } from '@constants/generated/batchPublicationStatuses'
 import {
   type PipelineConfig,
   type PipelineExecutionStep,
 } from '@lib/pipelineConfig'
+import { GENERATED_PIPELINE_EXECUTION_MODES } from '@constants/generated/pipelineExecutionModes'
 import type { ProcessBatchStatus, ProcessStageStatus } from 'types/pipelineContracts'
 
 export type PipelineStepRuntimeStatus = 'pending' | 'queued' | 'running' | 'completed' | 'failed' | 'review_needed'
 
+const INGESTER_STEP_LABEL = getStepDefinition(INGESTER_STAGE)?.label ?? ''
+
 const ORCHESTRATED_SERVICES = new Set<string>([
-  'ingester',
+  INGESTER_STAGE,
   DOCUMENT_SPLITTER_STAGE,
   PAGE_ROTATOR_STAGE,
   OCR_PROCESSOR_STAGE,
@@ -35,8 +41,8 @@ const INGEST_ONLY_PIPELINE_CONFIG: PipelineConfig = {
     {
       id: 'step-ingester',
       stepId: 'ingester',
-      service: 'ingester',
-      label: 'Ingest',
+      service: INGESTER_STAGE,
+      label: INGESTER_STEP_LABEL,
       order: 0,
       enabled: true,
     },
@@ -56,14 +62,20 @@ const REQUESTED_STAGE_SERVICES: Record<string, PipelineExecutionStep['service']>
   metadata_extractor: METADATA_EXTRACTOR_STAGE,
 }
 
-const REQUESTED_STAGE_LABELS: Record<PipelineExecutionStep['service'], string> = {
-  'document-splitter': 'Document Splitter',
-  'page-rotator': 'Page Rotator',
-  'ocr-processor': 'OCR Processor',
-  'content-dedup': 'Content Dedup',
-  'metadata-extraction': 'Metadata Extraction',
-  ingester: 'Ingest',
-  'fedora-ingester': 'Fedora Ingester',
+const REPROCESSING_INGESTER_STEP: PipelineExecutionStep = {
+  id: 'reprocess-ingester',
+  stepId: 'ingester',
+  service: INGESTER_STAGE,
+  label: INGESTER_STEP_LABEL,
+  order: -1,
+  enabled: true,
+}
+
+function isReprocessingExecution(batch: ProcessBatchStatus): boolean {
+  return (
+    batch.pipelineExecutionMode === GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS ||
+    batch.currentExecution?.executionMode === GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS
+  )
 }
 
 function getRequestedStagesPipelineConfig(batch: ProcessBatchStatus): PipelineConfig | null {
@@ -78,7 +90,7 @@ function getRequestedStagesPipelineConfig(batch: ProcessBatchStatus): PipelineCo
         id: `requested-stage-${index}`,
         stepId: service === DOCUMENT_SPLITTER_STAGE || service === PAGE_ROTATOR_STAGE ? 'normalize-pass-1' : service,
         service,
-        label: REQUESTED_STAGE_LABELS[service],
+        label: getPipelineServiceDisplayNameForService(service),
         order: index,
         enabled: true,
       } satisfies PipelineExecutionStep,
@@ -118,7 +130,7 @@ function getStageForService(
   service: PipelineExecutionStep['service'],
 ): ProcessStageStatus | null {
   switch (service) {
-    case 'ingester':
+    case INGESTER_STAGE:
       return batch.ingester
     case DOCUMENT_SPLITTER_STAGE:
       return batch.documentSplitter
@@ -156,9 +168,15 @@ export function getPipelineConfigForBatch(batch: ProcessBatchStatus): PipelineCo
 }
 
 export function getOrchestratedExecutionPlan(batch: ProcessBatchStatus): PipelineExecutionStep[] {
-  return getPipelineConfigForBatch(batch)
+  const executionPlan = getPipelineConfigForBatch(batch)
     .executionPlan.filter((step) => step.enabled && ORCHESTRATED_SERVICES.has(step.service))
     .sort((left, right) => left.order - right.order)
+
+  if (isReprocessingExecution(batch) && !executionPlan.some((step) => step.service === 'ingester')) {
+    return [REPROCESSING_INGESTER_STEP, ...executionPlan]
+  }
+
+  return executionPlan
 }
 
 export function getLastEnabledAutomatedExecutionStep(batch: ProcessBatchStatus): PipelineExecutionStep | null {
@@ -243,10 +261,10 @@ export function areExecutionStepDependenciesSatisfied(
 export function getNextEligibleExecutionStep(batch: ProcessBatchStatus): PipelineExecutionStep | null {
   if (
     new Set<string>([
-      'rollback_requested',
-      'draining',
-      'reverting',
-      GENERATED_BATCH_LIFECYCLE_STATUSES.REVERTED,
+      GENERATED_BATCH_LIFECYCLE_STATUSES.ROLLBACK_REQUESTED,
+      GENERATED_BATCH_LIFECYCLE_STATUSES.DRAINING,
+      GENERATED_BATCH_LIFECYCLE_STATUSES.ROLLBACK_IN_PROGRESS,
+      GENERATED_BATCH_LIFECYCLE_STATUSES.ROLLED_BACK,
       GENERATED_BATCH_LIFECYCLE_STATUSES.ROLLBACK_FAILED,
       GENERATED_BATCH_LIFECYCLE_STATUSES.PUBLICATION_LOCKED,
       GENERATED_BATCH_LIFECYCLE_STATUSES.COMPLETE,
@@ -264,7 +282,7 @@ export function getNextEligibleExecutionStep(batch: ProcessBatchStatus): Pipelin
   const executionPlan = getOrchestratedExecutionPlan(batch)
 
   for (const step of executionPlan) {
-    if (step.service === 'ingester') {
+    if (step.service === INGESTER_STAGE) {
       continue
     }
 
@@ -296,14 +314,15 @@ export function hasTerminalPipelineFailure(batch: ProcessBatchStatus): boolean {
 }
 
 export function isPipelineBatchTerminal(batch: ProcessBatchStatus): boolean {
-  if (['requested', 'draining', 'reverting'].includes(batch.rollbackStatus ?? '')) {
+  if (['requested', 'draining', 'rollback_in_progress'].includes(batch.rollbackStatus ?? '')) {
     return false
   }
 
   if (
     new Set<string>([
-      GENERATED_BATCH_LIFECYCLE_STATUSES.REVERTED,
+      GENERATED_BATCH_LIFECYCLE_STATUSES.ROLLED_BACK,
       GENERATED_BATCH_LIFECYCLE_STATUSES.COMPLETE,
+      GENERATED_BATCH_LIFECYCLE_STATUSES.PUBLISHED,
       GENERATED_BATCH_LIFECYCLE_STATUSES.FAILED,
       GENERATED_BATCH_LIFECYCLE_STATUSES.ROLLBACK_FAILED,
     ]).has(batch.lifecycleStatus ?? '') ||
@@ -320,7 +339,7 @@ export function isPipelineBatchTerminal(batch: ProcessBatchStatus): boolean {
     return false
   }
 
-  const ingesterStep = executionPlan.find((step) => step.service === 'ingester')
+  const ingesterStep = executionPlan.find((step) => step.service === INGESTER_STAGE)
   if (!ingesterStep || !isExecutionStepTerminal(batch, ingesterStep)) {
     return false
   }

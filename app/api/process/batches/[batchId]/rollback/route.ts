@@ -3,6 +3,8 @@ import { randomUUID } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 
 import { getDashboardSession } from '@root/auth'
+import { BATCH_ROLLBACK_CALLBACK_PATH } from '@constants/paths'
+import { DASHBOARD_BASE_URL } from '@constants/server'
 
 interface RouteContext {
   params: Promise<{ batchId: string }>
@@ -17,7 +19,8 @@ export async function POST(request: NextRequest, context: RouteContext): Promise
 
   const pipelineBaseUrl = process.env.PIPELINE_API_BASE_URL?.trim()
   const triggerToken = process.env.PIPELINE_TRIGGER_TOKEN?.trim()
-  if (!pipelineBaseUrl || !triggerToken) {
+  const callbackToken = process.env.PIPELINE_CALLBACK_TOKEN?.trim()
+  if (!pipelineBaseUrl || !triggerToken || !callbackToken) {
     return NextResponse.json({ error: 'Pipeline API configuration is incomplete.' }, { status: 500 })
   }
 
@@ -36,7 +39,15 @@ export async function POST(request: NextRequest, context: RouteContext): Promise
       'Content-Type': 'application/json',
       Authorization: `Bearer ${triggerToken}`,
     },
-    body: JSON.stringify({ requested_by: requestedBy, reason, idempotency_key: randomUUID() }),
+    body: JSON.stringify({
+      requested_by: requestedBy,
+      reason,
+      idempotency_key: randomUUID(),
+      callback: {
+        url: new URL(BATCH_ROLLBACK_CALLBACK_PATH, DASHBOARD_BASE_URL).toString(),
+        token: callbackToken,
+      },
+    }),
     cache: 'no-store',
   })
 

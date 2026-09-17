@@ -27,4 +27,18 @@ describe('StatusPill', () => {
     expect(markup).toContain('Review Needed')
     expect(markup).toContain('background-color:rgba(211, 47, 47, 0.15)')
   })
+
+  it('renders complete as a successful terminal processing status', () => {
+    const markup = renderToStaticMarkup(<StatusPill status={'complete'} />)
+
+    expect(statusVariantMap.complete).toBe('success')
+    expect(markup).toContain('Complete')
+  })
+
+  it('renders published as a successful terminal publication status', () => {
+    const markup = renderToStaticMarkup(<StatusPill status={'published'} />)
+
+    expect(statusVariantMap.published).toBe('success')
+    expect(markup).toContain('Published')
+  })
 })

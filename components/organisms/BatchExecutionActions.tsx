@@ -27,6 +27,36 @@ const STAGE_PROPERTIES: Record<CallbackStageKey, keyof ProcessBatchStatus> = {
   fedora_ingester: 'fedoraIngester',
 }
 
+function getBatchExecutionState(batch: ProcessBatchStatus): {
+  processingReadyForLibrary: boolean
+  published: boolean
+  publicationUnavailable: boolean
+  rolledBack: boolean
+  rerunDisabled: boolean
+} {
+  const processingReadyForLibrary =
+    batch.lifecycleStatus === GENERATED_BATCH_LIFECYCLE_STATUSES.COMPLETE &&
+    batch.publicationStatus === GENERATED_BATCH_PUBLICATION_STATUSES.NOT_STARTED
+  const published =
+    batch.lifecycleStatus === GENERATED_BATCH_LIFECYCLE_STATUSES.PUBLISHED ||
+    batch.publicationStatus === GENERATED_BATCH_PUBLICATION_STATUSES.PUBLISHED
+  const publicationUnavailable =
+    batch.lifecycleStatus === GENERATED_BATCH_LIFECYCLE_STATUSES.PUBLICATION_LOCKED ||
+    new Set<string>([
+      GENERATED_BATCH_PUBLICATION_STATUSES.PUBLICATION_LOCKED,
+      GENERATED_BATCH_PUBLICATION_STATUSES.UNKNOWN,
+    ]).has(batch.publicationStatus ?? '')
+  const rolledBack = batch.lifecycleStatus === GENERATED_BATCH_LIFECYCLE_STATUSES.ROLLED_BACK
+
+  return {
+    processingReadyForLibrary,
+    published,
+    publicationUnavailable,
+    rolledBack,
+    rerunDisabled: processingReadyForLibrary || publicationUnavailable || published || rolledBack,
+  }
+}
+
 export function BatchExecutionActions({
   batch,
   currentExecution,
@@ -45,25 +75,27 @@ export function BatchExecutionActions({
   }, [batch])
 
   if (!batch) return null
-  const published =
-    batch.lifecycleStatus === GENERATED_BATCH_LIFECYCLE_STATUSES.PUBLICATION_LOCKED ||
-    batch.lifecycleStatus === GENERATED_BATCH_LIFECYCLE_STATUSES.COMPLETE ||
-    new Set<string>([
-      GENERATED_BATCH_PUBLICATION_STATUSES.PUBLISHED,
-      GENERATED_BATCH_PUBLICATION_STATUSES.PUBLICATION_LOCKED,
-      GENERATED_BATCH_PUBLICATION_STATUSES.UNKNOWN,
-    ]).has(batch.publicationStatus ?? '')
-  const reverted = batch.lifecycleStatus === GENERATED_BATCH_LIFECYCLE_STATUSES.REVERTED
-  const rerunDisabled = published || reverted
+  const { processingReadyForLibrary, published, publicationUnavailable, rolledBack, rerunDisabled } =
+    getBatchExecutionState(batch)
 
   return (
     <Stack spacing={1.5} sx={{ alignItems: 'flex-start' }}>
+      {processingReadyForLibrary ? (
+        <Alert severity={'success'}>
+          {'Processing is complete. This batch is ready for library handoff.'}
+        </Alert>
+      ) : null}
       {published ? (
         <Alert severity={'info'}>
           {'This batch has been published. Reprocess its documents into a new batch instead of rerunning it in place.'}
         </Alert>
       ) : null}
-      {reverted ? (
+      {publicationUnavailable ? (
+        <Alert severity={'info'}>
+          {'This batch is publication-locked. Reprocess its documents into a new batch instead of rerunning it in place.'}
+        </Alert>
+      ) : null}
+      {rolledBack ? (
         <Alert severity={'info'}>
           {
             'This batch was rolled back successfully. Rerun from stage is unavailable; start a new batch from the original source instead.'

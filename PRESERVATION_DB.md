@@ -126,7 +126,7 @@ erDiagram
         varchar id PK
         varchar batch_id FK, UK
         text original_batch_name
-        int reversion_number
+        int rollback_number
         varchar requested_by
         text reason
         varchar idempotency_key UK
@@ -405,9 +405,11 @@ erDiagram
 - `pipeline_queue_items.payload` stores the original accepted trigger payload used by the worker.
 - `pipeline_queue_items.callback_delivery` stores the callback delivery result recorded after worker completion.
 - `batches.lifecycle_status` is the durable batch workflow state.
-  Current values are `draft`, `queued`, `running`, `failed`, `publication_locked`, `complete`, `archive`, `rollback_requested`, `draining`, `reverting`, `rollback_failed`, and `reverted`.
-  Drafts are editable cart batches, `failed` is rerunnable before manual edits, `complete` is reserved for verified Fedora publication, and `publication_locked` prevents rerun after an edit or uncertain/irreversible publication.
-  The rollback-eligible states are pre-publication states; `publication_locked`, `complete`, and `unknown` publication outcomes are not rollback eligible.
+  Current values are `draft`, `queued`, `running`, `complete`, `published`, `failed`, `publication_locked`, `archive`, `rollback_requested`, `draining`, `rollback_in_progress`, `rollback_failed`, and `rolled_back`.
+  Drafts are editable cart batches, `failed` is rerunnable before manual edits, `complete` means configured processing finished before publication, and `published` means Fedora publication was verified.
+  `publication_locked` prevents rerun after an edit or uncertain/irreversible publication.
+  A `complete` batch with `publication_status = 'not_started'` is the Dashboard's derived Ready for Library state.
+  Rollback is eligible for pre-publication `queued`, `running`, `complete`, and `failed` states; `publication_locked`, `published`, and `unknown` publication outcomes are not rollback eligible.
 - `batches.publication_status` records the provider boundary independently from the workflow state.
   `publication_target` identifies the configured provider, currently `fedora`.
 - `batch_rollbacks` retains the requested rollback, operator information, progress counts, failures, retries, and explicit resolutions.
@@ -787,7 +789,7 @@ Core batch/process-run records.
 | `completed_at` | `DATETIME` | Batch completion time. |
 | `last_processed` | `DATETIME` | Last processing datetime. |
 | `started_by` | `VARCHAR(255)` | Initiator name/process label. |
-| `lifecycle_status` | `VARCHAR(32)` | Durable workflow state: `draft`, `queued`, `running`, `failed`, `publication_locked`, `complete`, `archive`, and rollback states. |
+| `lifecycle_status` | `VARCHAR(32)` | Durable workflow state: `draft`, `queued`, `running`, `complete`, `published`, `failed`, `publication_locked`, `archive`, and rollback states. |
 | `publication_status` | `VARCHAR(32)` | Publication boundary state: `not_started`, `publication_locked`, `published`, or `unknown`. |
 | `publication_target` | `VARCHAR(64)` | Provider identifier for the publication endpoint; currently `fedora`. |
 
@@ -821,18 +823,18 @@ It is a durable orchestration/control table for the combined pipeline worker rat
 
 Durable rollback operation records.
 The batch row, processing details, costs, rollback record, and mutation ledger remain historical; batch-created operational rows are purged after compensation succeeds.
-The retained batch is renamed with an `<original-name>-reverted-<reversion-number>` suffix.
+The retained batch is renamed with an `<original-name>-rolled-back-<rollback-number>` suffix.
 
 | Column | Type | Notes |
 | --- | --- | --- |
 | `id` | `VARCHAR(36)` | Primary key. |
 | `batch_id` | `VARCHAR(36)` | Unique FK to `batches.id`; one rollback record per batch. |
 | `original_batch_name` | `TEXT` | Batch name before successful rollback renaming. |
-| `reversion_number` | `INT` | Monotonic suffix number for the original batch name. |
+| `rollback_number` | `INT` | Monotonic suffix number for the original batch name. |
 | `requested_by` | `VARCHAR(255)` | Operator or calling application identity. |
 | `reason` | `TEXT` | Optional operator explanation. |
 | `idempotency_key` | `VARCHAR(255)` | Optional unique request key. |
-| `status` | `VARCHAR(32)` | Rollback operation state, including `requested`, `reverting`, `reverted`, and `failed`. |
+| `status` | `VARCHAR(32)` | Rollback operation state, including `requested`, `rollback_in_progress`, `rolled_back`, and `failed`. |
 | `requested_at` / `started_at` / `completed_at` / `resolved_at` | `DATETIME` | Rollback lifecycle timestamps. |
 | `restored_count` / `deleted_count` / `cancelled_count` / `conflict_count` / `failed_count` | `INT` | Counts for restored rows, purged rows/artifacts, cancelled queue items, conflicts, and failures. |
 | `last_failure` | `TEXT` | Latest failure or operator-resolution detail. |

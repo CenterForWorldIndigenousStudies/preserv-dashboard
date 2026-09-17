@@ -36,6 +36,16 @@ function buildBatch(status: string) {
   })
 }
 
+function buildReprocessingBatch() {
+  return createProcessBatch({
+    pipelineExecutionMode: 'reprocess',
+    pipelineConfig: null,
+    pipelineRequestedStages: ['ocr_processor'],
+    ingester: createProcessStage({ status: 'completed' }),
+    ocrProcessor: createProcessStage({ status: 'running' }),
+  })
+}
+
 function renderTimeline(status: string): HTMLElement {
   const container = document.createElement('div')
   document.body.appendChild(container)
@@ -71,6 +81,19 @@ describe('PipelineTimelineCard', () => {
     const summary = container.querySelector('button[aria-expanded]')
 
     expect(summary?.textContent).toContain('Failed')
+  })
+
+  it('includes data ingest before the requested stages for reprocessing', () => {
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    mountedRoot = createRoot(container)
+
+    act(() => {
+      mountedRoot?.render(<PipelineTimelineCard batch={buildReprocessingBatch()} />)
+    })
+
+    expect(container.textContent).toContain('Ingest')
+    expect(container.textContent).toContain('OCR Processor')
   })
 
   it('starts completed timelines collapsed', () => {

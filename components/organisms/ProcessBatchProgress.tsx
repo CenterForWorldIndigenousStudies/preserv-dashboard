@@ -78,6 +78,11 @@ export function ProcessBatchProgress({
     setStreamVersion((current) => current + 1)
   }
 
+  function reconnectAfterRollback(): void {
+    reconnectAfterExecution()
+    onRollbackRequested?.()
+  }
+
   const executionActions = showExecutionActions ? (
     <BatchExecutionActions
       batch={batch}
@@ -92,7 +97,7 @@ export function ProcessBatchProgress({
       {streamError ? <Alert severity={'warning'}>{streamError}</Alert> : null}
       <ProcessBatchStatusCard
         batch={batch}
-        onRollbackRequested={onRollbackRequested}
+        onRollbackRequested={reconnectAfterRollback}
         executionActions={executionActions}
       />
       {processingDetails ? <BatchProcessingDetails properties={processingDetails} /> : null}

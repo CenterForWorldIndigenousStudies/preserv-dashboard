@@ -2,13 +2,14 @@
   "DRAFT": "draft",
   "QUEUED": "queued",
   "RUNNING": "running",
+  "COMPLETE": "complete",
+  "PUBLISHED": "published",
   "FAILED": "failed",
   "PUBLICATION_LOCKED": "publication_locked",
-  "COMPLETE": "complete",
   "ARCHIVE": "archive",
   "ROLLBACK_REQUESTED": "rollback_requested",
   "DRAINING": "draining",
-  "REVERTING": "reverting",
+  "ROLLBACK_IN_PROGRESS": "rollback_in_progress",
   "ROLLBACK_FAILED": "rollback_failed",
-  "REVERTED": "reverted"
+  "ROLLED_BACK": "rolled_back"
 }

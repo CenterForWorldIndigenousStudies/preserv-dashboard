@@ -196,6 +196,11 @@ export const GENERATED_PROCESSING_DETAILS_CONTRACT = {
         "description": "Number of documents passed through without a transformation.",
         "valueType": "integer"
       },
+      "passThroughs": {
+        "label": "Pass-Throughs",
+        "description": "Documents passed through without transformation and the reason.",
+        "valueType": "array"
+      },
       "rotatedCount": {
         "label": "Rotated Count",
         "description": "Number of documents or pages rotated by this stage.",

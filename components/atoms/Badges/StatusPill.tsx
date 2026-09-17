@@ -13,6 +13,7 @@ export const statusVariantMap = {
   [GENERATED_DOCUMENT_STATES.REJECTED]: 'danger',
   [GENERATED_DOCUMENT_STATES.NEEDS_REVIEW]: 'info',
   queued: 'neutral',
+  published: 'success',
   review_needed: 'danger',
   running: 'info',
 } as const

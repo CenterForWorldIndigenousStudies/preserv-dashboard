@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
 
 import { BATCHES_PATH, DOCUMENTS_PATH, READY_FOR_LIBRARY_PATH } from '@constants/paths'
+import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
 import { getDashboardSession } from '@root/auth'
 import type { PipelineExecutionContextInput } from '@lib/pipelineExecutionContext'
 import { batchNameExists, documentIdsExist, getPipelineExecutionSnapshot } from '@lib/queries/pipelineExecutionQueries'
@@ -157,7 +158,10 @@ async function preflightExecution(request: PipelineExecutionRequest): Promise<Ex
 }
 
 function isPublishedBatch(batch: ProcessBatchStatus): boolean {
-  return ['published', 'publication_locked', 'unknown'].includes(batch.publicationStatus ?? '')
+  return (
+    batch.lifecycleStatus === GENERATED_BATCH_LIFECYCLE_STATUSES.PUBLISHED ||
+    ['published', 'publication_locked', 'unknown'].includes(batch.publicationStatus ?? '')
+  )
 }
 
 function sourceBatchIdForRequest(request: PipelineExecutionRequest): string | undefined {

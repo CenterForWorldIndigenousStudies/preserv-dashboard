@@ -82,6 +82,7 @@ export const OCR_PROCESSOR_CALLBACK_PATH = `${PIPELINE_PATH}/ocr-processor/callb
 export const CONTENT_DEDUP_CALLBACK_PATH = `${PIPELINE_PATH}/content-dedup/callback` as const
 export const METADATA_EXTRACTOR_CALLBACK_PATH = `${PIPELINE_PATH}/metadata-extractor/callback` as const
 export const FEDORA_INGESTER_CALLBACK_PATH = `${PIPELINE_PATH}/fedora-ingester/callback` as const
+export const BATCH_ROLLBACK_CALLBACK_PATH = `${PIPELINE_PATH}/rollback/callback` as const
 
 export const PROCESS_PATH = `${API_PATH}/process` as const
 export const PROCESS_EVENTS_PATH = `${PROCESS_PATH}/events` as const

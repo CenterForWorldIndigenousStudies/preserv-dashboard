@@ -14,15 +14,16 @@ describe('batch lifecycle status contract', () => {
       'draft',
       'queued',
       'running',
+      'complete',
+      'published',
       'failed',
       'publication_locked',
-      'complete',
       'archive',
       'rollback_requested',
       'draining',
-      'reverting',
+      'rollback_in_progress',
       'rollback_failed',
-      'reverted',
+      'rolled_back',
     ])
   })
 

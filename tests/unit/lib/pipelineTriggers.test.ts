@@ -1,9 +1,21 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
-const {
-  mockTriggerMetadataExtractor,
-} = vi.hoisted(() => ({
+const { mockFinalizePipelineBatchReadiness, mockTriggerMetadataExtractor, mockUpdateMany } = vi.hoisted(() => ({
+  mockFinalizePipelineBatchReadiness: vi.fn(),
   mockTriggerMetadataExtractor: vi.fn(),
+  mockUpdateMany: vi.fn(),
+}))
+
+vi.mock('@lib/pipelineReadiness', () => ({
+  finalizePipelineBatchReadiness: mockFinalizePipelineBatchReadiness,
+}))
+
+vi.mock('@lib/db', () => ({
+  db: {
+    batches: {
+      updateMany: mockUpdateMany,
+    },
+  },
 }))
 
 vi.mock('@lib/pipelineTriggerRequests', () => ({
@@ -15,6 +27,7 @@ vi.mock('@lib/pipelineTriggerRequests', () => ({
 }))
 
 import {
+  finalizePipelineReadinessIfDue,
   getPipelineContinuationContext,
   triggerMetadataExtractor,
 } from '@lib/pipelineTriggers'
@@ -39,6 +52,10 @@ function buildBatchStatus(overrides: Partial<ProcessBatchStatus> = {}): ProcessB
 }
 
 describe('pipelineTriggers', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('preserves rerun execution context for downstream callbacks', () => {
     const batch = buildBatchStatus({
       currentExecution: {
@@ -74,4 +91,45 @@ describe('pipelineTriggers', () => {
     expect(mockTriggerMetadataExtractor).toHaveBeenCalledWith(batch)
   })
 
+  it('marks a batch complete after its final automated stage completes', async () => {
+    mockFinalizePipelineBatchReadiness.mockResolvedValue(undefined)
+
+    const batch = {
+      batchId: 'batch-1',
+      lifecycleStatus: 'running',
+      publicationStatus: 'not_started',
+      pipelineRequestedStages: ['metadata-extraction'],
+      pipelineConfig: {
+        profileId: 'custom',
+        mode: 'custom',
+        metadataExtraction: { mode: 'direct' },
+        executionPlan: [
+          { id: 'step-ingester', stepId: 'ingester', service: 'ingester', label: 'Ingest', order: 0, enabled: true },
+          {
+            id: 'step-metadata-extraction',
+            stepId: 'metadata-extraction',
+            service: 'metadata-extraction',
+            label: 'Metadata Extraction',
+            order: 1,
+            enabled: true,
+            dependsOn: ['step-ingester'],
+          },
+        ],
+      },
+      ingester: { status: 'completed' },
+      metadataExtractor: { status: 'completed' },
+    } as ProcessBatchStatus
+
+    await finalizePipelineReadinessIfDue(batch)
+
+    expect(mockFinalizePipelineBatchReadiness).toHaveBeenCalledWith('batch-1')
+    expect(mockUpdateMany.mock.calls[0]?.[0]).toMatchObject({
+      where: {
+        id: 'batch-1',
+        lifecycle_status: { in: ['queued', 'running'] },
+        publication_status: 'not_started',
+      },
+      data: { lifecycle_status: 'complete' },
+    })
+  })
 })

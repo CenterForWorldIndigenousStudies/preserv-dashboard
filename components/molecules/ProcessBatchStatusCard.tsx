@@ -69,7 +69,7 @@ export function ProcessBatchStatusCard({
           />
         ) : null}
         {batch.rollbackFailure ? <ProcessDetailRow label={'Rollback failure'} value={batch.rollbackFailure} /> : null}
-        {batch.rollbackStatus === 'reverted' ? (
+        {batch.rollbackStatus === 'rolled_back' ? (
           <Alert severity={'success'}>
             {
               'This batch was rolled back successfully. Its generated database artifacts were removed, and its Google Drive artifacts were moved to the administrator delete folder.'
