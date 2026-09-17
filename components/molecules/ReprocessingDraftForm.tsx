@@ -1,10 +1,10 @@
 'use client'
 
-import { useMemo, type ReactElement } from 'react'
-import { MenuItem, Stack, TextField } from '@mui/material'
+import type { ReactElement } from 'react'
+import { Stack, TextField } from '@mui/material'
 
 import { ProcessBatchFormPanel } from '@molecules/ProcessBatchFormPanel'
-import { REPROCESSING_STAGE_OPTIONS } from '@lib/reprocessingDrafts'
+import { ReprocessingStageSelector } from '@molecules/ReprocessingStageSelector'
 import type { CallbackStageKey } from 'types/pipelineContracts'
 
 interface ReprocessingDraftFormProps {
@@ -12,6 +12,7 @@ interface ReprocessingDraftFormProps {
   collectionName: string
   collectionNotes: string
   restartStage: CallbackStageKey
+  requestedStages: readonly CallbackStageKey[]
   reason: string
   isSubmitting: boolean
   canSubmit: boolean
@@ -22,10 +23,10 @@ interface ReprocessingDraftFormProps {
   onCollectionNameChange: (value: string) => void
   onCollectionNotesChange: (value: string) => void
   onRestartStageChange: (value: CallbackStageKey) => void
+  onRequestedStagesChange: (value: CallbackStageKey[]) => void
   onReasonChange: (value: string) => void
   onSubmit: () => void
   submitLabel?: string
-  disableRestartStage?: boolean
 }
 
 export function ReprocessingDraftForm({
@@ -33,6 +34,7 @@ export function ReprocessingDraftForm({
   collectionName,
   collectionNotes,
   restartStage,
+  requestedStages,
   reason,
   isSubmitting,
   canSubmit,
@@ -43,13 +45,11 @@ export function ReprocessingDraftForm({
   onCollectionNameChange,
   onCollectionNotesChange,
   onRestartStageChange,
+  onRequestedStagesChange,
   onReasonChange,
   onSubmit,
   submitLabel = 'Add to reprocessing cart',
-  disableRestartStage = false,
 }: ReprocessingDraftFormProps): ReactElement {
-  const stageOptions = useMemo(() => REPROCESSING_STAGE_OPTIONS, [])
-
   return (
     <Stack spacing={2}>
       <ProcessBatchFormPanel
@@ -69,24 +69,16 @@ export function ReprocessingDraftForm({
         onSubmit={onSubmit}
         onRefresh={() => undefined}
         title={'Create a reprocessing batch'}
-        description={'Name the draft and choose the stage and reason.'}
+        description={'Name the draft and choose the stages and reason.'}
         submitLabel={submitLabel}
         showRefresh={false}
       />
-      <TextField
-        select
-        fullWidth
-        label={'Start stage'}
-        value={restartStage}
-        disabled={disableRestartStage}
-        onChange={(event) => onRestartStageChange(event.target.value as CallbackStageKey)}
-      >
-        {stageOptions.map((option) => (
-          <MenuItem key={option.value} value={option.value}>
-            {option.label}
-          </MenuItem>
-        ))}
-      </TextField>
+      <ReprocessingStageSelector
+        restartStage={restartStage}
+        requestedStages={requestedStages}
+        onRestartStageChange={onRestartStageChange}
+        onRequestedStagesChange={onRequestedStagesChange}
+      />
       <TextField
         fullWidth
         required

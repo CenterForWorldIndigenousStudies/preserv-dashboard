@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import {
+  finalizePipelineReadinessIfDue,
   getPipelineContinuationContext,
   shouldTriggerContentDedup,
-  finalizePipelineReadinessIfDue,
   shouldTriggerDocumentSplitter,
   shouldTriggerMetadataExtractor,
   shouldTriggerOcrProcessor,
@@ -24,13 +24,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   return handlePipelineCallback({
     request,
     stage: 'ingester',
-    eventName: 'ingester_callback',
-    expectedExecutionMode: 'normal',
+    eventName: 'reprocess_callback',
+    expectedExecutionMode: 'reprocess',
     onSuccess: async ({ parsed }) => {
       await markProcessStageCallbackReceived(parsed.batchId, 'ingester', Math.floor(Date.now() / 1000))
       const batch = await getProcessBatchStatus(parsed.batchId)
       if (!batch) {
-        throw new Error(`Batch ${parsed.batchId} was not found after recording ingester callback.`)
+        throw new Error(`Batch ${parsed.batchId} was not found after recording reprocess callback.`)
       }
 
       if (shouldTriggerDocumentSplitter(batch)) {

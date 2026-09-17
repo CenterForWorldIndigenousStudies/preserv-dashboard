@@ -1,8 +1,9 @@
 'use client'
 
 import type { ReactElement } from 'react'
-import { Box, Stack } from '@mui/material'
+import { Box, Stack, Typography } from '@mui/material'
 
+import { AccordionPanel } from '@molecules/AccordionPanel'
 import { GoogleDriveFolderTree } from '@molecules/GoogleDriveFolderTree'
 import { ProcessBatchFormPanel } from '@molecules/ProcessBatchFormPanel'
 import { PipelineProfileSelector } from '@molecules/PipelineProfileSelector'
@@ -31,6 +32,7 @@ interface ProcessBatchCreationWorkspaceProps {
   selectedFolders: Record<string, DriveFolderOption>
   foldersError: string | null
   googleDriveExpanded: boolean
+  isManagingDraft: boolean
   onBatchNameChange: (value: string) => void
   onCollectionNameChange: (value: string) => void
   onCollectionNotesChange: (value: string) => void
@@ -65,6 +67,7 @@ export function ProcessBatchCreationWorkspace({
   selectedFolders,
   foldersError,
   googleDriveExpanded,
+  isManagingDraft,
   onBatchNameChange,
   onCollectionNameChange,
   onCollectionNotesChange,
@@ -80,63 +83,73 @@ export function ProcessBatchCreationWorkspace({
   onToggleFolderExpansion,
 }: ProcessBatchCreationWorkspaceProps): ReactElement {
   return (
-    <Stack spacing={4}>
-      <Box
-        sx={{
-          display: 'grid',
-          gap: 3,
-          gridTemplateColumns: {
-            xs: '1fr',
-            lg: 'minmax(0, 1.15fr) minmax(0, 0.85fr)',
-          },
-        }}
-      >
-        <ProcessBatchFormPanel
-          batchName={batchName}
-          collectionName={collectionName}
-          collectionNotes={collectionNotes}
-          isSubmitting={isSubmitting}
-          isRefreshing={isRefreshing}
-          canSubmit={canSubmit}
-          submitError={submitError}
-          acceptedBatchName={acceptedBatchName}
-          batchNameSearchError={batchNameSearchError}
-          batchNameExists={batchNameExists}
-          onBatchNameChange={onBatchNameChange}
-          onCollectionNameChange={onCollectionNameChange}
-          onCollectionNotesChange={onCollectionNotesChange}
-          onSubmit={onSubmit}
-          onRefresh={onRefresh}
+    <AccordionPanel
+      expanded={!isManagingDraft}
+      summary={
+        <Typography component={'span'} variant={'h5'}>
+          {'Create a new batch'}
+        </Typography>
+      }
+    >
+      <Stack spacing={4}>
+        <Box
+          sx={{
+            display: 'grid',
+            gap: 3,
+            gridTemplateColumns: {
+              xs: '1fr',
+              lg: 'minmax(0, 1.15fr) minmax(0, 0.85fr)',
+            },
+          }}
+        >
+          <ProcessBatchFormPanel
+            batchName={batchName}
+            collectionName={collectionName}
+            collectionNotes={collectionNotes}
+            isSubmitting={isSubmitting}
+            isRefreshing={isRefreshing}
+            canSubmit={canSubmit}
+            submitError={submitError}
+            acceptedBatchName={acceptedBatchName}
+            batchNameSearchError={batchNameSearchError}
+            batchNameExists={batchNameExists}
+            onBatchNameChange={onBatchNameChange}
+            onCollectionNameChange={onCollectionNameChange}
+            onCollectionNotesChange={onCollectionNotesChange}
+            onSubmit={onSubmit}
+            onRefresh={onRefresh}
+            title={'Batch details'}
+          />
+
+          <Stack spacing={3}>
+            <PipelineProfileSelector
+              draft={pipelineDraft}
+              onProfileChange={onProfileChange}
+              onConvertToCustom={onConvertToCustom}
+              onOpenStepsModal={onOpenStepsModal}
+            />
+            <PipelineStepsModal
+              open={isPipelineStepsModalOpen}
+              draft={pipelineDraft}
+              onClose={onCloseStepsModal}
+              onDraftChange={onProfileDraftChange}
+            />
+            <ProcessSelectedFoldersPanel folders={Object.values(selectedFolders)} />
+          </Stack>
+        </Box>
+
+        <GoogleDriveFolderTree
+          rootFolders={rootFolders}
+          childFoldersByParent={childFoldersByParent}
+          expandedFolderIds={expandedFolderIds}
+          selectedFolderIds={selectedFolders}
+          error={foldersError}
+          expanded={googleDriveExpanded}
+          onExpandedChange={onGoogleDriveExpandedChange}
+          onToggleFolderSelection={onToggleFolderSelection}
+          onToggleFolderExpansion={onToggleFolderExpansion}
         />
-
-        <Stack spacing={3}>
-          <PipelineProfileSelector
-            draft={pipelineDraft}
-            onProfileChange={onProfileChange}
-            onConvertToCustom={onConvertToCustom}
-            onOpenStepsModal={onOpenStepsModal}
-          />
-          <PipelineStepsModal
-            open={isPipelineStepsModalOpen}
-            draft={pipelineDraft}
-            onClose={onCloseStepsModal}
-            onDraftChange={onProfileDraftChange}
-          />
-          <ProcessSelectedFoldersPanel folders={Object.values(selectedFolders)} />
-        </Stack>
-      </Box>
-
-      <GoogleDriveFolderTree
-        rootFolders={rootFolders}
-        childFoldersByParent={childFoldersByParent}
-        expandedFolderIds={expandedFolderIds}
-        selectedFolderIds={selectedFolders}
-        error={foldersError}
-        expanded={googleDriveExpanded}
-        onExpandedChange={onGoogleDriveExpandedChange}
-        onToggleFolderSelection={onToggleFolderSelection}
-        onToggleFolderExpansion={onToggleFolderExpansion}
-      />
-    </Stack>
+      </Stack>
+    </AccordionPanel>
   )
 }

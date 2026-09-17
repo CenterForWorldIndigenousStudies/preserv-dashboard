@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 
 import {
   CONTENT_DEDUP_CALLBACK_PATH,
+  DATA_INGESTER_REPROCESS_CALLBACK_PATH,
   FEDORA_INGESTER_CALLBACK_PATH,
   DOCUMENT_SPLITTER_CALLBACK_PATH,
   METADATA_EXTRACTOR_CALLBACK_PATH,
@@ -29,6 +30,11 @@ export interface PipelineTriggerAcceptedResponse {
   batchId: string | null
   status: string | null
   service: string | null
+}
+
+type ReprocessTriggerConfig = {
+  endpointPath: string
+  callbackPath: string
 }
 
 function buildStageCallbackUrl(pathname: string): string {
@@ -79,12 +85,14 @@ function createAsyncCallbackPayload(
     throw new Error(`Batch ${batch.batchId} is missing startedBy.`)
   }
 
-  const context = normalizePipelineExecutionContext(requestId, executionContext)
+  const context = normalizePipelineExecutionContext(requestId, executionContext, {
+    targetBatchId: batch.batchId || undefined,
+  })
 
   return {
     app: 'preserv-dashboard',
     request_id: requestId,
-    batch_id: context.executionMode === 'reprocess' && !context.draftBatchId ? null : batch.batchId,
+    batch_id: batch.batchId || null,
     started_by: batch.startedBy,
     initiated_at: initiatedAt,
     execution_mode: context.executionMode,
@@ -95,10 +103,57 @@ function createAsyncCallbackPayload(
     source_batch_id: context.sourceBatchId ?? null,
     new_batch_name: context.newBatchName ?? null,
     draft_batch_id: context.draftBatchId ?? null,
+    requested_stages: context.requestedStages ?? [],
     collection: context.collection ?? null,
     pipeline_config: context.pipelineConfig ?? null,
     callback: {
       url: callbackUrl,
+      token: readRequiredEnv('PIPELINE_CALLBACK_TOKEN', 'PIPELINE_CALLBACK_TOKEN is not configured.'),
+    },
+  }
+}
+
+function createReprocessCallbackPayload(
+  batch: ProcessBatchStatus,
+  initiatedAt: string,
+  requestId: string,
+  config: ReprocessTriggerConfig,
+  executionContext: PipelineExecutionContextInput,
+): Record<string, unknown> {
+  if (!batch.startedBy || !batch.batchId) {
+    throw new Error('A reprocessing batch is missing its batch ID or startedBy.')
+  }
+  const context = normalizePipelineExecutionContext(requestId, executionContext, {
+    targetBatchId: batch.batchId,
+  })
+  if (context.executionMode !== 'reprocess') {
+    throw new Error('Data Ingester reprocessing requires reprocess execution.')
+  }
+  if (!context.sourceDocumentIds?.length) {
+    throw new Error('Data Ingester reprocessing requires source documents.')
+  }
+  if (!context.requestedStages?.length) {
+    throw new Error('Data Ingester reprocessing requires requested stages.')
+  }
+
+  return {
+    app: 'preserv-dashboard',
+    request_id: requestId,
+    batch_id: batch.batchId,
+    batch_name: batch.batchName || batch.batchId,
+    started_by: batch.startedBy,
+    initiated_at: initiatedAt,
+    execution_mode: context.executionMode,
+    operation_id: context.operationId,
+    idempotency_key: context.idempotencyKey,
+    reason: context.reason ?? null,
+    source_document_ids: context.sourceDocumentIds,
+    source_batch_id: context.sourceBatchId ?? null,
+    draft_batch_id: context.draftBatchId ?? null,
+    requested_stages: context.requestedStages,
+    collection: context.collection ?? null,
+    callback: {
+      url: buildStageCallbackUrl(config.callbackPath),
       token: readRequiredEnv('PIPELINE_CALLBACK_TOKEN', 'PIPELINE_CALLBACK_TOKEN is not configured.'),
     },
   }
@@ -254,4 +309,38 @@ export async function triggerFedoraIngester(
     },
     executionContext,
   )
+}
+
+export async function triggerDataIngesterReprocess(
+  batch: ProcessBatchStatus,
+  executionContext: PipelineExecutionContextInput,
+): Promise<PipelineTriggerAcceptedResponse> {
+  const baseUrl = readRequiredEnv('PIPELINE_API_BASE_URL', 'PIPELINE_API_BASE_URL is not configured.')
+  const triggerToken = readRequiredEnv('PIPELINE_TRIGGER_TOKEN', 'PIPELINE_TRIGGER_TOKEN is not configured.')
+  const requestId = randomUUID()
+  const initiatedAt = new Date().toISOString()
+  const config: ReprocessTriggerConfig = {
+    endpointPath: '/reprocess',
+    callbackPath: DATA_INGESTER_REPROCESS_CALLBACK_PATH,
+  }
+  const payload = createReprocessCallbackPayload(batch, initiatedAt, requestId, config, executionContext)
+  const response = await fetch(new URL(config.endpointPath, baseUrl), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${triggerToken}`,
+    },
+    body: JSON.stringify(payload),
+    cache: 'no-store',
+  })
+  const responseBody = await parseResponseBody(response)
+  if (!response.ok) {
+    throw new Error(getErrorMessage(responseBody, `data-ingester reprocess returned ${response.status}`))
+  }
+  const acceptedBody = typeof responseBody === 'object' && responseBody !== null ? responseBody : {}
+  return {
+    batchId: 'batchId' in acceptedBody && typeof acceptedBody.batchId === 'string' ? acceptedBody.batchId : null,
+    status: 'status' in acceptedBody && typeof acceptedBody.status === 'string' ? acceptedBody.status : null,
+    service: 'service' in acceptedBody && typeof acceptedBody.service === 'string' ? acceptedBody.service : null,
+  }
 }

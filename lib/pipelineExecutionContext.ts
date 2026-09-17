@@ -1,6 +1,7 @@
 import { type PipelineExecutionMode } from '@constants/pipelineExecutionModes'
 import { GENERATED_PIPELINE_EXECUTION_MODES } from '@constants/generated/pipelineExecutionModes'
 import type { PipelineConfig } from '@lib/pipelineConfig'
+import type { CallbackStageKey } from 'types/pipelineContracts'
 
 export interface PipelineExecutionCollection {
   name: string
@@ -16,6 +17,7 @@ export interface PipelineExecutionContext {
   sourceBatchId?: string
   newBatchName?: string
   draftBatchId?: string
+  requestedStages?: readonly CallbackStageKey[]
   collection?: PipelineExecutionCollection
   pipelineConfig?: PipelineConfig
 }
@@ -43,12 +45,17 @@ function normalizeDocumentIds(values: string[] | undefined): string[] {
   return [...new Set(values.map((value) => value.trim()).filter(Boolean))]
 }
 
+function normalizeRequestedStages(values: readonly CallbackStageKey[] | undefined): CallbackStageKey[] {
+  if (!values) return []
+  return [...new Set(values.map((value) => value.trim()).filter(Boolean))] as CallbackStageKey[]
+}
+
 function normalizeCollection(value: PipelineExecutionCollection | undefined): PipelineExecutionCollection | undefined {
   if (!value) return undefined
 
   const name = normalizeOptionalText(value.name, 'collection.name')
   if (!name) return undefined
-  const notes = value.notes === null ? null : normalizeOptionalText(value.notes, 'collection.notes') ?? null
+  const notes = value.notes === null ? null : (normalizeOptionalText(value.notes, 'collection.notes') ?? null)
   return { name, notes }
 }
 
@@ -57,6 +64,7 @@ function validateExecutionScope(
   sourceDocumentIds: string[],
   newBatchName: string | undefined,
   draftBatchId: string | undefined,
+  targetBatchId: string | undefined,
 ): void {
   if (executionMode === GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS) {
     if (draftBatchId) {
@@ -68,7 +76,7 @@ function validateExecutionScope(
     if (sourceDocumentIds.length === 0) {
       throw new Error('reprocess execution requires sourceDocumentIds.')
     }
-    if (!newBatchName) {
+    if (!newBatchName && !targetBatchId) {
       throw new Error('reprocess execution requires newBatchName.')
     }
     return
@@ -85,6 +93,7 @@ function validateExecutionScope(
 export function normalizePipelineExecutionContext(
   requestId: string,
   input: PipelineExecutionContextInput = {},
+  options: { targetBatchId?: string } = {},
 ): PipelineExecutionContext {
   const normalizedRequestId = requestId.trim()
   if (!normalizedRequestId) {
@@ -101,6 +110,7 @@ export function normalizePipelineExecutionContext(
   const sourceBatchId = normalizeOptionalText(input.sourceBatchId, 'sourceBatchId')
   const newBatchName = normalizeOptionalText(input.newBatchName, 'newBatchName')
   const draftBatchId = normalizeOptionalText(input.draftBatchId, 'draftBatchId')
+  const requestedStages = normalizeRequestedStages(input.requestedStages)
   const collection = normalizeCollection(input.collection)
 
   if (!operationId) {
@@ -109,7 +119,7 @@ export function normalizePipelineExecutionContext(
   if (!idempotencyKey) {
     throw new Error(`${executionMode} execution requires idempotencyKey.`)
   }
-  validateExecutionScope(executionMode, sourceDocumentIds, newBatchName, draftBatchId)
+  validateExecutionScope(executionMode, sourceDocumentIds, newBatchName, draftBatchId, options.targetBatchId?.trim())
   if (
     input.pipelineConfig &&
     executionMode !== GENERATED_PIPELINE_EXECUTION_MODES.NORMAL &&
@@ -127,6 +137,7 @@ export function normalizePipelineExecutionContext(
     ...(sourceBatchId ? { sourceBatchId } : {}),
     ...(newBatchName ? { newBatchName } : {}),
     ...(draftBatchId ? { draftBatchId } : {}),
+    requestedStages,
     ...(collection ? { collection } : {}),
     ...(input.pipelineConfig ? { pipelineConfig: input.pipelineConfig } : {}),
   }

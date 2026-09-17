@@ -5,12 +5,14 @@ const {
   mockGetReprocessingDraft,
   mockGetPipelineExecutionSnapshot,
   mockTriggerMetadataExtractor,
+  mockTriggerDataIngesterReprocess,
   mockRevalidatePath,
 } = vi.hoisted(() => ({
   mockGetDashboardSession: vi.fn(),
   mockGetReprocessingDraft: vi.fn(),
   mockGetPipelineExecutionSnapshot: vi.fn(),
   mockTriggerMetadataExtractor: vi.fn(),
+  mockTriggerDataIngesterReprocess: vi.fn(),
   mockRevalidatePath: vi.fn(),
 }))
 
@@ -26,6 +28,7 @@ vi.mock('@lib/pipelineTriggerRequests', () => ({
   triggerDocumentSplitter: vi.fn(),
   triggerFedoraIngester: vi.fn(),
   triggerMetadataExtractor: mockTriggerMetadataExtractor,
+  triggerDataIngesterReprocess: mockTriggerDataIngesterReprocess,
   triggerOcrProcessor: vi.fn(),
   triggerPageRotator: vi.fn(),
 }))
@@ -63,7 +66,7 @@ describe('requestPipelineExecution', () => {
       queueAttempts: [],
       batchNameConflict: false,
     })
-    mockTriggerMetadataExtractor.mockResolvedValue({ batchId: 'draft-1' })
+    mockTriggerDataIngesterReprocess.mockResolvedValue({ batchId: 'draft-1' })
 
     await expect(requestPipelineExecution({
       mode: 'reprocess',
@@ -73,7 +76,7 @@ describe('requestPipelineExecution', () => {
       reason: 'Retry metadata',
     })).resolves.toMatchObject({ ok: true, operationId: 'draft-submit:draft-1' })
 
-    expect(mockTriggerMetadataExtractor).toHaveBeenCalledWith(
+    expect(mockTriggerDataIngesterReprocess).toHaveBeenCalledWith(
       expect.objectContaining({ batchId: 'draft-1' }),
       expect.objectContaining({
         operationId: 'draft-submit:draft-1',
@@ -81,5 +84,36 @@ describe('requestPipelineExecution', () => {
         draftBatchId: 'draft-1',
       }),
     )
+  })
+
+  it('keeps direct reprocessing on the existing stage path', async () => {
+    mockGetReprocessingDraft.mockResolvedValue(null)
+    mockGetPipelineExecutionSnapshot.mockResolvedValue({
+      batch: null,
+      currentExecution: null,
+      queueAttempts: [],
+      batchNameConflict: false,
+    })
+    const queryModule = await import('@lib/queries/pipelineExecutionQueries')
+    vi.mocked(queryModule.documentIdsExist).mockResolvedValue(true)
+    vi.mocked(queryModule.batchNameExists).mockResolvedValue(false)
+    mockTriggerMetadataExtractor.mockResolvedValue({ batchId: 'new-batch-1' })
+
+    await expect(requestPipelineExecution({
+      mode: 'reprocess',
+      restartStage: 'metadata_extractor',
+      documentIds: ['doc-1'],
+      newBatchName: 'Reprocessed batch',
+      reason: 'Retry metadata',
+    })).resolves.toMatchObject({ ok: true })
+
+    expect(mockTriggerMetadataExtractor).toHaveBeenCalledWith(
+      expect.objectContaining({ batchName: 'Reprocessed batch' }),
+      expect.objectContaining({
+        executionMode: 'reprocess',
+        sourceDocumentIds: ['doc-1'],
+      }),
+    )
+    expect(mockTriggerDataIngesterReprocess).not.toHaveBeenCalled()
   })
 })

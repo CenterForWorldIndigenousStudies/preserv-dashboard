@@ -16,6 +16,7 @@ describe('ReprocessingCart', () => {
               collectionName: null,
               collectionNotes: null,
               restartStage: 'ocr_processor',
+              requestedStages: ['ocr_processor'],
               reason: 'Review correction',
               documentCount: 1,
               createdAt: null,

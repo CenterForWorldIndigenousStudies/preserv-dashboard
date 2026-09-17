@@ -7,6 +7,7 @@ import { SourceId } from '@atoms/SourceId'
 import { NeedsReviewReasons } from '@molecules/NeedsReviewReasons'
 import { ValuePillList } from '@molecules/ValuePillList'
 import { parseMetadataList, parseMetadataValue } from '@lib/metadata'
+import type { DocumentSourceLinkOptions } from '@lib/documentSourceLinks'
 import type { MetadataField } from 'types/metadata'
 
 const metadataPillFieldNames = new Set([
@@ -42,11 +43,11 @@ const dateFieldNames = new Set([
 
 const costFieldNames = new Set(['cost_saved'])
 
-export interface MetadataValueProps {
+export interface MetadataValueProps extends DocumentSourceLinkOptions {
   field: MetadataField
 }
 
-export function MetadataValue({ field }: MetadataValueProps): ReactElement {
+export function MetadataValue({ field, fileExtension, fileName, mimeType }: MetadataValueProps): ReactElement {
   if (field.name === 'needs_review') {
     return <NeedsReviewReasons value={field.value} />
   }
@@ -58,7 +59,7 @@ export function MetadataValue({ field }: MetadataValueProps): ReactElement {
   const parsed = parseMetadataValue(field.value, field.value_type)
 
   if (sourceIdFieldNames.has(field.name)) {
-    return <SourceId value={parsed.display as string} />
+    return <SourceId value={parsed.display as string} fileExtension={fileExtension} fileName={fileName} mimeType={mimeType} />
   }
 
   if (sourceFolderIdFieldNames.has(field.name)) {

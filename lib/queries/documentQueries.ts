@@ -389,9 +389,7 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
           (metadataLink) =>
             metadataLink.metadata.name === 'preservation_candidate' && isTruthyMetadataValue(metadataLink.value),
         ) ?? false,
-      is_duplicate: isCanonical
-        ? false
-        : row.document_to_tags.some((tagLink) => tagLink.tags.name === 'duplicate_document'),
+      is_duplicate: row.document_to_tags.some((tagLink) => tagLink.tags.name === 'duplicate_document'),
     }
   }
 

@@ -23,6 +23,7 @@ export {
   triggerOcrProcessor,
   triggerPageRotator,
   triggerFedoraIngester,
+  triggerDataIngesterReprocess,
 } from '@lib/pipelineTriggerRequests'
 import type { PipelineExecutionStep } from '@lib/pipelineConfig'
 import type { ProcessBatchStatus } from 'types/pipelineContracts'
@@ -49,6 +50,8 @@ export function getPipelineContinuationContext(batch: ProcessBatchStatus): Pipel
     idempotencyKey: randomUUID(),
     reason: execution.reason ?? undefined,
     sourceDocumentIds: execution.sourceDocumentIds,
+    ...(executionMode === GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS ? { sourceBatchId: batch.batchId } : {}),
+    requestedStages: batch.pipelineRequestedStages as PipelineExecutionContextInput['requestedStages'],
   }
 }
 

@@ -9,6 +9,7 @@ export interface PipelineExecutionRequest {
   batchId?: string
   documentIds?: string[]
   restartStage: CallbackStageKey
+  requestedStages?: readonly CallbackStageKey[]
   newBatchName?: string
   draftBatchId?: string
   reason: string

@@ -27,6 +27,7 @@ import {
   createReprocessingDraftForDocuments,
   getOpenDraftForDocument,
   getOpenDraftDocumentIds,
+  getReprocessingDraft,
   getReprocessingDrafts,
   removeDocumentsFromReprocessingDrafts,
   removeDocumentFromReprocessingDraft,
@@ -50,6 +51,7 @@ describe('reprocessing draft queries', () => {
         processing_details: JSON.stringify({
           reprocessingDraft: {
             restartStage: 'ocr_processor',
+            requestedStages: ['ocr_processor', 'content_dedup', 'metadata_extractor'],
             reason: 'Low OCR confidence',
             collectionName: 'Collection A',
             collectionNotes: 'Review set',
@@ -70,6 +72,7 @@ describe('reprocessing draft queries', () => {
         collectionName: 'Collection A',
         collectionNotes: 'Review set',
         restartStage: 'ocr_processor',
+        requestedStages: ['ocr_processor', 'content_dedup', 'metadata_extractor'],
         reason: 'Low OCR confidence',
         documentCount: 2,
         createdAt: '2026-09-03T10:00:00.000Z',
@@ -81,6 +84,49 @@ describe('reprocessing draft queries', () => {
     expect(mockDb.batches.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { lifecycle_status: 'draft' } }),
     )
+  })
+
+  it('includes the source batch identifiers for draft documents', async () => {
+    mockDb.batches.findFirst.mockResolvedValue({
+      id: 'draft-1',
+      name: 'Retry batch',
+      processing_details: JSON.stringify({ reprocessingDraft: { restartStage: 'ocr_processor', reason: 'Retry' } }),
+      created_at: new Date('2026-09-03T10:00:00.000Z'),
+      updated_at: new Date('2026-09-03T10:00:00.000Z'),
+      document_to_batches: [
+        {
+          id: 'membership-1',
+          added_at: new Date('2026-09-03T10:01:00.000Z'),
+          documents: {
+            id: 'doc-1',
+            name: 'Interview.pdf',
+            id_legacy: 'legacy-doc-1',
+            document_to_batches: [
+              {
+                batches: {
+                  id: 'source-batch-1',
+                  id_legacy: 'legacy-batch-1',
+                  name: 'Original ingest',
+                },
+              },
+            ],
+          },
+        },
+      ],
+    })
+
+    await expect(getReprocessingDraft('draft-1')).resolves.toMatchObject({
+      documents: [
+        {
+          id: 'doc-1',
+          name: 'Interview.pdf',
+          idLegacy: 'legacy-doc-1',
+          sourceBatchId: 'source-batch-1',
+          sourceBatchLegacyId: 'legacy-batch-1',
+          sourceBatchName: 'Original ingest',
+        },
+      ],
+    })
   })
 
   it('returns the open draft owning a document', async () => {
@@ -112,6 +158,7 @@ describe('reprocessing draft queries', () => {
       documentId: 'doc-1',
       name: 'Retry batch',
       restartStage: 'ocr_processor',
+      requestedStages: ['ocr_processor', 'content_dedup', 'metadata_extractor'],
       reason: 'Low OCR confidence',
     })
     expect(result.ok).toBe(true)
@@ -146,6 +193,7 @@ describe('reprocessing draft queries', () => {
       documentIds: ['doc-1', 'doc-2'],
       name: 'Retry selected documents',
       restartStage: 'ocr_processor',
+      requestedStages: ['ocr_processor'],
       reason: 'Low OCR confidence',
     })
 
@@ -163,12 +211,13 @@ describe('reprocessing draft queries', () => {
       id: 'draft-1',
       name: 'Old name',
       processing_details: JSON.stringify({
-          reprocessingDraft: {
-            restartStage: 'ocr_processor',
-            reason: 'Old reason',
-            collectionName: 'Old collection',
-            collectionNotes: 'Old notes',
-            createdBy: 'creator@example.com',
+        reprocessingDraft: {
+          restartStage: 'ocr_processor',
+          requestedStages: ['ocr_processor', 'content_dedup'],
+          reason: 'Old reason',
+          collectionName: 'Old collection',
+          collectionNotes: 'Old notes',
+          createdBy: 'creator@example.com',
         },
       }),
       created_at: new Date('2026-09-03T10:00:00.000Z'),
@@ -182,6 +231,8 @@ describe('reprocessing draft queries', () => {
       name: 'New name',
       collectionName: 'New collection',
       collectionNotes: 'New notes',
+      restartStage: 'page_rotator',
+      requestedStages: ['page_rotator', 'ocr_processor'],
       reason: 'New reason',
       updatedBy: 'editor@example.com',
     })
@@ -200,6 +251,15 @@ describe('reprocessing draft queries', () => {
           string,
           unknown
         >,
+      }),
+    )
+    expect(mockCreateEditHistoryEntry).toHaveBeenCalledWith(
+      mockDb,
+      expect.objectContaining({
+        newValue: expect.objectContaining({
+          restartStage: 'page_rotator',
+          requestedStages: ['page_rotator', 'ocr_processor'],
+        }) as unknown as Record<string, unknown>,
       }),
     )
   })
@@ -242,9 +302,9 @@ describe('reprocessing draft queries', () => {
     mockDb.document_to_batches.findFirst.mockResolvedValue(null)
     mockDb.document_to_batches.create.mockResolvedValue({ id: 'new-membership', batch_id: 'draft-1' })
 
-    await expect(addDocumentsToReprocessingDraft({ batchId: 'draft-1', documentIds: ['doc-1', 'doc-2'] })).resolves.toEqual(
-      { ok: true, batchId: 'draft-1' },
-    )
+    await expect(
+      addDocumentsToReprocessingDraft({ batchId: 'draft-1', documentIds: ['doc-1', 'doc-2'] }),
+    ).resolves.toEqual({ ok: true, batchId: 'draft-1' })
     expect(mockDb.document_to_batches.delete).toHaveBeenCalledWith({ where: { id: 'old-membership' } })
     expect(mockDb.document_to_batches.create).toHaveBeenCalledTimes(2)
   })
@@ -264,10 +324,7 @@ describe('reprocessing draft queries', () => {
   })
 
   it('returns selected document IDs that belong to an open draft', async () => {
-    mockDb.document_to_batches.findMany.mockResolvedValue([
-      { document_id: 'doc-1' },
-      { document_id: 'doc-1' },
-    ])
+    mockDb.document_to_batches.findMany.mockResolvedValue([{ document_id: 'doc-1' }, { document_id: 'doc-1' }])
 
     await expect(getOpenDraftDocumentIds(['doc-1', 'doc-2'])).resolves.toEqual(['doc-1'])
   })

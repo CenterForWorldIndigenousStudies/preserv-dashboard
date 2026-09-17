@@ -47,6 +47,7 @@ describe('reprocessing draft actions', () => {
         documentId: ' doc-1 ',
         name: ' Retry batch ',
         restartStage: 'ocr_processor',
+        requestedStages: ['ocr_processor'],
         reason: ' Low OCR confidence ',
       }),
     ).resolves.toEqual({ ok: true, batchId: 'draft-1' })
@@ -54,6 +55,7 @@ describe('reprocessing draft actions', () => {
       documentId: 'doc-1',
       name: 'Retry batch',
       restartStage: 'ocr_processor',
+      requestedStages: ['ocr_processor'],
       reason: 'Low OCR confidence',
       createdBy: 'reviewer@example.com',
     })
@@ -68,6 +70,7 @@ describe('reprocessing draft actions', () => {
         documentId: 'doc-1',
         name: 'Retry',
         restartStage: 'ocr_processor',
+        requestedStages: ['ocr_processor'],
         reason: 'Retry',
       }),
     ).resolves.toEqual({ ok: false, error: 'Authentication required.' })
@@ -83,6 +86,7 @@ describe('reprocessing draft actions', () => {
         documentIds: [' doc-1 ', 'doc-2'],
         name: ' Retry batch ',
         restartStage: 'ocr_processor',
+        requestedStages: ['ocr_processor'],
         reason: ' Low OCR confidence ',
       }),
     ).resolves.toEqual({ ok: true, batchId: 'draft-1' })
@@ -91,6 +95,7 @@ describe('reprocessing draft actions', () => {
       documentIds: ['doc-1', 'doc-2'],
       name: 'Retry batch',
       restartStage: 'ocr_processor',
+      requestedStages: ['ocr_processor'],
       reason: 'Low OCR confidence',
       createdBy: 'reviewer@example.com',
     })

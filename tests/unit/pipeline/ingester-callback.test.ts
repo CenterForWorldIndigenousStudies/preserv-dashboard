@@ -58,6 +58,7 @@ vi.mock('@lib/observability', () => ({
 }))
 
 import { POST } from '@api/pipeline/ingester/callback/route'
+import { POST as POST_REPROCESS } from '@api/pipeline/reprocess/callback/route'
 import { DATA_INGESTER_CALLBACK_PATH } from '@constants/paths'
 
 describe('ingester callback route', () => {
@@ -95,6 +96,7 @@ describe('ingester callback route', () => {
       body: JSON.stringify({
         batch_id: 'batch-1',
         request_id: 'request-1',
+        execution_mode: 'normal',
         status: 'completed',
       }),
     })
@@ -131,6 +133,7 @@ describe('ingester callback route', () => {
       body: JSON.stringify({
         batch_id: 'batch-2',
         request_id: 'request-2',
+        execution_mode: 'normal',
         status: 'completed',
       }),
     })
@@ -143,5 +146,52 @@ describe('ingester callback route', () => {
     expect(mockTriggerPageRotator).not.toHaveBeenCalled()
     expect(mockTriggerOcrProcessor).not.toHaveBeenCalled()
     expect(mockTriggerContentDedup).not.toHaveBeenCalled()
+  })
+
+  it('requires the shared callback token and reprocess execution mode', async () => {
+    const requestWithOrdinaryToken = new NextRequest(
+      'http://localhost/api/pipeline/reprocess/callback',
+      {
+        method: 'POST',
+        headers: {
+          authorization: 'Bearer ingester-token',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          batch_id: 'batch-reprocess-1',
+          request_id: 'request-reprocess-1',
+          execution_mode: 'reprocess',
+          status: 'completed',
+        }),
+      },
+    )
+
+    const acceptedResponse = await POST_REPROCESS(requestWithOrdinaryToken)
+
+    expect(acceptedResponse.status).toBe(204)
+
+    mockGetProcessBatchStatus.mockClear()
+
+    const requestWithWrongMode = new NextRequest(
+      'http://localhost/api/pipeline/reprocess/callback',
+      {
+        method: 'POST',
+        headers: {
+          authorization: 'Bearer ingester-token',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          batch_id: 'batch-reprocess-1',
+          request_id: 'request-reprocess-1',
+          execution_mode: 'normal',
+          status: 'completed',
+        }),
+      },
+    )
+
+    const invalidModeResponse = await POST_REPROCESS(requestWithWrongMode)
+
+    expect(invalidModeResponse.status).toBe(400)
+    expect(mockGetProcessBatchStatus).not.toHaveBeenCalled()
   })
 })

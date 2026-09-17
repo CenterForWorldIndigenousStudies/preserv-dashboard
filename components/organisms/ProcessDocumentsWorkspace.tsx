@@ -233,6 +233,7 @@ export function ProcessDocumentsWorkspace({ initialBatches, initialDraft = null 
         selectedFolders={selectedFolders}
         foldersError={foldersError}
         googleDriveExpanded={isGoogleDriveExpanded}
+        isManagingDraft={Boolean(initialDraft)}
         onBatchNameChange={setBatchName}
         onCollectionNameChange={setCollectionName}
         onCollectionNotesChange={setCollectionNotes}

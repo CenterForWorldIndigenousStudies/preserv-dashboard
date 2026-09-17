@@ -23,7 +23,7 @@ import {
   type ReviewQueueChecklistState,
 } from '@constants/reviewQueueChecklist'
 import { useOverviewTableState } from '@hooks/useOverviewTableState'
-import { DEFAULT_REPROCESSING_START_STAGE } from '@lib/reprocessingDrafts'
+import { DEFAULT_REPROCESSING_START_STAGE, getReprocessingDownstreamStages } from '@lib/reprocessingDrafts'
 import { type AdvancedSearchFilters, type FilterOptions, type StatusOption } from '@lib/search'
 import type { DocumentsQueryParams } from '@lib/queries/documentQueries'
 import type { Document } from 'types/documents'
@@ -347,6 +347,9 @@ export function ReviewQueueTable({
   const [reprocessCollectionName, setReprocessCollectionName] = useState('')
   const [reprocessCollectionNotes, setReprocessCollectionNotes] = useState('')
   const [reprocessStage, setReprocessStage] = useState<CallbackStageKey>(DEFAULT_REPROCESSING_START_STAGE)
+  const [reprocessRequestedStages, setReprocessRequestedStages] = useState<CallbackStageKey[]>(
+    getReprocessingDownstreamStages(DEFAULT_REPROCESSING_START_STAGE),
+  )
   const [reprocessReason, setReprocessReason] = useState('')
   const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null)
   const [reprocessPending, setReprocessPending] = useState(false)
@@ -367,6 +370,7 @@ export function ReviewQueueTable({
     setReprocessCollectionName('')
     setReprocessCollectionNotes('')
     setReprocessStage(DEFAULT_REPROCESSING_START_STAGE)
+    setReprocessRequestedStages(getReprocessingDownstreamStages(DEFAULT_REPROCESSING_START_STAGE))
     setReprocessReason('')
     setSelectedDraftId(null)
   }
@@ -384,6 +388,7 @@ export function ReviewQueueTable({
               collectionName: reprocessCollectionName,
               collectionNotes: reprocessCollectionNotes,
               restartStage: reprocessStage,
+              requestedStages: reprocessRequestedStages,
               reason: reprocessReason,
             })
           : selectedDraftId
@@ -747,6 +752,7 @@ export function ReviewQueueTable({
         collectionName={reprocessCollectionName}
         collectionNotes={reprocessCollectionNotes}
         restartStage={reprocessStage}
+        requestedStages={reprocessRequestedStages}
         reason={reprocessReason}
         drafts={initialDrafts}
         selectedDraftId={selectedDraftId}
@@ -758,6 +764,7 @@ export function ReviewQueueTable({
         onCollectionNameChange={setReprocessCollectionName}
         onCollectionNotesChange={setReprocessCollectionNotes}
         onRestartStageChange={setReprocessStage}
+        onRequestedStagesChange={setReprocessRequestedStages}
         onReasonChange={setReprocessReason}
         onSelectedDraftChange={(draft) => setSelectedDraftId(draft?.id ?? null)}
         onSubmit={() => {

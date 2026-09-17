@@ -6,16 +6,14 @@ import { revalidatePath } from 'next/cache'
 import { BATCHES_PATH, DOCUMENTS_PATH, READY_FOR_LIBRARY_PATH } from '@constants/paths'
 import { getDashboardSession } from '@root/auth'
 import type { PipelineExecutionContextInput } from '@lib/pipelineExecutionContext'
-import {
-  batchNameExists,
-  documentIdsExist,
-  getPipelineExecutionSnapshot,
-} from '@lib/queries/pipelineExecutionQueries'
+import { batchNameExists, documentIdsExist, getPipelineExecutionSnapshot } from '@lib/queries/pipelineExecutionQueries'
 import { getReprocessingDraft } from '@lib/queries/reprocessingDraftQueries'
+import { normalizeReprocessingRequestedStages } from '@lib/reprocessingDrafts'
 import {
   triggerContentDedup,
   triggerDocumentSplitter,
   triggerFedoraIngester,
+  triggerDataIngesterReprocess,
   triggerMetadataExtractor,
   triggerOcrProcessor,
   triggerPageRotator,
@@ -44,11 +42,15 @@ const triggerByStage: Partial<
 
 function normalizeRequest(request: PipelineExecutionRequest): PipelineExecutionRequest {
   const documentIds = [...new Set((request.documentIds ?? []).map((id) => id.trim()).filter(Boolean))]
+  const requestedStages: CallbackStageKey[] | undefined = request.requestedStages
+    ? [...new Set(request.requestedStages.map((stage) => stage.trim() as CallbackStageKey).filter(Boolean))]
+    : undefined
   return {
     ...request,
     batchId: request.batchId?.trim() || undefined,
     draftBatchId: request.draftBatchId?.trim() || undefined,
     documentIds,
+    requestedStages,
     newBatchName: request.newBatchName?.trim() || undefined,
     reason: request.reason.trim(),
   }
@@ -64,6 +66,10 @@ function validateRequest(request: PipelineExecutionRequest): string | null {
   if (request.mode === 'reprocess') {
     if (!REPROCESSABLE_STAGES.has(request.restartStage)) {
       return 'Fedora Ingester cannot be used as a reprocessing start stage.'
+    }
+    const requestedStages = request.requestedStages ?? [request.restartStage]
+    if (normalizeReprocessingRequestedStages(request.restartStage, requestedStages).length === 0) {
+      return 'Requested reprocessing stages must begin with the restart stage.'
     }
     if (request.draftBatchId) {
       if (request.newBatchName || request.documentIds?.length) {
@@ -90,7 +96,11 @@ async function preflightReprocess(request: PipelineExecutionRequest): Promise<st
   if (request.draftBatchId) {
     const draft = await getReprocessingDraft(request.draftBatchId)
     if (draft) {
-      if (draft.restartStage !== request.restartStage) return 'The selected stage does not match the draft restart stage.'
+      if (draft.restartStage !== request.restartStage)
+        return 'The selected stage does not match the draft restart stage.'
+      if (JSON.stringify(draft.requestedStages) !== JSON.stringify(request.requestedStages ?? draft.requestedStages)) {
+        return 'The selected stages do not match the draft processing plan.'
+      }
       if (draft.documentCount === 0) return 'A reprocessing draft must contain at least one document.'
       return null
     }
@@ -151,7 +161,7 @@ function isPublishedBatch(batch: ProcessBatchStatus): boolean {
 }
 
 function sourceBatchIdForRequest(request: PipelineExecutionRequest): string | undefined {
-  return request.draftBatchId ? undefined : request.sourceBatchId ?? request.batchId
+  return request.draftBatchId ? undefined : (request.sourceBatchId ?? request.batchId)
 }
 
 function executionIdentity(request: PipelineExecutionRequest): { operationId: string; idempotencyKey: string } {
@@ -161,6 +171,40 @@ function executionIdentity(request: PipelineExecutionRequest): { operationId: st
   }
 
   return { operationId: randomUUID(), idempotencyKey: randomUUID() }
+}
+
+async function triggerRequestedExecution(
+  request: PipelineExecutionRequest,
+  sourceBatch: Awaited<ReturnType<typeof getPipelineExecutionSnapshot>>['batch'],
+  startedBy: string,
+  operationId: string,
+  idempotencyKey: string,
+): Promise<unknown> {
+  const draft = request.draftBatchId ? await getReprocessingDraft(request.draftBatchId) : null
+  const trigger = request.mode === 'reprocess' && request.draftBatchId
+    ? triggerDataIngesterReprocess
+    : triggerByStage[request.restartStage]
+  if (!trigger) {
+    throw new Error(`Stage ${request.restartStage} cannot be triggered.`)
+  }
+
+  const triggerBatch = sourceBatch ?? buildReprocessTriggerBatch(request, startedBy, draft?.name)
+  const sourceDocumentIds = draft?.documents.map((document) => document.id)
+    ?? sourceBatch?.currentExecution?.sourceDocumentIds
+    ?? request.documentIds
+  return trigger(triggerBatch, {
+    executionMode: request.mode,
+    operationId,
+    idempotencyKey,
+    reason: request.reason,
+    sourceDocumentIds,
+    sourceBatchId: sourceBatchIdForRequest(request),
+    newBatchName: request.newBatchName,
+    draftBatchId: request.draftBatchId,
+    collection: request.collection,
+    pipelineConfig: request.mode === 'rerun' ? request.pipelineConfig : undefined,
+    requestedStages: request.requestedStages ? [...request.requestedStages] : undefined,
+  })
 }
 
 export async function requestPipelineExecution(
@@ -186,24 +230,13 @@ export async function requestPipelineExecution(
     const { sourceBatch } = preflight
 
     const { operationId, idempotencyKey } = executionIdentity(request)
-    const trigger = triggerByStage[request.restartStage]
-    if (!trigger) {
-      return { ok: false, error: `Stage ${request.restartStage} cannot be triggered.` }
-    }
-
-    const triggerBatch = sourceBatch?.batch ?? buildReprocessTriggerBatch(request, startedBy)
-    const accepted = await trigger(triggerBatch, {
-      executionMode: request.mode,
+    const accepted = await triggerRequestedExecution(
+      request,
+      sourceBatch?.batch ?? null,
+      startedBy,
       operationId,
       idempotencyKey,
-      reason: request.reason,
-      sourceDocumentIds: request.documentIds,
-      sourceBatchId: sourceBatchIdForRequest(request),
-      newBatchName: request.newBatchName,
-      draftBatchId: request.draftBatchId,
-      collection: request.collection,
-      pipelineConfig: request.mode === 'rerun' ? request.pipelineConfig : undefined,
-    })
+    )
     const acceptedBatchId =
       accepted && typeof accepted === 'object' && 'batchId' in accepted && typeof accepted.batchId === 'string'
         ? accepted.batchId
@@ -243,13 +276,17 @@ function getStageStatus(batch: ProcessBatchStatus, stage: CallbackStageKey): str
     : null
 }
 
-function buildReprocessTriggerBatch(request: PipelineExecutionRequest, startedBy: string): ProcessBatchStatus {
+function buildReprocessTriggerBatch(
+  request: PipelineExecutionRequest,
+  startedBy: string,
+  draftName?: string,
+): ProcessBatchStatus {
   return {
-    batchId: request.draftBatchId ?? request.sourceBatchId ?? '',
-    batchName: request.newBatchName ?? null,
+    batchId: request.draftBatchId ?? '',
+    batchName: draftName ?? request.newBatchName ?? null,
     startedBy,
     createdAt: null,
-    pipelineRequestedStages: [],
+    pipelineRequestedStages: request.requestedStages ? [...request.requestedStages] : [request.restartStage],
     pipelineConfig: null,
     ingester: null,
     documentSplitter: null,

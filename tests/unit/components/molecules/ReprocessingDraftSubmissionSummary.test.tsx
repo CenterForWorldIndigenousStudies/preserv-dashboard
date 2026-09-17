@@ -4,11 +4,12 @@ import { describe, expect, it } from 'vitest'
 import { ReprocessingDraftSubmissionSummary } from '@molecules/ReprocessingDraftSubmissionSummary'
 
 describe('ReprocessingDraftSubmissionSummary', () => {
-  it('summarizes the fixed start stage and downstream execution plan', () => {
+  it('summarizes the fixed start stage and selected execution plan', () => {
     const markup = renderToStaticMarkup(
       <ReprocessingDraftSubmissionSummary
         documentCount={3}
         restartStage={'metadata_extractor'}
+        requestedStages={['metadata_extractor']}
         collectionName={'Review collection'}
         reason={'Correct extracted metadata'}
       />,
@@ -17,11 +18,11 @@ describe('ReprocessingDraftSubmissionSummary', () => {
     expect(markup).toContain('Submission summary')
     expect(markup).toContain('3 documents')
     expect(markup).toContain('Starts at:')
-    expect(markup).toContain('Then runs:')
+    expect(markup).toContain('Stages:')
     expect(markup).toContain('Metadata Extractor')
     expect(markup).not.toContain('Metadata Validator')
     expect(markup).not.toContain('Rights Determinator')
-    expect(markup).toContain('Fedora Ingester')
+    expect(markup).not.toContain('Fedora Ingester')
     expect(markup).toContain('Review collection')
     expect(markup).toContain('Correct extracted metadata')
   })
@@ -31,6 +32,7 @@ describe('ReprocessingDraftSubmissionSummary', () => {
       <ReprocessingDraftSubmissionSummary
         documentCount={0}
         restartStage={'metadata_extractor'}
+        requestedStages={['metadata_extractor']}
         collectionName={null}
         reason={'Retry metadata extraction'}
       />,

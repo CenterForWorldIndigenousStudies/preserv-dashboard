@@ -9,7 +9,15 @@ const meta = {
   tags: ['autodocs'],
   args: {
     documents: [
-      { id: 'document-1', name: 'Interview.pdf', idLegacy: 'legacy-1', sourceBatchName: 'Original ingest', addedAt: null },
+      {
+        id: 'document-1',
+        name: 'Interview.pdf',
+        idLegacy: 'legacy-1',
+        sourceBatchId: 'source-batch-1',
+        sourceBatchLegacyId: 'legacy-batch-1',
+        sourceBatchName: 'Original ingest',
+        addedAt: null,
+      },
     ],
     onRemove: fn(),
   },

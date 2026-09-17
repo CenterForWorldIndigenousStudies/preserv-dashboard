@@ -19,7 +19,7 @@ import {
 
 import { requestPipelineExecution } from '@actions/pipelineExecution'
 import { getPipelineConfigForBatch } from '@lib/pipelineExecution'
-import { REPROCESSING_EXECUTION_STAGE_ORDER } from '@lib/reprocessingDrafts'
+import { getReprocessingDownstreamStages, PIPELINE_EXECUTION_STAGE_ORDER } from '@lib/reprocessingDrafts'
 import {
   createDefaultDraft,
   draftToPipelineConfig,
@@ -29,6 +29,7 @@ import {
   type PipelineSelectionDraft,
 } from '@lib/pipelineConfig'
 import { PipelineProfileSelector } from '@molecules/PipelineProfileSelector'
+import { ReprocessingStageSelector } from '@molecules/ReprocessingStageSelector'
 import { PipelineStepsModal } from '@organisms/PipelineStepsModal'
 import type { PipelineExecutionMode, PipelineExecutionRequest } from 'types/pipelineExecution'
 import type { CallbackStageKey, ProcessBatchStatus } from 'types/pipelineContracts'
@@ -72,7 +73,7 @@ function availableStages(
     ? new Set(pipelineConfig.executionPlan.filter((step) => step.enabled).map((step) => step.service))
     : null
 
-  return REPROCESSING_EXECUTION_STAGE_ORDER.filter((stage) => {
+  return PIPELINE_EXECUTION_STAGE_ORDER.filter((stage) => {
     if (mode === 'reprocess' && stage === 'fedora_ingester') {
       return false
     }
@@ -103,11 +104,11 @@ export function PipelineExecutionDialog({
     () => (mode === 'rerun' ? draftToPipelineConfig(rerunDraft) : undefined),
     [mode, rerunDraft],
   )
-  const stages = useMemo(
-    () => availableStages(batch, mode, rerunPipelineConfig),
-    [batch, mode, rerunPipelineConfig],
-  )
+  const stages = useMemo(() => availableStages(batch, mode, rerunPipelineConfig), [batch, mode, rerunPipelineConfig])
   const [stage, setStage] = useState<CallbackStageKey>(initialStage ?? stages[0] ?? 'metadata_extractor')
+  const [requestedStages, setRequestedStages] = useState<CallbackStageKey[]>(
+    getReprocessingDownstreamStages(initialStage ?? stages[0] ?? 'metadata_extractor'),
+  )
   const [reason, setReason] = useState('')
   const [newBatchName, setNewBatchName] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -123,10 +124,25 @@ export function PipelineExecutionDialog({
   }, [batch, batch.batchId, mode, open])
 
   useEffect(() => {
-    if (!stages.includes(stage)) {
-      setStage(stages[0] ?? 'metadata_extractor')
+    if (mode !== 'reprocess' || !open) {
+      return
     }
-  }, [stage, stages])
+
+    const selectedStage =
+      initialStage && stages.includes(initialStage) ? initialStage : (stages[0] ?? 'metadata_extractor')
+    setStage(selectedStage)
+    setRequestedStages(getReprocessingDownstreamStages(selectedStage))
+  }, [batch.batchId, initialStage, mode, open, stages])
+
+  useEffect(() => {
+    if (!stages.includes(stage)) {
+      const nextStage = stages[0] ?? 'metadata_extractor'
+      setStage(nextStage)
+      if (mode === 'reprocess') {
+        setRequestedStages(getReprocessingDownstreamStages(nextStage))
+      }
+    }
+  }, [mode, stage, stages])
 
   async function submit(): Promise<void> {
     setSubmitting(true)
@@ -138,6 +154,7 @@ export function PipelineExecutionDialog({
       restartStage: stage,
       newBatchName: mode === 'reprocess' ? newBatchName : undefined,
       reason,
+      requestedStages: mode === 'reprocess' ? requestedStages : undefined,
       sourceBatchId: batch.batchId || undefined,
       pipelineConfig: rerunPipelineConfig,
     }
@@ -186,21 +203,33 @@ export function PipelineExecutionDialog({
               />
             </>
           ) : null}
-          <FormControl fullWidth>
-            <InputLabel id={'pipeline-execution-stage-label'}>{stageFieldLabel}</InputLabel>
-            <Select
-              labelId={'pipeline-execution-stage-label'}
-              value={stage}
-              label={stageFieldLabel}
-              onChange={(event) => setStage(event.target.value)}
-            >
-              {stages.map((option) => (
-                <MenuItem key={option} value={option}>
-                  {STAGE_LABELS[option]}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          {mode === 'reprocess' ? (
+            <ReprocessingStageSelector
+              restartStage={stage}
+              requestedStages={requestedStages}
+              onRestartStageChange={(nextStage) => {
+                setStage(nextStage)
+                setRequestedStages(getReprocessingDownstreamStages(nextStage))
+              }}
+              onRequestedStagesChange={setRequestedStages}
+            />
+          ) : (
+            <FormControl fullWidth>
+              <InputLabel id={'pipeline-execution-stage-label'}>{stageFieldLabel}</InputLabel>
+              <Select
+                labelId={'pipeline-execution-stage-label'}
+                value={stage}
+                label={stageFieldLabel}
+                onChange={(event) => setStage(event.target.value)}
+              >
+                {stages.map((option) => (
+                  <MenuItem key={option} value={option}>
+                    {STAGE_LABELS[option]}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
           {mode === 'reprocess' ? (
             <TextField
               label={'New batch name'}

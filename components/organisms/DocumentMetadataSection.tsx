@@ -14,12 +14,14 @@ export interface DocumentMetadataSectionProps {
   metadata: MetadataField[]
   contributors: DocumentDetail['document_to_contributors']
   publishers: DocumentDetail['document_to_publishers']
+  documentName?: string | null
 }
 
 export function DocumentMetadataSection({
   metadata,
   contributors,
   publishers,
+  documentName,
 }: DocumentMetadataSectionProps): ReactElement {
   const displayedMetadata = buildDisplayedMetadata(metadata)
   const stageMetadata = buildStageMetadata(metadata)
@@ -27,7 +29,10 @@ export function DocumentMetadataSection({
 
   return (
     <DetailPageSection title={'Metadata'}>
-      <MetadataTable fields={displayedMetadata} renderValue={(field) => <MetadataValue field={field} />} />
+      <MetadataTable
+        fields={displayedMetadata}
+        renderValue={(field) => <MetadataValue field={field} fileName={documentName} />}
+      />
       <DocumentMetadataRelationships contributors={contributors} publishers={publishers} />
       {stageMetadata.length > 0 ? (
         <Stack spacing={2} sx={{ mt: 3 }}>
@@ -44,7 +49,7 @@ export function DocumentMetadataSection({
               <MetadataTable
                 fields={group.fields}
                 editable={false}
-                renderValue={(field) => <MetadataValue field={field} />}
+                renderValue={(field) => <MetadataValue field={field} fileName={documentName} />}
               />
             </AccordionPanel>
           ))}
@@ -60,7 +65,7 @@ export function DocumentMetadataSection({
             fields={recordedSourceMetadata}
             minWidth={520}
             editable={false}
-            renderValue={(field) => <MetadataValue field={field} />}
+            renderValue={(field) => <MetadataValue field={field} fileName={documentName} />}
           />
         </>
       ) : null}

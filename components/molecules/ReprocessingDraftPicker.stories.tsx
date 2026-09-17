@@ -9,6 +9,7 @@ const draft = {
   collectionName: 'CWIS collection',
   collectionNotes: null,
   restartStage: 'metadata_extractor' as const,
+  requestedStages: ['metadata_extractor'] as const,
   reason: 'Correct metadata after review.',
   documentCount: 3,
   createdAt: '2026-09-03T10:00:00.000Z',

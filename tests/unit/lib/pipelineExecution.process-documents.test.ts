@@ -237,9 +237,10 @@ describe('pipelineExecution process-documents behavior', () => {
     expect(getExecutionStepRuntimeStatus(batch, executionStep)).toBe('pending')
   })
 
-  test('does not infer normalize pass 2 from requested stages when pipeline config is absent', () => {
+  test('uses requested stages when pipeline config is absent', () => {
     const batch = buildBatchStatus({
       pipelineConfig: null,
+      pipelineRequestedStages: ['ocr_processor'],
       documentSplitter: buildStageStatus({
         status: 'completed' satisfies PipelineStepRuntimeStatus,
         currentPass: 1,
@@ -256,10 +257,11 @@ describe('pipelineExecution process-documents behavior', () => {
 
     expect(getOrchestratedExecutionPlan(batch)).toEqual([
       expect.objectContaining({
-        service: 'ingester',
+        service: 'ocr-processor',
+        label: 'OCR Processor',
       }),
     ])
-    expect(getNextEligibleExecutionStep(batch)).toBeNull()
+    expect(getNextEligibleExecutionStep(batch)?.service).toBe('ocr-processor')
   })
 
   test('returns metadata extraction as next eligible step after content dedup completes', () => {

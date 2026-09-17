@@ -151,7 +151,7 @@ describe('getDocumentDetail version family mapping', () => {
     ])
   })
 
-  it('deduplicates the canonical family row and forces canonical to display first as non-duplicate', async () => {
+  it('uses the duplicate tag instead of version-family membership for duplicate status', async () => {
     mockBaseDocument()
     mockDocumentAccessFindMany.mockResolvedValue([
       { access_levels: { level_name: 'restricted' } },
@@ -219,7 +219,7 @@ describe('getDocumentDetail version family mapping', () => {
                   created_at: new Date('2026-05-18T10:02:00Z'),
                   updated_at: new Date('2026-05-18T10:02:00Z'),
                   document_to_metadata: [],
-                  document_to_tags: [{ tags: { name: 'duplicate_document' } }],
+                  document_to_tags: [],
                 },
               },
             ],
@@ -250,12 +250,12 @@ describe('getDocumentDetail version family mapping', () => {
     expect(result?.version_family?.documents[0]).toMatchObject({
       id: 'canonical-1',
       is_canonical: true,
-      is_duplicate: false,
+      is_duplicate: true,
     })
     expect(result?.version_family?.documents[1]).toMatchObject({
       id: 'duplicate-1',
       is_canonical: false,
-      is_duplicate: true,
+      is_duplicate: false,
     })
   })
 

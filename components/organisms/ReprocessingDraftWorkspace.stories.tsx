@@ -18,6 +18,7 @@ const meta = {
       collectionName: 'CWIS collection',
       collectionNotes: 'Metadata correction run.',
       restartStage: 'metadata_extractor',
+      requestedStages: ['metadata_extractor'],
       reason: 'Correct metadata after review.',
       documentCount: 1,
       createdAt: '2026-09-03T10:00:00.000Z',
@@ -25,7 +26,15 @@ const meta = {
       createdBy: null,
       updatedBy: null,
       documents: [
-        { id: 'document-1', name: 'Interview.pdf', idLegacy: 'legacy-1', sourceBatchName: 'Original ingest', addedAt: null },
+        {
+          id: 'document-1',
+          name: 'Interview.pdf',
+          idLegacy: 'legacy-1',
+          sourceBatchId: 'source-batch-1',
+          sourceBatchLegacyId: 'legacy-batch-1',
+          sourceBatchName: 'Original ingest',
+          addedAt: null,
+        },
       ],
     },
   },
@@ -35,4 +44,6 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const WithDocument: Story = {}
-export const EmptyDraft: Story = { args: { initialDraft: { ...meta.args.initialDraft, documentCount: 0, documents: [] } } }
+export const EmptyDraft: Story = {
+  args: { initialDraft: { ...meta.args.initialDraft, documentCount: 0, documents: [] } },
+}

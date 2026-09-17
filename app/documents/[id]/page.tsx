@@ -208,6 +208,7 @@ export default async function DocumentDetailPage({
               metadata={metadata}
               contributors={detail.document_to_contributors}
               publishers={detail.document_to_publishers}
+              documentName={document.name}
             />
             <DocumentCommentsSection metadata={metadata} quality={detail.quality} />
             <DocumentBatchesSection

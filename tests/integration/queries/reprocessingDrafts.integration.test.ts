@@ -48,6 +48,7 @@ describeDbIntegration('reprocessing draft queries (integration)', () => {
       documentId: documentOneId,
       name: `Integration draft ${Date.now()}`,
       restartStage: 'metadata_extractor',
+      requestedStages: ['metadata_extractor'],
       reason: 'Integration test reprocessing.',
     })
     expect(created.ok).toBe(true)
@@ -55,7 +56,9 @@ describeDbIntegration('reprocessing draft queries (integration)', () => {
     batchIds.push(created.batchId)
 
     expect((await getOpenDraftForDocument(documentOneId))?.id).toBe(created.batchId)
-    expect((await addDocumentToReprocessingDraft({ batchId: created.batchId, documentId: documentTwoId })).ok).toBe(true)
+    expect((await addDocumentToReprocessingDraft({ batchId: created.batchId, documentId: documentTwoId })).ok).toBe(
+      true,
+    )
     expect((await getReprocessingDraft(created.batchId))?.documents).toHaveLength(2)
 
     expect((await removeDocumentFromReprocessingDraft(created.batchId, documentTwoId)).ok).toBe(true)

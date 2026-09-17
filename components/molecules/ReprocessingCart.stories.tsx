@@ -24,6 +24,7 @@ export const WithDrafts: Story = {
         collectionName: null,
         collectionNotes: null,
         restartStage: 'metadata_extractor',
+        requestedStages: ['metadata_extractor'],
         reason: 'Correct metadata after review.',
         documentCount: 3,
         createdAt: '2026-09-03T10:00:00.000Z',

@@ -13,6 +13,7 @@ const meta = {
     collectionName: 'CWIS collection',
     collectionNotes: 'Metadata correction run.',
     restartStage: DEFAULT_REPROCESSING_START_STAGE,
+    requestedStages: ['ocr_processor', 'content_dedup', 'metadata_extractor'],
     reason: 'Correct metadata after review.',
     isSubmitting: false,
     canSubmit: true,
@@ -21,6 +22,7 @@ const meta = {
     onCollectionNameChange: fn(),
     onCollectionNotesChange: fn(),
     onRestartStageChange: fn(),
+    onRequestedStagesChange: fn(),
     onReasonChange: fn(),
     onSubmit: fn(),
   },
@@ -32,4 +34,4 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
 export const Invalid: Story = { args: { canSubmit: false, error: 'A reason is required.' } }
-export const Editing: Story = { args: { disableRestartStage: true, submitLabel: 'Save draft' } }
+export const Editing: Story = { args: { submitLabel: 'Save draft' } }

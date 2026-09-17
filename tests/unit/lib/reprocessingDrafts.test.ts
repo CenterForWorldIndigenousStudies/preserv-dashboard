@@ -1,28 +1,24 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  DEFAULT_REPROCESSING_START_STAGE,
-  getReprocessingDownstreamStages,
-  getReprocessingStageLabel,
-} from '@lib/reprocessingDrafts'
+import { getReprocessingDownstreamStages, normalizeReprocessingRequestedStages } from '@lib/reprocessingDrafts'
 
-describe('reprocessing draft helpers', () => {
-  it('uses OCR Processor as the default start stage for new drafts', () => {
-    expect(DEFAULT_REPROCESSING_START_STAGE).toBe('ocr_processor')
-  })
-
-  it('returns the selected stage and every downstream execution stage', () => {
-    expect(getReprocessingDownstreamStages('metadata_extractor')).toEqual([
+describe('reprocessing stage plans', () => {
+  it('returns the ordered stages from the selected restart stage', () => {
+    expect(getReprocessingDownstreamStages('ocr_processor')).toEqual([
+      'ocr_processor',
+      'content_dedup',
       'metadata_extractor',
-      'fedora_ingester',
     ])
   })
 
-  it('returns an empty list for a stage that cannot start reprocessing', () => {
-    expect(getReprocessingDownstreamStages('ingester')).toEqual([])
+  it('accepts a contiguous subset beginning with the restart stage', () => {
+    expect(normalizeReprocessingRequestedStages('ocr_processor', ['ocr_processor', 'content_dedup'])).toEqual([
+      'ocr_processor',
+      'content_dedup',
+    ])
   })
 
-  it('provides the display label for the terminal stage', () => {
-    expect(getReprocessingStageLabel('fedora_ingester')).toBe('Fedora Ingester')
+  it('rejects a plan with skipped downstream stages', () => {
+    expect(normalizeReprocessingRequestedStages('ocr_processor', ['ocr_processor', 'metadata_extractor'])).toEqual([])
   })
 })

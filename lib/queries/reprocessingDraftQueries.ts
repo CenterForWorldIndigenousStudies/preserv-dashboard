@@ -5,6 +5,7 @@ import { GENERATED_BATCH_PUBLICATION_STATUSES } from '@constants/generated/batch
 import { db } from '@lib/db'
 import { createEditHistoryEntry } from '@lib/editHistory'
 import { buildNameHash } from '@lib/tagHash'
+import { normalizeReprocessingRequestedStages } from '@lib/reprocessingDrafts'
 import type { CallbackStageKey } from 'types/pipelineContracts'
 import type {
   AddDocumentToReprocessingDraftInput,
@@ -33,6 +34,7 @@ const DRAFT_DETAILS_KEY = 'reprocessingDraft'
 
 interface StoredDraftDetails {
   restartStage?: unknown
+  requestedStages?: unknown
   reason?: unknown
   collectionName?: unknown
   collectionNotes?: unknown
@@ -60,10 +62,25 @@ function draftMetadata(details: Record<string, unknown>): StoredDraftDetails {
   return value && typeof value === 'object' && !Array.isArray(value) ? value : {}
 }
 
+function pipelineRequestedStages(details: Record<string, unknown>): unknown {
+  const pipeline = details.pipeline
+  return pipeline && typeof pipeline === 'object' && !Array.isArray(pipeline)
+    ? (pipeline as Record<string, unknown>).requestedStages
+    : undefined
+}
+
 function restartStageValue(value: unknown): CallbackStageKey | null {
   return typeof value === 'string' && REPROCESSABLE_START_STAGES.has(value as CallbackStageKey)
     ? (value as CallbackStageKey)
     : null
+}
+
+function requestedStagesValue(value: unknown, restartStage: CallbackStageKey): CallbackStageKey[] {
+  const requestedStages = Array.isArray(value)
+    ? value.filter((stage): stage is CallbackStageKey => typeof stage === 'string')
+    : []
+  const normalized = normalizeReprocessingRequestedStages(restartStage, requestedStages)
+  return normalized.length > 0 ? normalized : [restartStage]
 }
 
 function isoDate(value: Date | null): string | null {
@@ -90,6 +107,10 @@ function summaryFromRow(row: {
     collectionName: textValue(metadata.collectionName),
     collectionNotes: textValue(metadata.collectionNotes),
     restartStage,
+    requestedStages: requestedStagesValue(
+      metadata.requestedStages ?? pipelineRequestedStages(parseDetails(row.processing_details)),
+      restartStage,
+    ),
     reason: textValue(metadata.reason) ?? '',
     documentCount: row.document_to_batches.length,
     createdAt: isoDate(row.created_at),
@@ -121,17 +142,27 @@ async function draftById(client: DraftQueryClient, batchId: string) {
   })
 }
 
-function validateDraftInput(input: { name: string; reason: string; restartStage?: CallbackStageKey }): string | null {
+function validateDraftInput(input: {
+  name: string
+  reason: string
+  restartStage?: CallbackStageKey
+  requestedStages?: readonly CallbackStageKey[]
+}): string | null {
   if (!input.name.trim()) return 'A batch name is required.'
   if (!input.reason.trim()) return 'A reason is required.'
   if (input.restartStage && !REPROCESSABLE_START_STAGES.has(input.restartStage)) {
     return 'Select a valid reprocessing start stage.'
+  }
+  if (input.restartStage && input.requestedStages) {
+    const normalized = normalizeReprocessingRequestedStages(input.restartStage, input.requestedStages)
+    if (normalized.length === 0) return 'Select an ordered set of reprocessing stages beginning with the start stage.'
   }
   return null
 }
 
 function buildDraftProcessingDetails(input: {
   restartStage: CallbackStageKey
+  requestedStages: readonly CallbackStageKey[]
   reason: string
   collectionName: string | null
   collectionNotes: string | null
@@ -141,6 +172,7 @@ function buildDraftProcessingDetails(input: {
   return JSON.stringify({
     reprocessingDraft: {
       restartStage: input.restartStage,
+      requestedStages: input.requestedStages,
       reason: input.reason,
       collectionName: input.collectionName,
       collectionNotes: input.collectionNotes,
@@ -149,7 +181,7 @@ function buildDraftProcessingDetails(input: {
     },
     pipeline: {
       executionMode: 'reprocess',
-      requestedStages: [input.restartStage],
+      requestedStages: input.requestedStages,
     },
   })
 }
@@ -161,6 +193,7 @@ function draftAuditValue(name: string | null, processingDetails: string | null):
     collectionName: textValue(metadata.collectionName),
     collectionNotes: textValue(metadata.collectionNotes),
     restartStage: restartStageValue(metadata.restartStage),
+    requestedStages: metadata.requestedStages,
     reason: textValue(metadata.reason),
   }
 }
@@ -281,7 +314,9 @@ export async function getReprocessingDraft(
                 where: { batches: { lifecycle_status: { not: GENERATED_BATCH_LIFECYCLE_STATUSES.DRAFT } } },
                 orderBy: [{ added_at: 'desc' }, { id: 'desc' }],
                 take: 1,
-                select: { batches: { select: { name: true } } },
+                select: {
+                  batches: { select: { id: true, id_legacy: true, name: true } },
+                },
               },
             },
           },
@@ -296,6 +331,8 @@ export async function getReprocessingDraft(
     id: membership.documents.id,
     name: membership.documents.name,
     idLegacy: membership.documents.id_legacy,
+    sourceBatchId: membership.documents.document_to_batches[0]?.batches.id ?? null,
+    sourceBatchLegacyId: membership.documents.document_to_batches[0]?.batches.id_legacy ?? null,
     sourceBatchName: membership.documents.document_to_batches[0]?.batches.name ?? null,
     addedAt: isoDate(membership.added_at),
   }))
@@ -363,8 +400,11 @@ export async function createReprocessingDraftForDocuments(
   const name = input.name.trim()
   const reason = input.reason.trim()
   const restartStage = input.restartStage
+  const requestedStages = normalizeReprocessingRequestedStages(restartStage, input.requestedStages)
   const validationError =
-    documentIds.length > 0 ? validateDraftInput({ name, reason, restartStage }) : 'A document is required.'
+    documentIds.length > 0
+      ? validateDraftInput({ name, reason, restartStage, requestedStages })
+      : 'A document is required.'
   if (validationError) return { ok: false, error: validationError }
 
   try {
@@ -392,6 +432,7 @@ export async function createReprocessingDraftForDocuments(
           publication_status: GENERATED_BATCH_PUBLICATION_STATUSES.NOT_STARTED,
           processing_details: buildDraftProcessingDetails({
             restartStage,
+            requestedStages,
             reason,
             collectionName: textValue(input.collectionName),
             collectionNotes: textValue(input.collectionNotes),
@@ -421,6 +462,7 @@ export async function createReprocessingDraftForDocuments(
           name,
           lifecycle_status: GENERATED_BATCH_LIFECYCLE_STATUSES.DRAFT,
           restart_stage: restartStage,
+          requested_stages: requestedStages,
           document_ids: documentIds,
         },
         editSummary: 'Created reprocessing draft batch.',
@@ -499,7 +541,13 @@ export async function updateReprocessingDraft(
   const batchId = input.batchId.trim()
   const name = input.name.trim()
   const reason = input.reason.trim()
-  const validationError = validateDraftInput({ name, reason })
+  const requestedStages = normalizeReprocessingRequestedStages(input.restartStage, input.requestedStages)
+  const validationError = validateDraftInput({
+    name,
+    reason,
+    restartStage: input.restartStage,
+    requestedStages,
+  })
   if (!batchId) return { ok: false, error: 'A draft batch is required.' }
   if (validationError) return { ok: false, error: validationError }
 
@@ -515,7 +563,8 @@ export async function updateReprocessingDraft(
       if (existingName) return { ok: false, error: `Batch name “${name}” already exists.` }
       const current = draftMetadata(parseDetails(draft.processing_details))
       const processingDetails = buildDraftProcessingDetails({
-        restartStage: restartStageValue(current.restartStage) ?? 'document_splitter',
+        restartStage: input.restartStage,
+        requestedStages,
         reason,
         collectionName: textValue(input.collectionName),
         collectionNotes: textValue(input.collectionNotes),

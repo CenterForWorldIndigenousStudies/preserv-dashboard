@@ -6,6 +6,7 @@ export interface ReprocessingDraftSummary {
   collectionName: string | null
   collectionNotes: string | null
   restartStage: CallbackStageKey
+  requestedStages: readonly CallbackStageKey[]
   reason: string
   documentCount: number
   createdAt: string | null
@@ -18,6 +19,8 @@ export interface ReprocessingDraftDocument {
   id: string
   name: string | null
   idLegacy: string | null
+  sourceBatchId: string | null
+  sourceBatchLegacyId: string | null
   sourceBatchName: string | null
   addedAt: string | null
 }
@@ -32,6 +35,7 @@ export interface CreateReprocessingDraftInput {
   collectionName?: string
   collectionNotes?: string
   restartStage: CallbackStageKey
+  requestedStages: readonly CallbackStageKey[]
   reason: string
   createdBy?: string | null
 }
@@ -42,6 +46,7 @@ export interface CreateReprocessingDraftForDocumentsInput {
   collectionName?: string
   collectionNotes?: string
   restartStage: CallbackStageKey
+  requestedStages: readonly CallbackStageKey[]
   reason: string
   createdBy?: string | null
 }
@@ -61,6 +66,8 @@ export interface UpdateReprocessingDraftInput {
   name: string
   collectionName?: string
   collectionNotes?: string
+  restartStage: CallbackStageKey
+  requestedStages: readonly CallbackStageKey[]
   reason: string
   updatedBy?: string | null
 }

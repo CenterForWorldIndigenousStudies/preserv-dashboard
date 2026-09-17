@@ -22,6 +22,15 @@ describe('SourceId', () => {
     expect(markup).toContain('1poTSVemTJceJNCqWlhzNuUnrO4oX21Dy')
   })
 
+  it('renders a Google Slides link when the source file is PowerPoint', () => {
+    const markup = renderToStaticMarkup(
+      <SourceId value="1qPSoUl8fM5_2VtXnKC_gplZedKlAD5rB" fileName="presentation.pptx" />,
+    )
+
+    expect(markup).toContain('href="https://docs.google.com/presentation/d/1qPSoUl8fM5_2VtXnKC_gplZedKlAD5rB"')
+    expect(markup).toContain('View PowerPoint presentation')
+  })
+
   it('renders plain text for values that do not look like Google Drive ids', () => {
     const markup = renderToStaticMarkup(<SourceId value="not-a-drive-id" />)
 

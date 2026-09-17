@@ -45,7 +45,13 @@ export function EntityNameBlock({
         <NameElement name={name} fallbackName={fallbackName} href={href} />
         {badges}
       </Stack>
-      <IdsRow id={id} legacyId={legacyId} sourceId={sourceId} maxTruncationLength={maxTruncationLength} />
+      <IdsRow
+        id={id}
+        legacyId={legacyId}
+        sourceId={sourceId}
+        fileName={name}
+        maxTruncationLength={maxTruncationLength}
+      />
     </Stack>
   )
 }

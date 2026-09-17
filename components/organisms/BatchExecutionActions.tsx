@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import { Alert, Button, Stack } from '@mui/material'
 
 import { PipelineExecutionDialog } from '@molecules/PipelineExecutionDialog'
-import { REPROCESSING_EXECUTION_STAGE_ORDER } from '@lib/reprocessingDrafts'
+import { PIPELINE_EXECUTION_STAGE_ORDER } from '@lib/reprocessingDrafts'
 import type { PipelineExecutionMode, PipelineQueueAttemptSummary } from 'types/pipelineExecution'
 import type { CallbackStageKey, ProcessBatchStatus } from 'types/pipelineContracts'
 import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
@@ -18,13 +18,13 @@ interface BatchExecutionActionsProps {
 }
 
 const STAGE_PROPERTIES: Record<CallbackStageKey, keyof ProcessBatchStatus> = {
-    ingester: 'ingester',
-    document_splitter: 'documentSplitter',
-    page_rotator: 'pageRotator',
-    ocr_processor: 'ocrProcessor',
-    content_dedup: 'contentDedup',
-    metadata_extractor: 'metadataExtractor',
-    fedora_ingester: 'fedoraIngester',
+  ingester: 'ingester',
+  document_splitter: 'documentSplitter',
+  page_rotator: 'pageRotator',
+  ocr_processor: 'ocrProcessor',
+  content_dedup: 'contentDedup',
+  metadata_extractor: 'metadataExtractor',
+  fedora_ingester: 'fedoraIngester',
 }
 
 export function BatchExecutionActions({
@@ -36,10 +36,12 @@ export function BatchExecutionActions({
   const [mode, setMode] = useState<PipelineExecutionMode | null>(null)
   const failedStage = useMemo(() => {
     if (!batch) return null
-    return REPROCESSING_EXECUTION_STAGE_ORDER.find((stage) => {
-      const value = batch[STAGE_PROPERTIES[stage]]
-      return value && typeof value === 'object' && 'status' in value && value.status === 'failed'
-    }) ?? null
+    return (
+      PIPELINE_EXECUTION_STAGE_ORDER.find((stage) => {
+        const value = batch[STAGE_PROPERTIES[stage]]
+        return value && typeof value === 'object' && 'status' in value && value.status === 'failed'
+      }) ?? null
+    )
   }, [batch])
 
   if (!batch) return null
@@ -56,10 +58,16 @@ export function BatchExecutionActions({
 
   return (
     <Stack spacing={1.5} sx={{ alignItems: 'flex-start' }}>
-      {published ? <Alert severity={'info'}>{'This batch has been published. Reprocess its documents into a new batch instead of rerunning it in place.'}</Alert> : null}
+      {published ? (
+        <Alert severity={'info'}>
+          {'This batch has been published. Reprocess its documents into a new batch instead of rerunning it in place.'}
+        </Alert>
+      ) : null}
       {reverted ? (
         <Alert severity={'info'}>
-          {'This batch was rolled back successfully. Rerun from stage is unavailable; start a new batch from the original source instead.'}
+          {
+            'This batch was rolled back successfully. Rerun from stage is unavailable; start a new batch from the original source instead.'
+          }
         </Alert>
       ) : null}
       {currentExecution?.operationId ? (

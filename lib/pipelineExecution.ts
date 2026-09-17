@@ -43,6 +43,58 @@ const INGEST_ONLY_PIPELINE_CONFIG: PipelineConfig = {
   ],
 }
 
+const REQUESTED_STAGE_SERVICES: Record<string, PipelineExecutionStep['service']> = {
+  'document-splitter': DOCUMENT_SPLITTER_STAGE,
+  document_splitter: DOCUMENT_SPLITTER_STAGE,
+  'page-rotator': PAGE_ROTATOR_STAGE,
+  page_rotator: PAGE_ROTATOR_STAGE,
+  'ocr-processor': OCR_PROCESSOR_STAGE,
+  ocr_processor: OCR_PROCESSOR_STAGE,
+  'content-dedup': CONTENT_DEDUP_STAGE,
+  content_dedup: CONTENT_DEDUP_STAGE,
+  'metadata-extraction': METADATA_EXTRACTOR_STAGE,
+  metadata_extractor: METADATA_EXTRACTOR_STAGE,
+}
+
+const REQUESTED_STAGE_LABELS: Record<PipelineExecutionStep['service'], string> = {
+  'document-splitter': 'Document Splitter',
+  'page-rotator': 'Page Rotator',
+  'ocr-processor': 'OCR Processor',
+  'content-dedup': 'Content Dedup',
+  'metadata-extraction': 'Metadata Extraction',
+  ingester: 'Ingest',
+  'fedora-ingester': 'Fedora Ingester',
+}
+
+function getRequestedStagesPipelineConfig(batch: ProcessBatchStatus): PipelineConfig | null {
+  const executionPlan = batch.pipelineRequestedStages.flatMap((requestedStage, index) => {
+    const service = REQUESTED_STAGE_SERVICES[requestedStage]
+    if (!service) {
+      return []
+    }
+
+    return [
+      {
+        id: `requested-stage-${index}`,
+        stepId: service === DOCUMENT_SPLITTER_STAGE || service === PAGE_ROTATOR_STAGE ? 'normalize-pass-1' : service,
+        service,
+        label: REQUESTED_STAGE_LABELS[service],
+        order: index,
+        enabled: true,
+      } satisfies PipelineExecutionStep,
+    ]
+  })
+
+  return executionPlan.length > 0
+    ? {
+        profileId: 'custom',
+        mode: 'custom',
+        metadataExtraction: { mode: 'direct' },
+        executionPlan,
+      }
+    : null
+}
+
 function normalizeRuntimeStatus(status: string | null | undefined): PipelineStepRuntimeStatus {
   switch (status) {
     case 'accepted':
@@ -100,7 +152,7 @@ export function getExecutionStepReviewWarningCount(batch: ProcessBatchStatus, st
 }
 
 export function getPipelineConfigForBatch(batch: ProcessBatchStatus): PipelineConfig {
-  return batch.pipelineConfig ?? INGEST_ONLY_PIPELINE_CONFIG
+  return batch.pipelineConfig ?? getRequestedStagesPipelineConfig(batch) ?? INGEST_ONLY_PIPELINE_CONFIG
 }
 
 export function getOrchestratedExecutionPlan(batch: ProcessBatchStatus): PipelineExecutionStep[] {

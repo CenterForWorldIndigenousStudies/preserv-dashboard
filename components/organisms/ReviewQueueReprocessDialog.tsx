@@ -20,6 +20,7 @@ export interface ReviewQueueReprocessDialogProps {
   collectionName: string
   collectionNotes: string
   restartStage: CallbackStageKey
+  requestedStages: readonly CallbackStageKey[]
   reason: string
   drafts: readonly ReprocessingDraftSummary[]
   selectedDraftId: string | null
@@ -32,6 +33,7 @@ export interface ReviewQueueReprocessDialogProps {
   onCollectionNameChange: (value: string) => void
   onCollectionNotesChange: (value: string) => void
   onRestartStageChange: (value: CallbackStageKey) => void
+  onRequestedStagesChange: (value: CallbackStageKey[]) => void
   onReasonChange: (value: string) => void
   onSelectedDraftChange: (draft: ReprocessingDraftSummary | null) => void
   onSubmit: () => void
@@ -45,6 +47,7 @@ export function ReviewQueueReprocessDialog({
   collectionName,
   collectionNotes,
   restartStage,
+  requestedStages,
   reason,
   drafts,
   selectedDraftId,
@@ -57,6 +60,7 @@ export function ReviewQueueReprocessDialog({
   onCollectionNameChange,
   onCollectionNotesChange,
   onRestartStageChange,
+  onRequestedStagesChange,
   onReasonChange,
   onSelectedDraftChange,
   onSubmit,
@@ -99,6 +103,7 @@ export function ReviewQueueReprocessDialog({
               collectionName={collectionName}
               collectionNotes={collectionNotes}
               restartStage={restartStage}
+              requestedStages={requestedStages}
               reason={reason}
               isSubmitting={pending}
               canSubmit={canCreate}
@@ -109,6 +114,7 @@ export function ReviewQueueReprocessDialog({
               onCollectionNameChange={onCollectionNameChange}
               onCollectionNotesChange={onCollectionNotesChange}
               onRestartStageChange={onRestartStageChange}
+              onRequestedStagesChange={onRequestedStagesChange}
               onReasonChange={onReasonChange}
               onSubmit={onSubmit}
               submitLabel={'Create draft'}

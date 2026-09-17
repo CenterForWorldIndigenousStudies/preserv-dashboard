@@ -1,8 +1,13 @@
 'use client'
 
-import { type ReactElement } from 'react'
-import { Box, Paper, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material'
+import { useMemo, type ReactElement } from 'react'
+import { Box, Typography } from '@mui/material'
+import type { MRT_ColumnDef } from 'material-react-table'
+
 import { Button } from '@atoms/Button'
+import { getBatchDetailPath } from '@constants/paths'
+import { EntityNameBlock } from '@molecules/EntityNameBlock'
+import { DetailDataTable } from '@organisms/DetailDataTable'
 
 import type { ReprocessingDraftDocument } from 'types/reprocessingDrafts'
 
@@ -17,47 +22,72 @@ export function ReprocessingDraftDocumentsTable({
   disabled = false,
   onRemove,
 }: ReprocessingDraftDocumentsTableProps): ReactElement {
+  const columns = useMemo<MRT_ColumnDef<ReprocessingDraftDocument>[]>(
+    () => [
+      {
+        id: 'document',
+        accessorFn: (row) => row.name ?? row.idLegacy ?? row.id,
+        header: 'Document',
+        size: 360,
+        Cell: ({ row }) => (
+          <EntityNameBlock
+            name={row.original.name}
+            id={row.original.id}
+            legacyId={row.original.idLegacy}
+            fallbackName={'Untitled document'}
+          />
+        ),
+      },
+      {
+        id: 'sourceBatch',
+        accessorFn: (row) => row.sourceBatchName ?? row.sourceBatchLegacyId ?? row.sourceBatchId ?? '',
+        header: 'Source batch',
+        size: 320,
+        Cell: ({ row }) =>
+          row.original.sourceBatchId ? (
+            <EntityNameBlock
+              name={row.original.sourceBatchName}
+              id={row.original.sourceBatchId}
+              legacyId={row.original.sourceBatchLegacyId}
+              fallbackName={'Untitled batch'}
+              href={getBatchDetailPath(row.original.sourceBatchId)}
+            />
+          ) : (
+            <Typography color={'text.secondary'}>{'-'}</Typography>
+          ),
+      },
+      {
+        id: 'remove',
+        header: 'Remove',
+        size: 120,
+        enableSorting: false,
+        Cell: ({ row }) => (
+          <Button
+            variant={'ghost'}
+            size={'sm'}
+            aria-label={`Remove ${row.original.name ?? row.original.id} from draft`}
+            disabled={disabled}
+            onClick={() => onRemove(row.original.id)}
+          >
+            {'Remove'}
+          </Button>
+        ),
+      },
+    ],
+    [disabled, onRemove],
+  )
+
   return (
-    <Paper variant={'outlined'}>
-      <Box sx={{ p: 2 }}>
-        <Typography component={'h2'} variant={'h6'}>{'Documents in this draft'}</Typography>
-      </Box>
-      <Table size={'small'}>
-        <TableHead>
-          <TableRow>
-            <TableCell>{'Document'}</TableCell>
-            <TableCell>{'Source batch'}</TableCell>
-            <TableCell align={'right'}>{'Remove'}</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {documents.map((document) => (
-            <TableRow key={document.id}>
-              <TableCell>
-                <Stack>
-                  <Typography variant={'body2'}>{document.name ?? document.id}</Typography>
-                  <Typography variant={'caption'} color={'text.secondary'}>{document.idLegacy ?? document.id}</Typography>
-                </Stack>
-              </TableCell>
-              <TableCell>{document.sourceBatchName ?? '-'}</TableCell>
-              <TableCell align={'right'}>
-                <Button
-                  variant={'ghost'}
-                  size={'sm'}
-                  aria-label={`Remove ${document.name ?? document.id} from draft`}
-                  disabled={disabled}
-                  onClick={() => onRemove(document.id)}
-                >
-                  {'Remove'}
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
-          {documents.length === 0 ? (
-            <TableRow><TableCell colSpan={3}><Typography color={'text.secondary'}>{'Add at least one document before submitting.'}</Typography></TableCell></TableRow>
-          ) : null}
-        </TableBody>
-      </Table>
-    </Paper>
+    <Box sx={{ mt: 3 }}>
+      <Typography component={'h2'} variant={'h6'} sx={{ mb: 2 }}>
+        {'Documents in this draft'}
+      </Typography>
+      <DetailDataTable
+        columns={columns}
+        data={[...documents]}
+        emptyMessage={'Add at least one document before submitting.'}
+        enableSorting
+      />
+    </Box>
   )
 }

@@ -86,6 +86,8 @@ export async function createReprocessingDraftAction(
       documentId: input.documentId.trim(),
       name: input.name.trim(),
       reason: input.reason.trim(),
+      restartStage: input.restartStage,
+      requestedStages: input.requestedStages,
       collectionName: input.collectionName?.trim(),
       collectionNotes: input.collectionNotes?.trim(),
       createdBy: email,

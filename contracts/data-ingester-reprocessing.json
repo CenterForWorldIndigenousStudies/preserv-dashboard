@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "description": "Targeted Data Ingester request and result contract for reprocessing selected documents in an existing batch.",
+  "request": {
+    "fields": {
+      "app": { "valueType": "string", "required": true },
+      "request_id": { "valueType": "string", "required": true },
+      "batch_id": { "valueType": "string", "required": true },
+      "batch_name": { "valueType": "string", "required": true },
+      "started_by": { "valueType": "string", "required": true },
+      "initiated_at": { "valueType": "string", "required": true },
+      "execution_mode": { "valueType": "string", "required": true, "allowedValues": ["reprocess"] },
+      "operation_id": { "valueType": "string", "required": true },
+      "idempotency_key": { "valueType": "string", "required": true },
+      "source_document_ids": { "valueType": "array", "required": true },
+      "requested_stages": { "valueType": "array", "required": true },
+      "reason": { "valueType": "string", "required": true },
+      "collection": { "valueType": "object", "required": false },
+      "source_batch_id": { "valueType": "string", "required": false },
+      "draft_batch_id": { "valueType": "string", "required": false },
+      "pipeline_config": { "valueType": "object", "required": false },
+      "callback": { "valueType": "object", "required": true }
+    }
+  },
+  "result": {
+    "fields": {
+      "app": { "valueType": "string", "required": true },
+      "request_id": { "valueType": "string", "required": true },
+      "batch_id": { "valueType": "string", "required": true },
+      "batch_name": { "valueType": "string", "required": true },
+      "status": { "valueType": "string", "required": true },
+      "execution_mode": { "valueType": "string", "required": true, "allowedValues": ["reprocess"] },
+      "operation_id": { "valueType": "string", "required": true },
+      "idempotency_key": { "valueType": "string", "required": true },
+      "processed_count": { "valueType": "integer", "required": true },
+      "ingested_count": { "valueType": "integer", "required": true },
+      "created_document_ids": { "valueType": "array", "required": true },
+      "reused_count": { "valueType": "integer", "required": true },
+      "materialized_count": { "valueType": "integer", "required": true },
+      "duplicate_count": { "valueType": "integer", "required": true },
+      "skipped_same_origin_count": { "valueType": "integer", "required": true },
+      "error": { "valueType": "string", "required": false }
+    }
+  }
+}

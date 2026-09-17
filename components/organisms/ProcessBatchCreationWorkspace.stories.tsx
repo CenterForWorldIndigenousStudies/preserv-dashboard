@@ -34,6 +34,7 @@ const meta = {
     },
     foldersError: null,
     googleDriveExpanded: true,
+    isManagingDraft: false,
     onBatchNameChange: () => {},
     onCollectionNameChange: () => {},
     onCollectionNotesChange: () => {},
@@ -54,3 +55,9 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
+
+export const ManagingDraft: Story = {
+  args: {
+    isManagingDraft: true,
+  },
+}

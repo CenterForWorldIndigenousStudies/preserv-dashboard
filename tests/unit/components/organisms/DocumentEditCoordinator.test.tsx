@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
 
-import { DocumentEditCoordinator } from '@organisms/DocumentEditCoordinator'
+import { DocumentEditCoordinator, EDIT_TOGGLE_LABEL } from '@organisms/DocumentEditCoordinator'
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ refresh: vi.fn() }),
@@ -24,9 +24,9 @@ describe('DocumentEditCoordinator', () => {
     )
 
     expect(markup).toContain('Read-only document details')
-    expect(markup).toContain('Edit document details')
+    expect(markup).toContain(EDIT_TOGGLE_LABEL)
     expect(markup).toContain('Review toolbar')
-    expect(markup.indexOf('Review toolbar')).toBeLessThan(markup.indexOf('Edit document details'))
+    expect(markup.indexOf('Review toolbar')).toBeLessThan(markup.indexOf(EDIT_TOGGLE_LABEL))
     expect(markup).toContain('type="checkbox"')
     expect(markup).toContain('position:sticky')
     expect(markup).toContain('max-width:fit-content')

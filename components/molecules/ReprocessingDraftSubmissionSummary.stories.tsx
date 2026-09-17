@@ -10,12 +10,17 @@ const meta = {
   args: {
     documentCount: 4,
     restartStage: 'metadata_extractor',
+    requestedStages: ['metadata_extractor'],
     collectionName: 'Review collection',
     collectionNotes: 'Documents selected for metadata correction.',
     reason: 'Correct extracted metadata before publication.',
   },
   decorators: [
-    (StoryComponent) => <Box sx={{ m: '0 auto', maxWidth: 760 }}><StoryComponent /></Box>,
+    (StoryComponent) => (
+      <Box sx={{ m: '0 auto', maxWidth: 760 }}>
+        <StoryComponent />
+      </Box>
+    ),
   ],
 } satisfies Meta<typeof ReprocessingDraftSubmissionSummary>
 

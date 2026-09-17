@@ -10,6 +10,7 @@ interface PipelineCallbackHandlerArgs {
   request: NextRequest
   stage: CallbackStageKey
   eventName: string
+  expectedExecutionMode?: string
   onSuccess: (args: {
     body: PipelineCallbackBody
     parsed: ParsedPipelineCallbackBody
@@ -47,6 +48,7 @@ function unauthorizedCallbackResponse(eventName: string): NextResponse {
 
 async function parseCallbackRequest(
   request: NextRequest,
+  expectedExecutionMode?: string,
 ): Promise<{ body: PipelineCallbackBody; parsed: ParsedPipelineCallbackBody } | NextResponse> {
   let body: PipelineCallbackBody
   try {
@@ -58,6 +60,9 @@ async function parseCallbackRequest(
   const parsed = parsePipelineCallbackBody(body)
   if (!parsed.batchId) {
     return NextResponse.json({ error: 'batch_id is required.' }, { status: 400 })
+  }
+  if (expectedExecutionMode && parsed.executionMode !== expectedExecutionMode) {
+    return NextResponse.json({ error: `Callback requires ${expectedExecutionMode} execution.` }, { status: 400 })
   }
 
   return { body, parsed }
@@ -121,6 +126,7 @@ export async function handlePipelineCallback({
   request,
   stage,
   eventName,
+  expectedExecutionMode,
   onSuccess,
 }: PipelineCallbackHandlerArgs): Promise<NextResponse> {
   const expectedToken = process.env.PIPELINE_CALLBACK_TOKEN?.trim()
@@ -132,7 +138,7 @@ export async function handlePipelineCallback({
     return unauthorizedCallbackResponse(eventName)
   }
 
-  const parsedRequest = await parseCallbackRequest(request)
+  const parsedRequest = await parseCallbackRequest(request, expectedExecutionMode)
   if (parsedRequest instanceof NextResponse) {
     return parsedRequest
   }

@@ -4,8 +4,9 @@ import { Stack } from '@mui/material'
 import { IdElement } from '@atoms/IdElement'
 import { SourceId } from '@atoms/SourceId'
 import { truncateString } from '@lib/strings'
+import type { DocumentSourceLinkOptions } from '@lib/documentSourceLinks'
 
-interface IdsRowProps {
+interface IdsRowProps extends DocumentSourceLinkOptions {
   /** Document UUID */
   id: string
   /** Optional legacy ID to display alongside the document name */
@@ -21,7 +22,15 @@ function formatShortDocumentId(documentId: string): string {
   return documentId.slice(0, 8)
 }
 
-export function IdsRow({ id, legacyId, sourceId, maxTruncationLength = 12 }: IdsRowProps): ReactElement {
+export function IdsRow({
+  id,
+  legacyId,
+  sourceId,
+  maxTruncationLength = 12,
+  fileExtension,
+  fileName,
+  mimeType,
+}: IdsRowProps): ReactElement {
   const shortId = formatShortDocumentId(id)
   const truncatedLegacyId = truncateString(legacyId, maxTruncationLength)
   const truncatedSourceId = truncateString(sourceId, maxTruncationLength)
@@ -36,7 +45,15 @@ export function IdsRow({ id, legacyId, sourceId, maxTruncationLength = 12 }: Ids
 
       {truncatedSourceId && (
         <IdElement
-          id={<SourceId value={sourceId} maxTruncationLength={maxTruncationLength} />}
+          id={
+            <SourceId
+              value={sourceId}
+              maxTruncationLength={maxTruncationLength}
+              fileExtension={fileExtension}
+              fileName={fileName}
+              mimeType={mimeType}
+            />
+          }
           label={`Source`}
           title={sourceId}
         />

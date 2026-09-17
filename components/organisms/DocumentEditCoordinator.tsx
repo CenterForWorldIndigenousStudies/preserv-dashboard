@@ -203,6 +203,8 @@ interface DocumentEditResponse {
   detail?: DocumentDetail
 }
 
+export const EDIT_TOGGLE_LABEL = 'Edit' as const
+
 export function DocumentEditCoordinator({
   documentId,
   metadata,
@@ -360,7 +362,7 @@ export function DocumentEditCoordinator({
               {toolbarContent}
               <FormControlLabel
                 control={<Switch checked={isEditing} onChange={toggleEditing} disabled={isSaving} />}
-                label={'Edit document details'}
+                label={EDIT_TOGGLE_LABEL}
                 sx={{ m: 0, flexShrink: 0 }}
               />
             </Stack>

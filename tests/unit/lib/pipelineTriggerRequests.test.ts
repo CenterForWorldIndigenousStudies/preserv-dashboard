@@ -8,13 +8,9 @@ vi.mock('@lib/observability', () => ({
   logEvent: mockLogEvent,
 }))
 
-import {
-  triggerMetadataExtractor,
-} from '@lib/pipelineTriggerRequests'
+import { triggerDataIngesterReprocess, triggerMetadataExtractor } from '@lib/pipelineTriggerRequests'
 import type { ProcessBatchStatus } from 'types/pipelineContracts'
-import {
-  METADATA_EXTRACTOR_CALLBACK_PATH,
-} from '@constants/paths'
+import { DATA_INGESTER_REPROCESS_CALLBACK_PATH, METADATA_EXTRACTOR_CALLBACK_PATH } from '@constants/paths'
 import { GENERATED_PIPELINE_EXECUTION_MODES } from '@constants/generated/pipelineExecutionModes'
 
 function buildBatchStatus(overrides: Partial<ProcessBatchStatus> = {}): ProcessBatchStatus {
@@ -93,6 +89,43 @@ describe('pipelineTriggerRequests', () => {
     })
   })
 
+  it('sends targeted reprocessing to Data Ingester with the shared callback token', async () => {
+    let receivedBody: string | null = null
+    let receivedUrl: string | null = null
+    let receivedAuthorization: string | null = null
+    vi.mocked(fetch).mockImplementation((input, init) => {
+      receivedBody = typeof init?.body === 'string' ? init.body : null
+      receivedUrl = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
+      receivedAuthorization = new Headers(init?.headers).get('Authorization')
+      return Promise.resolve(buildJsonResponse({ batchId: 'batch-1', status: 'queued', service: 'data_ingester' }))
+    })
+
+    await triggerDataIngesterReprocess(buildBatchStatus(), {
+      executionMode: GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS,
+      operationId: 'operation-reprocess-1',
+      idempotencyKey: 'operation-reprocess-1',
+      draftBatchId: 'draft-1',
+      sourceDocumentIds: ['document-1'],
+      requestedStages: ['document_splitter'],
+      reason: 'Retry this document',
+    })
+
+    expect(receivedUrl).toBe('http://localhost:8000/reprocess')
+    expect(receivedAuthorization).toBe('Bearer pipeline-trigger-token')
+    expect(JSON.parse(receivedBody ?? '')).toMatchObject({
+      execution_mode: 'reprocess',
+      batch_id: 'batch-1',
+      draft_batch_id: 'draft-1',
+      source_document_ids: ['document-1'],
+      requested_stages: ['document_splitter'],
+      callback: {
+        url: `http://localhost:3000${DATA_INGESTER_REPROCESS_CALLBACK_PATH}`,
+        token: 'pipeline-callback-token',
+      },
+    })
+    expect(JSON.parse(receivedBody ?? '')).not.toHaveProperty('source_folder_ids')
+  })
+
   it('serializes an explicit retry execution context', async () => {
     let receivedBody: string | null = null
     vi.mocked(fetch).mockImplementation((_input, init) => {
@@ -134,7 +167,9 @@ describe('pipelineTriggerRequests', () => {
     let receivedBody: string | null = null
     vi.mocked(fetch).mockImplementation((_input, init) => {
       receivedBody = typeof init?.body === 'string' ? init.body : null
-      return Promise.resolve(buildJsonResponse({ batchId: 'batch-1', status: 'queued', service: 'metadata_extractor', pass: null }))
+      return Promise.resolve(
+        buildJsonResponse({ batchId: 'batch-1', status: 'queued', service: 'metadata_extractor', pass: null }),
+      )
     })
 
     await triggerMetadataExtractor(buildBatchStatus(), {
@@ -154,6 +189,34 @@ describe('pipelineTriggerRequests', () => {
       execution_mode: 'reprocess',
       draft_batch_id: 'draft-1',
       new_batch_name: null,
+    })
+  })
+
+  it('serializes an existing reprocessing batch continuation without a new batch name', async () => {
+    let receivedBody: string | null = null
+    vi.mocked(fetch).mockImplementation((_input, init) => {
+      receivedBody = typeof init?.body === 'string' ? init.body : null
+      return Promise.resolve(buildJsonResponse({ batchId: 'batch-1', status: 'queued', service: 'metadata_extractor' }))
+    })
+
+    await triggerMetadataExtractor(buildBatchStatus(), {
+      executionMode: GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS,
+      operationId: 'operation-2',
+      idempotencyKey: 'idempotency-2',
+      reason: 'Continue selected reprocessing stages',
+      sourceDocumentIds: ['document-1'],
+    })
+
+    if (receivedBody === null) {
+      throw new Error('Expected dashboard to send a JSON string body to metadata-extractor.')
+    }
+
+    expect(JSON.parse(receivedBody)).toMatchObject({
+      batch_id: 'batch-1',
+      execution_mode: 'reprocess',
+      source_document_ids: ['document-1'],
+      new_batch_name: null,
+      draft_batch_id: null,
     })
   })
 

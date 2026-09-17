@@ -50,7 +50,7 @@ export function ReprocessingDraftPicker({
             {draft.name}
           </Typography>
           <Typography variant={'caption'} color={'text.secondary'}>
-            {`${draft.documentCount} document${draft.documentCount === 1 ? '' : 's'} · ${getReprocessingStageLabel(draft.restartStage)}`}
+            {`${draft.documentCount} document${draft.documentCount === 1 ? '' : 's'} · ${draft.requestedStages.length} stage${draft.requestedStages.length === 1 ? '' : 's'} from ${getReprocessingStageLabel(draft.restartStage)}`}
           </Typography>
         </Box>
       )}

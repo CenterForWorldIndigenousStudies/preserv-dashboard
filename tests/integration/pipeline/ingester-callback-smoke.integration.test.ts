@@ -155,6 +155,7 @@ describeDbIntegration('ingester callback smoke (integration)', () => {
       body: JSON.stringify({
         batch_id: batchId,
         request_id: 'ingester-request-1',
+        execution_mode: 'normal',
         status: 'completed',
       }),
     })
