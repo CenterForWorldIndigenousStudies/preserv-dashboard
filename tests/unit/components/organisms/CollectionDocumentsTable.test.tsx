@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
+import { ACCESS_LEVEL_OPTIONS } from '@constants/accessLevels'
 import { COLLECTIONS_PATH, DOCUMENTS_PATH } from '@constants/paths'
 import type { FilterOptions } from '@lib/search'
 
@@ -44,7 +45,7 @@ import { CollectionDocumentsTable } from '@organisms/CollectionDocumentsTable'
 
 const filterOptions: FilterOptions = {
   collections: ['Collection One'],
-  accessLevels: ['public', 'restricted', 'internal', 'admin', 'confidential'],
+  accessLevels: [...ACCESS_LEVEL_OPTIONS],
   statuses: ['APPROVED', 'NEEDS_REVIEW'],
 }
 

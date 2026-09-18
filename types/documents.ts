@@ -2,6 +2,7 @@ import type { DbDocumentQuality, DbDocumentVersion } from 'types/db'
 import type { MetadataField } from 'types/metadata'
 import type { NeedsReviewReasonGroup } from 'types/needsReview'
 import type { ReviewQueueChecklistState } from '@constants/reviewQueueChecklist'
+import type { AccessLevelOption } from '@constants/accessLevels'
 
 export interface Document {
   id: string
@@ -146,7 +147,7 @@ export interface DocumentDetail {
   document: Document
   readiness?: DocumentReadiness | null
   quality: DocumentQuality | null
-  access_levels: string[]
+  access_levels: AccessLevelOption[]
   versions: DocumentVersion[]
   version_family: VersionFamily | null
   metadata: DocumentMetadataField[]
@@ -168,7 +169,7 @@ export interface ReadyForLibraryItem {
   validation_status: string | null
   validation_timestamp: string | number | null
   metadata_complete: boolean
-  access_level: string | null
+  access_level: AccessLevelOption | null
 }
 
 export interface LibraryCollection {

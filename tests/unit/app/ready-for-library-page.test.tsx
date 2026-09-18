@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { ACCESS_LEVEL_OPTIONS } from '@constants/accessLevels'
 const {
   mockGetReadyForLibraryDocuments,
   mockGetDocumentFilterOptions,
@@ -48,7 +49,7 @@ describe('ReadyForLibraryPage', () => {
       createdFrom: '2026-01-01',
       createdTo: '2026-12-31',
       collection: 'Collection A',
-      accessLevel: 'public',
+      accessLevel: ACCESS_LEVEL_OPTIONS[0],
     })
 
     expect(query).toMatchObject({
@@ -63,7 +64,7 @@ describe('ReadyForLibraryPage', () => {
         createdFrom: '2026-01-01',
         createdTo: '2026-12-31',
         collection: 'Collection A',
-        accessLevel: 'public',
+      accessLevel: ACCESS_LEVEL_OPTIONS[0],
       },
     })
   })
@@ -77,7 +78,7 @@ describe('ReadyForLibraryPage', () => {
           validation_status: 'APPROVED',
           validation_timestamp: 1720000000000,
           metadata_complete: false,
-          access_level: 'public',
+          access_level: ACCESS_LEVEL_OPTIONS[0],
         },
       ],
       total: 1,

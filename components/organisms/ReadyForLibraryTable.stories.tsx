@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { ACCESS_LEVEL_OPTIONS } from '@constants/accessLevels'
 import { READY_FOR_LIBRARY_PATH } from '@constants/paths'
 import type { DocumentTableFetchResult, DocumentTableQuery } from '@organisms/DocumentTable/types'
 import type { AdvancedSearchFilters, FilterOptions } from '@lib/search'
@@ -20,7 +21,7 @@ const sampleItems: ReadyForLibraryItem[] = [
     validation_status: 'APPROVED',
     validation_timestamp: '2026-04-28T10:00:00Z',
     metadata_complete: true,
-    access_level: 'public',
+    access_level: ACCESS_LEVEL_OPTIONS[0],
   },
   {
     id: UUIDS.doc2,
@@ -28,7 +29,7 @@ const sampleItems: ReadyForLibraryItem[] = [
     validation_status: 'APPROVED',
     validation_timestamp: '2026-04-27T15:30:00Z',
     metadata_complete: true,
-    access_level: 'restricted',
+    access_level: ACCESS_LEVEL_OPTIONS[1],
   },
   {
     id: UUIDS.doc3,
@@ -44,7 +45,7 @@ const sampleItems: ReadyForLibraryItem[] = [
     validation_status: 'APPROVED',
     validation_timestamp: '2026-04-25T14:00:00Z',
     metadata_complete: true,
-    access_level: 'public',
+    access_level: ACCESS_LEVEL_OPTIONS[0],
   },
 ]
 
@@ -56,7 +57,7 @@ const initialQuery: DocumentTableQuery<AdvancedSearchFilters> = {
 
 const filterOptions: FilterOptions = {
   collections: ['Collection A', 'Collection B'],
-  accessLevels: ['public', 'restricted', 'internal', 'admin', 'confidential'],
+  accessLevels: [...ACCESS_LEVEL_OPTIONS],
   statuses: ['APPROVED', 'VALIDATED'],
 }
 

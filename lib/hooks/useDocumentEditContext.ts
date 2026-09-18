@@ -2,6 +2,7 @@
 
 import { createContext, useContext } from 'react'
 
+import type { AccessLevelOption } from '@constants/accessLevels'
 import type {
   DocumentEditContributor,
   DocumentEditPublisher,
@@ -13,7 +14,7 @@ import type {
 export interface DocumentEditContextValue {
   isEditing: boolean
   draft: DocumentEditSnapshot
-  updateAccessLevel: (accessLevel: string | null) => void
+  updateAccessLevel: (accessLevel: AccessLevelOption | null) => void
   updateMetadata: (name: string, value: DocumentEditValue) => void
   updateQuality: (field: 'comment' | 'commentAdditional', value: string | null) => void
   updateTags: (tags: DocumentEditTag[]) => void

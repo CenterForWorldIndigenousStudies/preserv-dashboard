@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 
+import { ACCESS_LEVEL_OPTIONS } from '@constants/accessLevels'
 import { LibraryTable } from './LibraryTable'
 import type { DocumentTableFetchResult, DocumentTableQuery } from './DocumentTable/types'
 import type { AdvancedSearchFilters, FilterOptions } from '@lib/search'
@@ -7,7 +8,7 @@ import type { LibraryDocumentItem } from 'types/documents'
 
 const filterOptions: FilterOptions = {
   collections: ['Collection One', 'Collection Two'],
-  accessLevels: ['public', 'restricted', 'internal', 'admin', 'confidential'],
+  accessLevels: [...ACCESS_LEVEL_OPTIONS],
   statuses: ['APPROVED', 'VALIDATED'],
 }
 

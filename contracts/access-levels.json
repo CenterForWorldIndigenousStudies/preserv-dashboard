@@ -1,0 +1,22 @@
+{
+  "PUBLIC": {
+    "value": "public",
+    "description": "Open access"
+  },
+  "RESTRICTED": {
+    "value": "restricted",
+    "description": "Restricted access"
+  },
+  "INTERNAL": {
+    "value": "internal",
+    "description": "Internal use only"
+  },
+  "ADMIN": {
+    "value": "admin",
+    "description": "Administrative access"
+  },
+  "CONFIDENTIAL": {
+    "value": "confidential",
+    "description": "Confidential access"
+  }
+}

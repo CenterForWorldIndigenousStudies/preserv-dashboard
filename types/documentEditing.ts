@@ -1,3 +1,5 @@
+import type { AccessLevelOption } from '@constants/accessLevels'
+
 export type DocumentEditValue = string | number | boolean | string[] | null
 
 export interface DocumentEditTag {
@@ -22,7 +24,7 @@ export interface DocumentEditPublisher {
 }
 
 export interface DocumentEditSnapshot {
-  accessLevel: string | null
+  accessLevel: AccessLevelOption | null
   metadata: Record<string, DocumentEditValue>
   quality: {
     comment: string | null

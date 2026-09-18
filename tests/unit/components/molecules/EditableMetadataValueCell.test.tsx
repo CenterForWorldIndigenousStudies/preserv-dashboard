@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { EditableMetadataValueCell } from '@molecules/EditableMetadataValueCell'
 import { DocumentEditContext, type DocumentEditContextValue } from '@lib/hooks/useDocumentEditContext'
+import { normalizeAccessLevel } from '@lib/search'
 import type { MetadataField } from 'types/metadata'
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -31,7 +32,7 @@ describe('EditableMetadataValueCell', () => {
     const contextValue: DocumentEditContextValue = {
       isEditing: true,
       draft: {
-        accessLevel: field.name === 'access_level' ? value : null,
+        accessLevel: field.name === 'access_level' ? normalizeAccessLevel(value) ?? null : null,
         metadata: { [field.name]: value },
         quality,
         tags: [],

@@ -56,7 +56,7 @@ export const WithActiveFilters: Story = {
       createdFrom: '2026-01-01',
       createdTo: '2026-04-30',
       collection: 'First Nations Canada',
-      accessLevel: 'restricted',
+      accessLevel: ACCESS_LEVEL_OPTIONS[1],
     },
     filterOptions: defaultFilterOptions,
   },

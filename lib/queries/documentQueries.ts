@@ -18,6 +18,7 @@ import {
   normalizeDocumentType,
   normalizeStatuses,
   normalizeTextFilter,
+  type AccessLevelOption,
   type AdvancedSearchFilters,
 } from '@lib/search'
 import type {
@@ -129,10 +130,12 @@ export async function getDocuments(
   }
 }
 
-export function normalizeDocumentAccessLevels(levels: readonly (string | null | undefined)[]): string[] {
+export function normalizeDocumentAccessLevels(
+  levels: readonly (string | null | undefined)[],
+): AccessLevelOption[] {
   return levels
-    .filter((level): level is string => Boolean(level?.trim()))
-    .map((level) => level.trim())
+    .map((level) => normalizeAccessLevel(level?.trim()))
+    .filter((level): level is AccessLevelOption => Boolean(level))
     .sort((left, right) => left.localeCompare(right))
 }
 

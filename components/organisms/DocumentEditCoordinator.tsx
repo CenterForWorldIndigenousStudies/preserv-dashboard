@@ -10,6 +10,7 @@ import Switch from '@mui/material/Switch'
 import Tooltip from '@mui/material/Tooltip'
 import { useRouter } from 'next/navigation'
 
+import type { AccessLevelOption } from '@constants/accessLevels'
 import { DocumentEditActions } from '@molecules/DocumentEditActions'
 import { DocumentEditAccessDialog } from '@molecules/DocumentEditAccessDialog'
 import { DocumentEditConfirmationDialog } from '@molecules/DocumentEditConfirmationDialog'
@@ -43,7 +44,7 @@ interface DocumentEditCoordinatorProps {
   initialTags: DocumentToTag[]
   initialContributors: DocumentToContributor[]
   initialPublishers: DocumentToPublisher[]
-  initialAccessLevels: string[]
+  initialAccessLevels: AccessLevelOption[]
   editWarning?: DocumentEditWarning | null
   toolbarContent?: ReactNode
   toolbarTrailingContent?: ReactNode
@@ -51,7 +52,7 @@ interface DocumentEditCoordinatorProps {
 }
 
 type DraftAction =
-  | { type: 'accessLevel'; value: string | null }
+  | { type: 'accessLevel'; value: AccessLevelOption | null }
   | { type: 'metadata'; name: string; value: DocumentEditValue }
   | { type: 'quality'; field: 'comment' | 'commentAdditional'; value: string | null }
   | { type: 'tags'; tags: DocumentEditTag[] }
@@ -114,7 +115,7 @@ function buildInitialSnapshot(
   initialTags: DocumentToTag[],
   initialContributors: DocumentToContributor[],
   initialPublishers: DocumentToPublisher[],
-  initialAccessLevels: string[],
+  initialAccessLevels: AccessLevelOption[],
 ): DocumentEditSnapshot {
   const allowedNames = new Set<string>(EDITABLE_DOCUMENT_METADATA_FIELDS)
   const editableMetadata = Object.fromEntries(
@@ -349,7 +350,7 @@ export function DocumentEditCoordinator({
     () => ({
       isEditing,
       draft,
-      updateAccessLevel: (value: string | null) => dispatch({ type: 'accessLevel', value }),
+      updateAccessLevel: (value: AccessLevelOption | null) => dispatch({ type: 'accessLevel', value }),
       updateMetadata: (name: string, value: DocumentEditValue) => dispatch({ type: 'metadata', name, value }),
       updateQuality: (field: 'comment' | 'commentAdditional', value: string | null) =>
         dispatch({ type: 'quality', field, value }),

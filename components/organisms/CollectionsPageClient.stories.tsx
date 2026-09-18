@@ -1,6 +1,7 @@
 import Box from '@mui/material/Box'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 
+import { ACCESS_LEVEL_OPTIONS } from '@constants/accessLevels'
 import { COLLECTIONS_PATH } from '@constants/paths'
 import { CollectionsPageClient } from '@organisms/CollectionsPageClient'
 import type { FilterOptions } from '@lib/search'
@@ -29,7 +30,7 @@ const sampleCollections: CollectionWithMeta[] = [
 
 const filterOptions: FilterOptions = {
   collections: sampleCollections.map(({ collection_name }) => collection_name),
-  accessLevels: ['public', 'restricted', 'internal', 'admin', 'confidential'],
+  accessLevels: [...ACCESS_LEVEL_OPTIONS],
   statuses: ['APPROVED', 'NEEDS_REVIEW', 'VALIDATED'],
 }
 

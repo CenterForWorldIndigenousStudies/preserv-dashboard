@@ -1,6 +1,7 @@
 import Box from '@mui/material/Box'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 
+import { ACCESS_LEVEL_OPTIONS } from '@constants/accessLevels'
 import { VALIDATION_STATUS_OPTIONS } from '@constants/validationStatuses'
 import { REVIEW_QUEUE_PATH } from '@constants/paths'
 import { ActionButton, ReviewQueueTable } from '@organisms/ReviewQueueTable'
@@ -11,7 +12,7 @@ import { fn } from 'storybook/test'
 
 const filterOptions: FilterOptions = {
   collections: ['Plateau', 'Southwest', 'Pacific Northwest'],
-  accessLevels: ['public', 'restricted', 'internal', 'admin', 'confidential'],
+  accessLevels: [...ACCESS_LEVEL_OPTIONS],
   statuses: [...VALIDATION_STATUS_OPTIONS],
 }
 

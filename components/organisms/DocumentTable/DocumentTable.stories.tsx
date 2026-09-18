@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import type { MRT_ColumnDef } from 'material-react-table'
 
+import { ACCESS_LEVEL_OPTIONS } from '@constants/accessLevels'
 import { DocumentTable, type DocumentTableProps } from './DocumentTable'
 import type { DocumentTableConfig, DocumentTableFetchResult, DocumentTableQuery } from './types'
 import type { FilterOptions } from '@lib/search'
@@ -23,7 +24,7 @@ const columns: MRT_ColumnDef<StoryDocument>[] = [
 
 const filterOptions: FilterOptions = {
   collections: ['Collection A'],
-  accessLevels: ['public', 'restricted', 'internal', 'admin', 'confidential'],
+  accessLevels: [...ACCESS_LEVEL_OPTIONS],
   statuses: ['APPROVED', 'NEEDS_REVIEW'],
 }
 
@@ -140,7 +141,7 @@ export const FullAdvancedSearch: Story = {
           createdFrom: '2026-01-01',
           createdTo: '2026-12-31',
           collection: 'Collection A',
-          accessLevel: 'public',
+          accessLevel: ACCESS_LEVEL_OPTIONS[0],
         },
         filterOptions,
         onApply: () => undefined,

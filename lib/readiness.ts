@@ -1,3 +1,5 @@
+import type { AccessLevelOption } from '@constants/accessLevels'
+
 export const REQUIRED_READINESS_FIELDS = [
   'dc_title',
   'dc_date',
@@ -45,7 +47,7 @@ export function evaluateCandidateReadiness({
 }: {
   metadata: ReadinessMetadata
   validatedFields: ReadinessMetadata
-  accessLevels: readonly string[]
+  accessLevels: readonly AccessLevelOption[]
 }): ReadinessEvaluation {
   const unmetRequirements: string[] = []
   const reasons: string[] = []

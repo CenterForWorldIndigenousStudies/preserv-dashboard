@@ -5,6 +5,7 @@ import { createRoot } from 'react-dom/client'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
 
+import { ACCESS_LEVEL_OPTIONS } from '@constants/accessLevels'
 import { BATCHES_PATH } from '@constants/paths'
 import type { FilterOptions } from '@lib/search'
 
@@ -47,7 +48,7 @@ const row: BatchListItem = {
 
 const filterOptions: FilterOptions = {
   collections: ['Collection A'],
-  accessLevels: ['public'],
+  accessLevels: [ACCESS_LEVEL_OPTIONS[0]],
   statuses: ['APPROVED'],
 }
 
@@ -69,7 +70,7 @@ const initialQuery = {
     createdFrom: '2026-01-01',
     createdTo: '2026-01-31',
     collection: 'Collection A',
-    accessLevel: 'public' as const,
+    accessLevel: ACCESS_LEVEL_OPTIONS[0],
   },
 }
 

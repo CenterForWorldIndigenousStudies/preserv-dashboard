@@ -12,7 +12,7 @@ import { buildNameHash } from '@lib/tagHash'
 import { getProtectedTagDeletionMessage, isProtectedTagName, normalizeTagName } from '@lib/tagUtils'
 import { normalizeDocumentEditValue, serializeDocumentMetadataValue } from '@lib/documentEditing'
 import { appendNeedsReviewReason, normalizeNeedsReviewValue } from '@lib/needsReview'
-import { ACCESS_LEVEL_OPTIONS } from '@constants/accessLevels'
+import { ACCESS_LEVEL_OPTIONS, type AccessLevelOption } from '@constants/accessLevels'
 import { GENERATED_BATCH_PUBLICATION_STATUSES } from '@constants/generated/batchPublicationStatuses'
 import { GENERATED_DOCUMENT_STATES } from '@constants/generated/documentStates'
 import { NEEDS_REVIEW_METADATA_NAME } from '@constants/documentMetadata'
@@ -74,12 +74,12 @@ function normalizeNullableText(value: unknown, fieldName: string): string | null
   return trimmed.length > 0 ? trimmed : null
 }
 
-function normalizeAccessLevel(value: unknown): string | null {
+function normalizeAccessLevel(value: unknown): AccessLevelOption | null {
   const normalized = normalizeNullableText(value, DOCUMENT_ACCESS_LEVEL_FIELD)?.toLowerCase() ?? null
   if (normalized && !ACCESS_LEVEL_OPTIONS.includes(normalized as (typeof ACCESS_LEVEL_OPTIONS)[number])) {
     failValidation(`Invalid access level: ${normalized}.`)
   }
-  return normalized
+  return normalized as AccessLevelOption | null
 }
 
 function normalizeSnapshot(snapshot: DocumentEditSnapshot): DocumentEditSnapshot {

@@ -25,8 +25,11 @@ vi.mock('@lib/pipelineReadiness', () => ({ evaluateDocumentReadiness: vi.fn(() =
 import { getDocumentDetail, normalizeDocumentAccessLevels } from '@lib/queries/documentQueries'
 
 describe('normalizeDocumentAccessLevels', () => {
-  it('removes blank values and sorts all assigned levels alphabetically', () => {
-    expect(normalizeDocumentAccessLevels(['restricted', ' ', null, 'internal'])).toEqual(['internal', 'restricted'])
+  it('keeps only generated access levels, normalizes case, and sorts them alphabetically', () => {
+    expect(normalizeDocumentAccessLevels(['RESTRICTED', ' ', null, 'internal', 'unknown'])).toEqual([
+      'internal',
+      'restricted',
+    ])
   })
 })
 

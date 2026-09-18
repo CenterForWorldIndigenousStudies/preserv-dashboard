@@ -20,6 +20,7 @@ import {
   type QueryDbClient,
 } from '@lib/queries/documentQuerySupport'
 import type { DocumentsQueryParams } from '@lib/queries/documentQueries'
+import type { AccessLevelOption } from '@constants/accessLevels'
 import type { ReadyForLibraryItem } from 'types/documents'
 
 function firstSearchParam(value: string | string[] | undefined): string | undefined {
@@ -76,7 +77,7 @@ interface ReadyForLibraryQualityRow {
 
 export function buildReadyForLibraryItems(
   qualityDocs: readonly ReadyForLibraryQualityRow[],
-  docAccessMap: ReadonlyMap<string, string | undefined>,
+  docAccessMap: ReadonlyMap<string, AccessLevelOption | undefined>,
   docDcFields: ReadonlyMap<string, ReadonlySet<string>>,
   requiredDcFields: readonly string[],
 ): ReadyForLibraryItem[] {
@@ -152,10 +153,13 @@ export async function getReadyForLibraryDocuments(
     where: { document_id: { in: approvedCandidateDocIds } },
     select: { document_id: true, access_level_id: true, access_levels: { select: { level_name: true } } },
   })
-  const docAccessMap = new Map<string, string>()
+  const docAccessMap = new Map<string, AccessLevelOption>()
   for (const row of accessRows) {
+    const accessLevel = normalizeAccessLevel(row.access_levels.level_name)
+    if (!accessLevel) continue
+
     if (!docAccessMap.has(row.document_id)) {
-      docAccessMap.set(row.document_id, row.access_levels.level_name)
+      docAccessMap.set(row.document_id, accessLevel)
     }
   }
 

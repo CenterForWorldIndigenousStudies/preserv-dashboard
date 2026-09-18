@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { ACCESS_LEVEL_OPTIONS } from '@constants/accessLevels'
 import type { FilterOptions } from '@lib/search'
 import type { Document } from 'types/documents'
 
@@ -50,7 +51,7 @@ import { ReviewQueueTable } from '@organisms/ReviewQueueTable'
 
 const filterOptions: FilterOptions = {
   collections: ['Collection A'],
-  accessLevels: ['public', 'restricted', 'internal', 'admin', 'confidential'],
+  accessLevels: [...ACCESS_LEVEL_OPTIONS],
   statuses: ['APPROVED', 'NEEDS_REVIEW'],
 }
 

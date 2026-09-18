@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
 import { GENERATED_BATCH_PUBLICATION_STATUSES } from '@constants/generated/batchPublicationStatuses'
+import { ACCESS_LEVEL_OPTIONS } from '@constants/accessLevels'
 
 const {
   mockGetBatchOverviewMetrics,
@@ -70,7 +71,7 @@ const initialData = {
 
 const filterOptions = {
   collections: ['Collection A'],
-  accessLevels: ['public'],
+  accessLevels: [ACCESS_LEVEL_OPTIONS[0]],
   statuses: ['APPROVED'],
   lifecycleStatuses: Object.values(GENERATED_BATCH_LIFECYCLE_STATUSES),
   publicationStatuses: Object.values(GENERATED_BATCH_PUBLICATION_STATUSES),

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 
+import { ACCESS_LEVEL_OPTIONS } from '@constants/accessLevels'
 import { BatchesTable } from './BatchesTable'
 import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
 import { GENERATED_BATCH_PUBLICATION_STATUSES } from '@constants/generated/batchPublicationStatuses'
@@ -35,7 +36,7 @@ const initialQuery = {
 
 const filterOptions: FilterOptions = {
   collections: ['January collection', 'February collection'],
-  accessLevels: ['public', 'restricted'],
+  accessLevels: [ACCESS_LEVEL_OPTIONS[0], ACCESS_LEVEL_OPTIONS[1]],
   statuses: ['APPROVED', 'PENDING'],
   lifecycleStatuses: Object.values(GENERATED_BATCH_LIFECYCLE_STATUSES),
   publicationStatuses: Object.values(GENERATED_BATCH_PUBLICATION_STATUSES),

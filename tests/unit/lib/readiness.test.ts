@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { ACCESS_LEVEL_OPTIONS } from '@constants/accessLevels'
 import { REQUIRED_READINESS_FIELDS, evaluateCandidateReadiness, projectCandidateMetadata } from '@lib/readiness'
 
 const completeMetadata = (): Record<string, unknown> => ({
@@ -22,7 +23,7 @@ describe('candidate readiness', () => {
     const result = evaluateCandidateReadiness({
       metadata,
       validatedFields: Object.fromEntries(REQUIRED_READINESS_FIELDS.map((field) => [field, true])),
-      accessLevels: ['public'],
+      accessLevels: [ACCESS_LEVEL_OPTIONS[0]],
     })
 
     expect(metadata.dc_subject).toBe('Indigenous peoples')
@@ -36,7 +37,7 @@ describe('candidate readiness', () => {
     const result = evaluateCandidateReadiness({
       metadata: projectCandidateMetadata({ metadata, validatedFields: {} }),
       validatedFields: {},
-      accessLevels: ['public'],
+      accessLevels: [ACCESS_LEVEL_OPTIONS[0]],
     })
 
     expect(result.unmetRequirements).toEqual(['dc_description_abstract'])
@@ -72,7 +73,7 @@ describe('candidate readiness', () => {
     const result = evaluateCandidateReadiness({
       metadata: projectCandidateMetadata({ metadata, validatedFields: {} }),
       validatedFields: {},
-      accessLevels: ['public'],
+      accessLevels: [ACCESS_LEVEL_OPTIONS[0]],
     })
 
     expect(result.unmetRequirements).toEqual(['dc_subject'])

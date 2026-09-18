@@ -12,6 +12,7 @@ import { EditableValuePillList } from '@molecules/EditableValuePillList'
 import { useDocumentEditContext } from '@lib/hooks/useDocumentEditContext'
 import { ACCESS_LEVEL_LABELS, ACCESS_LEVEL_OPTIONS } from '@constants/accessLevels'
 import { DOCUMENT_ACCESS_LEVEL_FIELD } from '@constants/documentEditing'
+import { normalizeAccessLevel } from '@lib/search'
 import {
   formatDocumentDateInputValue,
   getDocumentMetadataValueType,
@@ -66,7 +67,7 @@ export function EditableMetadataValueCell({ field, editable, children }: Editabl
           value={value}
           label={'Access Level'}
           inputProps={{ 'aria-label': label }}
-          onChange={(event) => context.updateAccessLevel(event.target.value || null)}
+          onChange={(event) => context.updateAccessLevel(normalizeAccessLevel(event.target.value) ?? null)}
         >
           <MenuItem value={''}>{'No access level'}</MenuItem>
           {ACCESS_LEVEL_OPTIONS.map((option) => (

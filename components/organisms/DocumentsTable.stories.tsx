@@ -1,5 +1,6 @@
 import Box from '@mui/material/Box'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { ACCESS_LEVEL_OPTIONS } from '@constants/accessLevels'
 import { VALIDATION_STATUS_OPTIONS } from '@constants/validationStatuses'
 import { DocumentsTable } from '@organisms/DocumentsTable'
 import type { FilterOptions } from '@lib/search'
@@ -42,7 +43,7 @@ const mockDocuments: Document[] = [
 
 const filterOptions: FilterOptions = {
   collections: ['Plateau', 'Southwest', 'Pacific Northwest'],
-  accessLevels: ['public', 'restricted', 'internal', 'admin', 'confidential'],
+  accessLevels: [...ACCESS_LEVEL_OPTIONS],
   statuses: [...VALIDATION_STATUS_OPTIONS],
 }
 

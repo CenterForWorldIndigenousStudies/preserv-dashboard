@@ -1,3 +1,4 @@
+import type { AccessLevelOption } from '@constants/accessLevels'
 import { GENERATED_DOCUMENT_STATES } from '@constants/generated/documentStates'
 import {
   NEEDS_REVIEW_HISTORY_METADATA_NAME,
@@ -7,6 +8,7 @@ import {
 import { db } from '@lib/db'
 import { normalizeNeedsReviewValue } from '@lib/needsReview'
 import { appendReviewHistoryEpisode } from '@lib/reviewHistory'
+import { normalizeAccessLevel } from '@lib/search'
 import { evaluateCandidateReadiness, projectCandidateMetadata, type ReadinessReasonGroup } from '@lib/readiness'
 import type { Prisma, PrismaClient } from '@lib/prisma/generated/client'
 
@@ -29,7 +31,7 @@ interface CandidateReadinessDocument {
   id: string
   metadata: Record<string, unknown>
   activeReviewValue: unknown
-  accessLevels: string[]
+  accessLevels: AccessLevelOption[]
   latestState: { id: string; new_state: string | null } | null
   quality: { validation_status: string | null } | null
 }
@@ -69,7 +71,10 @@ export async function evaluateDocumentReadiness(
     evaluation: evaluateCandidateReadiness({
       metadata: projectedMetadata,
       validatedFields,
-      accessLevels: accessRows.map((row) => row.access_levels.level_name),
+      accessLevels: accessRows.flatMap((row) => {
+        const accessLevel = normalizeAccessLevel(row.access_levels.level_name)
+        return accessLevel ? [accessLevel] : []
+      }),
     }),
   }
 }
@@ -112,10 +117,13 @@ async function loadCandidateReadinessDocuments(
     metadataByDocumentId.set(row.document_id, rows)
   }
 
-  const accessByDocumentId = new Map<string, string[]>()
+  const accessByDocumentId = new Map<string, AccessLevelOption[]>()
   for (const row of accessRows) {
+    const accessLevel = normalizeAccessLevel(row.access_levels.level_name)
+    if (!accessLevel) continue
+
     const levels = accessByDocumentId.get(row.document_id) ?? []
-    levels.push(row.access_levels.level_name)
+    levels.push(accessLevel)
     accessByDocumentId.set(row.document_id, levels)
   }
 

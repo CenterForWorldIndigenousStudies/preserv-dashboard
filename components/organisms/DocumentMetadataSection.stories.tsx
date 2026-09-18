@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 
+import { ACCESS_LEVEL_OPTIONS } from '@constants/accessLevels'
 import { DocumentMetadataSection } from '@organisms/DocumentMetadataSection'
 import type { MetadataField } from 'types/metadata'
 
@@ -33,7 +34,7 @@ const meta = {
   parameters: { layout: 'padded', a11y: { disable: true } },
   args: {
     metadata,
-    accessLevels: ['public'],
+    accessLevels: [ACCESS_LEVEL_OPTIONS[0]],
     contributors: [
       {
         id: 'relationship-1',

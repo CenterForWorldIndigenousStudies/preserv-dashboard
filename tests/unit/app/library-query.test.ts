@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { ACCESS_LEVEL_OPTIONS } from '@constants/accessLevels'
 import { parseLibraryQueryParams } from '@lib/queries/libraryQueries'
 
 describe('parseLibraryQueryParams', () => {
@@ -52,7 +53,7 @@ describe('parseLibraryQueryParams', () => {
         createdFrom: '2026-01-01',
         createdTo: '2026-01-31',
         collection: 'Collection A',
-        accessLevel: 'public',
+        accessLevel: ACCESS_LEVEL_OPTIONS[0],
       },
     })
   })

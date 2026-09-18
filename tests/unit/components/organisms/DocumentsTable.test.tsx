@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { ACCESS_LEVEL_OPTIONS } from '@constants/accessLevels'
 import type { FilterOptions } from '@lib/search'
 
 const mocks = vi.hoisted(() => ({
@@ -44,7 +45,7 @@ import { DocumentsTable } from '@organisms/DocumentsTable'
 
 const filterOptions: FilterOptions = {
   collections: ['Collection A'],
-  accessLevels: ['public', 'restricted', 'internal', 'admin', 'confidential'],
+  accessLevels: [...ACCESS_LEVEL_OPTIONS],
   statuses: ['APPROVED', 'NEEDS_REVIEW'],
 }
 
