@@ -8,6 +8,7 @@ const {
   mockDetailFieldGrid,
   mockValuePillList,
   mockGetReprocessingDrafts,
+  mockReprocessingCart,
   mockDocumentReviewToolbar,
   mockDocumentPropertiesSection,
   mockDocumentVersionsSection,
@@ -48,6 +49,7 @@ const {
     ),
   ),
   mockGetReprocessingDrafts: vi.fn().mockResolvedValue([]),
+  mockReprocessingCart: vi.fn(() => <div data-testid={'reprocessing-cart'}>{'Reprocessing cart'}</div>),
   mockDocumentReviewToolbar: vi.fn(
     ({
       hasOpenReprocessingDraft,
@@ -132,15 +134,25 @@ vi.mock('@organisms/DocumentEditCoordinator', () => ({
   DocumentEditCoordinator: ({
     children,
     toolbarContent,
+    toolbarTrailingContent,
   }: {
     children: React.ReactNode
     toolbarContent?: React.ReactNode
+    toolbarTrailingContent?: React.ReactNode
   }) => (
     <>
-      <div data-testid={'document-review-toolbar'}>{toolbarContent}</div>
+      <div data-testid={'document-review-toolbar'}>
+        {toolbarContent}
+        <span>{'Edit toggle'}</span>
+        {toolbarTrailingContent}
+      </div>
       {children}
     </>
   ),
+}))
+
+vi.mock('@molecules/ReprocessingCart', () => ({
+  ReprocessingCart: mockReprocessingCart,
 }))
 
 vi.mock('@organisms/DocumentReviewToolbar', () => ({
@@ -184,6 +196,17 @@ describe('DocumentDetailPage', () => {
   })
 
   it('passes the current detail href into version navigation', async () => {
+    mockGetReprocessingDrafts.mockResolvedValueOnce([
+      {
+        id: 'draft-1',
+        name: 'Reprocessing batch',
+        restartStage: 'ocr_processor',
+        requestedStages: ['ocr_processor'],
+        pipelineConfig: undefined,
+        documentCount: 1,
+        createdAt: '2026-06-03T08:00:00Z',
+      },
+    ])
     mockGetDocumentDetail.mockResolvedValue({
       document: {
         id: 'doc-1',
@@ -372,6 +395,8 @@ describe('DocumentDetailPage', () => {
     expect(markup.indexOf('Comments')).toBeLessThan(markup.indexOf('Batches'))
     expect(markup.indexOf('Batches')).toBeLessThan(markup.indexOf('Audit History'))
     expect(markup).toContain('Document review controls')
+    expect(markup).toContain('Reprocessing cart')
+    expect(markup.indexOf('Edit toggle')).toBeLessThan(markup.indexOf('Reprocessing cart'))
     expect(markup).toContain('Candidate')
     expect(markup).toContain('Canonical')
     expect(markup).not.toContain('Version Family')
@@ -433,6 +458,7 @@ describe('DocumentDetailPage', () => {
     expect(markup).not.toContain('OCR Processor')
     expect(markup).not.toContain('Content Deduplication')
     expect(markup).not.toContain('Legacy')
+    expect(markup).not.toContain('Reprocessing cart')
     expect(markup).toContain('Comments')
     expect(markup).toContain('Comment')
     expect(markup).toContain('Additional Comment')

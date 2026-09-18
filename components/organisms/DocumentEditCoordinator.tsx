@@ -46,6 +46,7 @@ interface DocumentEditCoordinatorProps {
   initialAccessLevels: string[]
   editWarning?: DocumentEditWarning | null
   toolbarContent?: ReactNode
+  toolbarTrailingContent?: ReactNode
   children: ReactNode
 }
 
@@ -239,6 +240,7 @@ export function DocumentEditCoordinator({
   initialAccessLevels,
   editWarning = null,
   toolbarContent,
+  toolbarTrailingContent,
   children,
 }: DocumentEditCoordinatorProps): ReactElement {
   const router = useRouter()
@@ -394,6 +396,7 @@ export function DocumentEditCoordinator({
                   sx={{ m: 0, flexShrink: 0 }}
                 />
               </Tooltip>
+              {toolbarTrailingContent}
             </Stack>
           </Box>
           {children}

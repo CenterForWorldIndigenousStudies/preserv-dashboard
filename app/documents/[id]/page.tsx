@@ -28,6 +28,7 @@ import {
 import { PAGE_LABELS } from '@constants/pageLabels'
 import type { DocumentDetail } from 'types/documents'
 import { DocumentReviewToolbar } from '@organisms/DocumentReviewToolbar'
+import { ReprocessingCart } from '@molecules/ReprocessingCart'
 
 export const dynamic = 'force-dynamic'
 
@@ -190,6 +191,9 @@ export default async function DocumentDetailPage({
             latestState: detail.state_history[0]?.new_state,
           })}
           toolbarContent={buildDocumentReviewToolbar(detail, reprocessingDrafts, diagnosticsHref)}
+          toolbarTrailingContent={
+            reprocessingDrafts.length > 0 ? <ReprocessingCart drafts={reprocessingDrafts} /> : undefined
+          }
         >
           <DocumentPropertiesSection document={document} metadata={metadata} />
           <Stack component={'section'} spacing={4}>
