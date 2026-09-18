@@ -8,6 +8,7 @@ import { useBatchSearch } from '@lib/hooks/useBatchSearch'
 import { ReprocessingDraftForm } from '@molecules/ReprocessingDraftForm'
 import { ReprocessingDraftPicker } from '@molecules/ReprocessingDraftPicker'
 import type { CallbackStageKey } from 'types/pipelineContracts'
+import type { PipelineConfig } from '@lib/pipelineConfig'
 import type { ReprocessingDraftSummary } from 'types/reprocessingDrafts'
 
 export type ReviewQueueReprocessMode = 'create' | 'existing'
@@ -21,6 +22,7 @@ export interface ReviewQueueReprocessDialogProps {
   collectionNotes: string
   restartStage: CallbackStageKey
   requestedStages: readonly CallbackStageKey[]
+  pipelineConfig?: PipelineConfig
   reason: string
   drafts: readonly ReprocessingDraftSummary[]
   selectedDraftId: string | null
@@ -34,6 +36,7 @@ export interface ReviewQueueReprocessDialogProps {
   onCollectionNotesChange: (value: string) => void
   onRestartStageChange: (value: CallbackStageKey) => void
   onRequestedStagesChange: (value: CallbackStageKey[]) => void
+  onPipelineConfigChange?: (value: PipelineConfig) => void
   onReasonChange: (value: string) => void
   onSelectedDraftChange: (draft: ReprocessingDraftSummary | null) => void
   onSubmit: () => void
@@ -48,6 +51,7 @@ export function ReviewQueueReprocessDialog({
   collectionNotes,
   restartStage,
   requestedStages,
+  pipelineConfig,
   reason,
   drafts,
   selectedDraftId,
@@ -61,6 +65,7 @@ export function ReviewQueueReprocessDialog({
   onCollectionNotesChange,
   onRestartStageChange,
   onRequestedStagesChange,
+  onPipelineConfigChange,
   onReasonChange,
   onSelectedDraftChange,
   onSubmit,
@@ -104,6 +109,7 @@ export function ReviewQueueReprocessDialog({
               collectionNotes={collectionNotes}
               restartStage={restartStage}
               requestedStages={requestedStages}
+              pipelineConfig={pipelineConfig}
               reason={reason}
               isSubmitting={pending}
               canSubmit={canCreate}
@@ -115,6 +121,7 @@ export function ReviewQueueReprocessDialog({
               onCollectionNotesChange={onCollectionNotesChange}
               onRestartStageChange={onRestartStageChange}
               onRequestedStagesChange={onRequestedStagesChange}
+              onPipelineConfigChange={onPipelineConfigChange}
               onReasonChange={onReasonChange}
               onSubmit={onSubmit}
               submitLabel={'Create draft'}

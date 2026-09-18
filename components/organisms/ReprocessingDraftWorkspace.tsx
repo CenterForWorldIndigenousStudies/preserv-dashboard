@@ -5,7 +5,7 @@ import { Alert, Box, Button as MuiButton, Card, CardContent, Stack, Typography }
 import { useRouter } from 'next/navigation'
 
 import { Button } from '@atoms/Button'
-import { getReprocessingStageLabel } from '@lib/reprocessingDrafts'
+import { getReprocessingStageLabel, pipelineConfigToReprocessingRequestedStages } from '@lib/reprocessingDrafts'
 import type { ReprocessingDraftDetail } from 'types/reprocessingDrafts'
 import { ReprocessingDraftDocumentsTable } from '@organisms/ReprocessingDraftDocumentsTable'
 import { ReprocessingDraftForm } from '@molecules/ReprocessingDraftForm'
@@ -23,6 +23,7 @@ function draftDetailsHaveChanged(currentDraft: ReprocessingDraftDetail, savedDra
     currentDraft.reason !== savedDraft.reason ||
     currentDraft.restartStage !== savedDraft.restartStage ||
     JSON.stringify(currentDraft.requestedStages) !== JSON.stringify(savedDraft.requestedStages)
+    || JSON.stringify(currentDraft.pipelineConfig) !== JSON.stringify(savedDraft.pipelineConfig)
   )
 }
 
@@ -64,6 +65,7 @@ export function ReprocessingDraftWorkspace({ initialDraft }: ReprocessingDraftWo
           collectionNotes: currentDraft.collectionNotes ?? undefined,
           restartStage: currentDraft.restartStage,
           requestedStages: currentDraft.requestedStages,
+          pipelineConfig: currentDraft.pipelineConfig,
           reason: currentDraft.reason,
         })
         if (!result.ok) {
@@ -132,6 +134,7 @@ export function ReprocessingDraftWorkspace({ initialDraft }: ReprocessingDraftWo
           draftBatchId: currentDraft.id,
           restartStage: currentDraft.restartStage,
           requestedStages: currentDraft.requestedStages,
+          pipelineConfig: currentDraft.pipelineConfig,
           reason: currentDraft.reason,
           collection: currentDraft.collectionName
             ? { name: currentDraft.collectionName, notes: currentDraft.collectionNotes }
@@ -175,6 +178,7 @@ export function ReprocessingDraftWorkspace({ initialDraft }: ReprocessingDraftWo
             collectionNotes={currentDraft.collectionNotes ?? ''}
             restartStage={currentDraft.restartStage}
             requestedStages={currentDraft.requestedStages}
+            pipelineConfig={currentDraft.pipelineConfig}
             reason={currentDraft.reason}
             isSubmitting={isPending}
             canSubmit={canSave}
@@ -184,6 +188,17 @@ export function ReprocessingDraftWorkspace({ initialDraft }: ReprocessingDraftWo
             onCollectionNotesChange={(value) => updateDraftField('collectionNotes', value)}
             onRestartStageChange={(value) => updateDraftField('restartStage', value)}
             onRequestedStagesChange={(value) => updateDraftField('requestedStages', value)}
+            onPipelineConfigChange={(config) => {
+              setDraft((current) =>
+                current
+                  ? {
+                      ...current,
+                      pipelineConfig: config,
+                      requestedStages: pipelineConfigToReprocessingRequestedStages(config),
+                    }
+                  : current,
+              )
+            }}
             onReasonChange={(value) => updateDraftField('reason', value)}
             onSubmit={saveDraft}
             submitLabel={'Save draft'}

@@ -5,13 +5,20 @@ import { AccordionPanel } from '@molecules/AccordionPanel'
 import { DocumentMetadataRelationships } from '@molecules/DocumentMetadataRelationships'
 import { MetadataTable } from '@molecules/MetadataTable'
 import { MetadataValue } from '@molecules/MetadataValue'
-import { buildDisplayedMetadata, buildStageMetadata, recordedSourceMetadataKeys } from '@lib/documentDetailViewModel'
+import { DOCUMENT_ACCESS_LEVEL_FIELD } from '@constants/documentEditing'
+import {
+  buildDisplayedMetadata,
+  buildStageMetadata,
+  ensureRequiredReadinessMetadata,
+  recordedSourceMetadataKeys,
+} from '@lib/documentDetailViewModel'
 import { DetailPageSection } from '@organisms/DetailPageSection'
 import type { DocumentDetail } from 'types/documents'
 import type { MetadataField } from 'types/metadata'
 
 export interface DocumentMetadataSectionProps {
   metadata: MetadataField[]
+  accessLevels: DocumentDetail['access_levels']
   contributors: DocumentDetail['document_to_contributors']
   publishers: DocumentDetail['document_to_publishers']
   documentName?: string | null
@@ -19,13 +26,27 @@ export interface DocumentMetadataSectionProps {
 
 export function DocumentMetadataSection({
   metadata,
+  accessLevels,
   contributors,
   publishers,
   documentName,
 }: DocumentMetadataSectionProps): ReactElement {
-  const displayedMetadata = buildDisplayedMetadata(metadata)
-  const stageMetadata = buildStageMetadata(metadata)
-  const recordedSourceMetadata = metadata.filter((field) => recordedSourceMetadataKeys.has(field.name))
+  const metadataWithRequiredFields = ensureRequiredReadinessMetadata(metadata)
+  const accessLevelField: MetadataField = {
+    name: DOCUMENT_ACCESS_LEVEL_FIELD,
+    displayName: 'Access Level',
+    value: JSON.stringify({ value: accessLevels.join(', ') }),
+    value_type: 'access_level',
+    notes: 'Access level assigned to the document.',
+  }
+  const displayedMetadata = [
+    accessLevelField,
+    ...buildDisplayedMetadata(metadataWithRequiredFields).filter((field) => field.name !== DOCUMENT_ACCESS_LEVEL_FIELD),
+  ]
+  const stageMetadata = buildStageMetadata(metadataWithRequiredFields)
+  const recordedSourceMetadata = metadataWithRequiredFields.filter((field) =>
+    recordedSourceMetadataKeys.has(field.name),
+  )
 
   return (
     <DetailPageSection title={'Metadata'}>

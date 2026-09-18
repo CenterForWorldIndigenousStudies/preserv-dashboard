@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typog
 
 import { MetadataNameWithNotes } from '@atoms/MetadataNameWithNotes'
 import { EditableMetadataValueCell } from '@molecules/EditableMetadataValueCell'
-import { isEditableDocumentMetadataField } from '@constants/documentEditing'
+import { DOCUMENT_ACCESS_LEVEL_FIELD, isEditableDocumentMetadataField } from '@constants/documentEditing'
 import { parseMetadataValue } from '@lib/metadata'
 import type { MetadataField } from 'types/metadata'
 
@@ -73,7 +73,10 @@ export function MetadataTable({
               <TableCell sx={tableBodyCellSx}>
                 <EditableMetadataValueCell
                   field={field}
-                  editable={editable && isEditableDocumentMetadataField(field.name)}
+                  editable={
+                    editable &&
+                    (field.name === DOCUMENT_ACCESS_LEVEL_FIELD || isEditableDocumentMetadataField(field.name))
+                  }
                 >
                   {renderValue(field)}
                 </EditableMetadataValueCell>

@@ -19,7 +19,12 @@ import {
 
 import { requestPipelineExecution } from '@actions/pipelineExecution'
 import { getPipelineConfigForBatch } from '@lib/pipelineExecution'
-import { getReprocessingDownstreamStages, PIPELINE_EXECUTION_STAGE_ORDER } from '@lib/reprocessingDrafts'
+import {
+  getDefaultReprocessingPipelineConfig,
+  getReprocessingDownstreamStages,
+  pipelineConfigToReprocessingRequestedStages,
+  PIPELINE_EXECUTION_STAGE_ORDER,
+} from '@lib/reprocessingDrafts'
 import {
   createDefaultDraft,
   draftToPipelineConfig,
@@ -109,6 +114,9 @@ export function PipelineExecutionDialog({
   const [requestedStages, setRequestedStages] = useState<CallbackStageKey[]>(
     getReprocessingDownstreamStages(initialStage ?? stages[0] ?? 'metadata_extractor'),
   )
+  const [reprocessPipelineConfig, setReprocessPipelineConfig] = useState<PipelineConfig>(() =>
+    getDefaultReprocessingPipelineConfig(initialStage ?? stages[0] ?? 'metadata_extractor'),
+  )
   const [reason, setReason] = useState('')
   const [newBatchName, setNewBatchName] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -131,7 +139,9 @@ export function PipelineExecutionDialog({
     const selectedStage =
       initialStage && stages.includes(initialStage) ? initialStage : (stages[0] ?? 'metadata_extractor')
     setStage(selectedStage)
-    setRequestedStages(getReprocessingDownstreamStages(selectedStage))
+    const defaultConfig = getDefaultReprocessingPipelineConfig(selectedStage)
+    setReprocessPipelineConfig(defaultConfig)
+    setRequestedStages(pipelineConfigToReprocessingRequestedStages(defaultConfig))
   }, [batch.batchId, initialStage, mode, open, stages])
 
   useEffect(() => {
@@ -139,7 +149,9 @@ export function PipelineExecutionDialog({
       const nextStage = stages[0] ?? 'metadata_extractor'
       setStage(nextStage)
       if (mode === 'reprocess') {
-        setRequestedStages(getReprocessingDownstreamStages(nextStage))
+        const defaultConfig = getDefaultReprocessingPipelineConfig(nextStage)
+        setReprocessPipelineConfig(defaultConfig)
+        setRequestedStages(pipelineConfigToReprocessingRequestedStages(defaultConfig))
       }
     }
   }, [mode, stage, stages])
@@ -156,7 +168,7 @@ export function PipelineExecutionDialog({
       reason,
       requestedStages: mode === 'reprocess' ? requestedStages : undefined,
       sourceBatchId: batch.batchId || undefined,
-      pipelineConfig: rerunPipelineConfig,
+      pipelineConfig: mode === 'rerun' ? rerunPipelineConfig : reprocessPipelineConfig,
     }
     const result = await requestPipelineExecution(request)
     setSubmitting(false)
@@ -209,9 +221,16 @@ export function PipelineExecutionDialog({
               requestedStages={requestedStages}
               onRestartStageChange={(nextStage) => {
                 setStage(nextStage)
-                setRequestedStages(getReprocessingDownstreamStages(nextStage))
+                const defaultConfig = getDefaultReprocessingPipelineConfig(nextStage)
+                setReprocessPipelineConfig(defaultConfig)
+                setRequestedStages(pipelineConfigToReprocessingRequestedStages(defaultConfig))
               }}
               onRequestedStagesChange={setRequestedStages}
+              pipelineConfig={reprocessPipelineConfig}
+              onPipelineConfigChange={(config) => {
+                setReprocessPipelineConfig(config)
+                setRequestedStages(pipelineConfigToReprocessingRequestedStages(config))
+              }}
             />
           ) : (
             <FormControl fullWidth>

@@ -12,10 +12,11 @@ import { buildNameHash } from '@lib/tagHash'
 import { getProtectedTagDeletionMessage, isProtectedTagName, normalizeTagName } from '@lib/tagUtils'
 import { normalizeDocumentEditValue, serializeDocumentMetadataValue } from '@lib/documentEditing'
 import { appendNeedsReviewReason, normalizeNeedsReviewValue } from '@lib/needsReview'
+import { ACCESS_LEVEL_OPTIONS } from '@constants/accessLevels'
 import { GENERATED_BATCH_PUBLICATION_STATUSES } from '@constants/generated/batchPublicationStatuses'
 import { GENERATED_DOCUMENT_STATES } from '@constants/generated/documentStates'
 import { NEEDS_REVIEW_METADATA_NAME } from '@constants/documentMetadata'
-import { isEditableDocumentMetadataField } from '@constants/documentEditing'
+import { DOCUMENT_ACCESS_LEVEL_FIELD, isEditableDocumentMetadataField } from '@constants/documentEditing'
 import type {
   DocumentEditChange,
   DocumentEditContributor,
@@ -73,6 +74,14 @@ function normalizeNullableText(value: unknown, fieldName: string): string | null
   return trimmed.length > 0 ? trimmed : null
 }
 
+function normalizeAccessLevel(value: unknown): string | null {
+  const normalized = normalizeNullableText(value, DOCUMENT_ACCESS_LEVEL_FIELD)?.toLowerCase() ?? null
+  if (normalized && !ACCESS_LEVEL_OPTIONS.includes(normalized as (typeof ACCESS_LEVEL_OPTIONS)[number])) {
+    failValidation(`Invalid access level: ${normalized}.`)
+  }
+  return normalized
+}
+
 function normalizeSnapshot(snapshot: DocumentEditSnapshot): DocumentEditSnapshot {
   if (!snapshot || typeof snapshot !== 'object') {
     failValidation('A document edit snapshot is required.')
@@ -118,6 +127,7 @@ function normalizeSnapshot(snapshot: DocumentEditSnapshot): DocumentEditSnapshot
   )
 
   return {
+    accessLevel: normalizeAccessLevel(snapshot.accessLevel),
     metadata,
     quality: {
       comment: normalizeNullableText(snapshot.quality.comment, 'comment'),
@@ -257,6 +267,56 @@ async function recordChange(
     editSummary: summary,
   })
   changes.push({ fieldName, previousValue, newValue, summary })
+}
+
+async function applyAccessLevelChanges(
+  tx: Prisma.TransactionClient,
+  documentId: string,
+  editorEmail: string,
+  snapshot: DocumentEditSnapshot,
+  currentRows: Array<{ id: string; access_level_id: string; access_levels: { level_name: string } }>,
+  changes: DocumentEditChange[],
+): Promise<void> {
+  const currentAccessLevels = currentRows.map((row) => row.access_levels.level_name).sort()
+  const currentPrimaryAccessLevel = currentAccessLevels[0] ?? null
+  if (currentPrimaryAccessLevel === snapshot.accessLevel) return
+
+  const nextAccessLevel = snapshot.accessLevel
+    ? await tx.access_levels.findUnique({
+        where: { level_name: snapshot.accessLevel },
+        select: { id: true, level_name: true },
+      })
+    : null
+  if (snapshot.accessLevel && !nextAccessLevel) {
+    failValidation(`Access level ${snapshot.accessLevel} does not exist.`)
+  }
+
+  for (const current of currentRows) {
+    await tx.document_access.delete({ where: { id: current.id } })
+  }
+
+  if (nextAccessLevel) {
+    await tx.document_access.create({
+      data: {
+        id: crypto.randomUUID(),
+        document_id: documentId,
+        access_level_id: nextAccessLevel.id,
+        granted_by_email: editorEmail,
+        granted_at: new Date(),
+      },
+    })
+  }
+
+  await recordChange(
+    tx,
+    editorEmail,
+    documentId,
+    changes,
+    DOCUMENT_ACCESS_LEVEL_FIELD,
+    currentAccessLevels.length <= 1 ? currentPrimaryAccessLevel : currentAccessLevels,
+    snapshot.accessLevel,
+    `${snapshot.accessLevel === null ? 'Cleared' : 'Changed'} access level.`,
+  )
 }
 
 async function applyMetadataChanges(
@@ -635,7 +695,7 @@ export async function applyDocumentEditInTransaction(
     throw new DocumentEditNotFoundError('Document not found.')
   }
 
-  const [metadataRows, quality, tagRows, contributorRows, publisherRows] = await Promise.all([
+  const [metadataRows, quality, tagRows, contributorRows, publisherRows, accessRows] = await Promise.all([
     tx.document_to_metadata.findMany({ where: { document_id: params.documentId }, include: { metadata: true } }),
     tx.document_quality.findUnique({
       where: { document_id: params.documentId },
@@ -647,9 +707,11 @@ export async function applyDocumentEditInTransaction(
       include: { contributors: true },
     }),
     tx.document_to_publishers.findMany({ where: { document_id: params.documentId }, include: { publishers: true } }),
+    tx.document_access.findMany({ where: { document_id: params.documentId }, include: { access_levels: true } }),
   ])
   const changes: DocumentEditChange[] = []
 
+  await applyAccessLevelChanges(tx, params.documentId, editorEmail, snapshot, accessRows, changes)
   await applyMetadataChanges(tx, params.documentId, editorEmail, snapshot, metadataRows, changes)
   await applyQualityChanges(tx, params.documentId, editorEmail, snapshot, quality, changes)
   await applyTagChanges(tx, params.documentId, editorEmail, snapshot, tagRows, changes)

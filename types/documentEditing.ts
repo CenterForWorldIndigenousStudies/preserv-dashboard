@@ -22,6 +22,7 @@ export interface DocumentEditPublisher {
 }
 
 export interface DocumentEditSnapshot {
+  accessLevel: string | null
   metadata: Record<string, DocumentEditValue>
   quality: {
     comment: string | null

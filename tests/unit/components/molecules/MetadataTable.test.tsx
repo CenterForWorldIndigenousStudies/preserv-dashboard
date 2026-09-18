@@ -30,6 +30,7 @@ describe('MetadataTable', () => {
     const contextValue: DocumentEditContextValue = {
       isEditing: true,
       draft: {
+        accessLevel: null,
         metadata: {
           dc_subject: ['History', 'Archives'],
         },
@@ -38,6 +39,7 @@ describe('MetadataTable', () => {
         contributors: [],
         publishers: [],
       },
+      updateAccessLevel: vi.fn(),
       updateMetadata: vi.fn(),
       updateQuality: vi.fn(),
       updateTags: vi.fn(),
@@ -72,12 +74,14 @@ describe('MetadataTable', () => {
     const contextValue: DocumentEditContextValue = {
       isEditing: true,
       draft: {
+        accessLevel: null,
         metadata: {},
         quality: { comment: 'Control comment', commentAdditional: 'Additional comment' },
         tags: [],
         contributors: [],
         publishers: [],
       },
+      updateAccessLevel: vi.fn(),
       updateMetadata: vi.fn(),
       updateQuality: vi.fn(),
       updateTags: vi.fn(),

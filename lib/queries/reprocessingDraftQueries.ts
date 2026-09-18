@@ -5,7 +5,11 @@ import { GENERATED_BATCH_PUBLICATION_STATUSES } from '@constants/generated/batch
 import { db } from '@lib/db'
 import { createEditHistoryEntry } from '@lib/editHistory'
 import { buildNameHash } from '@lib/tagHash'
-import { normalizeReprocessingRequestedStages } from '@lib/reprocessingDrafts'
+import {
+  getReprocessingPipelineConfig,
+  normalizeReprocessingRequestedStages,
+} from '@lib/reprocessingDrafts'
+import { parsePipelineConfig, type PipelineConfig } from '@lib/pipelineConfig'
 import type { CallbackStageKey } from 'types/pipelineContracts'
 import type {
   AddDocumentToReprocessingDraftInput,
@@ -40,6 +44,7 @@ interface StoredDraftDetails {
   collectionNotes?: unknown
   createdBy?: unknown
   updatedBy?: unknown
+  pipelineConfig?: unknown
 }
 
 function parseDetails(value: string | null): Record<string, unknown> {
@@ -67,6 +72,14 @@ function pipelineRequestedStages(details: Record<string, unknown>): unknown {
   return pipeline && typeof pipeline === 'object' && !Array.isArray(pipeline)
     ? (pipeline as Record<string, unknown>).requestedStages
     : undefined
+}
+
+function pipelineConfig(details: Record<string, unknown>): PipelineConfig | undefined {
+  const metadata = draftMetadata(details)
+  const pipeline = details.pipeline
+  const pipelineRecord = pipeline && typeof pipeline === 'object' ? (pipeline as Record<string, unknown>) : undefined
+  const value = metadata.pipelineConfig ?? pipelineRecord?.config
+  return parsePipelineConfig(value) ?? undefined
 }
 
 function restartStageValue(value: unknown): CallbackStageKey | null {
@@ -101,16 +114,19 @@ function summaryFromRow(row: {
     throw new Error(`Draft batch ${row.id} has no valid restart stage.`)
   }
 
+  const requestedStages = requestedStagesValue(
+    metadata.requestedStages ?? pipelineRequestedStages(parseDetails(row.processing_details)),
+    restartStage,
+  )
+
   return {
     id: row.id,
     name: row.name?.trim() || row.id,
     collectionName: textValue(metadata.collectionName),
     collectionNotes: textValue(metadata.collectionNotes),
     restartStage,
-    requestedStages: requestedStagesValue(
-      metadata.requestedStages ?? pipelineRequestedStages(parseDetails(row.processing_details)),
-      restartStage,
-    ),
+    requestedStages,
+    pipelineConfig: pipelineConfig(parseDetails(row.processing_details)) ?? getReprocessingPipelineConfig(restartStage, requestedStages),
     reason: textValue(metadata.reason) ?? '',
     documentCount: row.document_to_batches.length,
     createdAt: isoDate(row.created_at),
@@ -168,6 +184,7 @@ function buildDraftProcessingDetails(input: {
   collectionNotes: string | null
   createdBy?: string | null
   updatedBy?: string | null
+  pipelineConfig: PipelineConfig
 }): string {
   return JSON.stringify({
     reprocessingDraft: {
@@ -178,10 +195,12 @@ function buildDraftProcessingDetails(input: {
       collectionNotes: input.collectionNotes,
       createdBy: input.createdBy ?? null,
       updatedBy: input.updatedBy ?? input.createdBy ?? null,
+      pipelineConfig: input.pipelineConfig,
     },
     pipeline: {
       executionMode: 'reprocess',
       requestedStages: input.requestedStages,
+      config: input.pipelineConfig,
     },
   })
 }
@@ -194,6 +213,7 @@ function draftAuditValue(name: string | null, processingDetails: string | null):
     collectionNotes: textValue(metadata.collectionNotes),
     restartStage: restartStageValue(metadata.restartStage),
     requestedStages: metadata.requestedStages,
+    pipelineConfig: metadata.pipelineConfig,
     reason: textValue(metadata.reason),
   }
 }
@@ -401,6 +421,7 @@ export async function createReprocessingDraftForDocuments(
   const reason = input.reason.trim()
   const restartStage = input.restartStage
   const requestedStages = normalizeReprocessingRequestedStages(restartStage, input.requestedStages)
+  const pipelineConfig = input.pipelineConfig ?? getReprocessingPipelineConfig(restartStage, requestedStages)
   const validationError =
     documentIds.length > 0
       ? validateDraftInput({ name, reason, restartStage, requestedStages })
@@ -437,6 +458,7 @@ export async function createReprocessingDraftForDocuments(
             collectionName: textValue(input.collectionName),
             collectionNotes: textValue(input.collectionNotes),
             createdBy: input.createdBy,
+            pipelineConfig,
           }),
         },
       })
@@ -542,6 +564,7 @@ export async function updateReprocessingDraft(
   const name = input.name.trim()
   const reason = input.reason.trim()
   const requestedStages = normalizeReprocessingRequestedStages(input.restartStage, input.requestedStages)
+  const pipelineConfig = input.pipelineConfig ?? getReprocessingPipelineConfig(input.restartStage, requestedStages)
   const validationError = validateDraftInput({
     name,
     reason,
@@ -570,6 +593,7 @@ export async function updateReprocessingDraft(
         collectionNotes: textValue(input.collectionNotes),
         createdBy: textValue(current.createdBy),
         updatedBy: input.updatedBy,
+        pipelineConfig,
       })
       const previousValue = draftAuditValue(draft.name, draft.processing_details)
       const newValue = draftAuditValue(name, processingDetails)

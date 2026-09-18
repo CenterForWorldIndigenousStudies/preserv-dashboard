@@ -1,4 +1,5 @@
 import type { CallbackStageKey } from 'types/pipelineContracts'
+import type { PipelineConfig } from '@lib/pipelineConfig'
 
 export interface ReprocessingDraftSummary {
   id: string
@@ -7,6 +8,7 @@ export interface ReprocessingDraftSummary {
   collectionNotes: string | null
   restartStage: CallbackStageKey
   requestedStages: readonly CallbackStageKey[]
+  pipelineConfig?: PipelineConfig
   reason: string
   documentCount: number
   createdAt: string | null
@@ -36,6 +38,7 @@ export interface CreateReprocessingDraftInput {
   collectionNotes?: string
   restartStage: CallbackStageKey
   requestedStages: readonly CallbackStageKey[]
+  pipelineConfig?: PipelineConfig
   reason: string
   createdBy?: string | null
 }
@@ -47,6 +50,7 @@ export interface CreateReprocessingDraftForDocumentsInput {
   collectionNotes?: string
   restartStage: CallbackStageKey
   requestedStages: readonly CallbackStageKey[]
+  pipelineConfig?: PipelineConfig
   reason: string
   createdBy?: string | null
 }
@@ -68,6 +72,7 @@ export interface UpdateReprocessingDraftInput {
   collectionNotes?: string
   restartStage: CallbackStageKey
   requestedStages: readonly CallbackStageKey[]
+  pipelineConfig?: PipelineConfig
   reason: string
   updatedBy?: string | null
 }

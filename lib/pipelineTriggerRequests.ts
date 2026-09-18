@@ -152,6 +152,7 @@ function createReprocessCallbackPayload(
     draft_batch_id: context.draftBatchId ?? null,
     requested_stages: context.requestedStages,
     collection: context.collection ?? null,
+    pipeline_config: context.pipelineConfig ?? null,
     callback: {
       url: buildStageCallbackUrl(config.callbackPath),
       token: readRequiredEnv('PIPELINE_CALLBACK_TOKEN', 'PIPELINE_CALLBACK_TOKEN is not configured.'),

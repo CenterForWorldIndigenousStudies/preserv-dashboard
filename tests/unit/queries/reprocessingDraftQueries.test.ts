@@ -33,6 +33,7 @@ import {
   removeDocumentFromReprocessingDraft,
   updateReprocessingDraft,
 } from '@lib/queries/reprocessingDraftQueries'
+import { getReprocessingPipelineConfig } from '@lib/reprocessingDrafts'
 
 describe('reprocessing draft queries', () => {
   beforeEach(() => {
@@ -73,6 +74,11 @@ describe('reprocessing draft queries', () => {
         collectionNotes: 'Review set',
         restartStage: 'ocr_processor',
         requestedStages: ['ocr_processor', 'content_dedup', 'metadata_extractor'],
+        pipelineConfig: getReprocessingPipelineConfig('ocr_processor', [
+          'ocr_processor',
+          'content_dedup',
+          'metadata_extractor',
+        ]),
         reason: 'Low OCR confidence',
         documentCount: 2,
         createdAt: '2026-09-03T10:00:00.000Z',

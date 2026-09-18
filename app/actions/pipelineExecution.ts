@@ -206,7 +206,7 @@ async function triggerRequestedExecution(
     newBatchName: request.newBatchName,
     draftBatchId: request.draftBatchId,
     collection: request.collection,
-    pipelineConfig: request.mode === 'rerun' ? request.pipelineConfig : undefined,
+    pipelineConfig: request.pipelineConfig,
     requestedStages: request.requestedStages ? [...request.requestedStages] : undefined,
   })
 }

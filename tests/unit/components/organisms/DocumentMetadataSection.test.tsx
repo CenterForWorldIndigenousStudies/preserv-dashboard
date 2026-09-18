@@ -27,6 +27,7 @@ describe('DocumentMetadataSection', () => {
     const markup = renderToStaticMarkup(
       <DocumentMetadataSection
         metadata={[field('dc_title'), field('ocr_generated'), field('source_id')]}
+        accessLevels={['restricted']}
         contributors={[] as DocumentDetail['document_to_contributors']}
         publishers={[] as DocumentDetail['document_to_publishers']}
       />,
@@ -38,5 +39,7 @@ describe('DocumentMetadataSection', () => {
     expect(markup).toContain('OCR Processor')
     expect(markup).toContain('Recorded source metadata')
     expect(markup).toContain('source_id')
+    expect(markup).toContain('access_level')
+    expect(markup.indexOf('access_level')).toBeLessThan(markup.indexOf('dc_title'))
   })
 })

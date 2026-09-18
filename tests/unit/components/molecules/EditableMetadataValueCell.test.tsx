@@ -31,12 +31,14 @@ describe('EditableMetadataValueCell', () => {
     const contextValue: DocumentEditContextValue = {
       isEditing: true,
       draft: {
+        accessLevel: field.name === 'access_level' ? value : null,
         metadata: { [field.name]: value },
         quality,
         tags: [],
         contributors: [],
         publishers: [],
       },
+      updateAccessLevel: vi.fn(),
       updateMetadata: onUpdateMetadata,
       updateQuality: onUpdateQuality,
       updateTags: vi.fn(),
@@ -119,6 +121,16 @@ describe('EditableMetadataValueCell', () => {
 
     expect(container.querySelector('input[type="checkbox"]')).toBeNull()
     expect(container.querySelector('input[type="text"]')).not.toBeNull()
+  })
+
+  it('uses a seeded access-level selector for the access-level field', () => {
+    const container = renderCell(
+      { name: 'access_level', value: JSON.stringify({ value: 'restricted' }), value_type: 'access_level', notes: null },
+      'restricted',
+    )
+
+    expect(container.querySelector('[role="combobox"]')).not.toBeNull()
+    expect(container.textContent).toContain('Restricted access')
   })
 
   it('updates metadata-backed comment fields while editing', () => {

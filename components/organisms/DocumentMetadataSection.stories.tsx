@@ -33,6 +33,7 @@ const meta = {
   parameters: { layout: 'padded', a11y: { disable: true } },
   args: {
     metadata,
+    accessLevels: ['public'],
     contributors: [
       {
         id: 'relationship-1',
@@ -64,6 +65,7 @@ export const WithStageAndSourceMetadata: Story = {}
 export const BasicMetadata: Story = {
   args: {
     metadata: metadata.slice(0, 2),
+    accessLevels: [],
     contributors: [],
     publishers: [],
   },

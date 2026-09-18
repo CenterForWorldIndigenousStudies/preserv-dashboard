@@ -1,3 +1,5 @@
+'use client'
+
 import type { ReactNode } from 'react'
 import { Chip } from '@mui/material'
 import { alpha, type SxProps, type Theme } from '@mui/material/styles'

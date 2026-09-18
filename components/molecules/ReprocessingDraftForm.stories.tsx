@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { fn } from 'storybook/test'
 
-import { DEFAULT_REPROCESSING_START_STAGE } from '@lib/reprocessingDrafts'
+import { DEFAULT_REPROCESSING_START_STAGE, getDefaultReprocessingPipelineConfig } from '@lib/reprocessingDrafts'
 import { ReprocessingDraftForm } from '@molecules/ReprocessingDraftForm'
 
 const meta = {
@@ -14,6 +14,7 @@ const meta = {
     collectionNotes: 'Metadata correction run.',
     restartStage: DEFAULT_REPROCESSING_START_STAGE,
     requestedStages: ['ocr_processor', 'content_dedup', 'metadata_extractor'],
+    pipelineConfig: getDefaultReprocessingPipelineConfig(DEFAULT_REPROCESSING_START_STAGE),
     reason: 'Correct metadata after review.',
     isSubmitting: false,
     canSubmit: true,

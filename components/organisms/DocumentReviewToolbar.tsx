@@ -14,7 +14,13 @@ import {
   type ReviewQueueChecklistItemKey,
   type ReviewQueueChecklistState,
 } from '@constants/reviewQueueChecklist'
-import { DEFAULT_REPROCESSING_START_STAGE, getReprocessingDownstreamStages } from '@lib/reprocessingDrafts'
+import {
+  DEFAULT_REPROCESSING_START_STAGE,
+  getDefaultReprocessingPipelineConfig,
+  getReprocessingDownstreamStages,
+  pipelineConfigToReprocessingRequestedStages,
+} from '@lib/reprocessingDrafts'
+import type { PipelineConfig } from '@lib/pipelineConfig'
 import { NeedsReviewReasonsPopover } from '@molecules/NeedsReviewReasonsPopover'
 import { DocumentRoleBadges } from '@molecules/DocumentRoleBadges'
 import { ReviewQueueActionButton } from '@molecules/ReviewQueueActionButton'
@@ -94,6 +100,9 @@ export function DocumentReviewToolbar({
   const [reprocessStage, setReprocessStage] = useState<CallbackStageKey>(DEFAULT_REPROCESSING_START_STAGE)
   const [reprocessRequestedStages, setReprocessRequestedStages] = useState<CallbackStageKey[]>(
     getReprocessingDownstreamStages(DEFAULT_REPROCESSING_START_STAGE),
+  )
+  const [reprocessPipelineConfig, setReprocessPipelineConfig] = useState<PipelineConfig>(() =>
+    getDefaultReprocessingPipelineConfig(DEFAULT_REPROCESSING_START_STAGE),
   )
   const [reprocessReason, setReprocessReason] = useState('')
   const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null)
@@ -180,7 +189,9 @@ export function DocumentReviewToolbar({
     setReprocessCollectionName('')
     setReprocessCollectionNotes('')
     setReprocessStage(DEFAULT_REPROCESSING_START_STAGE)
-    setReprocessRequestedStages(getReprocessingDownstreamStages(DEFAULT_REPROCESSING_START_STAGE))
+    const defaultConfig = getDefaultReprocessingPipelineConfig(DEFAULT_REPROCESSING_START_STAGE)
+    setReprocessPipelineConfig(defaultConfig)
+    setReprocessRequestedStages(pipelineConfigToReprocessingRequestedStages(defaultConfig))
     setReprocessReason('')
     setSelectedDraftId(null)
     setReprocessError(null)
@@ -202,6 +213,7 @@ export function DocumentReviewToolbar({
               collectionNotes: reprocessCollectionNotes,
               restartStage: reprocessStage,
               requestedStages: reprocessRequestedStages,
+              pipelineConfig: reprocessPipelineConfig,
               reason: reprocessReason,
             })
           : selectedDraftId
@@ -309,6 +321,7 @@ export function DocumentReviewToolbar({
         collectionNotes={reprocessCollectionNotes}
         restartStage={reprocessStage}
         requestedStages={reprocessRequestedStages}
+        pipelineConfig={reprocessPipelineConfig}
         reason={reprocessReason}
         drafts={initialDrafts}
         selectedDraftId={selectedDraftId}
@@ -322,6 +335,10 @@ export function DocumentReviewToolbar({
         onCollectionNotesChange={setReprocessCollectionNotes}
         onRestartStageChange={setReprocessStage}
         onRequestedStagesChange={setReprocessRequestedStages}
+        onPipelineConfigChange={(config) => {
+          setReprocessPipelineConfig(config)
+          setReprocessRequestedStages(pipelineConfigToReprocessingRequestedStages(config))
+        }}
         onReasonChange={setReprocessReason}
         onSelectedDraftChange={(draft) => setSelectedDraftId(draft?.id ?? null)}
         onSubmit={() => {

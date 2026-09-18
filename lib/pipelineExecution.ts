@@ -16,7 +16,10 @@ import {
   type PipelineExecutionStep,
 } from '@lib/pipelineConfig'
 import { GENERATED_PIPELINE_EXECUTION_MODES } from '@constants/generated/pipelineExecutionModes'
-import type { ProcessBatchStatus, ProcessStageStatus } from 'types/pipelineContracts'
+import {
+  getReprocessingPipelineConfig,
+} from '@lib/reprocessingDrafts'
+import type { CallbackStageKey, ProcessBatchStatus, ProcessStageStatus } from 'types/pipelineContracts'
 
 export type PipelineStepRuntimeStatus = 'pending' | 'queued' | 'running' | 'completed' | 'failed' | 'review_needed'
 
@@ -79,22 +82,24 @@ function isReprocessingExecution(batch: ProcessBatchStatus): boolean {
 }
 
 function getRequestedStagesPipelineConfig(batch: ProcessBatchStatus): PipelineConfig | null {
+  const requestedStages = batch.pipelineRequestedStages.map((stage) => stage.replaceAll('-', '_')) as CallbackStageKey[]
+  const restartStage = requestedStages[0]
+  if (restartStage && isReprocessingExecution(batch)) {
+    return getReprocessingPipelineConfig(restartStage, requestedStages)
+  }
+
   const executionPlan = batch.pipelineRequestedStages.flatMap((requestedStage, index) => {
     const service = REQUESTED_STAGE_SERVICES[requestedStage]
-    if (!service) {
-      return []
-    }
+    if (!service) return []
 
-    return [
-      {
-        id: `requested-stage-${index}`,
-        stepId: service === DOCUMENT_SPLITTER_STAGE || service === PAGE_ROTATOR_STAGE ? 'normalize-pass-1' : service,
-        service,
-        label: getPipelineServiceDisplayNameForService(service),
-        order: index,
-        enabled: true,
-      } satisfies PipelineExecutionStep,
-    ]
+    return [{
+      id: `requested-stage-${index}`,
+      stepId: service === DOCUMENT_SPLITTER_STAGE || service === PAGE_ROTATOR_STAGE ? 'normalize-pass-1' : service,
+      service,
+      label: getPipelineServiceDisplayNameForService(service),
+      order: index,
+      enabled: true,
+    } satisfies PipelineExecutionStep]
   })
 
   return executionPlan.length > 0

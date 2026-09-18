@@ -7,13 +7,14 @@ import FormControlLabel from '@mui/material/FormControlLabel'
 import Snackbar from '@mui/material/Snackbar'
 import Stack from '@mui/material/Stack'
 import Switch from '@mui/material/Switch'
+import Tooltip from '@mui/material/Tooltip'
 import { useRouter } from 'next/navigation'
 
 import { DocumentEditActions } from '@molecules/DocumentEditActions'
 import { DocumentEditAccessDialog } from '@molecules/DocumentEditAccessDialog'
 import { DocumentEditConfirmationDialog } from '@molecules/DocumentEditConfirmationDialog'
 import { getDocumentEditAuthorizationPath, getDocumentEditPath } from '@constants/paths'
-import { EDITABLE_DOCUMENT_METADATA_FIELDS } from '@constants/documentEditing'
+import { DOCUMENT_ACCESS_LEVEL_FIELD, EDITABLE_DOCUMENT_METADATA_FIELDS } from '@constants/documentEditing'
 import { DocumentEditContext } from '@lib/hooks/useDocumentEditContext'
 import { parseMetadataList, parseMetadataValue } from '@lib/metadata'
 import { normalizeDocumentEditValue } from '@lib/documentEditing'
@@ -42,12 +43,14 @@ interface DocumentEditCoordinatorProps {
   initialTags: DocumentToTag[]
   initialContributors: DocumentToContributor[]
   initialPublishers: DocumentToPublisher[]
+  initialAccessLevels: string[]
   editWarning?: DocumentEditWarning | null
   toolbarContent?: ReactNode
   children: ReactNode
 }
 
 type DraftAction =
+  | { type: 'accessLevel'; value: string | null }
   | { type: 'metadata'; name: string; value: DocumentEditValue }
   | { type: 'quality'; field: 'comment' | 'commentAdditional'; value: string | null }
   | { type: 'tags'; tags: DocumentEditTag[] }
@@ -58,6 +61,8 @@ type DraftAction =
 
 function draftReducer(state: DocumentEditSnapshot, action: DraftAction): DocumentEditSnapshot {
   switch (action.type) {
+    case 'accessLevel':
+      return { ...state, accessLevel: action.value }
     case 'metadata':
       return { ...state, metadata: { ...state.metadata, [action.name]: action.value } }
     case 'quality':
@@ -108,6 +113,7 @@ function buildInitialSnapshot(
   initialTags: DocumentToTag[],
   initialContributors: DocumentToContributor[],
   initialPublishers: DocumentToPublisher[],
+  initialAccessLevels: string[],
 ): DocumentEditSnapshot {
   const allowedNames = new Set<string>(EDITABLE_DOCUMENT_METADATA_FIELDS)
   const editableMetadata = Object.fromEntries(
@@ -123,6 +129,7 @@ function buildInitialSnapshot(
   )
 
   return {
+    accessLevel: initialAccessLevels[0] ?? null,
     metadata: editableMetadata,
     quality: {
       comment: quality?.comment ?? null,
@@ -148,6 +155,14 @@ function buildInitialSnapshot(
 
 function buildChanges(initial: DocumentEditSnapshot, draft: DocumentEditSnapshot): DocumentEditChange[] {
   const changes: DocumentEditChange[] = []
+  if (initial.accessLevel !== draft.accessLevel) {
+    changes.push({
+      fieldName: DOCUMENT_ACCESS_LEVEL_FIELD,
+      previousValue: initial.accessLevel,
+      newValue: draft.accessLevel,
+      summary: `${draft.accessLevel === null ? 'Cleared' : 'Changed'} access level.`,
+    })
+  }
   const names = new Set([...Object.keys(initial.metadata), ...Object.keys(draft.metadata)])
   for (const name of names) {
     const previousValue = initial.metadata[name] ?? null
@@ -204,6 +219,15 @@ interface DocumentEditResponse {
 }
 
 export const EDIT_TOGGLE_LABEL = 'Edit' as const
+export const EDIT_TOGGLE_TOOLTIP_ENABLE = 'Turn editing on to make document details editable.' as const
+export const EDIT_TOGGLE_TOOLTIP_DISCARD = 'Turning editing off will discard your unsaved changes.' as const
+export const EDIT_TOGGLE_TOOLTIP_DISABLE = 'Turn editing off to make document details read-only.' as const
+
+export function getEditToggleTooltip(isEditing: boolean, isDirty: boolean): string {
+  if (!isEditing) return EDIT_TOGGLE_TOOLTIP_ENABLE
+  if (isDirty) return EDIT_TOGGLE_TOOLTIP_DISCARD
+  return EDIT_TOGGLE_TOOLTIP_DISABLE
+}
 
 export function DocumentEditCoordinator({
   documentId,
@@ -212,14 +236,15 @@ export function DocumentEditCoordinator({
   initialTags,
   initialContributors,
   initialPublishers,
+  initialAccessLevels,
   editWarning = null,
   toolbarContent,
   children,
 }: DocumentEditCoordinatorProps): ReactElement {
   const router = useRouter()
   const initialSnapshot = useMemo(
-    () => buildInitialSnapshot(metadata, quality, initialTags, initialContributors, initialPublishers),
-    [initialContributors, initialPublishers, initialTags, metadata, quality],
+    () => buildInitialSnapshot(metadata, quality, initialTags, initialContributors, initialPublishers, initialAccessLevels),
+    [initialAccessLevels, initialContributors, initialPublishers, initialTags, metadata, quality],
   )
   const [draft, dispatch] = useReducer(draftReducer, initialSnapshot)
   const [savedSnapshot, setSavedSnapshot] = useState(initialSnapshot)
@@ -302,6 +327,7 @@ export function DocumentEditCoordinator({
         payload.detail.document_to_tags,
         payload.detail.document_to_contributors,
         payload.detail.document_to_publishers,
+        payload.detail.access_levels ?? [],
       )
       setSavedSnapshot(nextSnapshot)
       dispatch({ type: 'reset', snapshot: nextSnapshot })
@@ -321,6 +347,7 @@ export function DocumentEditCoordinator({
     () => ({
       isEditing,
       draft,
+      updateAccessLevel: (value: string | null) => dispatch({ type: 'accessLevel', value }),
       updateMetadata: (name: string, value: DocumentEditValue) => dispatch({ type: 'metadata', name, value }),
       updateQuality: (field: 'comment' | 'commentAdditional', value: string | null) =>
         dispatch({ type: 'quality', field, value }),
@@ -360,11 +387,13 @@ export function DocumentEditCoordinator({
               sx={{ alignItems: { xs: 'stretch', lg: 'center' }, width: '100%' }}
             >
               {toolbarContent}
-              <FormControlLabel
-                control={<Switch checked={isEditing} onChange={toggleEditing} disabled={isSaving} />}
-                label={EDIT_TOGGLE_LABEL}
-                sx={{ m: 0, flexShrink: 0 }}
-              />
+              <Tooltip title={getEditToggleTooltip(isEditing, isDirty)} arrow>
+                <FormControlLabel
+                  control={<Switch checked={isEditing} onChange={toggleEditing} disabled={isSaving} />}
+                  label={EDIT_TOGGLE_LABEL}
+                  sx={{ m: 0, flexShrink: 0 }}
+                />
+              </Tooltip>
             </Stack>
           </Box>
           {children}

@@ -1,6 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { fn } from 'storybook/test'
 
+import {
+  getDefaultReprocessingPipelineConfig,
+  pipelineConfigToReprocessingRequestedStages,
+} from '@lib/reprocessingDrafts'
 import { ReprocessingStageSelector } from '@molecules/ReprocessingStageSelector'
 
 const meta = {
@@ -8,8 +12,9 @@ const meta = {
   component: ReprocessingStageSelector,
   tags: ['autodocs'],
   args: {
-    restartStage: 'ocr_processor' as const,
-    requestedStages: ['ocr_processor', 'content_dedup'] as const,
+    restartStage: 'document_splitter' as const,
+    requestedStages: pipelineConfigToReprocessingRequestedStages(getDefaultReprocessingPipelineConfig('document_splitter')),
+    pipelineConfig: getDefaultReprocessingPipelineConfig('document_splitter'),
     onRestartStageChange: fn(),
     onRequestedStagesChange: fn(),
   },
@@ -23,6 +28,7 @@ export const StartAtMetadataExtraction: Story = {
   args: {
     restartStage: 'metadata_extractor',
     requestedStages: ['metadata_extractor'],
+    pipelineConfig: getDefaultReprocessingPipelineConfig('metadata_extractor'),
   },
 }
 export const Disabled: Story = { args: { disabled: true } }

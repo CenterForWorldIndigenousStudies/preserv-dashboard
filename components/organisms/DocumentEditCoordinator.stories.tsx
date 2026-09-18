@@ -19,6 +19,7 @@ const meta = {
     initialTags: [],
     initialContributors: [],
     initialPublishers: [],
+    initialAccessLevels: [],
     children: <Box sx={{ p: 3 }}>Read-only document details</Box>,
   },
   parameters: { layout: 'padded' },

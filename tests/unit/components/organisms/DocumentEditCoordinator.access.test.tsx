@@ -68,6 +68,7 @@ describe('DocumentEditCoordinator edit access', () => {
           initialTags={[]}
           initialContributors={[]}
           initialPublishers={[]}
+          initialAccessLevels={[]}
           editWarning={'approved'}
         >
           <div>Details</div>
@@ -107,6 +108,7 @@ describe('DocumentEditCoordinator edit access', () => {
           initialTags={[]}
           initialContributors={[]}
           initialPublishers={[]}
+          initialAccessLevels={[]}
           editWarning={'published'}
         >
           <div>Details</div>

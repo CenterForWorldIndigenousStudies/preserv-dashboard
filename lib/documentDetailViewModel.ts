@@ -1,5 +1,6 @@
 import { getBatchDetailPath } from '@constants/paths'
 import { parseCommentPipelineEvents } from '@lib/commentPipeline'
+import { REQUIRED_READINESS_FIELDS } from '@lib/readiness'
 import type { PipelineDiagnosticEvent, PipelineEventBatchLink } from 'types/commentPipeline'
 import type { DocumentDetail } from 'types/documents'
 import type { MetadataField } from 'types/metadata'
@@ -123,6 +124,23 @@ const stageMetadataGroups = [
 ] as const
 
 const stageMetadataFieldNames = new Set(stageMetadataGroups.flatMap((group) => Array.from(group.keys)))
+
+const requiredReadinessFieldValueTypes: Partial<Record<(typeof REQUIRED_READINESS_FIELDS)[number], string>> = {
+  dc_date: 'unix_timestamp',
+  dc_subject: 'json',
+}
+
+export function ensureRequiredReadinessMetadata(metadata: MetadataField[]): MetadataField[] {
+  const existingNames = new Set(metadata.map((field) => field.name))
+  const missingFields = REQUIRED_READINESS_FIELDS.filter((name) => !existingNames.has(name)).map((name) => ({
+    name,
+    value: '',
+    value_type: requiredReadinessFieldValueTypes[name] ?? 'string',
+    notes: null,
+  }))
+
+  return [...metadata, ...missingFields].sort((left, right) => left.name.localeCompare(right.name))
+}
 
 export function buildDisplayedMetadata(metadata: MetadataField[]): MetadataField[] {
   return metadata.filter(

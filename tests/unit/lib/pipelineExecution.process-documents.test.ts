@@ -278,6 +278,29 @@ describe('pipelineExecution process-documents behavior', () => {
     ])
   })
 
+  test('infers both normalization passes for a legacy reprocessing plan without config', () => {
+    const batch = buildBatchStatus({
+      pipelineExecutionMode: 'reprocess',
+      pipelineConfig: null,
+      pipelineRequestedStages: [
+        'document_splitter',
+        'page_rotator',
+        'ocr_processor',
+      ],
+      ingester: buildStageStatus({ status: 'completed' }),
+    })
+
+    expect(getOrchestratedExecutionPlan(batch).map((step) => `${step.stepId}:${step.pass ?? 0}`)).toEqual([
+      'ingester:0',
+      'normalize-pass-1:1',
+      'normalize-pass-1:1',
+      'normalize-pass-2:2',
+      'normalize-pass-2:2',
+      'ocr-processor:0',
+    ])
+    expect(getNextEligibleExecutionStep(batch)).toMatchObject({ service: 'document-splitter', pass: 1 })
+  })
+
   test('returns metadata extraction as next eligible step after content dedup completes', () => {
     const batch = buildBatchStatus({
       documentSplitter: buildStageStatus({

@@ -5,6 +5,7 @@ import {
   buildDisplayedMetadata,
   buildPipelineDiagnostics,
   buildStageMetadata,
+  ensureRequiredReadinessMetadata,
 } from '@lib/documentDetailViewModel'
 import type { DocumentDetail } from 'types/documents'
 import type { MetadataField } from 'types/metadata'
@@ -27,6 +28,22 @@ function metadataField(name: string, value: unknown, valueType = 'string'): Meta
 }
 
 describe('document detail view model', () => {
+  it('adds missing required readiness fields with editor-compatible empty values', () => {
+    const fields = ensureRequiredReadinessMetadata([ordinaryField])
+
+    expect(fields.map((field) => field.name)).toEqual([
+      'dc_date',
+      'dc_description_abstract',
+      'dc_language_iso',
+      'dc_rights',
+      'dc_subject',
+      'dc_title',
+      'dc_type',
+    ])
+    expect(fields.find((field) => field.name === 'dc_date')).toMatchObject({ value: '', value_type: 'unix_timestamp' })
+    expect(fields.find((field) => field.name === 'dc_subject')).toMatchObject({ value: '', value_type: 'json' })
+  })
+
   it('keeps ordinary metadata out of system, comment, and pipeline fields', () => {
     const unescoSubject = metadataField('dc_subject_unesco', ['History'])
     const fields = [

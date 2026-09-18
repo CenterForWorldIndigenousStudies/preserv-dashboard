@@ -1,5 +1,7 @@
 import { GENERATED_METADATA_EXTRACTOR_METADATA_FIELDS } from '@constants/generated/metadataExtractorFields'
 
+export const DOCUMENT_ACCESS_LEVEL_FIELD = 'access_level' as const
+
 const DASHBOARD_EDITABLE_DOCUMENT_METADATA_FIELDS = [
   'classification',
   'comment',

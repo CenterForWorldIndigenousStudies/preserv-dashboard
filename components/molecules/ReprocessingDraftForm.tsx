@@ -5,6 +5,7 @@ import { Stack, TextField } from '@mui/material'
 
 import { ProcessBatchFormPanel } from '@molecules/ProcessBatchFormPanel'
 import { ReprocessingStageSelector } from '@molecules/ReprocessingStageSelector'
+import type { PipelineConfig } from '@lib/pipelineConfig'
 import type { CallbackStageKey } from 'types/pipelineContracts'
 
 interface ReprocessingDraftFormProps {
@@ -13,6 +14,7 @@ interface ReprocessingDraftFormProps {
   collectionNotes: string
   restartStage: CallbackStageKey
   requestedStages: readonly CallbackStageKey[]
+  pipelineConfig?: PipelineConfig
   reason: string
   isSubmitting: boolean
   canSubmit: boolean
@@ -24,6 +26,7 @@ interface ReprocessingDraftFormProps {
   onCollectionNotesChange: (value: string) => void
   onRestartStageChange: (value: CallbackStageKey) => void
   onRequestedStagesChange: (value: CallbackStageKey[]) => void
+  onPipelineConfigChange?: (value: PipelineConfig) => void
   onReasonChange: (value: string) => void
   onSubmit: () => void
   submitLabel?: string
@@ -35,6 +38,7 @@ export function ReprocessingDraftForm({
   collectionNotes,
   restartStage,
   requestedStages,
+  pipelineConfig,
   reason,
   isSubmitting,
   canSubmit,
@@ -46,6 +50,7 @@ export function ReprocessingDraftForm({
   onCollectionNotesChange,
   onRestartStageChange,
   onRequestedStagesChange,
+  onPipelineConfigChange,
   onReasonChange,
   onSubmit,
   submitLabel = 'Add to reprocessing cart',
@@ -76,8 +81,10 @@ export function ReprocessingDraftForm({
       <ReprocessingStageSelector
         restartStage={restartStage}
         requestedStages={requestedStages}
+        pipelineConfig={pipelineConfig}
         onRestartStageChange={onRestartStageChange}
         onRequestedStagesChange={onRequestedStagesChange}
+        onPipelineConfigChange={onPipelineConfigChange}
       />
       <TextField
         fullWidth

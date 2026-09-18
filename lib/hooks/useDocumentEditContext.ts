@@ -13,6 +13,7 @@ import type {
 export interface DocumentEditContextValue {
   isEditing: boolean
   draft: DocumentEditSnapshot
+  updateAccessLevel: (accessLevel: string | null) => void
   updateMetadata: (name: string, value: DocumentEditValue) => void
   updateQuality: (field: 'comment' | 'commentAdditional', value: string | null) => void
   updateTags: (tags: DocumentEditTag[]) => void

@@ -120,11 +120,7 @@ export function normalizePipelineExecutionContext(
     throw new Error(`${executionMode} execution requires idempotencyKey.`)
   }
   validateExecutionScope(executionMode, sourceDocumentIds, newBatchName, draftBatchId, options.targetBatchId?.trim())
-  if (
-    input.pipelineConfig &&
-    executionMode !== GENERATED_PIPELINE_EXECUTION_MODES.NORMAL &&
-    executionMode !== GENERATED_PIPELINE_EXECUTION_MODES.RERUN
-  ) {
+  if (input.pipelineConfig && executionMode === GENERATED_PIPELINE_EXECUTION_MODES.RETRY) {
     throw new Error(`${executionMode} execution cannot specify pipelineConfig.`)
   }
 

@@ -2,10 +2,16 @@
 
 import type { ReactElement, ReactNode } from 'react'
 import Checkbox from '@mui/material/Checkbox'
+import FormControl from '@mui/material/FormControl'
+import InputLabel from '@mui/material/InputLabel'
+import MenuItem from '@mui/material/MenuItem'
+import Select from '@mui/material/Select'
 import TextField from '@mui/material/TextField'
 
 import { EditableValuePillList } from '@molecules/EditableValuePillList'
 import { useDocumentEditContext } from '@lib/hooks/useDocumentEditContext'
+import { ACCESS_LEVEL_LABELS, ACCESS_LEVEL_OPTIONS } from '@constants/accessLevels'
+import { DOCUMENT_ACCESS_LEVEL_FIELD } from '@constants/documentEditing'
 import {
   formatDocumentDateInputValue,
   getDocumentMetadataValueType,
@@ -48,6 +54,30 @@ export function EditableMetadataValueCell({ field, editable, children }: Editabl
   }
 
   const context = editContext
+
+  if (field.name === DOCUMENT_ACCESS_LEVEL_FIELD) {
+    const value = context.draft.accessLevel ?? ''
+    const label = 'Edit access level'
+    return (
+      <FormControl fullWidth size={'small'}>
+        <InputLabel id={'document-access-level-label'}>{'Access Level'}</InputLabel>
+        <Select
+          labelId={'document-access-level-label'}
+          value={value}
+          label={'Access Level'}
+          inputProps={{ 'aria-label': label }}
+          onChange={(event) => context.updateAccessLevel(event.target.value || null)}
+        >
+          <MenuItem value={''}>{'No access level'}</MenuItem>
+          {ACCESS_LEVEL_OPTIONS.map((option) => (
+            <MenuItem key={option} value={option}>
+              {ACCESS_LEVEL_LABELS[option]}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+    )
+  }
 
   const isCommentControl = field.name === 'comment_control' || field.name === 'comment'
   const isCommentAdditional = field.name === 'comment_additional'

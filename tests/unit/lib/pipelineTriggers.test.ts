@@ -78,6 +78,39 @@ describe('pipelineTriggers', () => {
     expect(typeof context?.idempotencyKey).toBe('string')
   })
 
+  it('preserves the pass-aware reprocessing pipeline config for downstream callbacks', () => {
+    const pipelineConfig = {
+      profileId: 'custom' as const,
+      mode: 'custom' as const,
+      metadataExtraction: { mode: 'direct' as const },
+      executionPlan: [
+        {
+          id: 'step-normalize-pass-2-split',
+          stepId: 'normalize-pass-2' as const,
+          service: 'document-splitter' as const,
+          label: 'Split Pass 2',
+          order: 1,
+          enabled: true,
+          pass: 2 as const,
+        },
+      ],
+    }
+    const batch = buildBatchStatus({
+      pipelineExecutionMode: 'reprocess',
+      pipelineConfig,
+      currentExecution: {
+        executionMode: 'reprocess',
+        operationId: 'operation-1',
+        idempotencyKey: 'idempotency-1',
+        stage: 'document_splitter',
+        reason: 'Run normalization again.',
+        sourceDocumentIds: ['document-1'],
+      },
+    })
+
+    expect(getPipelineContinuationContext(batch)?.pipelineConfig).toEqual(pipelineConfig)
+  })
+
   it('does not add execution context to normal downstream callbacks', () => {
     expect(getPipelineContinuationContext(buildBatchStatus())).toBeUndefined()
   })

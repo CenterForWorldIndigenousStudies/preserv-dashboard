@@ -180,6 +180,7 @@ export default async function DocumentDetailPage({
           initialTags={detail.document_to_tags}
           initialContributors={detail.document_to_contributors}
           initialPublishers={detail.document_to_publishers}
+          initialAccessLevels={detail.access_levels}
           editWarning={getDocumentEditWarning({
             validationStatus: detail.quality?.validation_status,
             hasPublishedBatch: detail.document_to_batches.some(
@@ -206,6 +207,7 @@ export default async function DocumentDetailPage({
             </DetailPageSection>
             <DocumentMetadataSection
               metadata={metadata}
+              accessLevels={detail.access_levels}
               contributors={detail.document_to_contributors}
               publishers={detail.document_to_publishers}
               documentName={document.name}

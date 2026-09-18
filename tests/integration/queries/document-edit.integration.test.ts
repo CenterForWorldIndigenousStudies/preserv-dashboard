@@ -100,6 +100,7 @@ describeDbIntegration('document editing (integration)', () => {
         documentId,
         editorEmail: 'integration-editor@example.test',
         snapshot: {
+          accessLevel: null,
           metadata: { dc_title: 'After' },
           quality: { comment: 'New control comment', commentAdditional: null },
           tags: [{ tagId, name: `Integration Tag ${documentId}`, notes: 'Updated tag notes' }],
@@ -153,6 +154,7 @@ describeDbIntegration('document editing (integration)', () => {
           documentId,
           editorEmail: 'integration-editor@example.test',
           snapshot: {
+            accessLevel: null,
             metadata: { dc_title: 'After' },
             quality: { comment: null, commentAdditional: null },
             tags: [],

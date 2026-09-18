@@ -31,6 +31,7 @@ describe('applyDocumentEdit validation', () => {
         documentId: 'doc-1',
         editorEmail: 'editor@example.test',
         snapshot: {
+          accessLevel: null,
           metadata: { rudolph_ryser_detected: true },
           quality: { comment: null, commentAdditional: null },
           tags: [],
@@ -62,6 +63,8 @@ describe('applyDocumentEdit validation', () => {
         upsert: vi.fn(),
       },
       document_quality: { findUnique: vi.fn().mockResolvedValue(null) },
+      document_access: { findMany: vi.fn().mockResolvedValue([]) },
+      access_levels: { findUnique: vi.fn() },
       document_to_tags: { findMany: vi.fn().mockResolvedValue([]) },
       document_to_contributors: { findMany: vi.fn().mockResolvedValue([]) },
       document_to_publishers: { findMany: vi.fn().mockResolvedValue([]) },
@@ -75,6 +78,7 @@ describe('applyDocumentEdit validation', () => {
       documentId: 'doc-1',
       editorEmail: 'editor@example.test',
       snapshot: {
+        accessLevel: null,
         metadata: { dc_title: 'After' },
         quality: { comment: null, commentAdditional: null },
         tags: [],
@@ -115,6 +119,8 @@ describe('applyDocumentEdit validation', () => {
       documents: { findUnique: vi.fn().mockResolvedValue({ id: 'doc-1' }) },
       document_to_metadata: { findMany: vi.fn().mockResolvedValue([]) },
       document_quality: { findUnique: vi.fn().mockResolvedValue(null) },
+      document_access: { findMany: vi.fn().mockResolvedValue([]) },
+      access_levels: { findUnique: vi.fn() },
       document_to_tags: { findMany: vi.fn().mockResolvedValue([]) },
       document_to_contributors: { findMany: vi.fn().mockResolvedValue([]) },
       document_to_publishers: { findMany: vi.fn().mockResolvedValue([]) },
@@ -128,6 +134,7 @@ describe('applyDocumentEdit validation', () => {
         documentId: 'doc-1',
         editorEmail: 'editor@example.test',
         snapshot: {
+          accessLevel: null,
           metadata: {},
           quality: { comment: null, commentAdditional: null },
           tags: [],
@@ -139,6 +146,67 @@ describe('applyDocumentEdit validation', () => {
 
     expect(mockCreateDocumentEditHistoryEntry).not.toHaveBeenCalled()
     expect(mockMarkDocumentBatchesPublicationLocked).not.toHaveBeenCalled()
+  })
+
+  it('updates the access level, audits the change, and locks associated batches', async () => {
+    const tx = {
+      documents: { findUnique: vi.fn().mockResolvedValue({ id: 'doc-1' }) },
+      document_to_metadata: { findMany: vi.fn().mockResolvedValue([]) },
+      document_quality: { findUnique: vi.fn().mockResolvedValue(null) },
+      document_access: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: 'document-access-1', access_level_id: 'restricted-id', access_levels: { level_name: 'restricted' } },
+        ]),
+        delete: vi.fn(),
+        create: vi.fn(),
+      },
+      access_levels: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'public-id', level_name: 'public' }),
+      },
+      document_to_tags: { findMany: vi.fn().mockResolvedValue([]) },
+      document_to_contributors: { findMany: vi.fn().mockResolvedValue([]) },
+      document_to_publishers: { findMany: vi.fn().mockResolvedValue([]) },
+    }
+    mockDb.$transaction.mockImplementationOnce(async (callback: (client: typeof tx) => Promise<unknown>) =>
+      callback(tx),
+    )
+
+    const result = await applyDocumentEdit({
+      documentId: 'doc-1',
+      editorEmail: 'editor@example.test',
+      snapshot: {
+        accessLevel: 'public',
+        metadata: {},
+        quality: { comment: null, commentAdditional: null },
+        tags: [],
+        contributors: [],
+        publishers: [],
+      },
+    })
+
+    expect(result.changes).toEqual([
+      expect.objectContaining({ fieldName: 'access_level', previousValue: 'restricted', newValue: 'public' }),
+    ])
+    expect(tx.document_access.delete).toHaveBeenCalledWith({ where: { id: 'document-access-1' } })
+    expect(tx.document_access.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        data: expect.objectContaining({
+          document_id: 'doc-1',
+          access_level_id: 'public-id',
+          granted_by_email: 'editor@example.test',
+        }),
+      }),
+    )
+    expect(mockCreateDocumentEditHistoryEntry).toHaveBeenCalledWith(
+      tx,
+      expect.objectContaining({
+        fieldName: 'access_level',
+        previousValue: 'restricted',
+        newValue: 'public',
+      }),
+    )
+    expect(mockMarkDocumentBatchesPublicationLocked).toHaveBeenCalledWith(tx, 'doc-1')
   })
 })
 

@@ -70,6 +70,7 @@ describe('DocumentEditCoordinator successful save', () => {
           initialTags={[]}
           initialContributors={[]}
           initialPublishers={[]}
+          initialAccessLevels={[]}
         >
           <DraftEditor />
         </DocumentEditCoordinator>,

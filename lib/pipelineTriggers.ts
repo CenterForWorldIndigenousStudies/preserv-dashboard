@@ -53,6 +53,7 @@ export function getPipelineContinuationContext(batch: ProcessBatchStatus): Pipel
     sourceDocumentIds: execution.sourceDocumentIds,
     ...(executionMode === GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS ? { sourceBatchId: batch.batchId } : {}),
     requestedStages: batch.pipelineRequestedStages as PipelineExecutionContextInput['requestedStages'],
+    pipelineConfig: batch.pipelineConfig ?? undefined,
   }
 }
 
