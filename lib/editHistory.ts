@@ -54,7 +54,7 @@ export async function markDocumentBatchesPublicationLocked(
         },
       },
     },
-    select: { batch_id: true, batches: { select: { lifecycle_status: true, publication_status: true } } },
+    select: { batch_id: true, batches: { select: { lifecycle_status: true } } },
   })
 
   if (memberships.length === 0) return
@@ -74,11 +74,9 @@ export async function markDocumentBatchesPublicationLocked(
         entityId: membership.batch_id,
         previousValue: {
           lifecycle_status: membership.batches.lifecycle_status,
-          publication_status: membership.batches.publication_status,
         },
         newValue: {
           lifecycle_status: GENERATED_BATCH_LIFECYCLE_STATUSES.PUBLICATION_LOCKED,
-          publication_status: membership.batches.publication_status,
         },
         editSummary: `Locked batch after an associated document edit (${documentId}).`,
       }),

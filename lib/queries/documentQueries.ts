@@ -471,7 +471,6 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
       batch_legacy_id: b.batches.id_legacy ?? null,
       batch_name: b.batches.name ?? null,
       batch_status: b.batches.lifecycle_status ?? null,
-      batch_publication_status: b.batches.publication_status ?? null,
     })),
     document_to_contributors: contributors.map((a) => ({
       id: String(a.id),

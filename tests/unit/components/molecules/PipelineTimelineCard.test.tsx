@@ -17,8 +17,8 @@ const singleStepPipelineConfig = {
   executionPlan: [
     {
       id: 'step-ingester',
-      stepId: 'ingester',
-      service: 'ingester',
+      stepId: 'data_ingester',
+      service: 'data_ingester',
       label: 'Ingest',
       order: 0,
       enabled: true,
@@ -31,7 +31,7 @@ let mountedRoot: Root | undefined
 function buildBatch(status: string) {
   return createProcessBatch({
     pipelineConfig: singleStepPipelineConfig,
-    pipelineRequestedStages: ['ingester'],
+    pipelineRequestedStages: ['data_ingester'],
     ingester: createProcessStage({ status }),
   })
 }

@@ -5,6 +5,7 @@ import { Box, Collapse, List, ListItem, ListItemIcon, Typography } from '@mui/ma
 
 import { StatusDot } from '@atoms/StatusDot'
 import type { PipelineStepRuntimeStatus } from '@lib/pipelineExecution'
+import { PIPELINE_STAGE_STATUSES } from '@constants/pipelineStageStatuses'
 
 export interface TimelineStep {
   label: string
@@ -14,12 +15,12 @@ export interface TimelineStep {
 }
 
 const statusLabelMap: Record<PipelineStepRuntimeStatus, string> = {
-  completed: 'Done',
-  running: 'Running...',
-  queued: 'Queued',
-  failed: 'Failed',
-  review_needed: 'Needs review',
-  pending: 'Waiting',
+  [PIPELINE_STAGE_STATUSES.COMPLETED]: 'Done',
+  [PIPELINE_STAGE_STATUSES.RUNNING]: 'Running...',
+  [PIPELINE_STAGE_STATUSES.QUEUED]: 'Queued',
+  [PIPELINE_STAGE_STATUSES.FAILED]: 'Failed',
+  [PIPELINE_STAGE_STATUSES.REVIEW_NEEDED]: 'Needs review',
+  [PIPELINE_STAGE_STATUSES.PENDING]: 'Waiting',
 }
 
 function formatStatusLabel(status: PipelineStepRuntimeStatus): string {
@@ -57,11 +58,11 @@ export function PipelineTimelineGroup({ step, isLast }: PipelineTimelineGroupPro
             <Typography
               variant={'body2'}
               sx={{
-                fontWeight: step.status === 'completed' ? 500 : 600,
+                fontWeight: step.status === PIPELINE_STAGE_STATUSES.COMPLETED ? 500 : 600,
                 color:
-                  step.status === 'completed'
+                  step.status === PIPELINE_STAGE_STATUSES.COMPLETED
                     ? 'text.secondary'
-                    : step.status === 'failed'
+                    : step.status === PIPELINE_STAGE_STATUSES.FAILED
                       ? 'error.main'
                       : 'text.primary',
               }}
@@ -79,7 +80,7 @@ export function PipelineTimelineGroup({ step, isLast }: PipelineTimelineGroupPro
           ) : null}
 
           {step.subSteps && step.subSteps.length > 0 ? (
-            <Collapse in={step.status !== 'pending'} timeout={'auto'} unmountOnExit>
+            <Collapse in={step.status !== PIPELINE_STAGE_STATUSES.PENDING} timeout={'auto'} unmountOnExit>
               <List dense disablePadding sx={{ pl: 2 }}>
                 {step.subSteps.map((subStep) => (
                   <ListItem key={subStep.label} disablePadding sx={{ py: 0.25 }}>
@@ -90,7 +91,10 @@ export function PipelineTimelineGroup({ step, isLast }: PipelineTimelineGroupPro
                       variant={'caption'}
                       sx={{
                         fontWeight: 500,
-                        color: subStep.status === 'completed' ? 'text.secondary' : 'text.primary',
+                        color:
+                          subStep.status === PIPELINE_STAGE_STATUSES.COMPLETED
+                            ? 'text.secondary'
+                            : 'text.primary',
                         mr: 1,
                       }}
                     >

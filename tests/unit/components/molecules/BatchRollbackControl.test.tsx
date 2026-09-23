@@ -44,7 +44,6 @@ describe('BatchRollbackControl', () => {
         <BatchRollbackControl
           batchId={'batch-1'}
           lifecycleStatus={'running'}
-          publicationStatus={'not_started'}
         />
       </ThemeProvider>,
     )
@@ -56,7 +55,6 @@ describe('BatchRollbackControl', () => {
     const container = renderControl({
       batchId: 'batch-1',
       lifecycleStatus: 'running',
-      publicationStatus: 'not_started',
     })
 
     act(() => {

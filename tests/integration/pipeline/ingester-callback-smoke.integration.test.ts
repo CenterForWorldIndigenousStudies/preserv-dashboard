@@ -38,16 +38,16 @@ describeDbIntegration('ingester callback smoke (integration)', () => {
     executionPlan: [
       {
         id: 'step-ingester',
-        stepId: 'ingester' as const,
-        service: 'ingester' as const,
+        stepId: 'data_ingester' as const,
+        service: 'data_ingester' as const,
         label: 'Ingest',
         order: 0,
         enabled: true,
       },
       {
         id: 'step-normalize-pass-1-split',
-        stepId: 'normalize-pass-1' as const,
-        service: 'document-splitter' as const,
+        stepId: 'document_splitter' as const,
+        service: 'document_splitter' as const,
         label: 'Split Pass 1',
         order: 1,
         enabled: true,
@@ -210,8 +210,12 @@ describeDbIntegration('ingester callback smoke (integration)', () => {
       dataIngester?: { callback?: { receivedAt?: unknown } }
     }
 
-    expect(processingDetails.pipeline?.requestedStages).toEqual(['document-splitter'])
-    expect(processingDetails.pipeline?.config).toEqual(pipelineConfig)
+    expect(processingDetails.pipeline?.requestedStages).toEqual(['document_splitter'])
+    expect(processingDetails.pipeline?.config).toEqual({
+      ...pipelineConfig,
+      sourceFolderIds: [],
+      sourceDocumentIds: [],
+    })
     expect(processingDetails.dataIngester?.callback?.receivedAt).toBe(callbackReceivedAtUnix)
   })
 })

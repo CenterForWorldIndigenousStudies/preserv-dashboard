@@ -9,7 +9,7 @@ function buildBatchStatus(): ProcessBatchStatus {
     batchName: 'Batch 1',
     startedBy: 'archivist@example.org',
     createdAt: '2026-05-29T00:00:00.000Z',
-    pipelineRequestedStages: ['document-splitter', 'page-rotator'],
+    pipelineRequestedStages: ['document_splitter', 'page_rotator'],
     pipelineConfig: null,
     ingester: null,
     documentSplitter: null,

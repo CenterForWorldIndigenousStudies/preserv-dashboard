@@ -49,16 +49,12 @@ describe('ReviewQueuePage', () => {
     expect(markup).not.toContain('Review decisions and next step')
     expect(markup).not.toContain('Review Queue is where human judgment happens.')
 
-    const cartPosition = markup.indexOf('Open reprocessing cart with 0 draft batches')
-    const headerPosition = markup.indexOf('Documents needing review.')
-    expect(cartPosition).toBeGreaterThanOrEqual(0)
-    expect(headerPosition).toBeGreaterThanOrEqual(0)
-    expect(cartPosition).toBeGreaterThan(headerPosition)
+    expect(markup).not.toContain('Open batch cart with 0 draft batches')
 
     expect(mockGetNeedsReviewDocumentsCount).not.toHaveBeenCalled()
     expect(mockGetNeedsReviewDocuments).not.toHaveBeenCalled()
   })
 })
-vi.mock('@lib/queries/reprocessingDraftQueries', () => ({
-  getReprocessingDrafts: vi.fn().mockResolvedValue([]),
+vi.mock('@lib/queries/batchDraftQueries', () => ({
+  getBatchDrafts: vi.fn().mockResolvedValue([]),
 }))

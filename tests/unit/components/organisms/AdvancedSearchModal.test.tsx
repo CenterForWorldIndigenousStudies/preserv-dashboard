@@ -212,7 +212,7 @@ describe('AdvancedSearchModal', () => {
     )
   })
 
-  it('shows batch lifecycle and publication status filters when provided', () => {
+  it('shows batch lifecycle status filters when provided', () => {
     mockUseTagSearch.mockReturnValue({ suggestions: [], isLoading: false, error: null })
     mockUseBatchSearch.mockReturnValue({ suggestions: [], exactMatch: null, isLoading: false, error: null })
     const onApply = vi.fn()
@@ -227,7 +227,6 @@ describe('AdvancedSearchModal', () => {
           filterOptions={{
             ...filterOptions,
             lifecycleStatuses: ['DRAFT', 'FAILED'],
-            publicationStatuses: ['NOT_STARTED', 'PUBLISHED'],
           }}
           onApply={onApply}
         />,
@@ -241,8 +240,5 @@ describe('AdvancedSearchModal', () => {
     expect(document.body.textContent).toContain('Batch lifecycle status')
     expect(document.body.textContent).toContain('Draft')
     expect(document.body.textContent).toContain('Failed')
-    expect(document.body.textContent).toContain('Publication status')
-    expect(document.body.textContent).toContain('Not Started')
-    expect(document.body.textContent).toContain('Published')
   })
 })

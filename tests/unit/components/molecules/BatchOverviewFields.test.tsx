@@ -13,7 +13,7 @@ describe('BatchOverviewFields', () => {
           startedAt={'2026-09-05T10:00:00.000Z'}
           requestedStages={['ocr_processor']}
           lifecycleStatus={'running'}
-          publicationStatus={'not_started'}
+          publicationState={'not_started'}
         />
       </ThemeProvider>,
     )
@@ -36,7 +36,7 @@ describe('BatchOverviewFields', () => {
           startedAt={null}
           requestedStages={['metadata_extractor']}
           lifecycleStatus={'draft'}
-          publicationStatus={'not_started'}
+          publicationState={'not_started'}
         />
       </ThemeProvider>,
     )

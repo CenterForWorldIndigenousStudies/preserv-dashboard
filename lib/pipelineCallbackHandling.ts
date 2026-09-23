@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { GENERATED_PIPELINE_EXECUTION_MODES } from '@constants/generated/pipelineExecutionModes'
+import { DATA_INGESTER_SERVICE } from '@constants/pipeline'
+import { PIPELINE_STAGE_STATUSES } from '@constants/pipelineStageStatuses'
 import { logEvent } from '@lib/observability'
 import { parseBearerToken, parsePipelineCallbackBody, type ParsedPipelineCallbackBody } from '@lib/pipelineCallbacks'
 import { getProcessBatchStatus, recordProcessStageFailure } from '@lib/processBatches'
@@ -20,7 +22,7 @@ interface PipelineCallbackHandlerArgs {
 
 function getStageDetails(batch: ProcessBatchStatus, stage: CallbackStageKey): ProcessBatchStatus['ingester'] {
   const stageDetails: Record<CallbackStageKey, ProcessBatchStatus['ingester']> = {
-    ingester: batch.ingester,
+    [DATA_INGESTER_SERVICE]: batch.ingester,
     document_splitter: batch.documentSplitter,
     page_rotator: batch.pageRotator,
     ocr_processor: batch.ocrProcessor,
@@ -93,7 +95,7 @@ async function processCallback({
     return new NextResponse(null, { status: 204 })
   }
 
-  if (parsed.status === 'failed') {
+  if (parsed.status === PIPELINE_STAGE_STATUSES.FAILED) {
     await recordProcessStageFailure(parsed.batchId, stage, {
       requestId: parsed.requestId,
       operationId: parsed.operationId || parsed.requestId,

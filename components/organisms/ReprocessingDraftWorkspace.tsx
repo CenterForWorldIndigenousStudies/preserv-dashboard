@@ -5,35 +5,78 @@ import { Alert, Box, Button as MuiButton, Card, CardContent, Stack, Typography }
 import { useRouter } from 'next/navigation'
 
 import { Button } from '@atoms/Button'
-import { getReprocessingStageLabel, pipelineConfigToReprocessingRequestedStages } from '@lib/reprocessingDrafts'
+import {
+  getDefaultReprocessingPipelineConfig,
+  getReprocessingDownstreamStages,
+  pipelineConfigToReprocessingRequestedStages,
+  REPROCESSING_STAGE_OPTIONS,
+} from '@lib/reprocessingDrafts'
+import {
+  BATCH_DRAFT_STAGE_OPTIONS,
+  batchDraftPipelineConfigToRequestedStages,
+  getBatchDraftDownstreamStages,
+  getBatchDraftStageLabel,
+  getDefaultBatchDraftPipelineConfig,
+} from '@lib/batchDraftPipeline'
 import type { ReprocessingDraftDetail } from 'types/reprocessingDrafts'
 import { ReprocessingDraftDocumentsTable } from '@organisms/ReprocessingDraftDocumentsTable'
-import { ReprocessingDraftForm } from '@molecules/ReprocessingDraftForm'
+import { BatchDraftForm } from '@molecules/BatchDraftForm'
 import { ReprocessingDraftSubmissionSummary } from '@molecules/ReprocessingDraftSubmissionSummary'
+import { GoogleDriveFolderTree } from '@molecules/GoogleDriveFolderTree'
+import { ProcessSelectedFoldersPanel } from '@molecules/ProcessSelectedFoldersPanel'
+import type { DriveFolderOption } from '@lib/googleDrive'
 
-interface ReprocessingDraftWorkspaceProps {
+export const SUBMIT_LABEL = 'Process batch'
+export interface BatchDraftWorkspaceProps {
   initialDraft: ReprocessingDraftDetail | null
+  rootFolders?: DriveFolderOption[]
+  childFoldersByParent?: Record<string, DriveFolderOption[]>
+  expandedFolderIds?: Record<string, boolean>
+  selectedFolders?: Record<string, DriveFolderOption>
+  foldersError?: string | null
+  onToggleFolderSelection?: (folder: DriveFolderOption) => void
+  onToggleFolderExpansion?: (folderId: string) => void
+  onGoogleDriveExpandedChange?: (expanded: boolean) => void
 }
 
-function draftDetailsHaveChanged(currentDraft: ReprocessingDraftDetail, savedDraft: ReprocessingDraftDetail): boolean {
+function draftDetailsHaveChanged(
+  currentDraft: ReprocessingDraftDetail,
+  savedDraft: ReprocessingDraftDetail,
+  currentSourceFolderIds: readonly string[],
+): boolean {
   return (
     currentDraft.name !== savedDraft.name ||
     (currentDraft.collectionName ?? '') !== (savedDraft.collectionName ?? '') ||
     (currentDraft.collectionNotes ?? '') !== (savedDraft.collectionNotes ?? '') ||
     currentDraft.reason !== savedDraft.reason ||
     currentDraft.restartStage !== savedDraft.restartStage ||
-    JSON.stringify(currentDraft.requestedStages) !== JSON.stringify(savedDraft.requestedStages)
-    || JSON.stringify(currentDraft.pipelineConfig) !== JSON.stringify(savedDraft.pipelineConfig)
+    JSON.stringify(currentDraft.requestedStages) !== JSON.stringify(savedDraft.requestedStages) ||
+    JSON.stringify(currentDraft.pipelineConfig) !== JSON.stringify(savedDraft.pipelineConfig) ||
+    JSON.stringify(currentSourceFolderIds) !== JSON.stringify(savedDraft.sourceFolderIds ?? [])
   )
 }
 
-export function ReprocessingDraftWorkspace({ initialDraft }: ReprocessingDraftWorkspaceProps): ReactElement | null {
+// This component intentionally coordinates the form, source controls, draft mutations, and submission state.
+// Keep those transitions together so the draft cannot be submitted with stale source or stage state.
+// eslint-disable-next-line complexity -- The workspace coordinates several related draft transitions.
+export function BatchDraftWorkspace({
+  initialDraft,
+  rootFolders = [],
+  childFoldersByParent = {},
+  expandedFolderIds = {},
+  selectedFolders,
+  foldersError = null,
+  onToggleFolderSelection,
+  onToggleFolderExpansion,
+  onGoogleDriveExpandedChange,
+}: BatchDraftWorkspaceProps): ReactElement | null {
   const router = useRouter()
   const [draft, setDraft] = useState(initialDraft)
   const [savedDraft, setSavedDraft] = useState(initialDraft)
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [googleDriveExpanded, setGoogleDriveExpanded] = useState(true)
 
   useEffect(() => {
     setDraft(initialDraft)
@@ -44,6 +87,10 @@ export function ReprocessingDraftWorkspace({ initialDraft }: ReprocessingDraftWo
     return null
   }
   const currentDraft = draft
+  const selectedFolderList = selectedFolders ? Object.values(selectedFolders) : []
+  const currentSourceFolderIds = selectedFolders
+    ? Object.keys(selectedFolders)
+    : [...(currentDraft.sourceFolderIds ?? [])]
 
   function updateDraftField<
     Field extends keyof Pick<
@@ -57,8 +104,11 @@ export function ReprocessingDraftWorkspace({ initialDraft }: ReprocessingDraftWo
   function saveDraft(): void {
     startTransition(() => {
       void (async () => {
-        const { updateReprocessingDraftAction } = await import('@actions/reprocessingDrafts')
-        const result = await updateReprocessingDraftAction({
+        const { updateBatchDraftAction } = await import('@actions/batchDrafts')
+        const sourceFolderIds = selectedFolders
+          ? Object.keys(selectedFolders)
+          : [...(currentDraft.sourceFolderIds ?? [])]
+        const result = await updateBatchDraftAction({
           batchId: currentDraft.id,
           name: currentDraft.name,
           collectionName: currentDraft.collectionName ?? undefined,
@@ -66,6 +116,8 @@ export function ReprocessingDraftWorkspace({ initialDraft }: ReprocessingDraftWo
           restartStage: currentDraft.restartStage,
           requestedStages: currentDraft.requestedStages,
           pipelineConfig: currentDraft.pipelineConfig,
+          sourceFolderIds,
+          sourceDocumentIds: currentDraft.documents.map((document) => document.id),
           reason: currentDraft.reason,
         })
         if (!result.ok) {
@@ -73,7 +125,15 @@ export function ReprocessingDraftWorkspace({ initialDraft }: ReprocessingDraftWo
           return
         }
         setError(null)
-        setSavedDraft(currentDraft)
+        const savedValue: ReprocessingDraftDetail = {
+          ...currentDraft,
+          sourceFolderIds: currentSourceFolderIds,
+          pipelineConfig: currentDraft.pipelineConfig
+            ? { ...currentDraft.pipelineConfig, sourceFolderIds: currentSourceFolderIds }
+            : currentDraft.pipelineConfig,
+        }
+        setDraft(savedValue)
+        setSavedDraft(savedValue)
         setMessage('Draft saved.')
         router.refresh()
       })().catch((caught: unknown) =>
@@ -85,8 +145,8 @@ export function ReprocessingDraftWorkspace({ initialDraft }: ReprocessingDraftWo
   function removeDocument(documentId: string): void {
     startTransition(() => {
       void (async () => {
-        const { removeDocumentFromReprocessingDraftAction } = await import('@actions/reprocessingDrafts')
-        const result = await removeDocumentFromReprocessingDraftAction(currentDraft.id, documentId)
+        const { removeDocumentFromBatchDraftAction } = await import('@actions/batchDrafts')
+        const result = await removeDocumentFromBatchDraftAction(currentDraft.id, documentId)
         if (!result.ok) {
           setError(result.error)
           return
@@ -110,8 +170,8 @@ export function ReprocessingDraftWorkspace({ initialDraft }: ReprocessingDraftWo
   function archiveDraft(): void {
     startTransition(() => {
       void (async () => {
-        const { archiveReprocessingDraftAction } = await import('@actions/reprocessingDrafts')
-        const result = await archiveReprocessingDraftAction(currentDraft.id)
+        const { archiveBatchDraftAction } = await import('@actions/batchDrafts')
+        const result = await archiveBatchDraftAction(currentDraft.id)
         if (!result.ok) {
           setError(result.error)
           return
@@ -128,8 +188,10 @@ export function ReprocessingDraftWorkspace({ initialDraft }: ReprocessingDraftWo
     startTransition(() => {
       void (async () => {
         const { requestPipelineExecution } = await import('@actions/pipelineExecution')
+        const executionMode =
+          currentDraft.executionMode ?? (currentDraft.pipelineConfig?.sourceFolderIds?.length ? 'normal' : 'reprocess')
         const result = await requestPipelineExecution({
-          mode: 'reprocess',
+          mode: executionMode,
           batchId: currentDraft.id,
           draftBatchId: currentDraft.id,
           restartStage: currentDraft.restartStage,
@@ -152,10 +214,12 @@ export function ReprocessingDraftWorkspace({ initialDraft }: ReprocessingDraftWo
     })
   }
 
-  const hasUnsavedChanges = savedDraft !== null && draftDetailsHaveChanged(currentDraft, savedDraft)
+  const hasUnsavedChanges =
+    savedDraft !== null && draftDetailsHaveChanged(currentDraft, savedDraft, currentSourceFolderIds)
   const hasValidDraftDetails = Boolean(currentDraft.name.trim() && currentDraft.reason.trim())
   const canSave = Boolean(hasUnsavedChanges && hasValidDraftDetails)
-  const canSubmit = hasValidDraftDetails && currentDraft.documents.length > 0 && !hasUnsavedChanges && !isPending
+  const hasSources = currentDraft.documents.length > 0 || currentSourceFolderIds.length > 0
+  const canSubmit = hasValidDraftDetails && hasSources && !hasUnsavedChanges && !isPending
 
   return (
     <Card component={'section'} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4 }}>
@@ -163,20 +227,20 @@ export function ReprocessingDraftWorkspace({ initialDraft }: ReprocessingDraftWo
         <Stack spacing={3}>
           <Box>
             <Typography variant={'overline'} color={'primary'}>
-              {'Reprocessing cart'}
+              {'Batch cart'}
             </Typography>
             <Typography component={'h2'} variant={'h5'}>
               {currentDraft.name}
             </Typography>
             <Typography variant={'body2'} color={'text.secondary'} sx={{ mt: 1 }}>
-              {`Restart at ${getReprocessingStageLabel(currentDraft.restartStage)} and choose the stages to run. Edit the batch details before submission.`}
+              {`Start at ${getBatchDraftStageLabel(currentDraft.restartStage)} and choose the stages to run. Edit the batch details before submission.`}
             </Typography>
           </Box>
-          <ReprocessingDraftForm
+          <BatchDraftForm
             name={currentDraft.name}
             collectionName={currentDraft.collectionName ?? ''}
             collectionNotes={currentDraft.collectionNotes ?? ''}
-            restartStage={currentDraft.restartStage}
+            startStage={currentDraft.restartStage}
             requestedStages={currentDraft.requestedStages}
             pipelineConfig={currentDraft.pipelineConfig}
             reason={currentDraft.reason}
@@ -186,7 +250,7 @@ export function ReprocessingDraftWorkspace({ initialDraft }: ReprocessingDraftWo
             onNameChange={(value) => updateDraftField('name', value)}
             onCollectionNameChange={(value) => updateDraftField('collectionName', value)}
             onCollectionNotesChange={(value) => updateDraftField('collectionNotes', value)}
-            onRestartStageChange={(value) => updateDraftField('restartStage', value)}
+            onStartStageChange={(value) => updateDraftField('restartStage', value)}
             onRequestedStagesChange={(value) => updateDraftField('requestedStages', value)}
             onPipelineConfigChange={(config) => {
               setDraft((current) =>
@@ -194,7 +258,10 @@ export function ReprocessingDraftWorkspace({ initialDraft }: ReprocessingDraftWo
                   ? {
                       ...current,
                       pipelineConfig: config,
-                      requestedStages: pipelineConfigToReprocessingRequestedStages(config),
+                      requestedStages:
+                        currentDraft.executionMode === 'normal'
+                          ? batchDraftPipelineConfigToRequestedStages(config)
+                          : pipelineConfigToReprocessingRequestedStages(config),
                     }
                   : current,
               )
@@ -202,17 +269,56 @@ export function ReprocessingDraftWorkspace({ initialDraft }: ReprocessingDraftWo
             onReasonChange={(value) => updateDraftField('reason', value)}
             onSubmit={saveDraft}
             submitLabel={'Save draft'}
+            stageOptions={
+              currentDraft.executionMode === 'normal' ? BATCH_DRAFT_STAGE_OPTIONS : REPROCESSING_STAGE_OPTIONS
+            }
+            getDownstreamStages={
+              currentDraft.executionMode === 'normal' ? getBatchDraftDownstreamStages : getReprocessingDownstreamStages
+            }
+            getDefaultPipelineConfig={
+              currentDraft.executionMode === 'normal'
+                ? getDefaultBatchDraftPipelineConfig
+                : getDefaultReprocessingPipelineConfig
+            }
+            getRequestedStages={
+              currentDraft.executionMode === 'normal'
+                ? batchDraftPipelineConfigToRequestedStages
+                : pipelineConfigToReprocessingRequestedStages
+            }
+            showNormalizationPasses
           />
-          <ReprocessingDraftDocumentsTable
-            documents={currentDraft.documents}
-            disabled={isPending}
-            onRemove={removeDocument}
-          />
-          {currentDraft.documents.length === 0 ? (
-            <Alert severity={'warning'}>{'Add at least one document before submitting this draft.'}</Alert>
+          {currentDraft.documents.length > 0 ? (
+            <ReprocessingDraftDocumentsTable
+              documents={currentDraft.documents}
+              disabled={isPending}
+              onRemove={removeDocument}
+            />
+          ) : null}
+          {selectedFolderList.length > 0 ? <ProcessSelectedFoldersPanel folders={selectedFolderList} /> : null}
+          {selectedFolders && onToggleFolderSelection && onToggleFolderExpansion ? (
+            <GoogleDriveFolderTree
+              rootFolders={rootFolders}
+              childFoldersByParent={childFoldersByParent}
+              expandedFolderIds={expandedFolderIds}
+              selectedFolderIds={selectedFolders}
+              error={foldersError}
+              expanded={googleDriveExpanded}
+              onExpandedChange={(expanded) => {
+                setGoogleDriveExpanded(expanded)
+                onGoogleDriveExpandedChange?.(expanded)
+              }}
+              onToggleFolderSelection={onToggleFolderSelection}
+              onToggleFolderExpansion={onToggleFolderExpansion}
+            />
+          ) : null}
+          {!hasSources ? (
+            <Alert severity={'warning'}>
+              {'Add at least one source folder or document before submitting this draft.'}
+            </Alert>
           ) : null}
           <ReprocessingDraftSubmissionSummary
             documentCount={currentDraft.documents.length}
+            sourceFolderCount={currentSourceFolderIds.length}
             restartStage={currentDraft.restartStage}
             requestedStages={currentDraft.requestedStages}
             collectionName={currentDraft.collectionName}
@@ -222,7 +328,7 @@ export function ReprocessingDraftWorkspace({ initialDraft }: ReprocessingDraftWo
           {message ? <Alert severity={'success'}>{message}</Alert> : null}
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
             <Button onClick={submitDraft} disabled={!canSubmit} loading={isPending}>
-              {'Submit draft'}
+              {SUBMIT_LABEL}
             </Button>
             <MuiButton color={'error'} onClick={archiveDraft} disabled={isPending}>
               {'Discard draft'}
@@ -233,3 +339,5 @@ export function ReprocessingDraftWorkspace({ initialDraft }: ReprocessingDraftWo
     </Card>
   )
 }
+
+export const ReprocessingDraftWorkspace = BatchDraftWorkspace

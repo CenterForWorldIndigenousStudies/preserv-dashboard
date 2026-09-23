@@ -9,16 +9,16 @@ function buildExecutionPlan(): PipelineExecutionStep[] {
   return [
     {
       id: 'step-ingester',
-      stepId: 'ingester',
-      service: 'ingester',
+      stepId: 'data_ingester',
+      service: 'data_ingester',
       label: 'Ingest',
       order: 0,
       enabled: true,
     },
     {
       id: 'step-normalize-pass-1-split',
-      stepId: 'normalize-pass-1',
-      service: 'document-splitter',
+      stepId: 'document_splitter',
+      service: 'document_splitter',
       label: 'Split Pass 1',
       order: 1,
       enabled: true,
@@ -26,8 +26,8 @@ function buildExecutionPlan(): PipelineExecutionStep[] {
     },
     {
       id: 'step-normalize-pass-1-rotate',
-      stepId: 'normalize-pass-1',
-      service: 'page-rotator',
+      stepId: 'page_rotator',
+      service: 'page_rotator',
       label: 'Rotate Pass 1',
       order: 2,
       enabled: true,
@@ -35,8 +35,8 @@ function buildExecutionPlan(): PipelineExecutionStep[] {
     },
     {
       id: 'step-normalize-pass-2-split',
-      stepId: 'normalize-pass-2',
-      service: 'document-splitter',
+      stepId: 'document_splitter',
+      service: 'document_splitter',
       label: 'Split Pass 2',
       order: 3,
       enabled: true,
@@ -44,8 +44,8 @@ function buildExecutionPlan(): PipelineExecutionStep[] {
     },
     {
       id: 'step-normalize-pass-2-rotate',
-      stepId: 'normalize-pass-2',
-      service: 'page-rotator',
+      stepId: 'page_rotator',
+      service: 'page_rotator',
       label: 'Rotate Pass 2',
       order: 4,
       enabled: true,
@@ -114,7 +114,7 @@ function buildBatchStatus(overrides: Partial<ProcessBatchStatus> = {}): ProcessB
     batchName: 'Batch 1',
     startedBy: 'archivist@example.org',
     createdAt: '2026-05-17T00:00:00.000Z',
-    pipelineRequestedStages: ['document-splitter', 'page-rotator'],
+    pipelineRequestedStages: ['document_splitter', 'page_rotator'],
     pipelineConfig,
     ingester: buildStageStatus({ status: 'completed' }),
     documentSplitter: buildStageStatus(),
@@ -148,7 +148,7 @@ describe('normalization forward-processing orchestration', () => {
       }),
     })
 
-    expectNextStep(batch, { service: 'page-rotator', pass: 1 })
+    expectNextStep(batch, { service: 'page_rotator', pass: 1 })
     expect(shouldTriggerPageRotator(batch)).toBe(true)
     expect(shouldTriggerDocumentSplitter(batch)).toBe(false)
   })
@@ -163,7 +163,7 @@ describe('normalization forward-processing orchestration', () => {
       }),
     })
 
-    expectNextStep(batch, { service: 'page-rotator', pass: 1 })
+    expectNextStep(batch, { service: 'page_rotator', pass: 1 })
     expect(shouldTriggerPageRotator(batch)).toBe(true)
     expect(shouldTriggerDocumentSplitter(batch)).toBe(false)
   })
@@ -182,7 +182,7 @@ describe('normalization forward-processing orchestration', () => {
       }),
     })
 
-    expectNextStep(batch, { service: 'document-splitter', pass: 2 })
+    expectNextStep(batch, { service: 'document_splitter', pass: 2 })
     expect(shouldTriggerDocumentSplitter(batch)).toBe(true)
     expect(shouldTriggerPageRotator(batch)).toBe(false)
   })
@@ -201,7 +201,7 @@ describe('normalization forward-processing orchestration', () => {
       }),
     })
 
-    expectNextStep(batch, { service: 'page-rotator', pass: 2 })
+    expectNextStep(batch, { service: 'page_rotator', pass: 2 })
     expect(shouldTriggerPageRotator(batch)).toBe(true)
     expect(shouldTriggerDocumentSplitter(batch)).toBe(false)
   })

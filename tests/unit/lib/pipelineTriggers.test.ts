@@ -39,7 +39,7 @@ function buildBatchStatus(overrides: Partial<ProcessBatchStatus> = {}): ProcessB
     batchName: 'Batch 1',
     startedBy: 'archivist@example.org',
     createdAt: '2026-07-03T00:00:00.000Z',
-    pipelineRequestedStages: ['metadata-extraction'],
+    pipelineRequestedStages: ['metadata_extractor'],
     pipelineConfig: null,
     ingester: null,
     documentSplitter: null,
@@ -86,8 +86,8 @@ describe('pipelineTriggers', () => {
       executionPlan: [
         {
           id: 'step-normalize-pass-2-split',
-          stepId: 'normalize-pass-2' as const,
-          service: 'document-splitter' as const,
+          stepId: 'page_rotator' as const,
+          service: 'document_splitter' as const,
           label: 'Split Pass 2',
           order: 1,
           enabled: true,
@@ -130,18 +130,17 @@ describe('pipelineTriggers', () => {
     const batch = {
       batchId: 'batch-1',
       lifecycleStatus: 'running',
-      publicationStatus: 'not_started',
-      pipelineRequestedStages: ['metadata-extraction'],
+      pipelineRequestedStages: ['metadata_extractor'],
       pipelineConfig: {
         profileId: 'custom',
         mode: 'custom',
         metadataExtraction: { mode: 'direct' },
         executionPlan: [
-          { id: 'step-ingester', stepId: 'ingester', service: 'ingester', label: 'Ingest', order: 0, enabled: true },
+          { id: 'step-ingester', stepId: 'data_ingester', service: 'data_ingester', label: 'Data Ingester', order: 0, enabled: true },
           {
             id: 'step-metadata-extraction',
-            stepId: 'metadata-extraction',
-            service: 'metadata-extraction',
+            stepId: 'metadata_extractor',
+            service: 'metadata_extractor',
             label: 'Metadata Extraction',
             order: 1,
             enabled: true,
@@ -160,7 +159,6 @@ describe('pipelineTriggers', () => {
       where: {
         id: 'batch-1',
         lifecycle_status: { in: ['queued', 'running'] },
-        publication_status: 'not_started',
       },
       data: { lifecycle_status: 'complete' },
     })

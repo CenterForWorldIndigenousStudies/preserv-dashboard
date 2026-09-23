@@ -5,6 +5,7 @@ import { Box, Checkbox, FormControlLabel, Paper, Typography } from '@mui/materia
 
 import type { NormalizePassState } from '@lib/pipelineConfig'
 import { NORMALIZE_PASS_1_SUB_OPTIONS, NORMALIZE_PASS_2_SUB_OPTIONS } from '@constants/pipeline'
+import { getPipelineServiceContractForService } from '@constants/pipelineServices'
 
 interface NormalizePassCardProps {
   passNumber: 1 | 2
@@ -78,7 +79,7 @@ export function NormalizePassCard({
         />
         <Box sx={{ flex: 1 }}>
           <Typography variant={'body1'} sx={{ fontWeight: 600 }}>
-            Normalize Pass {passNumber}
+            {`Normalize Pass ${passNumber}`}
           </Typography>
           <Typography variant={'body2'} sx={{ color: 'text.secondary' }}>
             {passNumber === 1 ? 'Split and rotate original documents' : 'Split and rotate artifacts from Pass 1'}
@@ -119,39 +120,42 @@ export function NormalizePassCard({
       {state.enabled && state.advancedOpen && (
         <Box sx={{ px: 2, pb: 2, borderTop: '1px solid', borderColor: 'divider', pt: 1 }}>
           <Box sx={{ pl: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            {subOptions.map((option) => (
-              <Paper
-                key={option.id}
-                elevation={0}
-                sx={{
-                  p: 1.5,
-                  borderRadius: 2,
-                  bgcolor: 'background.default',
-                }}
-              >
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={option.id === 'split' ? state.subSelection.split : state.subSelection.rotate}
-                      onChange={option.id === 'split' ? handleSplitChange : handleRotateChange}
-                      slotProps={{ input: { 'aria-label': option.label } }}
-                      size={'small'}
-                    />
-                  }
-                  label={
-                    <Box>
-                      <Typography variant={'body2'} sx={{ fontWeight: 600 }}>
-                        {option.label}
-                      </Typography>
-                      <Typography variant={'caption'} sx={{ color: 'text.secondary' }}>
-                        {option.description}
-                      </Typography>
-                    </Box>
-                  }
-                  sx={{ alignItems: 'flex-start', m: 0, width: '100%' }}
-                />
-              </Paper>
-            ))}
+            {subOptions.map((option) => {
+              const service = getPipelineServiceContractForService(option.service)
+              return (
+                <Paper
+                  key={option.id}
+                  elevation={0}
+                  sx={{
+                    p: 1.5,
+                    borderRadius: 2,
+                    bgcolor: 'background.default',
+                  }}
+                >
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={option.id === 'split' ? state.subSelection.split : state.subSelection.rotate}
+                        onChange={option.id === 'split' ? handleSplitChange : handleRotateChange}
+                        slotProps={{ input: { 'aria-label': `${service.display_name} Pass ${passNumber}` } }}
+                        size={'small'}
+                      />
+                    }
+                    label={
+                      <Box>
+                        <Typography variant={'body2'} sx={{ fontWeight: 600 }}>
+                          {`${service.display_name} Pass ${passNumber}`}
+                        </Typography>
+                        <Typography variant={'caption'} sx={{ color: 'text.secondary' }}>
+                          {service.description}
+                        </Typography>
+                      </Box>
+                    }
+                    sx={{ alignItems: 'flex-start', m: 0, width: '100%' }}
+                  />
+                </Paper>
+              )
+            })}
           </Box>
         </Box>
       )}

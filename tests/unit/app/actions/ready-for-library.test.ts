@@ -59,7 +59,6 @@ describe('triggerReadyForLibraryAction', () => {
       batchId,
       startedBy: 'original@example.org',
       lifecycleStatus: 'complete',
-      publicationStatus: 'not_started',
       fedoraIngester: batchId === 'batch-2' ? { status: 'queued' } : null,
     }))
 

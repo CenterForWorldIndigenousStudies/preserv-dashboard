@@ -2,10 +2,10 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { expect, fn, userEvent, within } from 'storybook/test'
 
 import {
-  CONTENT_DEDUP_STAGE,
-  DOCUMENT_SPLITTER_STAGE,
-  OCR_PROCESSOR_STAGE,
-  PAGE_ROTATOR_STAGE,
+  CONTENT_DEDUP_SERVICE,
+  DOCUMENT_SPLITTER_SERVICE,
+  OCR_PROCESSOR_SERVICE,
+  PAGE_ROTATOR_SERVICE,
 } from '@constants/pipeline'
 import { PipelineStageSelectorPanel } from '@molecules/PipelineStageSelectorPanel'
 
@@ -29,13 +29,13 @@ export const NoStagesSelected: Story = {}
 
 export const NormalizeAndOcrSelected: Story = {
   args: {
-    selectedStages: [DOCUMENT_SPLITTER_STAGE, PAGE_ROTATOR_STAGE, OCR_PROCESSOR_STAGE],
+    selectedStages: [DOCUMENT_SPLITTER_SERVICE, PAGE_ROTATOR_SERVICE, OCR_PROCESSOR_SERVICE],
   },
 }
 
 export const AllStagesSelected: Story = {
   args: {
-    selectedStages: [DOCUMENT_SPLITTER_STAGE, PAGE_ROTATOR_STAGE, OCR_PROCESSOR_STAGE, CONTENT_DEDUP_STAGE],
+    selectedStages: [DOCUMENT_SPLITTER_SERVICE, PAGE_ROTATOR_SERVICE, OCR_PROCESSOR_SERVICE, CONTENT_DEDUP_SERVICE],
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)

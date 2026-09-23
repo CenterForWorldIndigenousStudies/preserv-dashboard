@@ -3,6 +3,8 @@
 import { revalidatePath } from 'next/cache'
 
 import { READY_FOR_LIBRARY_PATH } from '@constants/paths'
+import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
+import { PIPELINE_STAGE_STATUSES } from '@constants/pipelineStageStatuses'
 import { getDashboardSession } from '@root/auth'
 import {
   getReadyForLibraryBatchIds,
@@ -45,11 +47,18 @@ function isHandoffAlreadyStarted(batch: Awaited<ReturnType<typeof getProcessBatc
     return false
   }
 
-  if (batch.publicationStatus !== 'not_started') {
+  if (
+    batch.lifecycleStatus === GENERATED_BATCH_LIFECYCLE_STATUSES.PUBLISHED ||
+    batch.lifecycleStatus === GENERATED_BATCH_LIFECYCLE_STATUSES.PUBLICATION_LOCKED
+  ) {
     return true
   }
 
-  return ['queued', 'running', 'completed'].includes(batch.fedoraIngester?.status ?? '')
+  return new Set<string>([
+    PIPELINE_STAGE_STATUSES.QUEUED,
+    PIPELINE_STAGE_STATUSES.RUNNING,
+    PIPELINE_STAGE_STATUSES.COMPLETED,
+  ]).has(batch.fedoraIngester?.status ?? '')
 }
 
 export async function triggerReadyForLibraryAction(): Promise<ReadyForLibraryHandoffActionResult> {

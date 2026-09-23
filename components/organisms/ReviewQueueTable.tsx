@@ -39,6 +39,7 @@ import type { ReprocessingDraftSummary } from 'types/reprocessingDrafts'
 import type { CallbackStageKey } from 'types/pipelineContracts'
 import { EntityNameBlock } from '@molecules/EntityNameBlock'
 import { NeedsReviewReasonsPopover } from '@molecules/NeedsReviewReasonsPopover'
+import { BatchCart } from '@molecules/BatchCart'
 import { ReviewQueueReprocessDialog } from '@organisms/ReviewQueueReprocessDialog'
 import { ReviewQueueCommentsPopover } from '@molecules/ReviewQueueCommentsPopover'
 import { ReviewQueueActionButton } from '@molecules/ReviewQueueActionButton'
@@ -668,23 +669,26 @@ export function ReviewQueueTable({
       },
     },
     trailingToolbarSlot: (
-      <ReviewQueueActionButton
-        batchActionPending={batchActionPending}
-        selectedCount={selectedReviewQueueDocumentIds.length}
-        hasSelectedDraftDocuments={selectedDraftDocumentIds.length > 0}
-        onApprove={() => {
-          void handleBatchDecision('APPROVED')
-        }}
-        onReject={() => {
-          void handleBatchDecision('REJECTED')
-        }}
-        onReprocess={() => {
-          openReprocessDialog(selectedReviewQueueDocumentIds)
-        }}
-        onRemove={() => {
-          void handleRemoveSelectedDrafts()
-        }}
-      />
+      <Stack direction={'row'} spacing={1} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+        <ReviewQueueActionButton
+          batchActionPending={batchActionPending}
+          selectedCount={selectedReviewQueueDocumentIds.length}
+          hasSelectedDraftDocuments={selectedDraftDocumentIds.length > 0}
+          onApprove={() => {
+            void handleBatchDecision('APPROVED')
+          }}
+          onReject={() => {
+            void handleBatchDecision('REJECTED')
+          }}
+          onReprocess={() => {
+            openReprocessDialog(selectedReviewQueueDocumentIds)
+          }}
+          onRemove={() => {
+            void handleRemoveSelectedDrafts()
+          }}
+        />
+        <BatchCart drafts={initialDrafts} />
+      </Stack>
     ),
   }
 

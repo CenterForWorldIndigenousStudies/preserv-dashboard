@@ -1,58 +1,36 @@
-import type { CallbackStageKey } from 'types/pipelineContracts'
-import type { PipelineConfig } from '@lib/pipelineConfig'
+import type {
+  AddBatchDraftDocumentsInput,
+  BatchDraftActionResult,
+  BatchDraftDetail,
+  BatchDraftDocument,
+  BatchDraftMembershipRemovalResult,
+  BatchDraftSummary,
+  CreateBatchDraftInput,
+  UpdateBatchDraftInput,
+} from './batchDrafts'
 
-export interface ReprocessingDraftSummary {
-  id: string
-  name: string
-  collectionName: string | null
-  collectionNotes: string | null
-  restartStage: CallbackStageKey
-  requestedStages: readonly CallbackStageKey[]
-  pipelineConfig?: PipelineConfig
-  reason: string
-  documentCount: number
-  createdAt: string | null
-  updatedAt: string | null
-  createdBy: string | null
-  updatedBy: string | null
+export type ReprocessingDraftSummary = BatchDraftSummary & {
+  /** @deprecated Draft actors are recorded in edit_history, not processing_details. */
+  createdBy?: string | null
+  /** @deprecated Draft actors are recorded in edit_history, not processing_details. */
+  updatedBy?: string | null
 }
 
-export interface ReprocessingDraftDocument {
-  id: string
-  name: string | null
-  idLegacy: string | null
-  sourceBatchId: string | null
-  sourceBatchLegacyId: string | null
-  sourceBatchName: string | null
-  addedAt: string | null
+export type ReprocessingDraftDocument = BatchDraftDocument
+export type ReprocessingDraftDetail = BatchDraftDetail & {
+  /** @deprecated Draft actors are recorded in edit_history, not processing_details. */
+  createdBy?: string | null
+  /** @deprecated Draft actors are recorded in edit_history, not processing_details. */
+  updatedBy?: string | null
 }
 
-export interface ReprocessingDraftDetail extends ReprocessingDraftSummary {
-  documents: ReprocessingDraftDocument[]
-}
-
-export interface CreateReprocessingDraftInput {
+export interface CreateReprocessingDraftInput extends Omit<CreateBatchDraftInput, 'documentIds' | 'sourceFolderIds'> {
   documentId: string
-  name: string
-  collectionName?: string
-  collectionNotes?: string
-  restartStage: CallbackStageKey
-  requestedStages: readonly CallbackStageKey[]
-  pipelineConfig?: PipelineConfig
-  reason: string
-  createdBy?: string | null
 }
 
-export interface CreateReprocessingDraftForDocumentsInput {
+export interface CreateReprocessingDraftForDocumentsInput
+  extends Omit<CreateBatchDraftInput, 'documentIds' | 'sourceFolderIds'> {
   documentIds: string[]
-  name: string
-  collectionName?: string
-  collectionNotes?: string
-  restartStage: CallbackStageKey
-  requestedStages: readonly CallbackStageKey[]
-  pipelineConfig?: PipelineConfig
-  reason: string
-  createdBy?: string | null
 }
 
 export interface AddDocumentToReprocessingDraftInput {
@@ -60,45 +38,7 @@ export interface AddDocumentToReprocessingDraftInput {
   documentId: string
 }
 
-export interface AddDocumentsToReprocessingDraftInput {
-  batchId: string
-  documentIds: string[]
-}
-
-export interface UpdateReprocessingDraftInput {
-  batchId: string
-  name: string
-  collectionName?: string
-  collectionNotes?: string
-  restartStage: CallbackStageKey
-  requestedStages: readonly CallbackStageKey[]
-  pipelineConfig?: PipelineConfig
-  reason: string
-  updatedBy?: string | null
-}
-
-export interface ReprocessingDraftSuccess {
-  ok: true
-  batchId: string
-}
-
-export interface ReprocessingDraftFailure {
-  ok: false
-  error: string
-}
-
-export type ReprocessingDraftActionResult = ReprocessingDraftSuccess | ReprocessingDraftFailure
-
-export interface ReprocessingDraftMembershipRemovalSuccess {
-  ok: true
-  removedDocumentIds: string[]
-}
-
-export interface ReprocessingDraftMembershipRemovalFailure {
-  ok: false
-  error: string
-}
-
-export type ReprocessingDraftMembershipRemovalResult =
-  | ReprocessingDraftMembershipRemovalSuccess
-  | ReprocessingDraftMembershipRemovalFailure
+export type AddDocumentsToReprocessingDraftInput = AddBatchDraftDocumentsInput
+export type UpdateReprocessingDraftInput = UpdateBatchDraftInput
+export type ReprocessingDraftActionResult = BatchDraftActionResult
+export type ReprocessingDraftMembershipRemovalResult = BatchDraftMembershipRemovalResult

@@ -8,6 +8,7 @@ import type { CallbackStageKey } from 'types/pipelineContracts'
 
 interface ReprocessingDraftSubmissionSummaryProps {
   documentCount: number
+  sourceFolderCount?: number
   restartStage: CallbackStageKey
   requestedStages: readonly CallbackStageKey[]
   collectionName: string | null
@@ -17,6 +18,7 @@ interface ReprocessingDraftSubmissionSummaryProps {
 
 export function ReprocessingDraftSubmissionSummary({
   documentCount,
+  sourceFolderCount = 0,
   restartStage,
   requestedStages,
   collectionName,
@@ -24,6 +26,7 @@ export function ReprocessingDraftSubmissionSummary({
   reason,
 }: ReprocessingDraftSubmissionSummaryProps): ReactElement {
   const documentLabel = documentCount === 1 ? 'document' : 'documents'
+  const folderLabel = sourceFolderCount === 1 ? 'folder' : 'folders'
 
   return (
     <Paper
@@ -36,7 +39,9 @@ export function ReprocessingDraftSubmissionSummary({
           {'Submission summary'}
         </Typography>
         <Typography variant={'body2'} color={'text.secondary'}>
-          {`${documentCount} ${documentLabel} will be processed as follows:`}
+          {sourceFolderCount > 0
+            ? `${documentCount} ${documentLabel} and ${sourceFolderCount} ${folderLabel} will be processed as follows:`
+            : `${documentCount} ${documentLabel} will be processed as follows:`}
         </Typography>
         <Typography variant={'body2'}>
           <strong>{'Starts at: '}</strong>

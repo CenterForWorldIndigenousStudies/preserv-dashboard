@@ -15,9 +15,9 @@ import { NoDataState } from '@organisms/NoDataState'
 import { PageHeader } from '@organisms/PageHeader'
 import { buildPipelineDiagnostics } from '@lib/documentDetailViewModel'
 import { getDocumentEditWarning } from '@lib/documentEditAccess'
-import { GENERATED_BATCH_PUBLICATION_STATUSES } from '@constants/generated/batchPublicationStatuses'
+import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
 import { getDocumentDetail } from '@lib/queries/documentQueries'
-import { getReprocessingDrafts } from '@lib/queries/reprocessingDraftQueries'
+import { getBatchDrafts } from '@lib/queries/batchDraftQueries'
 import {
   COLLECTIONS_PATH,
   DOCUMENTS_PATH,
@@ -28,7 +28,7 @@ import {
 import { PAGE_LABELS } from '@constants/pageLabels'
 import type { DocumentDetail } from 'types/documents'
 import { DocumentReviewToolbar } from '@organisms/DocumentReviewToolbar'
-import { ReprocessingCart } from '@molecules/ReprocessingCart'
+import { BatchCart } from '@molecules/BatchCart'
 
 export const dynamic = 'force-dynamic'
 
@@ -102,7 +102,7 @@ function buildCurrentDocumentHref(id: string, searchParams: Record<string, strin
 
 function buildDocumentReviewToolbar(
   detail: DocumentDetail,
-  reprocessingDrafts: Awaited<ReturnType<typeof getReprocessingDrafts>>,
+  reprocessingDrafts: Awaited<ReturnType<typeof getBatchDrafts>>,
   diagnosticsHref?: string,
 ): ReactNode {
   const { document, quality } = detail
@@ -161,7 +161,7 @@ export default async function DocumentDetailPage({
       batchLinks: pipelineBatchLinks,
       diagnosticsHref,
     } = buildPipelineDiagnostics(detail, metadata, currentDocumentHref)
-    const reprocessingDrafts = await getReprocessingDrafts()
+    const reprocessingDrafts = await getBatchDrafts()
 
     return (
       <Stack spacing={4} sx={{ width: '100%' }}>
@@ -185,14 +185,13 @@ export default async function DocumentDetailPage({
           editWarning={getDocumentEditWarning({
             validationStatus: detail.quality?.validation_status,
             hasPublishedBatch: detail.document_to_batches.some(
-              (batch) =>
-                batch.batch_publication_status?.toLowerCase() === GENERATED_BATCH_PUBLICATION_STATUSES.PUBLISHED,
+              (batch) => batch.batch_status?.toLowerCase() === GENERATED_BATCH_LIFECYCLE_STATUSES.PUBLISHED,
             ),
             latestState: detail.state_history[0]?.new_state,
           })}
           toolbarContent={buildDocumentReviewToolbar(detail, reprocessingDrafts, diagnosticsHref)}
           toolbarTrailingContent={
-            reprocessingDrafts.length > 0 ? <ReprocessingCart drafts={reprocessingDrafts} /> : undefined
+            reprocessingDrafts.length > 0 ? <BatchCart drafts={reprocessingDrafts} /> : undefined
           }
         >
           <DocumentPropertiesSection document={document} metadata={metadata} />

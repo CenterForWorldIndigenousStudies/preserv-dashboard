@@ -58,11 +58,6 @@ export function BatchesTable({ initialData, initialQuery, filterOptions }: Batch
     syncSearchParam(nextParams, 'lifecycleStatuses', serializeStatusesParam(controller.query.filters.lifecycleStatuses))
     syncSearchParam(
       nextParams,
-      'publicationStatuses',
-      serializeStatusesParam(controller.query.filters.publicationStatuses),
-    )
-    syncSearchParam(
-      nextParams,
       'documentType',
       controller.query.filters.documentType === 'all' ? undefined : controller.query.filters.documentType,
     )

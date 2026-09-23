@@ -5,64 +5,84 @@ import { useEffect, useMemo, useState, useTransition, type ReactElement } from '
 import { useRouter } from 'next/navigation'
 import { Box, Button, Card, CardContent, Stack, Typography } from '@mui/material'
 
-import { BATCHES_PATH, PROCESS_FOLDERS_PATH, PROCESS_START_PATH } from '@constants/paths'
-import type { ProfileId } from '@constants/pipeline'
+import { BATCHES_PATH, PROCESS_DOCUMENTS_PATH, PROCESS_FOLDERS_PATH } from '@constants/paths'
+import { DATA_INGESTER_SERVICE } from '@constants/pipeline'
 import type { DriveFolderOption } from '@lib/googleDrive'
 import { useBatchSearch } from '@lib/hooks/useBatchSearch'
+import type { PipelineConfig } from '@lib/pipelineConfig'
+import { BatchDraftForm } from '@molecules/BatchDraftForm'
+import { AccordionPanel } from '@molecules/AccordionPanel'
+import { BatchCart } from '@molecules/BatchCart'
+import { ConfirmationDialog } from '@molecules/ConfirmationDialog'
+import { GoogleDriveFolderTree } from '@molecules/GoogleDriveFolderTree'
+import { ProcessSelectedFoldersPanel } from '@molecules/ProcessSelectedFoldersPanel'
 import {
-  buildAcceptedBatchStatus,
-  normalizeAcceptedProcessStartResponse,
-  upsertBatchStatus,
-} from '@lib/processDocuments'
-import {
-  createDefaultDraft,
-  draftToPipelineConfig,
-  expandPresetToDraft,
-  pipelineConfigToRequestedStages,
-  type PipelineSelectionDraft,
-} from '@lib/pipelineConfig'
-import { ProcessBatchCreationWorkspace } from '@organisms/ProcessBatchCreationWorkspace'
+  BATCH_DRAFT_STAGE_OPTIONS,
+  batchDraftPipelineConfigToRequestedStages,
+  getBatchDraftDownstreamStages,
+  getBatchDraftInitialConfig,
+  getDefaultBatchDraftPipelineConfig,
+} from '@lib/batchDraftPipeline'
 import { ProcessBatchMonitor } from '@organisms/ProcessBatchMonitor'
-import type { ProcessBatchStatus } from 'types/pipelineContracts'
+import type { CallbackStageKey, ProcessBatchStatus } from 'types/pipelineContracts'
+import type { BatchDraftSummary } from 'types/batchDrafts'
 import type { ReprocessingDraftDetail } from 'types/reprocessingDrafts'
-import { ReprocessingDraftWorkspace } from '@organisms/ReprocessingDraftWorkspace'
+import { BatchDraftWorkspace } from '@organisms/BatchDraftWorkspace'
+
+export const UNSAVED_NEW_BATCH_CHANGES_MESSAGE = 'Your unsaved new batch changes will be lost.'
 
 interface ProcessDocumentsWorkspaceProps {
   initialBatches: ProcessBatchStatus[]
+  initialDrafts: readonly BatchDraftSummary[]
   initialDraft?: ReprocessingDraftDetail | null
 }
 
-interface ProcessAcceptedResponse {
-  batchId?: string
-  batchName?: string
-  batch_id?: string
-  batch_name?: string
-  error?: string
-}
+type WorkspaceMode = 'create' | 'draft'
 
-export function ProcessDocumentsWorkspace({ initialBatches, initialDraft = null }: ProcessDocumentsWorkspaceProps): ReactElement {
+// This workspace coordinates create, manage, navigation, and monitoring states.
+// eslint-disable-next-line complexity -- The component owns the process workspace transitions.
+export function ProcessDocumentsWorkspace({
+  initialBatches,
+  initialDrafts,
+  initialDraft = null,
+}: ProcessDocumentsWorkspaceProps): ReactElement {
   const router = useRouter()
   const [isSubmitting, startSubmitTransition] = useTransition()
-  const [isRefreshing, startRefreshTransition] = useTransition()
+  const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>(initialDraft ? 'draft' : 'create')
   const [batchName, setBatchName] = useState('')
   const [collectionName, setCollectionName] = useState('')
   const [collectionNotes, setCollectionNotes] = useState('')
-  const [pipelineDraft, setPipelineDraft] = useState<PipelineSelectionDraft>(createDefaultDraft)
-  const [isPipelineStepsModalOpen, setIsPipelineStepsModalOpen] = useState(false)
+  const [reason, setReason] = useState('Initial preservation batch')
+  const [startStage, setStartStage] = useState<CallbackStageKey>(DATA_INGESTER_SERVICE)
+  const [pipelineConfig, setPipelineConfig] = useState<PipelineConfig>(getBatchDraftInitialConfig)
   const [recentBatches, setRecentBatches] = useState(initialBatches)
   const [rootFolders, setRootFolders] = useState<DriveFolderOption[]>([])
   const [childFoldersByParent, setChildFoldersByParent] = useState<Record<string, DriveFolderOption[]>>({})
   const [expandedFolderIds, setExpandedFolderIds] = useState<Record<string, boolean>>({})
   const [selectedFolders, setSelectedFolders] = useState<Record<string, DriveFolderOption>>({})
   const [isGoogleDriveExpanded, setIsGoogleDriveExpanded] = useState(true)
+  const [isCreateBatchExpanded, setIsCreateBatchExpanded] = useState(!initialDraft)
   const [foldersError, setFoldersError] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
-  const [acceptedResult, setAcceptedResult] = useState<{ batch_id: string; batch_name: string } | null>(null)
+  const [pendingDraftId, setPendingDraftId] = useState<string | null>(null)
   const batchSearch = useBatchSearch(batchName, { enabled: true, limit: 7 })
 
   useEffect(() => {
     setRecentBatches(initialBatches)
   }, [initialBatches])
+
+  useEffect(() => {
+    setWorkspaceMode(initialDraft ? 'draft' : 'create')
+  }, [initialDraft?.id])
+
+  useEffect(() => {
+    if (!initialDraft) return
+    setSelectedFolders(
+      Object.fromEntries(
+        (initialDraft.sourceFolderIds ?? []).map((folderId) => [folderId, { id: folderId, name: folderId }]),
+      ),
+    )
+  }, [initialDraft?.id])
 
   useEffect(() => {
     void (async () => {
@@ -83,6 +103,56 @@ export function ProcessDocumentsWorkspace({ initialBatches, initialDraft = null 
   const selectedFolderList = useMemo(() => Object.values(selectedFolders), [selectedFolders])
   const batchNameExists = Boolean(batchName.trim()) && batchSearch.exactMatch !== null
   const canSubmit = batchName.trim().length > 0 && selectedFolderList.length > 0 && !isSubmitting && !batchNameExists
+  const hasNewBatchChanges =
+    batchName.length > 0 ||
+    collectionName.length > 0 ||
+    collectionNotes.length > 0 ||
+    reason !== 'Initial preservation batch' ||
+    startStage !== DATA_INGESTER_SERVICE ||
+    JSON.stringify(pipelineConfig) !== JSON.stringify(getBatchDraftInitialConfig()) ||
+    selectedFolderList.length > 0
+
+  function resetNewBatchForm(): void {
+    setBatchName('')
+    setCollectionName('')
+    setCollectionNotes('')
+    setReason('Initial preservation batch')
+    setStartStage(DATA_INGESTER_SERVICE)
+    setPipelineConfig(getBatchDraftInitialConfig())
+    setSelectedFolders({})
+    setExpandedFolderIds({})
+    setSubmitError(null)
+    setIsCreateBatchExpanded(true)
+    setIsGoogleDriveExpanded(true)
+  }
+
+  function startNewBatch(): void {
+    resetNewBatchForm()
+    setWorkspaceMode('create')
+  }
+
+  function manageDraft(draftId: string): void {
+    if (workspaceMode === 'create' && hasNewBatchChanges) {
+      setPendingDraftId(draftId)
+      return
+    }
+
+    navigateToDraft(draftId)
+  }
+
+  function navigateToDraft(draftId: string): void {
+    setPendingDraftId(null)
+    if (initialDraft?.id === draftId) {
+      setWorkspaceMode('draft')
+      setSelectedFolders(
+        Object.fromEntries(
+          (initialDraft.sourceFolderIds ?? []).map((folderId) => [folderId, { id: folderId, name: folderId }]),
+        ),
+      )
+      return
+    }
+    router.push(`${PROCESS_DOCUMENTS_PATH}?draftId=${encodeURIComponent(draftId)}`)
+  }
 
   async function loadChildFolders(parentId: string): Promise<void> {
     if (childFoldersByParent[parentId]) {
@@ -131,134 +201,136 @@ export function ProcessDocumentsWorkspace({ initialBatches, initialDraft = null 
     }
   }
 
-  function refreshStatuses(): void {
-    startRefreshTransition(() => {
-      router.refresh()
-    })
-  }
-
-  function updatePipelineProfile(profileId: ProfileId): void {
-    setPipelineDraft(expandPresetToDraft(profileId))
-  }
-
   function submitProcess(): void {
     startSubmitTransition(() => {
       void (async () => {
         setSubmitError(null)
-        setAcceptedResult(null)
-
         const selectedFolderIds = Object.keys(selectedFolders)
-        const pipelineConfig = draftToPipelineConfig(pipelineDraft)
-        const response = await fetch(PROCESS_START_PATH, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            batchName,
-            sourceFolderIds: selectedFolderIds,
-            collectionName,
-            collectionNotes,
-            pipelineConfig,
-          }),
+        const { createBatchDraftAction } = await import('@actions/batchDrafts')
+        const result = await createBatchDraftAction({
+          sourceFolderIds: selectedFolderIds,
+          name: batchName,
+          collectionName,
+          collectionNotes,
+          restartStage: startStage,
+          requestedStages: batchDraftPipelineConfigToRequestedStages(pipelineConfig),
+          executionMode: 'normal',
+          pipelineConfig: { ...pipelineConfig, sourceFolderIds: selectedFolderIds, sourceDocumentIds: [] },
+          reason,
         })
-        const payload = (await response.json()) as ProcessAcceptedResponse
-        if (!response.ok) {
-          setSubmitError(payload.error ?? 'Failed to start processing.')
+        if (!result.ok) {
+          setSubmitError(result.error)
           return
         }
-
-        const submittedAt = new Date().toISOString()
-        const { batchId: submittedBatchId, batchName: submittedBatchName } = normalizeAcceptedProcessStartResponse(
-          payload as Record<string, unknown>,
-          batchName,
-        )
-        if (!submittedBatchId) {
-          setSubmitError('Process start response did not include a batch ID.')
-          return
-        }
-        const requestedStages = pipelineConfigToRequestedStages(pipelineConfig)
-
-        setAcceptedResult({
-          batch_id: submittedBatchId,
-          batch_name: submittedBatchName,
-        })
-        setIsGoogleDriveExpanded(false)
-        setRecentBatches((current) =>
-          upsertBatchStatus(
-            current,
-            buildAcceptedBatchStatus({
-              batchId: submittedBatchId,
-              batchName: submittedBatchName,
-              startedBy: 'Current user',
-              submittedAt,
-              selectedFolderIds,
-              collectionName,
-              collectionNotes,
-              pipelineRequestedStages: requestedStages,
-              pipelineConfig,
-            }),
-          ),
-        )
-        setBatchName('')
-        setCollectionName('')
-        setCollectionNotes('')
-        setPipelineDraft(createDefaultDraft())
-        setSelectedFolders({})
+        router.push(`${PROCESS_DOCUMENTS_PATH}?draftId=${encodeURIComponent(result.batchId)}`)
       })().catch((error: unknown) => {
-        setSubmitError(error instanceof Error ? error.message : 'Failed to start processing.')
+        setSubmitError(error instanceof Error ? error.message : 'Failed to create batch draft.')
       })
     })
   }
 
   return (
     <Stack spacing={4}>
-      {initialDraft ? <ReprocessingDraftWorkspace initialDraft={initialDraft} /> : null}
-      <ProcessBatchCreationWorkspace
-        batchName={batchName}
-        collectionName={collectionName}
-        collectionNotes={collectionNotes}
-        isSubmitting={isSubmitting}
-        isRefreshing={isRefreshing}
-        canSubmit={canSubmit}
-        submitError={submitError}
-        acceptedBatchName={acceptedResult?.batch_name ?? null}
-        batchNameSearchError={batchSearch.error}
-        batchNameExists={batchNameExists}
-        pipelineDraft={pipelineDraft}
-        isPipelineStepsModalOpen={isPipelineStepsModalOpen}
-        rootFolders={rootFolders}
-        childFoldersByParent={childFoldersByParent}
-        expandedFolderIds={expandedFolderIds}
-        selectedFolders={selectedFolders}
-        foldersError={foldersError}
-        googleDriveExpanded={isGoogleDriveExpanded}
-        isManagingDraft={Boolean(initialDraft)}
-        onBatchNameChange={setBatchName}
-        onCollectionNameChange={setCollectionName}
-        onCollectionNotesChange={setCollectionNotes}
-        onSubmit={submitProcess}
-        onRefresh={refreshStatuses}
-        onProfileChange={updatePipelineProfile}
-        onConvertToCustom={() => {
-          setPipelineDraft((current) => ({
-            ...current,
-            profileId: 'custom',
-            mode: 'custom',
-          }))
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+        {workspaceMode === 'draft' && initialDraft ? (
+          <Button
+            variant={'outlined'}
+            onClick={startNewBatch}
+            sx={{ whiteSpace: 'nowrap' }}
+          >
+            {'Create New Batch'}
+          </Button>
+        ) : (
+          <Box />
+        )}
+        <BatchCart drafts={initialDrafts} onManageDraft={manageDraft} />
+      </Box>
+      {workspaceMode === 'draft' && initialDraft ? (
+        <BatchDraftWorkspace
+          initialDraft={initialDraft}
+          rootFolders={rootFolders}
+          childFoldersByParent={childFoldersByParent}
+          expandedFolderIds={expandedFolderIds}
+          selectedFolders={selectedFolders}
+          foldersError={foldersError}
+          onToggleFolderSelection={toggleFolderSelection}
+          onToggleFolderExpansion={toggleFolderExpansion}
+          onGoogleDriveExpandedChange={setIsGoogleDriveExpanded}
+        />
+      ) : null}
+      {workspaceMode === 'create' ? (
+        <AccordionPanel
+          expanded={isCreateBatchExpanded}
+          onChange={(_, expanded) => setIsCreateBatchExpanded(expanded)}
+          summary={
+            <Typography component={'span'} variant={'h5'}>
+              {'Create a new batch'}
+            </Typography>
+          }
+        >
+          <Stack spacing={4}>
+            <Box
+              sx={{
+                display: 'grid',
+                gap: 3,
+                gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1.15fr) minmax(0, 0.85fr)' },
+              }}
+            >
+              <BatchDraftForm
+                name={batchName}
+                collectionName={collectionName}
+                collectionNotes={collectionNotes}
+                startStage={startStage}
+                requestedStages={batchDraftPipelineConfigToRequestedStages(pipelineConfig)}
+                pipelineConfig={pipelineConfig}
+                stageOptions={BATCH_DRAFT_STAGE_OPTIONS}
+                getDownstreamStages={getBatchDraftDownstreamStages}
+                getDefaultPipelineConfig={getDefaultBatchDraftPipelineConfig}
+                getRequestedStages={batchDraftPipelineConfigToRequestedStages}
+                reason={reason}
+                isSubmitting={isSubmitting}
+                canSubmit={canSubmit && reason.trim().length > 0}
+                error={submitError}
+                nameExists={batchNameExists}
+                batchNameSearchError={batchSearch.error}
+                onNameChange={setBatchName}
+                onCollectionNameChange={setCollectionName}
+                onCollectionNotesChange={setCollectionNotes}
+                onStartStageChange={setStartStage}
+                onRequestedStagesChange={() => undefined}
+                onPipelineConfigChange={setPipelineConfig}
+                onReasonChange={setReason}
+                onSubmit={submitProcess}
+              />
+              <ProcessSelectedFoldersPanel folders={selectedFolderList} />
+            </Box>
+            <GoogleDriveFolderTree
+              rootFolders={rootFolders}
+              childFoldersByParent={childFoldersByParent}
+              expandedFolderIds={expandedFolderIds}
+              selectedFolderIds={selectedFolders}
+              error={foldersError}
+              expanded={isGoogleDriveExpanded}
+              onExpandedChange={setIsGoogleDriveExpanded}
+              onToggleFolderSelection={toggleFolderSelection}
+              onToggleFolderExpansion={toggleFolderExpansion}
+            />
+          </Stack>
+        </AccordionPanel>
+      ) : null}
+      <ConfirmationDialog
+        open={pendingDraftId !== null}
+        title={'Discard new batch changes?'}
+        message={UNSAVED_NEW_BATCH_CHANGES_MESSAGE}
+        confirmLabel={'Discard and manage'}
+        cancelLabel={'Cancel'}
+        onConfirm={() => {
+          if (pendingDraftId) {
+            navigateToDraft(pendingDraftId)
+          }
         }}
-        onProfileDraftChange={setPipelineDraft}
-        onOpenStepsModal={() => {
-          setIsPipelineStepsModalOpen(true)
-        }}
-        onCloseStepsModal={() => {
-          setIsPipelineStepsModalOpen(false)
-        }}
-        onGoogleDriveExpandedChange={setIsGoogleDriveExpanded}
-        onToggleFolderSelection={toggleFolderSelection}
-        onToggleFolderExpansion={toggleFolderExpansion}
+        onCancel={() => setPendingDraftId(null)}
       />
-
       <Card
         component={'section'}
         sx={(theme) => ({ p: 3, borderRadius: 2, border: 1, borderColor: theme.palette.divider, boxShadow: 2 })}

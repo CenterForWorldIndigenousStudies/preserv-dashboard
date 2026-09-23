@@ -4,14 +4,14 @@ import { useState } from 'react'
 import { Alert, Button, Stack, TextField, Typography } from '@mui/material'
 
 import { requestBatchRollback, retryBatchRollback } from '@lib/batchRollback'
+import { canRequestBatchRollback } from '@lib/batchLifecycle'
 import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
-import { GENERATED_BATCH_PUBLICATION_STATUSES } from '@constants/generated/batchPublicationStatuses'
 import { ConfirmationDialog } from '@molecules/ConfirmationDialog'
+import { BATCH_ROLLBACK_STATUSES } from '@constants/batchRollbackStatuses'
 
 interface BatchRollbackControlProps {
   batchId: string
   lifecycleStatus?: string | null
-  publicationStatus?: string | null
   manualEditAfterStart?: boolean
   rollbackStatus?: string | null
   onRollbackRequested?: () => void
@@ -20,40 +20,31 @@ interface BatchRollbackControlProps {
 type ConfirmationAction = 'rollback' | 'retry' | null
 
 function isRollbackRequestEligible({
-  publicationStatus,
   lifecycleStatus,
   manualEditAfterStart,
   rollbackStatus,
 }: Pick<
   BatchRollbackControlProps,
-  'publicationStatus' | 'lifecycleStatus' | 'manualEditAfterStart' | 'rollbackStatus'
+  'lifecycleStatus' | 'manualEditAfterStart' | 'rollbackStatus'
 >): boolean {
   return (
-    publicationStatus === GENERATED_BATCH_PUBLICATION_STATUSES.NOT_STARTED &&
-    new Set<string>([
-      GENERATED_BATCH_LIFECYCLE_STATUSES.QUEUED,
-      GENERATED_BATCH_LIFECYCLE_STATUSES.RUNNING,
-      GENERATED_BATCH_LIFECYCLE_STATUSES.COMPLETE,
-      GENERATED_BATCH_LIFECYCLE_STATUSES.FAILED,
-    ]).has(lifecycleStatus ?? '') &&
+    canRequestBatchRollback(lifecycleStatus) &&
     !manualEditAfterStart &&
     !rollbackStatus
   )
 }
 
 function isRollbackRetryEligible({
-  publicationStatus,
   lifecycleStatus,
   manualEditAfterStart,
   rollbackStatus,
 }: Pick<
   BatchRollbackControlProps,
-  'publicationStatus' | 'lifecycleStatus' | 'manualEditAfterStart' | 'rollbackStatus'
+  'lifecycleStatus' | 'manualEditAfterStart' | 'rollbackStatus'
 >): boolean {
   return (
-    publicationStatus === GENERATED_BATCH_PUBLICATION_STATUSES.NOT_STARTED &&
     lifecycleStatus === GENERATED_BATCH_LIFECYCLE_STATUSES.ROLLBACK_FAILED &&
-    rollbackStatus === 'failed' &&
+    rollbackStatus === BATCH_ROLLBACK_STATUSES.FAILED &&
     !manualEditAfterStart
   )
 }
@@ -61,7 +52,6 @@ function isRollbackRetryEligible({
 export function BatchRollbackControl({
   batchId,
   lifecycleStatus,
-  publicationStatus,
   manualEditAfterStart = false,
   rollbackStatus,
   onRollbackRequested,
@@ -73,12 +63,11 @@ export function BatchRollbackControl({
   const [confirmationAction, setConfirmationAction] = useState<ConfirmationAction>(null)
 
   const canRequest = isRollbackRequestEligible({
-    publicationStatus,
     lifecycleStatus,
     manualEditAfterStart,
     rollbackStatus,
   })
-  const canRetry = isRollbackRetryEligible({ publicationStatus, lifecycleStatus, manualEditAfterStart, rollbackStatus })
+  const canRetry = isRollbackRetryEligible({ lifecycleStatus, manualEditAfterStart, rollbackStatus })
 
   async function handleRetry() {
     setPending(true)
@@ -159,7 +148,7 @@ export function BatchRollbackControl({
         <Alert severity={'warning'}>{'Rollback unavailable: a Dashboard edit was made after the batch started.'}</Alert>
       )
     }
-    if (manualEditAfterStart && rollbackStatus === 'failed') {
+    if (manualEditAfterStart && rollbackStatus === BATCH_ROLLBACK_STATUSES.FAILED) {
       return (
         <Alert severity={'warning'}>
           {'Rollback retry unavailable: a Dashboard edit was made after the batch started.'}

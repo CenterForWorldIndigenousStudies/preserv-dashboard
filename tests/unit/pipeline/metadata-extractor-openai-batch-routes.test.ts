@@ -30,7 +30,7 @@ function buildBatchStatus(): ProcessBatchStatus {
     batchName: 'Batch 1',
     startedBy: 'archivist@example.org',
     createdAt: '2026-07-29T12:00:00.000Z',
-    pipelineRequestedStages: ['metadata-extraction'],
+    pipelineRequestedStages: ['metadata_extractor'],
     pipelineConfig: {
       profileId: 'custom',
       mode: 'custom',

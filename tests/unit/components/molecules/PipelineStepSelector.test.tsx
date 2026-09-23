@@ -16,6 +16,18 @@ describe('PipelineStepSelector', () => {
     expect(markup).not.toContain('Fedora Ingester')
   })
 
+  it('uses the shared pipeline service contract for service copy', () => {
+    const markup = renderToStaticMarkup(
+      <ThemeProvider>
+        <PipelineStepSelector draft={createDefaultDraft()} mode="custom" onDraftChange={vi.fn()} />
+      </ThemeProvider>,
+    )
+
+    expect(markup).toContain('Data Ingester')
+    expect(markup).toContain('Ingests source files from Google Drive and creates preservation records.')
+    expect(markup).toContain('Extracts text and quality signals from document images.')
+  })
+
   it('shows the OpenAI batch helper copy only when metadata extraction is enabled', () => {
     const disabledDraft = createDefaultDraft()
     const disabledMarkup = renderToStaticMarkup(

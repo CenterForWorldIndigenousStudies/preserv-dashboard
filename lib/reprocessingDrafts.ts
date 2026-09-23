@@ -1,5 +1,10 @@
 import type { CallbackStageKey } from 'types/pipelineContracts'
 import {
+  getPipelineServiceContractForService,
+  getPipelineServiceDisplayName,
+} from '@constants/pipelineServices'
+import { getServiceIdForCallbackStage } from '@constants/pipeline'
+import {
   createDefaultDraft,
   draftToPipelineConfig,
   pipelineConfigToDraft,
@@ -10,13 +15,31 @@ import {
 
 export const DEFAULT_REPROCESSING_START_STAGE: CallbackStageKey = 'ocr_processor'
 
-export const REPROCESSING_STAGE_OPTIONS: Array<{ value: CallbackStageKey; label: string }> = [
-  { value: 'document_splitter', label: 'Document Splitter' },
-  { value: 'page_rotator', label: 'Page Rotator' },
-  { value: 'ocr_processor', label: 'OCR Processor' },
-  { value: 'content_dedup', label: 'Content Deduplication' },
-  { value: 'metadata_extractor', label: 'Metadata Extractor' },
+const REPROCESSING_STAGE_VALUES: CallbackStageKey[] = [
+  'document_splitter',
+  'page_rotator',
+  'ocr_processor',
+  'content_dedup',
+  'metadata_extractor',
 ]
+
+export const REPROCESSING_STAGE_OPTIONS: Array<{
+  value: CallbackStageKey
+  label: string
+  description: string
+}> =
+  REPROCESSING_STAGE_VALUES.map((value) => {
+    const service = getServiceIdForCallbackStage(value)
+    if (!service) {
+      throw new Error(`No pipeline service exists for callback stage ${value}`)
+    }
+    const contract = getPipelineServiceContractForService(service)
+    return {
+      value,
+      label: contract.display_name,
+      description: contract.description,
+    }
+  })
 
 export const REPROCESSING_EXECUTION_STAGE_ORDER: CallbackStageKey[] = [
   ...REPROCESSING_STAGE_OPTIONS.map((option) => option.value),
@@ -28,18 +51,13 @@ export const PIPELINE_EXECUTION_STAGE_ORDER: CallbackStageKey[] = [
 ]
 
 function callbackStageForService(service: string): CallbackStageKey | null {
-  const stage = service === 'metadata-extraction' ? 'metadata_extractor' : service.replaceAll('-', '_')
-  return PIPELINE_EXECUTION_STAGE_ORDER.includes(stage as CallbackStageKey)
-    ? (stage as CallbackStageKey)
+  return PIPELINE_EXECUTION_STAGE_ORDER.includes(service as CallbackStageKey)
+    ? (service as CallbackStageKey)
     : null
 }
 
 export function getReprocessingStageLabel(stage: CallbackStageKey): string {
-  if (stage === 'fedora_ingester') {
-    return 'Fedora Ingester'
-  }
-
-  return REPROCESSING_STAGE_OPTIONS.find((option) => option.value === stage)?.label ?? stage
+  return getPipelineServiceDisplayName(getServiceIdForCallbackStage(stage) ?? stage)
 }
 
 export function getReprocessingDownstreamStages(stage: CallbackStageKey): CallbackStageKey[] {

@@ -67,8 +67,8 @@ describe('process start route', () => {
           executionPlan: [
             {
               id: 'step-ingester',
-              stepId: 'ingester',
-              service: 'ingester',
+              stepId: 'data_ingester',
+              service: 'data_ingester',
               label: 'Ingest',
               order: 0,
               enabled: true,
@@ -112,8 +112,8 @@ describe('process start route', () => {
           executionPlan: [
             {
               id: 'step-ingester',
-              stepId: 'ingester',
-              service: 'ingester',
+              stepId: 'data_ingester',
+              service: 'data_ingester',
               label: 'Ingest',
               order: 0,
               enabled: true,
@@ -169,16 +169,16 @@ describe('process start route', () => {
       executionPlan: [
         {
           id: 'step-ingester',
-          stepId: 'ingester',
-          service: 'ingester',
+          stepId: 'data_ingester',
+          service: 'data_ingester',
           label: 'Ingest',
           order: 0,
           enabled: true,
         },
         {
           id: 'step-normalize-pass-1-split',
-          stepId: 'normalize-pass-1',
-          service: 'document-splitter',
+          stepId: 'document_splitter',
+          service: 'document_splitter',
           label: 'Split Pass 1',
           order: 1,
           enabled: true,
@@ -216,7 +216,15 @@ describe('process start route', () => {
       pipeline_config?: unknown
     }
     expect(ingesterPayload.collection).toEqual({ name: 'Collection A', notes: 'Review set' })
-    expect(ingesterPayload.pipeline_config).toEqual(pipelineConfig)
-    expect(mockSetProcessBatchPipelineConfig).toHaveBeenCalledWith('batch-1', pipelineConfig)
+    expect(ingesterPayload.pipeline_config).toEqual({
+      ...pipelineConfig,
+      sourceFolderIds: [],
+      sourceDocumentIds: [],
+    })
+    expect(mockSetProcessBatchPipelineConfig).toHaveBeenCalledWith('batch-1', {
+      ...pipelineConfig,
+      sourceFolderIds: [],
+      sourceDocumentIds: [],
+    })
   })
 })

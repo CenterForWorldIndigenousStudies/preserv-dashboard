@@ -50,7 +50,7 @@ interface StatusFilterGroupsProps {
   filterOptions: FilterOptions
   draftFilters: AdvancedSearchFilters
   onToggleDocumentStatus: (status: StatusOption) => void
-  onToggleStatus: (field: 'lifecycleStatuses' | 'publicationStatuses', status: StatusOption) => void
+  onToggleStatus: (status: StatusOption) => void
 }
 
 function formatFilterLabel(value: string): string {
@@ -142,18 +142,10 @@ function StatusFilterGroups({
           title={'Batch lifecycle status'}
           options={filterOptions.lifecycleStatuses}
           selected={draftFilters.lifecycleStatuses ?? []}
-          onToggle={(status) => onToggleStatus('lifecycleStatuses', status)}
+          onToggle={onToggleStatus}
         />
       ) : null}
 
-      {filterOptions.publicationStatuses?.length ? (
-        <StatusFilterGroup
-          title={'Publication status'}
-          options={filterOptions.publicationStatuses}
-          selected={draftFilters.publicationStatuses ?? []}
-          onToggle={(status) => onToggleStatus('publicationStatuses', status)}
-        />
-      ) : null}
     </>
   )
 }
@@ -177,7 +169,6 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
     if (filters.tag) count += 1
     if (filters.statuses?.length) count += 1
     if (filters.lifecycleStatuses?.length) count += 1
-    if (filters.publicationStatuses?.length) count += 1
     if (filters.documentType && filters.documentType !== 'all') count += 1
     if (filters.batch) count += 1
     if (filters.createdFrom || filters.createdTo) count += 1
@@ -202,7 +193,6 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
       tag: draftFilters.tag?.trim() || undefined,
       statuses: draftFilters.statuses?.length ? draftFilters.statuses : undefined,
       lifecycleStatuses: draftFilters.lifecycleStatuses?.length ? draftFilters.lifecycleStatuses : undefined,
-      publicationStatuses: draftFilters.publicationStatuses?.length ? draftFilters.publicationStatuses : undefined,
       documentType: draftFilters.documentType ?? 'all',
       batch: draftFilters.batch?.trim() || undefined,
       createdFrom: draftFilters.createdFrom || undefined,
@@ -236,16 +226,16 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
     })
   }, [])
 
-  const toggleStatusFilter = useCallback((field: 'lifecycleStatuses' | 'publicationStatuses', status: StatusOption) => {
+  const toggleStatusFilter = useCallback((status: StatusOption) => {
     setDraftFilters((previousFilters) => {
-      const currentStatuses = previousFilters[field] ?? []
+      const currentStatuses = previousFilters.lifecycleStatuses ?? []
       const nextStatuses = currentStatuses.includes(status)
         ? currentStatuses.filter((value) => value !== status)
         : [...currentStatuses, status]
 
       return {
         ...previousFilters,
-        [field]: nextStatuses,
+        lifecycleStatuses: nextStatuses,
       }
     })
   }, [])

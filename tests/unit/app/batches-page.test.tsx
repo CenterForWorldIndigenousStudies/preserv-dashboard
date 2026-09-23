@@ -2,7 +2,6 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
-import { GENERATED_BATCH_PUBLICATION_STATUSES } from '@constants/generated/batchPublicationStatuses'
 import { ACCESS_LEVEL_OPTIONS } from '@constants/accessLevels'
 
 const {
@@ -74,7 +73,6 @@ const filterOptions = {
   accessLevels: [ACCESS_LEVEL_OPTIONS[0]],
   statuses: ['APPROVED'],
   lifecycleStatuses: Object.values(GENERATED_BATCH_LIFECYCLE_STATUSES),
-  publicationStatuses: Object.values(GENERATED_BATCH_PUBLICATION_STATUSES),
 }
 
 describe('BatchesPage', () => {
@@ -97,7 +95,7 @@ describe('BatchesPage', () => {
     expect(markup).toContain(PROCESS_DOCUMENTS_PATH)
     expect(markup).toContain('Total Batches')
     expect(markup).toContain('Total Documents')
-    expect(markup).toContain('Reprocessing cart')
+    expect(markup).toContain('Batch cart')
     expect(markup).not.toContain('Draft reprocessing batches')
   })
 
@@ -117,6 +115,6 @@ describe('BatchesPage', () => {
     expect(mocks.batchesTableProps).toEqual({ initialData, initialQuery, filterOptions })
   })
 })
-vi.mock('@lib/queries/reprocessingDraftQueries', () => ({
-  getReprocessingDrafts: vi.fn().mockResolvedValue([]),
+vi.mock('@lib/queries/batchDraftQueries', () => ({
+  getBatchDrafts: vi.fn().mockResolvedValue([]),
 }))

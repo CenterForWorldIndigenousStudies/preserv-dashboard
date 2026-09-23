@@ -18,16 +18,16 @@ function buildExecutionPlan(): PipelineExecutionStep[] {
   return [
     {
       id: 'step-ingester',
-      stepId: 'ingester',
-      service: 'ingester',
-      label: 'Ingest',
+      stepId: 'data_ingester',
+      service: 'data_ingester',
+      label: 'Data Ingester',
       order: 0,
       enabled: true,
     },
     {
       id: 'step-normalize-pass-1-split',
-      stepId: 'normalize-pass-1',
-      service: 'document-splitter',
+      stepId: 'document_splitter',
+      service: 'document_splitter',
       label: 'Split Pass 1',
       order: 1,
       enabled: true,
@@ -35,8 +35,8 @@ function buildExecutionPlan(): PipelineExecutionStep[] {
     },
     {
       id: 'step-normalize-pass-1-rotate',
-      stepId: 'normalize-pass-1',
-      service: 'page-rotator',
+      stepId: 'page_rotator',
+      service: 'page_rotator',
       label: 'Rotate Pass 1',
       order: 2,
       enabled: true,
@@ -45,8 +45,8 @@ function buildExecutionPlan(): PipelineExecutionStep[] {
     },
     {
       id: 'step-normalize-pass-2-split',
-      stepId: 'normalize-pass-2',
-      service: 'document-splitter',
+      stepId: 'document_splitter',
+      service: 'document_splitter',
       label: 'Split Pass 2',
       order: 3,
       enabled: true,
@@ -55,8 +55,8 @@ function buildExecutionPlan(): PipelineExecutionStep[] {
     },
     {
       id: 'step-normalize-pass-2-rotate',
-      stepId: 'normalize-pass-2',
-      service: 'page-rotator',
+      stepId: 'page_rotator',
+      service: 'page_rotator',
       label: 'Rotate Pass 2',
       order: 4,
       enabled: true,
@@ -65,8 +65,8 @@ function buildExecutionPlan(): PipelineExecutionStep[] {
     },
     {
       id: 'step-ocr-processor',
-      stepId: 'ocr-processor',
-      service: 'ocr-processor',
+      stepId: 'ocr_processor',
+      service: 'ocr_processor',
       label: 'OCR Processor',
       order: 5,
       enabled: true,
@@ -74,8 +74,8 @@ function buildExecutionPlan(): PipelineExecutionStep[] {
     },
     {
       id: 'step-content-dedup',
-      stepId: 'content-dedup',
-      service: 'content-dedup',
+      stepId: 'content_dedup',
+      service: 'content_dedup',
       label: 'Content Dedup',
       order: 6,
       enabled: true,
@@ -83,8 +83,8 @@ function buildExecutionPlan(): PipelineExecutionStep[] {
     },
     {
       id: 'step-metadata-extraction',
-      stepId: 'metadata-extraction',
-      service: 'metadata-extraction',
+      stepId: 'metadata_extractor',
+      service: 'metadata_extractor',
       label: 'Metadata Extraction',
       order: 7,
       enabled: true,
@@ -153,7 +153,7 @@ function buildBatchStatus(overrides: Partial<ProcessBatchStatus> = {}): ProcessB
     batchName: 'Batch 1',
     startedBy: 'archivist@example.org',
     createdAt: '2026-05-17T00:00:00.000Z',
-    pipelineRequestedStages: ['document-splitter', 'page-rotator'],
+    pipelineRequestedStages: ['document_splitter', 'page_rotator'],
     pipelineConfig,
     ingester: buildStageStatus({ status: 'completed' }),
     documentSplitter: buildStageStatus(),
@@ -197,7 +197,7 @@ describe('pipelineExecution process-documents behavior', () => {
       }),
     })
 
-    expect(getNextEligibleExecutionStep(batch)?.service).toBe('page-rotator')
+    expect(getNextEligibleExecutionStep(batch)?.service).toBe('page_rotator')
     expect(getNextEligibleExecutionStep(batch)?.pass).toBe(2)
   })
 
@@ -257,11 +257,11 @@ describe('pipelineExecution process-documents behavior', () => {
 
     expect(getOrchestratedExecutionPlan(batch)).toEqual([
       expect.objectContaining({
-        service: 'ocr-processor',
+        service: 'ocr_processor',
         label: 'OCR Processor',
       }),
     ])
-    expect(getNextEligibleExecutionStep(batch)?.service).toBe('ocr-processor')
+    expect(getNextEligibleExecutionStep(batch)?.service).toBe('ocr_processor')
   })
 
   test('includes the implicit data-ingester step for reprocessing executions', () => {
@@ -273,8 +273,8 @@ describe('pipelineExecution process-documents behavior', () => {
     })
 
     expect(getOrchestratedExecutionPlan(batch).map((step) => step.service)).toEqual([
-      'ingester',
-      'ocr-processor',
+      'data_ingester',
+      'ocr_processor',
     ])
   })
 
@@ -291,14 +291,14 @@ describe('pipelineExecution process-documents behavior', () => {
     })
 
     expect(getOrchestratedExecutionPlan(batch).map((step) => `${step.stepId}:${step.pass ?? 0}`)).toEqual([
-      'ingester:0',
-      'normalize-pass-1:1',
-      'normalize-pass-1:1',
-      'normalize-pass-2:2',
-      'normalize-pass-2:2',
-      'ocr-processor:0',
+      'data_ingester:0',
+      'document_splitter:1',
+      'page_rotator:1',
+      'document_splitter:2',
+      'page_rotator:2',
+      'ocr_processor:0',
     ])
-    expect(getNextEligibleExecutionStep(batch)).toMatchObject({ service: 'document-splitter', pass: 1 })
+    expect(getNextEligibleExecutionStep(batch)).toMatchObject({ service: 'document_splitter', pass: 1 })
   })
 
   test('returns metadata extraction as next eligible step after content dedup completes', () => {
@@ -323,7 +323,7 @@ describe('pipelineExecution process-documents behavior', () => {
       }),
     })
 
-    expect(getNextEligibleExecutionStep(batch)?.service).toBe('metadata-extraction')
+    expect(getNextEligibleExecutionStep(batch)?.service).toBe('metadata_extractor')
   })
 
   test('returns ocr processor as next eligible step when final rotate pass is completed without completed_passes metadata', () => {
@@ -342,7 +342,7 @@ describe('pipelineExecution process-documents behavior', () => {
       }),
     })
 
-    expect(getNextEligibleExecutionStep(batch)?.service).toBe('ocr-processor')
+    expect(getNextEligibleExecutionStep(batch)?.service).toBe('ocr_processor')
   })
 
   test('finishes automated processing after metadata extraction completes', () => {
@@ -379,7 +379,7 @@ describe('pipelineExecution process-documents behavior', () => {
     })
 
     expect(getLastEnabledAutomatedExecutionStep(batch)).toEqual(
-      expect.objectContaining({ service: 'metadata-extraction' }),
+      expect.objectContaining({ service: 'metadata_extractor' }),
     )
   })
 
@@ -393,8 +393,8 @@ describe('pipelineExecution process-documents behavior', () => {
           ...buildExecutionPlan(),
           {
             id: 'step-fedora-ingester',
-            stepId: 'fedora-ingester',
-            service: 'fedora-ingester',
+            stepId: 'fedora_ingester',
+            service: 'fedora_ingester',
             label: 'Fedora Ingester',
             order: 10,
             enabled: true,
@@ -405,7 +405,7 @@ describe('pipelineExecution process-documents behavior', () => {
     })
 
     expect(getLastEnabledAutomatedExecutionStep(batch)).toEqual(
-      expect.objectContaining({ service: 'metadata-extraction' }),
+      expect.objectContaining({ service: 'metadata_extractor' }),
     )
   })
 

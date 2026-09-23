@@ -16,12 +16,12 @@ describe('process stage status helpers', () => {
   it('shows a pending stage when the service is requested but has no status yet', () => {
     const batch = createProcessBatch({ pipelineConfig: processPipelineConfig })
 
-    expect(shouldShowPendingProcessStage(batch, batch.ocrProcessor, 'ocr-processor')).toBe(true)
+    expect(shouldShowPendingProcessStage(batch, batch.ocrProcessor, 'ocr_processor')).toBe(true)
     expect(
       shouldShowPendingProcessStage(
         { ...batch, ocrProcessor: createPendingProcessStage() },
         createPendingProcessStage(),
-        'ocr-processor',
+        'ocr_processor',
       ),
     ).toBe(false)
   })

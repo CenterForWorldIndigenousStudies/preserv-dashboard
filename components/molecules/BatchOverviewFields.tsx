@@ -8,7 +8,7 @@ interface BatchOverviewFieldsProps {
   startedAt: string | Date | null | undefined
   requestedStages: readonly string[]
   lifecycleStatus?: string | null
-  publicationStatus?: string | null
+  publicationState?: string | null
   additionalFields?: readonly DetailField[]
 }
 
@@ -25,7 +25,7 @@ export function BatchOverviewFields({
   startedAt,
   requestedStages,
   lifecycleStatus,
-  publicationStatus,
+  publicationState,
   additionalFields = [],
 }: BatchOverviewFieldsProps): ReactElement {
   return (
@@ -60,7 +60,7 @@ export function BatchOverviewFields({
           key: 'publication',
           label: 'Publication',
           description: FIELD_DESCRIPTIONS.publication,
-          value: publicationStatus ?? 'Unknown',
+          value: publicationState ?? 'Unknown',
         },
       ]}
     />

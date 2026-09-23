@@ -49,7 +49,7 @@ const {
     ),
   ),
   mockGetReprocessingDrafts: vi.fn().mockResolvedValue([]),
-  mockReprocessingCart: vi.fn(() => <div data-testid={'reprocessing-cart'}>{'Reprocessing cart'}</div>),
+  mockReprocessingCart: vi.fn(() => <div data-testid={'batch-cart'}>{'Batch cart'}</div>),
   mockDocumentReviewToolbar: vi.fn(
     ({
       hasOpenReprocessingDraft,
@@ -102,8 +102,8 @@ vi.mock('@lib/queries/documentQueries', () => ({
   getDocumentDetail: mockGetDocumentDetail,
 }))
 
-vi.mock('@lib/queries/reprocessingDraftQueries', () => ({
-  getReprocessingDrafts: mockGetReprocessingDrafts,
+vi.mock('@lib/queries/batchDraftQueries', () => ({
+  getBatchDrafts: mockGetReprocessingDrafts,
 }))
 
 vi.mock('@organisms/DocumentVersionsButton', () => ({
@@ -151,8 +151,8 @@ vi.mock('@organisms/DocumentEditCoordinator', () => ({
   ),
 }))
 
-vi.mock('@molecules/ReprocessingCart', () => ({
-  ReprocessingCart: mockReprocessingCart,
+vi.mock('@molecules/BatchCart', () => ({
+  BatchCart: mockReprocessingCart,
 }))
 
 vi.mock('@organisms/DocumentReviewToolbar', () => ({
@@ -395,8 +395,8 @@ describe('DocumentDetailPage', () => {
     expect(markup.indexOf('Comments')).toBeLessThan(markup.indexOf('Batches'))
     expect(markup.indexOf('Batches')).toBeLessThan(markup.indexOf('Audit History'))
     expect(markup).toContain('Document review controls')
-    expect(markup).toContain('Reprocessing cart')
-    expect(markup.indexOf('Edit toggle')).toBeLessThan(markup.indexOf('Reprocessing cart'))
+    expect(markup).toContain('Batch cart')
+    expect(markup.indexOf('Edit toggle')).toBeLessThan(markup.indexOf('Batch cart'))
     expect(markup).toContain('Candidate')
     expect(markup).toContain('Canonical')
     expect(markup).not.toContain('Version Family')
@@ -458,7 +458,7 @@ describe('DocumentDetailPage', () => {
     expect(markup).not.toContain('OCR Processor')
     expect(markup).not.toContain('Content Deduplication')
     expect(markup).not.toContain('Legacy')
-    expect(markup).not.toContain('Reprocessing cart')
+    expect(markup).not.toContain('Batch cart')
     expect(markup).toContain('Comments')
     expect(markup).toContain('Comment')
     expect(markup).toContain('Additional Comment')

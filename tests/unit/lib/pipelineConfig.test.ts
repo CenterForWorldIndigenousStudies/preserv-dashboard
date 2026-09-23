@@ -11,6 +11,8 @@ function buildDraft(): PipelineSelectionDraft {
   return {
     profileId: 'custom',
     mode: 'custom',
+    sourceFolderIds: [],
+    sourceDocumentIds: [],
     metadataExtraction: {
       mode: 'direct',
     },
@@ -69,7 +71,7 @@ describe('pipelineConfig', () => {
     expect(ocrStep?.dependsOn).toEqual(['step-normalize-pass-1-rotate'])
     expect(contentDedupStep?.dependsOn).toEqual(['step-ocr-processor'])
     expect(metadataExtractionStep?.dependsOn).toEqual(['step-content-dedup'])
-    expect(config.executionPlan.some((step) => step.service === 'fedora-ingester')).toBe(false)
+    expect(config.executionPlan.some((step) => step.service === 'fedora_ingester')).toBe(false)
   })
 
   it('persists metadata extraction mode in pipeline config', () => {
@@ -85,6 +87,58 @@ describe('pipelineConfig', () => {
     expect(config.metadataExtraction.mode).toBe('openai_batch')
   })
 
+  it('persists source IDs alongside the complete execution plan', () => {
+    const draft = buildDraft()
+    draft.sourceFolderIds = ['folder-1']
+    draft.sourceDocumentIds = ['document-1']
+
+    const config = draftToPipelineConfig(draft)
+
+    expect(config.sourceFolderIds).toEqual(['folder-1'])
+    expect(config.sourceDocumentIds).toEqual(['document-1'])
+    expect(config.executionPlan[0]).toMatchObject({
+      id: 'step-ingester',
+      service: 'data_ingester',
+      enabled: true,
+    })
+    expect(config.executionPlan.length).toBeGreaterThan(1)
+  })
+
+  it('restores source IDs when loading a persisted pipeline config', () => {
+    const config = draftToPipelineConfig({
+      ...buildDraft(),
+      sourceFolderIds: ['folder-1'],
+      sourceDocumentIds: ['document-1'],
+    })
+
+    const restored = pipelineConfigToDraft(config)
+
+    expect(restored.sourceFolderIds).toEqual(['folder-1'])
+    expect(restored.sourceDocumentIds).toEqual(['document-1'])
+  })
+
+  it('parses and deduplicates persisted source IDs', () => {
+    const parsed = parsePipelineConfig({
+      profileId: 'custom',
+      mode: 'custom',
+      sourceFolderIds: ['folder-1', 'folder-1', ''],
+      sourceDocumentIds: ['document-1', 'document-1'],
+      executionPlan: [
+        {
+          id: 'step-ingester',
+          stepId: 'data_ingester',
+          service: 'data_ingester',
+          label: 'Data Ingester',
+          order: 0,
+          enabled: true,
+        },
+      ],
+    })
+
+    expect(parsed?.sourceFolderIds).toEqual(['folder-1'])
+    expect(parsed?.sourceDocumentIds).toEqual(['document-1'])
+  })
+
   it('parses metadata extraction mode from persisted pipeline config', () => {
     const config = parsePipelineConfig({
       profileId: 'custom',
@@ -93,16 +147,16 @@ describe('pipelineConfig', () => {
       executionPlan: [
         {
           id: 'step-ingester',
-          stepId: 'ingester',
-          service: 'ingester',
-          label: 'Ingest',
+          stepId: 'data_ingester',
+          service: 'data_ingester',
+          label: 'Data Ingester',
           order: 0,
           enabled: true,
         },
         {
           id: 'step-metadata-extraction',
-          stepId: 'metadata-extraction',
-          service: 'metadata-extraction',
+          stepId: 'metadata_extractor',
+          service: 'metadata_extractor',
           label: 'Metadata Extraction',
           order: 1,
           enabled: true,

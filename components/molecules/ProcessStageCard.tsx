@@ -10,6 +10,7 @@ import { ProcessStageDetailList } from '@molecules/ProcessStageDetailList'
 import { ProcessStageDiagnosticsPanel } from '@molecules/ProcessStageDiagnosticsPanel'
 import { ProcessStageMetricsGrid } from '@molecules/ProcessStageMetricsGrid'
 import { formatReviewWarning } from '@lib/pipelineFormatting'
+import { PIPELINE_STAGE_STATUSES } from '@constants/pipelineStageStatuses'
 import type { ProcessStageStatus } from 'types/pipelineContracts'
 
 interface ProcessStageCardProps {
@@ -21,11 +22,11 @@ interface ProcessStageCardProps {
 
 function shouldStartExpanded(status: string | null | undefined): boolean {
   return (
-    status === 'accepted' ||
-    status === 'queued' ||
-    status === 'running' ||
-    status === 'failed' ||
-    status === 'review_needed'
+    status === PIPELINE_STAGE_STATUSES.ACCEPTED ||
+    status === PIPELINE_STAGE_STATUSES.QUEUED ||
+    status === PIPELINE_STAGE_STATUSES.RUNNING ||
+    status === PIPELINE_STAGE_STATUSES.FAILED ||
+    status === PIPELINE_STAGE_STATUSES.REVIEW_NEEDED
   )
 }
 
@@ -38,7 +39,7 @@ export function ProcessStageCard({
   const [expanded, setExpanded] = useState(() => shouldStartExpanded(stage?.status))
 
   useEffect(() => {
-    if (stage?.status === 'completed') {
+    if (stage?.status === PIPELINE_STAGE_STATUSES.COMPLETED) {
       setExpanded(false)
     }
   }, [stage?.status])

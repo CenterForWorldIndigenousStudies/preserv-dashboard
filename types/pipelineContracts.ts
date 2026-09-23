@@ -1,3 +1,4 @@
+import type { GeneratedPipelineServiceKey } from '@constants/generated/pipelineServices'
 import type { PipelineConfig } from '@lib/pipelineConfig'
 import type { BatchProperty } from 'types/batches'
 
@@ -143,14 +144,7 @@ export interface PipelineCallbackBody {
   stage?: unknown
 }
 
-export type CallbackStageKey =
-  | 'ingester'
-  | 'document_splitter'
-  | 'page_rotator'
-  | 'ocr_processor'
-  | 'content_dedup'
-  | 'metadata_extractor'
-  | 'fedora_ingester'
+export type CallbackStageKey = Exclude<GeneratedPipelineServiceKey, 'data_combiner'>
 
 export interface NormalizedProcessStageStatus {
   status: string | null
@@ -250,7 +244,7 @@ export interface ProcessBatchStatus extends NormalizedProcessBatchDetails {
   createdAt: string | null
   startedAt?: string | null
   lifecycleStatus?: string | null
-  publicationStatus?: string | null
+  publicationState?: string | null
   publicationTarget?: string | null
   manualEditAfterStart?: boolean
   rollbackStatus?: string | null

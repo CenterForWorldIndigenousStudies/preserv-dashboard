@@ -57,7 +57,6 @@ describe('batch query contracts', () => {
         tag: undefined,
         statuses: undefined,
         lifecycleStatuses: undefined,
-        publicationStatuses: undefined,
         documentType: undefined,
         batch: undefined,
         createdFrom: undefined,
@@ -76,7 +75,6 @@ describe('batch query contracts', () => {
         tag: ' refuge ',
         statuses: 'APPROVED,REJECTED',
         lifecycleStatuses: 'DRAFT,FAILED',
-        publicationStatuses: 'NOT_STARTED',
         documentType: 'duplicate',
         batch: 'Special_RCR',
         createdFrom: '2026-01-01',
@@ -90,7 +88,6 @@ describe('batch query contracts', () => {
       tag: 'refuge',
       statuses: ['APPROVED', 'REJECTED'],
       lifecycleStatuses: ['DRAFT', 'FAILED'],
-      publicationStatuses: ['NOT_STARTED'],
       documentType: 'duplicate',
       batch: 'Special_RCR',
       createdFrom: '2026-01-01',
@@ -152,7 +149,7 @@ describe('batch query contracts', () => {
     expect(batchDocumentCondition.document_to_batches).toEqual({ some: { documents: documentsWhere } })
   })
 
-  it('filters batches by lifecycle and publication status', async () => {
+  it('filters batches by lifecycle status', async () => {
     mockBatchesFindMany.mockResolvedValue([])
     mockBatchesCount.mockResolvedValue(0)
 
@@ -161,16 +158,13 @@ describe('batch query contracts', () => {
       pageSize: 25,
       filters: {
         lifecycleStatuses: ['DRAFT', 'FAILED'],
-        publicationStatuses: ['NOT_STARTED'],
       },
     })
 
     const findManyCall = mockBatchesFindMany.mock.calls[0]?.[0] as unknown as {
       where: Prisma.batchesWhereInput
     }
-    expect(findManyCall.where).toEqual({
-      AND: [{ lifecycle_status: { in: ['DRAFT', 'FAILED'] } }, { publication_status: { in: ['NOT_STARTED'] } }],
-    })
+    expect(findManyCall.where).toEqual({ lifecycle_status: { in: ['DRAFT', 'FAILED'] } })
   })
 
   it('limits batches to fuzzy batch matches', async () => {
@@ -269,7 +263,7 @@ describe('batch query contracts', () => {
       totalCost: '$8.75',
       processingTime: 37,
       lifecycleStatus: undefined,
-      publicationStatus: undefined,
+      publicationState: 'not_started',
     }
 
     expect(result.data).toEqual([expected])
@@ -357,7 +351,7 @@ describe('batch query contracts', () => {
         { key: 'Processing Time (seconds)', value: 42 },
       ],
       lifecycleStatus: undefined,
-      publicationStatus: undefined,
+      publicationState: 'not_started',
       metadata: [
         {
           name: 'batch-purpose',

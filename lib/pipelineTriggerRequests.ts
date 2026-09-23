@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 
 import {
   CONTENT_DEDUP_CALLBACK_PATH,
+  DATA_INGESTER_CALLBACK_PATH,
   DATA_INGESTER_REPROCESS_CALLBACK_PATH,
   FEDORA_INGESTER_CALLBACK_PATH,
   DOCUMENT_SPLITTER_CALLBACK_PATH,
@@ -10,20 +11,26 @@ import {
   PAGE_ROTATOR_CALLBACK_PATH,
 } from '@constants/paths'
 import { DASHBOARD_BASE_URL } from '@constants/server'
+import {
+  CONTENT_DEDUP_SERVICE,
+  DATA_INGESTER_SERVICE,
+  DOCUMENT_SPLITTER_SERVICE,
+  FEDORA_INGESTER_SERVICE,
+  METADATA_EXTRACTOR_SERVICE,
+  OCR_PROCESSOR_SERVICE,
+  PAGE_ROTATOR_SERVICE,
+  type ServiceId,
+} from '@constants/pipeline'
 import { logEvent } from '@lib/observability'
 import { normalizePipelineExecutionContext, type PipelineExecutionContextInput } from '@lib/pipelineExecutionContext'
 import type { ProcessBatchStatus } from 'types/pipelineContracts'
 
 type TriggerConfig = {
-  serviceName:
-    | 'document_splitter'
-    | 'page_rotator'
-    | 'ocr_processor'
-    | 'content_dedup'
-    | 'metadata_extractor'
-    | 'fedora_ingester'
+  serviceName: ServiceId
   endpointPath: string
   callbackPath: string
+  includeSourceFolderIds?: boolean
+  includeBatchName?: boolean
 }
 
 export interface PipelineTriggerAcceptedResponse {
@@ -58,6 +65,27 @@ function readRequiredEnv(name: string, message: string): string {
   return value
 }
 
+type ValidationErrorDetail = {
+  loc?: unknown
+  msg?: unknown
+  type?: unknown
+}
+
+function getResponseDetails(responseBody: unknown): ValidationErrorDetail[] | undefined {
+  if (typeof responseBody !== 'object' || responseBody === null || !('detail' in responseBody)) {
+    return undefined
+  }
+
+  const detail = responseBody.detail
+  if (!Array.isArray(detail)) {
+    return undefined
+  }
+
+  return detail.filter(
+    (item): item is ValidationErrorDetail => typeof item === 'object' && item !== null,
+  )
+}
+
 function getErrorMessage(responseBody: unknown, fallback: string): string {
   if (typeof responseBody !== 'object' || responseBody === null) {
     return fallback
@@ -71,7 +99,45 @@ function getErrorMessage(responseBody: unknown, fallback: string): string {
     return responseBody.detail
   }
 
+  const responseDetails = getResponseDetails(responseBody)
+  if (responseDetails && responseDetails.length > 0) {
+    const messages = responseDetails
+      .map((detail) => {
+        const location = Array.isArray(detail.loc) ? detail.loc.join('.') : undefined
+        const message = typeof detail.msg === 'string' ? detail.msg : 'Request validation failed'
+        return location ? `${location}: ${message}` : message
+      })
+      .filter((message, index, values) => values.indexOf(message) === index)
+
+    if (messages.length > 0) {
+      return messages.join('; ')
+    }
+  }
+
   return fallback
+}
+
+function getPayloadSummary(payload: Record<string, unknown>): Record<string, unknown> {
+  const pipelineConfig = payload.pipeline_config
+  const pipelineConfigRecord =
+    typeof pipelineConfig === 'object' && pipelineConfig !== null
+      ? (pipelineConfig as Record<string, unknown>)
+      : null
+  const count = (value: unknown): number => (Array.isArray(value) ? value.length : 0)
+
+  return {
+    draftBatchId: payload.draft_batch_id,
+    executionMode: payload.execution_mode,
+    hasCallback: typeof payload.callback === 'object' && payload.callback !== null,
+    hasPipelineConfig: pipelineConfigRecord !== null,
+    pipelineConfigKeys: pipelineConfigRecord ? Object.keys(pipelineConfigRecord).sort() : [],
+    pipelineConfigSourceDocumentCount: count(pipelineConfigRecord?.sourceDocumentIds),
+    pipelineConfigSourceFolderCount: count(pipelineConfigRecord?.sourceFolderIds),
+    pipelineConfigExecutionPlanCount: count(pipelineConfigRecord?.executionPlan),
+    requestedStageCount: count(payload.requested_stages),
+    sourceDocumentCount: count(payload.source_document_ids),
+    sourceFolderCount: count(payload.source_folder_ids),
+  }
 }
 
 function createAsyncCallbackPayload(
@@ -80,6 +146,8 @@ function createAsyncCallbackPayload(
   requestId: string,
   callbackUrl: string,
   executionContext: PipelineExecutionContextInput = {},
+  sourceFolderIds: readonly string[] = [],
+  includeBatchName = false,
 ): Record<string, unknown> {
   if (!batch.startedBy) {
     throw new Error(`Batch ${batch.batchId} is missing startedBy.`)
@@ -106,10 +174,12 @@ function createAsyncCallbackPayload(
     requested_stages: context.requestedStages ?? [],
     collection: context.collection ?? null,
     pipeline_config: context.pipelineConfig ?? null,
+    ...(sourceFolderIds.length > 0 ? { source_folder_ids: [...sourceFolderIds] } : {}),
     callback: {
       url: callbackUrl,
       token: readRequiredEnv('PIPELINE_CALLBACK_TOKEN', 'PIPELINE_CALLBACK_TOKEN is not configured.'),
     },
+    ...(includeBatchName ? { batch_name: batch.batchName || batch.batchId } : {}),
   }
 }
 
@@ -170,7 +240,15 @@ async function triggerPipelineService(
   const requestId = randomUUID()
   const initiatedAt = new Date().toISOString()
   const callbackUrl = buildStageCallbackUrl(config.callbackPath)
-  const payload = createAsyncCallbackPayload(batch, initiatedAt, requestId, callbackUrl, executionContext)
+  const payload = createAsyncCallbackPayload(
+    batch,
+    initiatedAt,
+    requestId,
+    callbackUrl,
+    executionContext,
+    config.includeSourceFolderIds ? executionContext.pipelineConfig?.sourceFolderIds ?? [] : [],
+    config.includeBatchName,
+  )
 
   logEvent('info', `${config.serviceName}_trigger_requested`, {
     batchId: batch.batchId,
@@ -178,6 +256,7 @@ async function triggerPipelineService(
     requestId,
     startedBy: batch.startedBy,
     callbackUrl,
+    payloadSummary: getPayloadSummary(payload),
   })
 
   const response = await fetch(new URL(config.endpointPath, baseUrl), {
@@ -203,6 +282,8 @@ async function triggerPipelineService(
       requestId,
       statusCode: response.status,
       errorMessage,
+      responseDetails: getResponseDetails(responseBody),
+      payloadSummary: getPayloadSummary(payload),
     })
     throw new Error(errorMessage)
   }
@@ -229,9 +310,31 @@ export async function triggerDocumentSplitter(
   return triggerPipelineService(
     batch,
     {
-      serviceName: 'document_splitter',
+      serviceName: DOCUMENT_SPLITTER_SERVICE,
       callbackPath: DOCUMENT_SPLITTER_CALLBACK_PATH,
       endpointPath: '/split',
+    },
+    executionContext,
+  )
+}
+
+export async function triggerDataIngesterBatch(
+  batch: ProcessBatchStatus,
+  executionContext: PipelineExecutionContextInput,
+): Promise<PipelineTriggerAcceptedResponse> {
+  const sourceFolderIds = executionContext.pipelineConfig?.sourceFolderIds ?? []
+  if (sourceFolderIds.length === 0 && !(executionContext.sourceDocumentIds ?? []).length) {
+    throw new Error('Data Ingester draft submission requires a folder or document source.')
+  }
+
+  return triggerPipelineService(
+    batch,
+    {
+      serviceName: DATA_INGESTER_SERVICE,
+      callbackPath: DATA_INGESTER_CALLBACK_PATH,
+      endpointPath: '/ingest',
+      includeSourceFolderIds: true,
+      includeBatchName: true,
     },
     executionContext,
   )
@@ -244,7 +347,7 @@ export async function triggerPageRotator(
   return triggerPipelineService(
     batch,
     {
-      serviceName: 'page_rotator',
+      serviceName: PAGE_ROTATOR_SERVICE,
       callbackPath: PAGE_ROTATOR_CALLBACK_PATH,
       endpointPath: '/rotate',
     },
@@ -259,7 +362,7 @@ export async function triggerOcrProcessor(
   return triggerPipelineService(
     batch,
     {
-      serviceName: 'ocr_processor',
+      serviceName: OCR_PROCESSOR_SERVICE,
       callbackPath: OCR_PROCESSOR_CALLBACK_PATH,
       endpointPath: '/ocr',
     },
@@ -274,7 +377,7 @@ export async function triggerContentDedup(
   return triggerPipelineService(
     batch,
     {
-      serviceName: 'content_dedup',
+      serviceName: CONTENT_DEDUP_SERVICE,
       callbackPath: CONTENT_DEDUP_CALLBACK_PATH,
       endpointPath: '/content-dedup',
     },
@@ -289,7 +392,7 @@ export async function triggerMetadataExtractor(
   return triggerPipelineService(
     batch,
     {
-      serviceName: 'metadata_extractor',
+      serviceName: METADATA_EXTRACTOR_SERVICE,
       callbackPath: METADATA_EXTRACTOR_CALLBACK_PATH,
       endpointPath: '/metadata-extractor',
     },
@@ -304,7 +407,7 @@ export async function triggerFedoraIngester(
   return triggerPipelineService(
     batch,
     {
-      serviceName: 'fedora_ingester',
+      serviceName: FEDORA_INGESTER_SERVICE,
       callbackPath: FEDORA_INGESTER_CALLBACK_PATH,
       endpointPath: '/fedora-ingester',
     },

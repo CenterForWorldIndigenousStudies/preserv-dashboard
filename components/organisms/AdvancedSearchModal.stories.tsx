@@ -1,9 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { ACCESS_LEVEL_OPTIONS } from '@constants/accessLevels'
 import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
-import { GENERATED_BATCH_PUBLICATION_STATUSES } from '@constants/generated/batchPublicationStatuses'
-import { VALIDATION_STATUS_OPTIONS } from '@constants/validationStatuses'
-import type { AdvancedSearchFilters, FilterOptions } from '@lib/search'
+import { VALIDATION_STATUSES, VALIDATION_STATUS_OPTIONS } from '@constants/validationStatuses'
+import { DOCUMENT_TYPE_OPTIONS, type AdvancedSearchFilters, type FilterOptions } from '@lib/search'
 
 import { AdvancedSearchModal } from './AdvancedSearchModal'
 
@@ -12,8 +11,7 @@ const defaultFilters: AdvancedSearchFilters = {
   publisher: '',
   statuses: [],
   lifecycleStatuses: [],
-  publicationStatuses: [],
-  documentType: 'all',
+  documentType: DOCUMENT_TYPE_OPTIONS[0],
   batch: '',
   createdFrom: '',
   createdTo: '',
@@ -26,7 +24,6 @@ const defaultFilterOptions: FilterOptions = {
   accessLevels: [...ACCESS_LEVEL_OPTIONS],
   statuses: [...VALIDATION_STATUS_OPTIONS],
   lifecycleStatuses: Object.values(GENERATED_BATCH_LIFECYCLE_STATUSES),
-  publicationStatuses: Object.values(GENERATED_BATCH_PUBLICATION_STATUSES),
 }
 
 const meta: Meta<typeof AdvancedSearchModal> = {
@@ -48,10 +45,9 @@ export const WithActiveFilters: Story = {
     filters: {
       contributor: 'Maria Gonzalez',
       publisher: 'Example Press',
-      statuses: ['NEEDS_REVIEW', 'APPROVED'],
-      lifecycleStatuses: ['FAILED'],
-      publicationStatuses: ['NOT_STARTED'],
-      documentType: 'unique',
+      statuses: [VALIDATION_STATUSES.NEEDS_REVIEW, VALIDATION_STATUSES.APPROVED],
+      lifecycleStatuses: [GENERATED_BATCH_LIFECYCLE_STATUSES.FAILED],
+      documentType: DOCUMENT_TYPE_OPTIONS[1],
       batch: 'BATCH-2026-04',
       createdFrom: '2026-01-01',
       createdTo: '2026-04-30',
@@ -68,7 +64,7 @@ export const NoCollections: Story = {
     filterOptions: {
       collections: [],
       accessLevels: [...ACCESS_LEVEL_OPTIONS],
-      statuses: ['APPROVED', 'NEEDS_REVIEW'],
+      statuses: [VALIDATION_STATUSES.APPROVED, VALIDATION_STATUSES.NEEDS_REVIEW],
     },
   },
 }

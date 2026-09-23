@@ -30,11 +30,11 @@ describe('reprocessing stage plans', () => {
   it('includes both normalization passes when reprocessing starts at document splitting', () => {
     const config = getDefaultReprocessingPipelineConfig('document_splitter')
 
-    expect(config.executionPlan.filter((step) => step.stepId === 'normalize-pass-1').map((step) => step.pass)).toEqual([
+    expect(config.executionPlan.filter((step) => step.pass === 1).map((step) => step.pass)).toEqual([
       1,
       1,
     ])
-    expect(config.executionPlan.filter((step) => step.stepId === 'normalize-pass-2').map((step) => step.pass)).toEqual([
+    expect(config.executionPlan.filter((step) => step.pass === 2).map((step) => step.pass)).toEqual([
       2,
       2,
     ])

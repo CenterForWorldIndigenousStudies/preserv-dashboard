@@ -82,11 +82,15 @@ function validateExecutionScope(
     return
   }
 
+  if (draftBatchId) {
+    if (newBatchName) {
+      throw new Error(`${executionMode} draft execution cannot specify newBatchName.`)
+    }
+    return
+  }
+
   if (newBatchName) {
     throw new Error(`${executionMode} execution cannot specify newBatchName.`)
-  }
-  if (draftBatchId) {
-    throw new Error(`${executionMode} execution cannot specify draftBatchId.`)
   }
 }
 

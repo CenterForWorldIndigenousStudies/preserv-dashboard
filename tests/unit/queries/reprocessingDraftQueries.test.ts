@@ -23,6 +23,7 @@ vi.mock('@lib/editHistory', () => ({ createEditHistoryEntry: mockCreateEditHisto
 import {
   addDocumentToReprocessingDraft,
   addDocumentsToReprocessingDraft,
+  createBatchDraft,
   createReprocessingDraft,
   createReprocessingDraftForDocuments,
   getOpenDraftForDocument,
@@ -44,20 +45,23 @@ describe('reprocessing draft queries', () => {
   })
 
   it('lists only draft batches and maps stored draft metadata', async () => {
+    const pipelineConfig = getReprocessingPipelineConfig('ocr_processor', [
+      'ocr_processor',
+      'content_dedup',
+      'metadata_extractor',
+    ])
     mockDb.batches.findMany.mockResolvedValue([
       {
         id: 'draft-1',
         name: 'Review retry one',
         lifecycle_status: 'draft',
         processing_details: JSON.stringify({
-          reprocessingDraft: {
-            restartStage: 'ocr_processor',
+          reason: 'Low OCR confidence',
+          collection: { name: 'Collection A', notes: 'Review set' },
+          pipeline: {
+            executionMode: 'reprocess',
             requestedStages: ['ocr_processor', 'content_dedup', 'metadata_extractor'],
-            reason: 'Low OCR confidence',
-            collectionName: 'Collection A',
-            collectionNotes: 'Review set',
-            createdBy: 'reviewer@example.com',
-            updatedBy: 'reviewer@example.com',
+            config: pipelineConfig,
           },
         }),
         created_at: new Date('2026-09-03T10:00:00.000Z'),
@@ -74,17 +78,14 @@ describe('reprocessing draft queries', () => {
         collectionNotes: 'Review set',
         restartStage: 'ocr_processor',
         requestedStages: ['ocr_processor', 'content_dedup', 'metadata_extractor'],
-        pipelineConfig: getReprocessingPipelineConfig('ocr_processor', [
-          'ocr_processor',
-          'content_dedup',
-          'metadata_extractor',
-        ]),
+        pipelineConfig,
+        executionMode: 'reprocess',
         reason: 'Low OCR confidence',
+        sourceFolderIds: [],
+        sourceDocumentIds: [],
         documentCount: 2,
         createdAt: '2026-09-03T10:00:00.000Z',
         updatedAt: '2026-09-03T10:05:00.000Z',
-        createdBy: 'reviewer@example.com',
-        updatedBy: 'reviewer@example.com',
       },
     ])
     expect(mockDb.batches.findMany).toHaveBeenCalledWith(
@@ -92,11 +93,62 @@ describe('reprocessing draft queries', () => {
     )
   })
 
+  it('reads the canonical batch draft processing details shape', async () => {
+    const pipelineConfig = getReprocessingPipelineConfig('ocr_processor', [
+      'ocr_processor',
+      'content_dedup',
+      'metadata_extractor',
+    ])
+    pipelineConfig.sourceFolderIds = ['folder-1']
+    pipelineConfig.sourceDocumentIds = ['doc-1', 'doc-2']
+    mockDb.batches.findMany.mockResolvedValue([
+      {
+        id: 'draft-2',
+        name: 'Canonical draft',
+        lifecycle_status: 'draft',
+        processing_details: JSON.stringify({
+          reason: 'Reprocess selected source documents',
+          collection: { name: 'Collection B', notes: 'Canonical notes' },
+          pipeline: {
+            executionMode: 'reprocess',
+            requestedStages: ['ocr_processor', 'content_dedup', 'metadata_extractor'],
+            config: pipelineConfig,
+          },
+        }),
+        created_at: new Date('2026-09-04T10:00:00.000Z'),
+        updated_at: new Date('2026-09-04T10:05:00.000Z'),
+        document_to_batches: [{ document_id: 'doc-1' }, { document_id: 'doc-2' }],
+      },
+    ])
+
+    await expect(getReprocessingDrafts()).resolves.toEqual([
+      expect.objectContaining({
+        id: 'draft-2',
+        collectionName: 'Collection B',
+        collectionNotes: 'Canonical notes',
+        restartStage: 'ocr_processor',
+        requestedStages: ['ocr_processor', 'content_dedup', 'metadata_extractor'],
+        pipelineConfig,
+        reason: 'Reprocess selected source documents',
+        sourceFolderIds: ['folder-1'],
+        sourceDocumentIds: ['doc-1', 'doc-2'],
+        documentCount: 2,
+      }),
+    ])
+  })
+
   it('includes the source batch identifiers for draft documents', async () => {
     mockDb.batches.findFirst.mockResolvedValue({
       id: 'draft-1',
       name: 'Retry batch',
-      processing_details: JSON.stringify({ reprocessingDraft: { restartStage: 'ocr_processor', reason: 'Retry' } }),
+      processing_details: JSON.stringify({
+        reason: 'Retry',
+        pipeline: {
+          executionMode: 'reprocess',
+          requestedStages: ['ocr_processor'],
+          config: getReprocessingPipelineConfig('ocr_processor', ['ocr_processor']),
+        },
+      }),
       created_at: new Date('2026-09-03T10:00:00.000Z'),
       updated_at: new Date('2026-09-03T10:00:00.000Z'),
       document_to_batches: [
@@ -141,7 +193,14 @@ describe('reprocessing draft queries', () => {
         id: 'draft-1',
         name: 'Retry batch',
         lifecycle_status: 'draft',
-        processing_details: JSON.stringify({ reprocessingDraft: { restartStage: 'page_rotator', reason: 'Retry' } }),
+        processing_details: JSON.stringify({
+          reason: 'Retry',
+          pipeline: {
+            executionMode: 'reprocess',
+            requestedStages: ['page_rotator'],
+            config: getReprocessingPipelineConfig('page_rotator', ['page_rotator']),
+          },
+        }),
         created_at: new Date('2026-09-03T10:00:00.000Z'),
         updated_at: new Date('2026-09-03T10:00:00.000Z'),
         document_to_batches: [{ document_id: 'doc-1' }],
@@ -212,18 +271,49 @@ describe('reprocessing draft queries', () => {
     expect(membershipCalls.map(([call]) => call.data.document_id)).toEqual(['doc-1', 'doc-2'])
   })
 
+  it('creates a mixed-source batch draft with canonical pipeline source configuration', async () => {
+    mockDb.documents.findUnique.mockResolvedValue({ id: 'doc-1' })
+    mockDb.batches.findFirst.mockResolvedValue(null)
+    mockDb.batches.create.mockResolvedValue({ id: 'draft-mixed' })
+    mockDb.document_to_batches.create.mockResolvedValue({ id: 'membership-1' })
+
+    const result = await createBatchDraft({
+      sourceFolderIds: ['folder-1'],
+      documentIds: ['doc-1'],
+      name: 'Mixed source draft',
+      restartStage: 'data_ingester',
+      requestedStages: ['ocr_processor', 'metadata_extractor'],
+      reason: 'Initial preservation batch',
+    })
+
+    expect(result.ok).toBe(true)
+    const createCall = mockDb.batches.create.mock.calls[0] as unknown as [
+      { data: { processing_details: string } },
+    ]
+    expect(JSON.parse(createCall[0].data.processing_details)).toMatchObject({
+      reason: 'Initial preservation batch',
+      pipeline: {
+        executionMode: 'normal',
+        requestedStages: ['ocr_processor', 'metadata_extractor'],
+        config: {
+          sourceFolderIds: ['folder-1'],
+          sourceDocumentIds: ['doc-1'],
+        },
+      },
+    })
+  })
+
   it('records the previous and new values when a draft is updated', async () => {
     mockDb.batches.findFirst.mockResolvedValueOnce({
       id: 'draft-1',
       name: 'Old name',
       processing_details: JSON.stringify({
-        reprocessingDraft: {
-          restartStage: 'ocr_processor',
+        reason: 'Old reason',
+        collection: { name: 'Old collection', notes: 'Old notes' },
+        pipeline: {
+          executionMode: 'reprocess',
           requestedStages: ['ocr_processor', 'content_dedup'],
-          reason: 'Old reason',
-          collectionName: 'Old collection',
-          collectionNotes: 'Old notes',
-          createdBy: 'creator@example.com',
+          config: getReprocessingPipelineConfig('ocr_processor', ['ocr_processor', 'content_dedup']),
         },
       }),
       created_at: new Date('2026-09-03T10:00:00.000Z'),
@@ -263,7 +353,6 @@ describe('reprocessing draft queries', () => {
       mockDb,
       expect.objectContaining({
         newValue: expect.objectContaining({
-          restartStage: 'page_rotator',
           requestedStages: ['page_rotator', 'ocr_processor'],
         }) as unknown as Record<string, unknown>,
       }),

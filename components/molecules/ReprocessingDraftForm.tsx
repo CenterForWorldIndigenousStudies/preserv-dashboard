@@ -1,10 +1,13 @@
 'use client'
 
 import type { ReactElement } from 'react'
-import { Stack, TextField } from '@mui/material'
-
-import { ProcessBatchFormPanel } from '@molecules/ProcessBatchFormPanel'
-import { ReprocessingStageSelector } from '@molecules/ReprocessingStageSelector'
+import { BatchDraftForm } from '@molecules/BatchDraftForm'
+import {
+  getDefaultReprocessingPipelineConfig,
+  getReprocessingDownstreamStages,
+  pipelineConfigToReprocessingRequestedStages,
+  REPROCESSING_STAGE_OPTIONS,
+} from '@lib/reprocessingDrafts'
 import type { PipelineConfig } from '@lib/pipelineConfig'
 import type { CallbackStageKey } from 'types/pipelineContracts'
 
@@ -56,46 +59,35 @@ export function ReprocessingDraftForm({
   submitLabel = 'Add to reprocessing cart',
 }: ReprocessingDraftFormProps): ReactElement {
   return (
-    <Stack spacing={2}>
-      <ProcessBatchFormPanel
-        batchName={name}
-        collectionName={collectionName}
-        collectionNotes={collectionNotes}
-        isSubmitting={isSubmitting}
-        isRefreshing={false}
-        canSubmit={canSubmit && !nameExists}
-        submitError={error}
-        acceptedBatchName={null}
-        batchNameSearchError={batchNameSearchError}
-        batchNameExists={nameExists}
-        onBatchNameChange={onNameChange}
-        onCollectionNameChange={onCollectionNameChange}
-        onCollectionNotesChange={onCollectionNotesChange}
-        onSubmit={onSubmit}
-        onRefresh={() => undefined}
-        title={'Create a reprocessing batch'}
-        description={'Name the draft and choose the stages and reason.'}
-        submitLabel={submitLabel}
-        showRefresh={false}
-      />
-      <ReprocessingStageSelector
-        restartStage={restartStage}
-        requestedStages={requestedStages}
-        pipelineConfig={pipelineConfig}
-        onRestartStageChange={onRestartStageChange}
-        onRequestedStagesChange={onRequestedStagesChange}
-        onPipelineConfigChange={onPipelineConfigChange}
-      />
-      <TextField
-        fullWidth
-        required
-        multiline
-        minRows={3}
-        label={'Reason'}
-        value={reason}
-        onChange={(event) => onReasonChange(event.target.value)}
-        placeholder={'Explain why this document needs to be reprocessed.'}
-      />
-    </Stack>
+    <BatchDraftForm
+      name={name}
+      collectionName={collectionName}
+      collectionNotes={collectionNotes}
+      startStage={restartStage}
+      requestedStages={requestedStages}
+      pipelineConfig={pipelineConfig}
+      stageOptions={REPROCESSING_STAGE_OPTIONS}
+      getDownstreamStages={getReprocessingDownstreamStages}
+      getDefaultPipelineConfig={getDefaultReprocessingPipelineConfig}
+      getRequestedStages={pipelineConfigToReprocessingRequestedStages}
+      reason={reason}
+      isSubmitting={isSubmitting}
+      canSubmit={canSubmit}
+      error={error}
+      nameExists={nameExists}
+      batchNameSearchError={batchNameSearchError}
+      onNameChange={onNameChange}
+      onCollectionNameChange={onCollectionNameChange}
+      onCollectionNotesChange={onCollectionNotesChange}
+      onStartStageChange={onRestartStageChange}
+      onRequestedStagesChange={onRequestedStagesChange}
+      onPipelineConfigChange={onPipelineConfigChange}
+      onReasonChange={onReasonChange}
+      onSubmit={onSubmit}
+      submitLabel={submitLabel}
+      title={'Create a reprocessing batch'}
+      description={'Name the draft and choose the stages and reason.'}
+      showNormalizationPasses
+    />
   )
 }

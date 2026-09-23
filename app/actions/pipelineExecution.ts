@@ -5,13 +5,24 @@ import { revalidatePath } from 'next/cache'
 
 import { BATCHES_PATH, DOCUMENTS_PATH, READY_FOR_LIBRARY_PATH } from '@constants/paths'
 import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
+import { GENERATED_PIPELINE_EXECUTION_MODES } from '@constants/generated/pipelineExecutionModes'
+import {
+  CONTENT_DEDUP_SERVICE,
+  DOCUMENT_SPLITTER_SERVICE,
+  FEDORA_INGESTER_SERVICE,
+  METADATA_EXTRACTOR_SERVICE,
+  OCR_PROCESSOR_SERVICE,
+  PAGE_ROTATOR_SERVICE,
+} from '@constants/pipeline'
 import { getDashboardSession } from '@root/auth'
+import { PIPELINE_STAGE_PROPERTIES } from '@constants/pipelineStageProperties'
 import type { PipelineExecutionContextInput } from '@lib/pipelineExecutionContext'
 import { batchNameExists, documentIdsExist, getPipelineExecutionSnapshot } from '@lib/queries/pipelineExecutionQueries'
-import { getReprocessingDraft } from '@lib/queries/reprocessingDraftQueries'
+import { getBatchDraft } from '@lib/queries/batchDraftQueries'
 import { normalizeReprocessingRequestedStages } from '@lib/reprocessingDrafts'
 import {
   triggerContentDedup,
+  triggerDataIngesterBatch,
   triggerDocumentSplitter,
   triggerFedoraIngester,
   triggerDataIngesterReprocess,
@@ -23,22 +34,27 @@ import type { PipelineExecutionActionResult, PipelineExecutionRequest } from 'ty
 import type { CallbackStageKey, ProcessBatchStatus } from 'types/pipelineContracts'
 
 const REPROCESSABLE_STAGES = new Set<CallbackStageKey>([
-  'document_splitter',
-  'page_rotator',
-  'ocr_processor',
-  'content_dedup',
-  'metadata_extractor',
+  DOCUMENT_SPLITTER_SERVICE,
+  PAGE_ROTATOR_SERVICE,
+  OCR_PROCESSOR_SERVICE,
+  CONTENT_DEDUP_SERVICE,
+  METADATA_EXTRACTOR_SERVICE,
+])
+
+const ACTIVE_BATCH_LIFECYCLE_STATUSES = new Set<string>([
+  GENERATED_BATCH_LIFECYCLE_STATUSES.QUEUED,
+  GENERATED_BATCH_LIFECYCLE_STATUSES.RUNNING,
 ])
 
 const triggerByStage: Partial<
   Record<CallbackStageKey, (batch: ProcessBatchStatus, context?: PipelineExecutionContextInput) => Promise<unknown>>
 > = {
-  document_splitter: triggerDocumentSplitter,
-  page_rotator: triggerPageRotator,
-  ocr_processor: triggerOcrProcessor,
-  content_dedup: triggerContentDedup,
-  metadata_extractor: triggerMetadataExtractor,
-  fedora_ingester: triggerFedoraIngester,
+  [DOCUMENT_SPLITTER_SERVICE]: triggerDocumentSplitter,
+  [PAGE_ROTATOR_SERVICE]: triggerPageRotator,
+  [OCR_PROCESSOR_SERVICE]: triggerOcrProcessor,
+  [CONTENT_DEDUP_SERVICE]: triggerContentDedup,
+  [METADATA_EXTRACTOR_SERVICE]: triggerMetadataExtractor,
+  [FEDORA_INGESTER_SERVICE]: triggerFedoraIngester,
 }
 
 function normalizeRequest(request: PipelineExecutionRequest): PipelineExecutionRequest {
@@ -64,7 +80,7 @@ function validateRequest(request: PipelineExecutionRequest): string | null {
   if (!request.restartStage) {
     return 'A restart stage is required.'
   }
-  if (request.mode === 'reprocess') {
+  if (request.mode === GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS) {
     if (!REPROCESSABLE_STAGES.has(request.restartStage)) {
       return 'Fedora Ingester cannot be used as a reprocessing start stage.'
     }
@@ -86,6 +102,9 @@ function validateRequest(request: PipelineExecutionRequest): string | null {
     }
     return null
   }
+  if (request.draftBatchId) {
+    return request.batchId === request.draftBatchId ? null : 'A draft batch is required.'
+  }
   return request.batchId ? null : 'A batch is required.'
 }
 
@@ -95,7 +114,7 @@ type ExecutionPreflight =
 
 async function preflightReprocess(request: PipelineExecutionRequest): Promise<string | null> {
   if (request.draftBatchId) {
-    const draft = await getReprocessingDraft(request.draftBatchId)
+    const draft = await getBatchDraft(request.draftBatchId)
     if (draft) {
       if (draft.restartStage !== request.restartStage)
         return 'The selected stage does not match the draft restart stage.'
@@ -111,7 +130,7 @@ async function preflightReprocess(request: PipelineExecutionRequest): Promise<st
     const replayKey = `draft-submit:${request.draftBatchId}`
     if (
       submittedSnapshot.batch &&
-      ['queued', 'running'].includes(submittedSnapshot.batch.lifecycleStatus ?? '') &&
+      ACTIVE_BATCH_LIFECYCLE_STATUSES.has(submittedSnapshot.batch.lifecycleStatus ?? '') &&
       currentExecution?.idempotencyKey === replayKey &&
       currentExecution.stage === request.restartStage
     ) {
@@ -130,27 +149,54 @@ async function preflightReprocess(request: PipelineExecutionRequest): Promise<st
   return null
 }
 
+async function preflightDraft(request: PipelineExecutionRequest): Promise<string | null> {
+  if (!request.draftBatchId) return null
+  const draft = await getBatchDraft(request.draftBatchId)
+  if (!draft) return 'The batch draft was not found or is no longer editable.'
+  if (draft.restartStage !== request.restartStage) {
+    return 'The selected stage does not match the draft start stage.'
+  }
+  const requestedStages = request.requestedStages ?? draft.requestedStages
+  if (JSON.stringify(draft.requestedStages) !== JSON.stringify(requestedStages)) {
+    return 'The selected stages do not match the draft processing plan.'
+  }
+  const folderCount = draft.sourceFolderIds?.length ?? draft.pipelineConfig?.sourceFolderIds?.length ?? 0
+  const documentCount = draft.sourceDocumentIds?.length ?? draft.documents.length
+  if (folderCount === 0 && documentCount === 0) {
+    return 'A batch draft must contain at least one source folder or document.'
+  }
+  return null
+}
+
 async function preflightExecution(request: PipelineExecutionRequest): Promise<ExecutionPreflight> {
-  if (request.mode === 'reprocess') {
+  if (request.mode === GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS) {
     const reprocessError = await preflightReprocess(request)
     if (reprocessError) {
       return { ok: false, error: reprocessError }
     }
   }
+  if (request.mode === GENERATED_PIPELINE_EXECUTION_MODES.NORMAL && request.draftBatchId) {
+    const draftError = await preflightDraft(request)
+    if (draftError) return { ok: false, error: draftError }
+  }
 
   const sourceBatchId = request.draftBatchId ?? request.batchId
   const sourceBatch = sourceBatchId ? await getPipelineExecutionSnapshot(sourceBatchId) : null
-  if (request.mode !== 'reprocess' && !sourceBatch?.batch) {
+  if (request.mode !== GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS && !sourceBatch?.batch) {
     return { ok: false, error: `Batch ${request.batchId} was not found.` }
   }
   if (
-    request.mode === 'retry' &&
+    request.mode === GENERATED_PIPELINE_EXECUTION_MODES.RETRY &&
     sourceBatch?.batch &&
     getStageStatus(sourceBatch.batch, request.restartStage) !== 'failed'
   ) {
     return { ok: false, error: 'Retry is only available for a failed stage.' }
   }
-  if (request.mode === 'rerun' && sourceBatch?.batch && isPublishedBatch(sourceBatch.batch)) {
+  if (
+    request.mode === GENERATED_PIPELINE_EXECUTION_MODES.RERUN &&
+    sourceBatch?.batch &&
+    isPublishedBatch(sourceBatch.batch)
+  ) {
     return { ok: false, error: 'Published batches must be reprocessed into a new batch.' }
   }
 
@@ -158,10 +204,7 @@ async function preflightExecution(request: PipelineExecutionRequest): Promise<Ex
 }
 
 function isPublishedBatch(batch: ProcessBatchStatus): boolean {
-  return (
-    batch.lifecycleStatus === GENERATED_BATCH_LIFECYCLE_STATUSES.PUBLISHED ||
-    ['published', 'publication_locked', 'unknown'].includes(batch.publicationStatus ?? '')
-  )
+  return batch.lifecycleStatus === GENERATED_BATCH_LIFECYCLE_STATUSES.PUBLISHED
 }
 
 function sourceBatchIdForRequest(request: PipelineExecutionRequest): string | undefined {
@@ -184,16 +227,22 @@ async function triggerRequestedExecution(
   operationId: string,
   idempotencyKey: string,
 ): Promise<unknown> {
-  const draft = request.draftBatchId ? await getReprocessingDraft(request.draftBatchId) : null
-  const trigger = request.mode === 'reprocess' && request.draftBatchId
+  const draft = request.draftBatchId ? await getBatchDraft(request.draftBatchId) : null
+  const trigger = request.mode === GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS && request.draftBatchId
     ? triggerDataIngesterReprocess
-    : triggerByStage[request.restartStage]
+    : request.mode === GENERATED_PIPELINE_EXECUTION_MODES.NORMAL && request.draftBatchId
+      ? triggerDataIngesterBatch
+      : triggerByStage[request.restartStage]
   if (!trigger) {
     throw new Error(`Stage ${request.restartStage} cannot be triggered.`)
   }
 
-  const triggerBatch = sourceBatch ?? buildReprocessTriggerBatch(request, startedBy, draft?.name)
-  const sourceDocumentIds = draft?.documents.map((document) => document.id)
+  const triggerBatch = request.draftBatchId
+    ? buildReprocessTriggerBatch(request, startedBy, draft?.name)
+    : sourceBatch ?? buildReprocessTriggerBatch(request, startedBy, draft?.name)
+  const sourceDocumentIds = draft?.sourceDocumentIds
+    ? [...draft.sourceDocumentIds]
+    : draft?.documents.map((document) => document.id)
     ?? sourceBatch?.currentExecution?.sourceDocumentIds
     ?? request.documentIds
   return trigger(triggerBatch, {
@@ -253,28 +302,18 @@ export async function requestPipelineExecution(
       ok: true,
       batchId: acceptedBatchId,
       operationId,
-      message: request.mode === 'reprocess' ? 'Document reprocessing was queued.' : 'Pipeline execution was queued.',
+      message:
+        request.mode === GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS
+          ? 'Document reprocessing was queued.'
+          : 'Pipeline execution was queued.',
     }
   } catch (error: unknown) {
     return { ok: false, error: error instanceof Error ? error.message : 'Pipeline execution could not be queued.' }
   }
 }
 
-function stageProperty(stage: CallbackStageKey): keyof ProcessBatchStatus {
-  const properties: Record<CallbackStageKey, keyof ProcessBatchStatus> = {
-    ingester: 'ingester',
-    document_splitter: 'documentSplitter',
-    page_rotator: 'pageRotator',
-    ocr_processor: 'ocrProcessor',
-    content_dedup: 'contentDedup',
-    metadata_extractor: 'metadataExtractor',
-    fedora_ingester: 'fedoraIngester',
-  }
-  return properties[stage]
-}
-
 function getStageStatus(batch: ProcessBatchStatus, stage: CallbackStageKey): string | null {
-  const stageValue = batch[stageProperty(stage)]
+  const stageValue = batch[PIPELINE_STAGE_PROPERTIES[stage]]
   return stageValue && typeof stageValue === 'object' && 'status' in stageValue && typeof stageValue.status === 'string'
     ? stageValue.status
     : null

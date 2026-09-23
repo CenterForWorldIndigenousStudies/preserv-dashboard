@@ -18,6 +18,16 @@ export const GENERATED_PROCESSING_DETAILS_CONTRACT = {
   },
   "batch": {
     "properties": {
+      "reason": {
+        "label": "Reason",
+        "description": "Operator-provided reason for creating or running the batch.",
+        "valueType": "string"
+      },
+      "collection": {
+        "label": "Collection",
+        "description": "Collection selected for the batch and its documents.",
+        "valueType": "object"
+      },
       "pipeline": {
         "label": "Pipeline",
         "description": "Execution context and history for modern pipeline work.",
@@ -73,6 +83,26 @@ export const GENERATED_PROCESSING_DETAILS_CONTRACT = {
         "valueType": "array"
       }
     }
+  },
+  "pipelineConfig": {
+    "properties": {
+      "sourceFolderIds": {
+        "label": "Source Folder IDs",
+        "description": "Google Drive folder IDs selected as sources for batch ingestion.",
+        "valueType": "array"
+      },
+      "sourceDocumentIds": {
+        "label": "Source Document IDs",
+        "description": "Existing document IDs selected as sources for batch materialization.",
+        "valueType": "array"
+      },
+      "executionPlan": {
+        "label": "Execution Plan",
+        "description": "The ordered pipeline steps selected for the batch.",
+        "valueType": "array"
+      }
+    },
+    "patterns": {}
   },
   "stage": {
     "properties": {

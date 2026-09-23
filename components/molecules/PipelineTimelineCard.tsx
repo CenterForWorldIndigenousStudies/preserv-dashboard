@@ -14,6 +14,7 @@ import {
   getOrchestratedExecutionPlan,
   type PipelineStepRuntimeStatus,
 } from '@lib/pipelineExecution'
+import { PIPELINE_STAGE_STATUSES } from '@constants/pipelineStageStatuses'
 import type { PipelineExecutionStep } from '@lib/pipelineConfig'
 import type { ProcessBatchStatus } from 'types/pipelineContracts'
 
@@ -23,59 +24,77 @@ interface PipelineTimelineCardProps {
   title?: string
 }
 
-type PipelineTimelineStatus = Extract<PipelineStepRuntimeStatus, 'pending' | 'running' | 'completed' | 'failed'>
+type PipelineTimelineStatus = Extract<
+  PipelineStepRuntimeStatus,
+  | typeof PIPELINE_STAGE_STATUSES.PENDING
+  | typeof PIPELINE_STAGE_STATUSES.RUNNING
+  | typeof PIPELINE_STAGE_STATUSES.COMPLETED
+  | typeof PIPELINE_STAGE_STATUSES.FAILED
+>
 
 const timelineStatusLabelMap: Record<PipelineTimelineStatus, string> = {
-  pending: 'Waiting',
-  running: 'Running',
-  completed: 'Completed',
-  failed: 'Failed',
+  [PIPELINE_STAGE_STATUSES.PENDING]: 'Waiting',
+  [PIPELINE_STAGE_STATUSES.RUNNING]: 'Running',
+  [PIPELINE_STAGE_STATUSES.COMPLETED]: 'Completed',
+  [PIPELINE_STAGE_STATUSES.FAILED]: 'Failed',
 }
 
 function getGroupStatus(
   subSteps: Array<{ label: string; status: PipelineStepRuntimeStatus }>,
 ): PipelineStepRuntimeStatus {
-  if (subSteps.some((step) => step.status === 'failed')) {
-    return 'failed'
+  if (subSteps.some((step) => step.status === PIPELINE_STAGE_STATUSES.FAILED)) {
+    return PIPELINE_STAGE_STATUSES.FAILED
   }
-  if (subSteps.some((step) => step.status === 'review_needed')) {
-    return 'review_needed'
+  if (subSteps.some((step) => step.status === PIPELINE_STAGE_STATUSES.REVIEW_NEEDED)) {
+    return PIPELINE_STAGE_STATUSES.REVIEW_NEEDED
   }
-  if (subSteps.every((step) => step.status === 'completed')) {
-    return 'completed'
+  if (subSteps.every((step) => step.status === PIPELINE_STAGE_STATUSES.COMPLETED)) {
+    return PIPELINE_STAGE_STATUSES.COMPLETED
   }
-  if (subSteps.some((step) => step.status === 'running')) {
-    return 'running'
+  if (subSteps.some((step) => step.status === PIPELINE_STAGE_STATUSES.RUNNING)) {
+    return PIPELINE_STAGE_STATUSES.RUNNING
   }
-  if (subSteps.some((step) => step.status === 'queued')) {
-    return 'queued'
+  if (subSteps.some((step) => step.status === PIPELINE_STAGE_STATUSES.QUEUED)) {
+    return PIPELINE_STAGE_STATUSES.QUEUED
   }
-  return 'pending'
+  return PIPELINE_STAGE_STATUSES.PENDING
 }
 
 function getTimelineStatus(steps: TimelineStep[]): PipelineTimelineStatus {
-  if (steps.some((step) => step.status === 'failed' || step.status === 'review_needed')) {
-    return 'failed'
+  if (
+    steps.some(
+      (step) =>
+        step.status === PIPELINE_STAGE_STATUSES.FAILED ||
+        step.status === PIPELINE_STAGE_STATUSES.REVIEW_NEEDED,
+    )
+  ) {
+    return PIPELINE_STAGE_STATUSES.FAILED
   }
-  if (steps.length > 0 && steps.every((step) => step.status === 'completed')) {
-    return 'completed'
+  if (steps.length > 0 && steps.every((step) => step.status === PIPELINE_STAGE_STATUSES.COMPLETED)) {
+    return PIPELINE_STAGE_STATUSES.COMPLETED
   }
-  if (steps.some((step) => step.status === 'running' || step.status === 'queued')) {
-    return 'running'
+  if (
+    steps.some(
+      (step) =>
+        step.status === PIPELINE_STAGE_STATUSES.RUNNING ||
+        step.status === PIPELINE_STAGE_STATUSES.QUEUED,
+    )
+  ) {
+    return PIPELINE_STAGE_STATUSES.RUNNING
   }
-  return 'pending'
+  return PIPELINE_STAGE_STATUSES.PENDING
 }
 
 function buildTimelineSteps(batch: ProcessBatchStatus): TimelineStep[] {
   const executionPlan = getOrchestratedExecutionPlan(batch)
-  const normalizeGroups = new Map<string, PipelineExecutionStep[]>()
+  const normalizeGroups = new Map<1 | 2, PipelineExecutionStep[]>()
   const timelineSteps: TimelineStep[] = []
 
   for (const step of executionPlan) {
-    if (step.stepId === 'normalize-pass-1' || step.stepId === 'normalize-pass-2') {
-      const current = normalizeGroups.get(step.stepId) ?? []
+    if (step.pass === 1 || step.pass === 2) {
+      const current = normalizeGroups.get(step.pass) ?? []
       current.push(step)
-      normalizeGroups.set(step.stepId, current)
+      normalizeGroups.set(step.pass, current)
       continue
     }
 
@@ -86,7 +105,7 @@ function buildTimelineSteps(batch: ProcessBatchStatus): TimelineStep[] {
     })
   }
 
-  const pass1Steps = normalizeGroups.get('normalize-pass-1')
+  const pass1Steps = normalizeGroups.get(1)
   if (pass1Steps && pass1Steps.length > 0) {
     const subSteps = pass1Steps.map((step) => ({
       label: step.label,
@@ -106,7 +125,7 @@ function buildTimelineSteps(batch: ProcessBatchStatus): TimelineStep[] {
     })
   }
 
-  const pass2Steps = normalizeGroups.get('normalize-pass-2')
+  const pass2Steps = normalizeGroups.get(2)
   if (pass2Steps && pass2Steps.length > 0) {
     const subSteps = pass2Steps.map((step) => ({
       label: step.label,

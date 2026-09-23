@@ -74,7 +74,7 @@ export default async function BatchDetailPage({ params, searchParams }: BatchDet
           startedAt={detail.startedAt}
           requestedStages={requestedStages}
           lifecycleStatus={detail.lifecycleStatus}
-          publicationStatus={detail.publicationStatus}
+          publicationState={detail.publicationState}
           additionalFields={[
             { key: 'id', label: 'Batch ID', value: detail.id },
             { key: 'name', label: 'Name', value: detail.name ?? '—' },

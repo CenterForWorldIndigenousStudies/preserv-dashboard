@@ -15,7 +15,7 @@ export interface BatchListItem {
   totalCost: string
   processingTime: number | string | null
   lifecycleStatus?: string | null
-  publicationStatus?: string | null
+  publicationState?: string | null
 }
 
 export interface BatchListPageResult {
@@ -42,7 +42,7 @@ export interface BatchDetail {
   startedAt: string | Date | null
   properties: BatchProperty[]
   lifecycleStatus?: string | null
-  publicationStatus?: string | null
+  publicationState?: string | null
   metadata: BatchMetadataField[]
 }
 

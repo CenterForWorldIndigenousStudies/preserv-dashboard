@@ -2,10 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import contract from '@contracts/pipeline-services.json'
 import * as pipelineServices from '@constants/pipelineServices'
-import { GENERATED_PIPELINE_SERVICES } from '@constants/generated/pipelineServices'
+import { GENERATED_PIPELINE_SERVICES, GENERATED_PIPELINE_SERVICE_KEYS } from '@constants/generated/pipelineServices'
 import {
+  getPipelineServiceContractForService,
   getPipelineServiceDisplayName,
-  getPipelineServiceDisplayNameForService,
+  getPipelineServiceDescriptionForService,
   pipelineServiceDisplayNames,
 } from '@constants/pipelineServices'
 
@@ -24,9 +25,16 @@ describe('pipeline service contract', () => {
     expect(getPipelineServiceDisplayName('new_service')).toBe('New Service')
   })
 
-  it('maps dashboard service identifiers to contract display names', () => {
-    expect(getPipelineServiceDisplayNameForService('document-splitter')).toBe('Document Splitter')
-    expect(getPipelineServiceDisplayNameForService('metadata-extraction')).toBe('Metadata Extractor')
-    expect(getPipelineServiceDisplayNameForService('ingester')).toBe('Data Ingester')
+  it('exposes the generated contract definition directly', () => {
+    expect(getPipelineServiceContractForService('ocr_processor')).toEqual(
+      GENERATED_PIPELINE_SERVICES.ocr_processor,
+    )
+    expect(getPipelineServiceDescriptionForService('metadata_extractor')).toBe(
+      GENERATED_PIPELINE_SERVICES.metadata_extractor.description,
+    )
+  })
+
+  it('derives service keys from the generated contract', () => {
+    expect(GENERATED_PIPELINE_SERVICE_KEYS.DATA_INGESTER).toBe('data_ingester')
   })
 })

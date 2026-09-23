@@ -2,46 +2,32 @@ import type { ReactElement } from 'react'
 import { Checkbox, FormControlLabel, Paper, Stack, Typography } from '@mui/material'
 
 import {
-  CONTENT_DEDUP_STAGE,
-  DOCUMENT_SPLITTER_STAGE,
-  OCR_PROCESSOR_STAGE,
-  PAGE_ROTATOR_STAGE,
+  CONTENT_DEDUP_SERVICE,
+  DOCUMENT_SPLITTER_SERVICE,
+  OCR_PROCESSOR_SERVICE,
+  PAGE_ROTATOR_SERVICE,
+  type ServiceId,
 } from '@constants/pipeline'
+import { getPipelineServiceContractForService } from '@constants/pipelineServices'
 
 interface PipelineStageSelectorPanelProps {
   selectedStages: string[]
   onSelectedStagesChange: (stages: string[]) => void
 }
 
-const availableStages: ReadonlyArray<{
-  id: string
-  label: string
-  description: string
-}> = [
-  {
-    id: DOCUMENT_SPLITTER_STAGE,
-    label: 'Document Splitter',
-    description: 'Automatically continue into document splitting after ingest completes successfully.',
-  },
-  {
-    id: PAGE_ROTATOR_STAGE,
-    label: 'Page Rotator',
-    description:
-      'Automatically continue into page rotation after ingest or after document splitting, depending on the selected stage set.',
-  },
-  {
-    id: OCR_PROCESSOR_STAGE,
-    label: 'OCR Processor',
-    description:
-      'Automatically continue into OCR after ingest, after document splitting, or after page rotation, depending on the selected stage set.',
-  },
-  {
-    id: CONTENT_DEDUP_STAGE,
-    label: 'Content Dedup',
-    description:
-      'Automatically continue into content-based duplicate and version detection after the deepest requested upstream stage completes.',
-  },
-]
+const availableStages: ReadonlyArray<{ id: ServiceId; label: string; description: string }> = [
+  DOCUMENT_SPLITTER_SERVICE,
+  PAGE_ROTATOR_SERVICE,
+  OCR_PROCESSOR_SERVICE,
+  CONTENT_DEDUP_SERVICE,
+].map((service) => {
+  const contract = getPipelineServiceContractForService(service)
+  return {
+    id: service,
+    label: contract.display_name,
+    description: contract.description,
+  }
+})
 
 export function PipelineStageSelectorPanel({
   selectedStages,

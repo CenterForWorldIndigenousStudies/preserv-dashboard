@@ -1,6 +1,6 @@
 import { db } from '@lib/db'
 import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
-import { GENERATED_BATCH_PUBLICATION_STATUSES } from '@constants/generated/batchPublicationStatuses'
+import { ROLLBACK_IN_PROGRESS_BATCH_LIFECYCLE_STATUSES, getBatchPublicationState } from '@lib/batchLifecycle'
 import { toBatchProperties } from '@lib/batchProperties'
 import { normalizeProcessBatchDetails, parseProcessingDetails, resolveStageDetailKey } from '@lib/pipelineNormalization'
 import { parsePipelineConfig, pipelineConfigToRequestedStages, type PipelineConfig } from '@lib/pipelineConfig'
@@ -21,7 +21,6 @@ type SelectedBatchFields = {
   started_at: Date | null
   processing_details: string | null
   lifecycle_status: string
-  publication_status: string
   publication_target: string
   batch_rollbacks: {
     status: string
@@ -82,7 +81,7 @@ function buildProcessBatchStatus(batch: SelectedBatchFields, manualEditAfterStar
     pipelineExecutionMode: details.pipelineExecutionMode,
     legacyImportStatus: details.legacyImportStatus,
     lifecycleStatus: batch.lifecycle_status,
-    publicationStatus: batch.publication_status,
+    publicationState: getBatchPublicationState(batch.lifecycle_status, details.fedoraIngester?.status),
     publicationTarget: batch.publication_target,
     manualEditAfterStart,
     rollbackStatus: rollback?.status ?? null,
@@ -122,7 +121,6 @@ const processBatchSelect = {
   started_at: true,
   processing_details: true,
   lifecycle_status: true,
-  publication_status: true,
   publication_target: true,
   batch_rollbacks: {
     select: {
@@ -264,7 +262,6 @@ export async function markProcessBatchComplete(batchId: string): Promise<void> {
       lifecycle_status: {
         in: [GENERATED_BATCH_LIFECYCLE_STATUSES.QUEUED, GENERATED_BATCH_LIFECYCLE_STATUSES.RUNNING],
       },
-      publication_status: GENERATED_BATCH_PUBLICATION_STATUSES.NOT_STARTED,
     },
     data: {
       lifecycle_status: GENERATED_BATCH_LIFECYCLE_STATUSES.COMPLETE,
@@ -329,13 +326,7 @@ export async function recordProcessStageFailure(
     where: { id: batchId },
     data: {
       processing_details: JSON.stringify(nextDetails),
-      ...(batch.publication_status === GENERATED_BATCH_PUBLICATION_STATUSES.NOT_STARTED &&
-      !new Set<string>([
-        GENERATED_BATCH_LIFECYCLE_STATUSES.ROLLBACK_REQUESTED,
-        GENERATED_BATCH_LIFECYCLE_STATUSES.DRAINING,
-        GENERATED_BATCH_LIFECYCLE_STATUSES.ROLLBACK_IN_PROGRESS,
-        GENERATED_BATCH_LIFECYCLE_STATUSES.ROLLBACK_FAILED,
-      ]).has(batch.lifecycle_status)
+      ...(!ROLLBACK_IN_PROGRESS_BATCH_LIFECYCLE_STATUSES.has(batch.lifecycle_status)
         ? { lifecycle_status: GENERATED_BATCH_LIFECYCLE_STATUSES.FAILED }
         : {}),
     },

@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ACCESS_LEVEL_OPTIONS } from '@constants/accessLevels'
 import type { FilterOptions } from '@lib/search'
 import type { Document } from 'types/documents'
+import type { ReprocessingDraftSummary } from 'types/reprocessingDrafts'
 
 const mocks = vi.hoisted(() => ({
   documentTableProps: undefined as Record<string, unknown> | undefined,
@@ -55,6 +56,21 @@ const filterOptions: FilterOptions = {
   statuses: ['APPROVED', 'NEEDS_REVIEW'],
 }
 
+const reprocessingDraft: ReprocessingDraftSummary = {
+  id: 'draft-1',
+  name: 'Reprocess missing metadata',
+  collectionName: null,
+  collectionNotes: null,
+  restartStage: 'ocr_processor',
+  requestedStages: ['ocr_processor', 'metadata_extractor'],
+  reason: 'Metadata correction',
+  documentCount: 2,
+  createdAt: null,
+  updatedAt: null,
+  createdBy: null,
+  updatedBy: null,
+}
+
 describe('ReviewQueueTable adapter', () => {
   afterEach(() => {
     mocks.documentTableProps = undefined
@@ -62,7 +78,13 @@ describe('ReviewQueueTable adapter', () => {
   })
 
   it('supplies review actions and selection through its own configuration', () => {
-    renderToStaticMarkup(<ReviewQueueTable filterOptions={filterOptions} defaultStatuses={['NEEDS_REVIEW']} />)
+    renderToStaticMarkup(
+      <ReviewQueueTable
+        filterOptions={filterOptions}
+        defaultStatuses={['NEEDS_REVIEW']}
+        initialDrafts={[reprocessingDraft]}
+      />,
+    )
 
     const config = mocks.documentTableProps?.config as {
       definition: {
@@ -100,6 +122,8 @@ describe('ReviewQueueTable adapter', () => {
     expect(typeof draftCheckboxProps?.sx).toBe('function')
     const actionMarkup = renderToStaticMarkup(<>{config.trailingToolbarSlot}</>)
     expect(actionMarkup).toContain('Actions (0)')
+    expect(actionMarkup).toContain('Batch cart')
+    expect(actionMarkup.indexOf('Actions (0)')).toBeLessThan(actionMarkup.indexOf('Batch cart'))
     expect(config.definition.columns.map(({ header }) => header)).not.toContain('Review Reasons')
 
     const validationStatusCell = config.definition.columns.find(

@@ -80,7 +80,6 @@ describe('processBatches', () => {
       where: {
         id: 'batch-1',
         lifecycle_status: { in: ['queued', 'running'] },
-        publication_status: 'not_started',
       },
       data: {
         lifecycle_status: 'complete',
@@ -94,7 +93,6 @@ describe('processBatches', () => {
       ...buildBatchRow({ dataIngester: { status: 'completed' } }),
       started_at: startedAt,
       lifecycle_status: 'complete',
-      publication_status: 'not_started',
       publication_target: 'fedora',
       batch_rollbacks: null,
     })
@@ -116,7 +114,7 @@ describe('processBatches', () => {
     mockFindUnique.mockResolvedValue(
       buildBatchRow({
         pipeline: {
-          requestedStages: ['document-splitter', 'page-rotator'],
+          requestedStages: ['document_splitter', 'page_rotator'],
         },
         dataIngester: {
           status: 'completed',
@@ -188,7 +186,6 @@ describe('processBatches', () => {
         legacyImport: { status: 'historical', processingTimeSeconds: 321 },
       }),
       lifecycle_status: 'publication_locked',
-      publication_status: 'not_started',
       publication_target: 'fedora',
       batch_rollbacks: null,
     })
@@ -215,7 +212,7 @@ describe('processBatches', () => {
     mockFindUnique.mockResolvedValue(
       buildBatchRow({
         pipeline: {
-          requestedStages: ['document-splitter', 'page-rotator'],
+          requestedStages: ['document_splitter', 'page_rotator'],
         },
         documentSplitterPass1: {
           status: 'completed',
@@ -248,7 +245,7 @@ describe('processBatches', () => {
     )
     mockUpdate.mockResolvedValue(undefined)
 
-    await markProcessStageCallbackReceived('batch-1', 'ingester', '2026-05-29T04:25:48.015Z')
+    await markProcessStageCallbackReceived('batch-1', 'data_ingester', '2026-05-29T04:25:48.015Z')
 
     expect(getUpdatedProcessingDetails()).toEqual({
       dataIngester: {
@@ -303,23 +300,23 @@ describe('processBatches', () => {
     mockFindUnique.mockResolvedValue({
       ...buildBatchRow({
         pipeline: {
-          requestedStages: ['page-rotator', 'ocr-processor'],
+          requestedStages: ['page_rotator', 'ocr_processor'],
           config: {
             profileId: 'custom',
             mode: 'custom',
             executionPlan: [
               {
                 id: 'step-ingester',
-                stepId: 'ingester',
-                service: 'ingester',
+                stepId: 'data_ingester',
+                service: 'data_ingester',
                 label: 'Ingest',
                 order: 0,
                 enabled: true,
               },
               {
                 id: 'step-normalize-pass-1-rotate',
-                stepId: 'normalize-pass-1',
-                service: 'page-rotator',
+                stepId: 'page_rotator',
+                service: 'page_rotator',
                 label: 'Rotate Pass 1',
                 order: 1,
                 enabled: true,
@@ -328,8 +325,8 @@ describe('processBatches', () => {
               },
               {
                 id: 'step-ocr-processor',
-                stepId: 'ocr-processor',
-                service: 'ocr-processor',
+                stepId: 'ocr_processor',
+                service: 'ocr_processor',
                 label: 'OCR Processor',
                 order: 2,
                 enabled: true,
@@ -356,7 +353,6 @@ describe('processBatches', () => {
       }),
       started_at: new Date('2026-05-29T04:20:00.000Z'),
       lifecycle_status: 'running',
-      publication_status: 'not_started',
       publication_target: 'fedora',
       batch_rollbacks: null,
     })
@@ -386,7 +382,7 @@ describe('processBatches', () => {
     mockFindUnique.mockResolvedValue(
       buildBatchRow({
         pipeline: {
-          requestedStages: ['metadata-extraction'],
+          requestedStages: ['metadata_extractor'],
         },
         metadataExtractor: {
           status: 'completed',
@@ -401,7 +397,7 @@ describe('processBatches', () => {
     const batch = await getProcessBatchStatus('batch-1')
 
     expect(batch).not.toBeNull()
-    expect(batch?.pipelineRequestedStages).toEqual(['metadata-extraction'])
+    expect(batch?.pipelineRequestedStages).toEqual(['metadata_extractor'])
     expect(batch?.metadataExtractor?.status).toBe('completed')
     expect(batch?.metadataExtractor?.requestId).toBe('request-7')
     expect(batch?.metadataExtractor?.processedCount).toBe(4)
@@ -411,7 +407,7 @@ describe('processBatches', () => {
     mockFindUnique.mockResolvedValue(
       buildBatchRow({
         pipeline: {
-          requestedStages: ['metadata-extraction'],
+          requestedStages: ['metadata_extractor'],
           config: {
             profileId: 'custom',
             mode: 'custom',
@@ -421,16 +417,16 @@ describe('processBatches', () => {
             executionPlan: [
               {
                 id: 'step-ingester',
-                stepId: 'ingester',
-                service: 'ingester',
+                stepId: 'data_ingester',
+                service: 'data_ingester',
                 label: 'Ingest',
                 order: 0,
                 enabled: true,
               },
               {
                 id: 'step-metadata-extraction',
-                stepId: 'metadata-extraction',
-                service: 'metadata-extraction',
+                stepId: 'metadata_extractor',
+                service: 'metadata_extractor',
                 label: 'Metadata Extraction',
                 order: 1,
                 enabled: true,
@@ -508,23 +504,23 @@ describe('processBatches', () => {
     mockFindUnique.mockResolvedValue({
       ...buildBatchRow({
         pipeline: {
-          requestedStages: ['metadata-extraction'],
+          requestedStages: ['metadata_extractor'],
           config: {
             profileId: 'custom',
             mode: 'custom',
             executionPlan: [
               {
                 id: 'step-ingester',
-                stepId: 'ingester',
-                service: 'ingester',
+                stepId: 'data_ingester',
+                service: 'data_ingester',
                 label: 'Ingest',
                 order: 0,
                 enabled: true,
               },
               {
                 id: 'step-metadata-extraction',
-                stepId: 'metadata-extraction',
-                service: 'metadata-extraction',
+                stepId: 'metadata_extractor',
+                service: 'metadata_extractor',
                 label: 'Metadata Extraction',
                 order: 1,
                 enabled: true,
@@ -540,7 +536,6 @@ describe('processBatches', () => {
       }),
       started_at: new Date('2026-05-29T04:39:50.000Z'),
       lifecycle_status: 'running',
-      publication_status: 'not_started',
       publication_target: 'fedora',
       batch_rollbacks: null,
     })
@@ -557,7 +552,7 @@ describe('processBatches', () => {
 
     expect(getUpdatedProcessingDetails()).toMatchObject({
       pipeline: {
-        requestedStages: ['metadata-extraction'],
+          requestedStages: ['metadata_extractor'],
       },
       metadataExtractor: {
         status: 'completed',

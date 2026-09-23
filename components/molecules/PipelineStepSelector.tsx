@@ -3,6 +3,13 @@
 import { type ReactElement, useCallback } from 'react'
 import { Box, Checkbox, FormControlLabel, Paper, Stack, Typography } from '@mui/material'
 
+import {
+  CONTENT_DEDUP_SERVICE,
+  DATA_INGESTER_SERVICE,
+  METADATA_EXTRACTOR_SERVICE,
+  OCR_PROCESSOR_SERVICE,
+} from '@constants/pipeline'
+import { getPipelineServiceContractForService } from '@constants/pipelineServices'
 import { getPass1HelperText, type PipelineSelectionDraft } from '@lib/pipelineConfig'
 import { NormalizePassCard } from '@molecules/NormalizePassCard'
 
@@ -69,6 +76,10 @@ function StepRow({ label, description, checked, disabled = false, onChange }: St
 export function PipelineStepSelector({ draft, mode, onDraftChange }: PipelineStepSelectorProps): ReactElement {
   const isCustomMode = mode === 'custom'
   const pass1HelperText = getPass1HelperText(draft)
+  const ingesterService = getPipelineServiceContractForService(DATA_INGESTER_SERVICE)
+  const ocrService = getPipelineServiceContractForService(OCR_PROCESSOR_SERVICE)
+  const contentDedupService = getPipelineServiceContractForService(CONTENT_DEDUP_SERVICE)
+  const metadataExtractionService = getPipelineServiceContractForService(METADATA_EXTRACTOR_SERVICE)
 
   const handlePass1Toggle = useCallback(
     (enabled: boolean) => {
@@ -223,10 +234,10 @@ export function PipelineStepSelector({ draft, mode, onDraftChange }: PipelineSte
       <Stack spacing={3}>
         <Box>
           <Typography variant={'overline'} sx={{ color: 'text.secondary', letterSpacing: '0.16em' }}>
-            {'Pipeline Steps'}
+            {'Pipeline Services'}
           </Typography>
           <Typography component={'h3'} variant={'h5'} sx={{ mt: 0.5 }}>
-            {'Select processing steps'}
+            {'Select processing services'}
           </Typography>
           <Typography variant={'body2'} sx={{ mt: 1, color: 'text.secondary' }}>
             {'Steps run in order. Ingest always runs first.'}
@@ -238,8 +249,8 @@ export function PipelineStepSelector({ draft, mode, onDraftChange }: PipelineSte
 
         <Stack spacing={2}>
           <StepRow
-            label={'Ingest'}
-            description={'Ingest documents from Google Drive source folders'}
+            label={ingesterService.display_name}
+            description={ingesterService.description}
             checked={true}
             disabled={true}
             onChange={() => {}}
@@ -264,15 +275,15 @@ export function PipelineStepSelector({ draft, mode, onDraftChange }: PipelineSte
           />
 
           <StepRow
-            label={'OCR Processor'}
-            description={'Run OCR on normalized documents'}
+            label={ocrService.display_name}
+            description={ocrService.description}
             checked={draft.steps.ocrProcessor}
             onChange={(value) => handleSimpleStepToggle('ocrProcessor', value)}
           />
 
           <StepRow
-            label={'Content Dedup'}
-            description={'Detect and handle duplicate content across documents'}
+            label={contentDedupService.display_name}
+            description={contentDedupService.description}
             checked={draft.steps.contentDedup}
             onChange={(value) => handleSimpleStepToggle('contentDedup', value)}
           />
@@ -280,8 +291,8 @@ export function PipelineStepSelector({ draft, mode, onDraftChange }: PipelineSte
           {draft.steps.metadataExtraction !== undefined && (
             <Stack spacing={1}>
               <StepRow
-                label={'Metadata Extraction'}
-                description={'Extract metadata from documents'}
+                label={metadataExtractionService.display_name}
+                description={metadataExtractionService.description}
                 checked={draft.steps.metadataExtraction}
                 onChange={(value) => handleSimpleStepToggle('metadataExtraction', value)}
               />

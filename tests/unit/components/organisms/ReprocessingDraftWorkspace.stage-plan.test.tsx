@@ -5,7 +5,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import ThemeProvider from '@components/ThemeProvider'
-import { ReprocessingDraftWorkspace } from '@organisms/ReprocessingDraftWorkspace'
+import { ReprocessingDraftWorkspace, SUBMIT_LABEL } from '@organisms/ReprocessingDraftWorkspace'
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
@@ -95,7 +95,7 @@ describe('ReprocessingDraftWorkspace stage-plan editing', () => {
 
     const submitButton = () =>
       [...container.querySelectorAll('button')].find((button) =>
-        button.textContent?.includes('Submit draft'),
+        button.textContent?.includes(SUBMIT_LABEL),
       ) as HTMLButtonElement
     expect(submitButton().disabled).toBe(false)
 

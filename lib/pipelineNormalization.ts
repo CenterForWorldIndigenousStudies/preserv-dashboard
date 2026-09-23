@@ -1,4 +1,9 @@
 import { parsePipelineConfig } from '@lib/pipelineConfig'
+import {
+  DATA_INGESTER_SERVICE,
+  DOCUMENT_SPLITTER_SERVICE,
+  PAGE_ROTATOR_SERVICE,
+} from '@constants/pipeline'
 import type {
   CallbackStageKey,
   NormalizedDocumentFailure,
@@ -347,7 +352,10 @@ export function normalizeProcessBatchDetails(details: RawProcessBatchDetails): N
 }
 
 const DIRECT_STAGE_DETAIL_KEYS: Record<
-  Exclude<CallbackStageKey, 'ingester' | 'document_splitter' | 'page_rotator'>,
+  Exclude<
+    CallbackStageKey,
+    typeof DATA_INGESTER_SERVICE | typeof DOCUMENT_SPLITTER_SERVICE | typeof PAGE_ROTATOR_SERVICE
+  >,
   keyof RawProcessBatchDetails
 > = {
   ocr_processor: 'ocrProcessor',
@@ -357,13 +365,13 @@ const DIRECT_STAGE_DETAIL_KEYS: Record<
 }
 
 export function resolveStageDetailKey(details: RawProcessBatchDetails, stageKey: CallbackStageKey): string | null {
-  if (stageKey === 'ingester') {
+  if (stageKey === DATA_INGESTER_SERVICE) {
     return details.dataIngester ? 'dataIngester' : null
   }
 
-  if (stageKey === 'document_splitter' || stageKey === 'page_rotator') {
+  if (stageKey === DOCUMENT_SPLITTER_SERVICE || stageKey === PAGE_ROTATOR_SERVICE) {
     const latestEntry = getPassStageEntries(details, stageKey).at(-1)
-    const directKey = stageKey === 'document_splitter' ? 'documentSplitter' : 'pageRotator'
+    const directKey = stageKey === DOCUMENT_SPLITTER_SERVICE ? 'documentSplitter' : 'pageRotator'
     return latestEntry?.key ?? (details[directKey] ? directKey : null)
   }
 

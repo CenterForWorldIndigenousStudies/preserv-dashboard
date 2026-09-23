@@ -9,7 +9,7 @@ describe('buildLegacyPipelineSteps', () => {
       createProcessBatch({
         pipelineExecutionMode: 'legacy_import',
         legacyImportStatus: 'historical',
-        publicationStatus: 'not_started',
+        lifecycleStatus: 'publication_locked',
       }),
     )
 
@@ -24,7 +24,7 @@ describe('buildLegacyPipelineSteps', () => {
       createProcessBatch({
         pipelineExecutionMode: 'legacy_import',
         legacyImportStatus: 'historical',
-        publicationStatus: 'published',
+        lifecycleStatus: 'published',
       }),
     )
 

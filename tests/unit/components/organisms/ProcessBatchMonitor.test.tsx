@@ -29,7 +29,7 @@ function buildBatchStatus(): ProcessBatchStatus {
     batchName: 'Batch 1',
     startedBy: 'archivist@example.org',
     createdAt: '2026-05-29T00:00:00.000Z',
-    pipelineRequestedStages: ['document-splitter', 'page-rotator', 'metadata-extraction'],
+    pipelineRequestedStages: ['document_splitter', 'page_rotator', 'metadata_extractor'],
     pipelineConfig: null,
     processingProperties: [{ key: 'total_documents', value: 5 }],
     ingester: null,
@@ -93,7 +93,7 @@ describe('ProcessBatchMonitor', () => {
 
     expect(markup).toContain('Batch 1')
     expect(markup).toContain('Requested Stages')
-    expect(markup).toContain('document-splitter, page-rotator, metadata-extraction')
+    expect(markup).toContain('document_splitter, page_rotator, metadata_extractor')
     expect(markup).toContain('Metadata Extractor')
     expect(markup).toContain('total_documents:5')
   })

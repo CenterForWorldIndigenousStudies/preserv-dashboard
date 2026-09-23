@@ -5,6 +5,7 @@ import {
 } from '@lib/prisma/generated/client'
 
 import { db } from '@lib/db'
+import { getBatchPublicationState } from '@lib/batchLifecycle'
 import { toBatchProperties } from '@lib/batchProperties'
 import { calculateTotalProcessingCost } from '@lib/processingCost'
 import { calculateCurrentProcessingTime } from '@lib/processingTime'
@@ -45,7 +46,6 @@ interface BatchDatabaseRow {
   created_at: Date | string | null
   started_at: Date | string | null
   lifecycle_status: string | null
-  publication_status: string | null
   processing_details: string | null
   document_to_batches: Array<{
     cost: Prisma.Decimal | number | string | null
@@ -93,7 +93,6 @@ export function parseBatchQueryParams(params: Record<string, string | string[] |
     tag: normalizeTextFilter(firstSearchParam(params.tag)),
     statuses: parseStatusesParam(params.statuses),
     lifecycleStatuses: parseStatusesParam(params.lifecycleStatuses),
-    publicationStatuses: parseStatusesParam(params.publicationStatuses),
     documentType: normalizeDocumentType(firstSearchParam(params.documentType)),
     batch: normalizeTextFilter(firstSearchParam(params.batch)),
     createdFrom: normalizeDateFilter(firstSearchParam(params.createdFrom)),
@@ -130,6 +129,15 @@ function parseProcessingDetails(rawDetails: string | null): Record<string, unkno
   } catch {
     return {}
   }
+}
+
+function getFedoraIngesterStatus(details: Record<string, unknown>): unknown {
+  const fedoraIngester = details.fedoraIngester
+  if (!fedoraIngester || typeof fedoraIngester !== 'object' || Array.isArray(fedoraIngester)) {
+    return undefined
+  }
+
+  return (fedoraIngester as { status?: unknown }).status
 }
 
 function getBatchStatistics(value: unknown): Record<string, unknown> {
@@ -221,7 +229,7 @@ function mapBatchListItem(row: BatchDatabaseRow): BatchListItem {
     totalCost: calculateTotalProcessingCost(details, row.document_to_batches),
     processingTime: getTotalProcessingTime(row),
     lifecycleStatus: row.lifecycle_status,
-    publicationStatus: row.publication_status,
+    publicationState: getBatchPublicationState(row.lifecycle_status, getFedoraIngesterStatus(details)),
   }
 }
 
@@ -240,7 +248,7 @@ function mapBatchDetail(row: BatchDatabaseRow): BatchDetail {
     startedAt: row.started_at,
     properties,
     lifecycleStatus: row.lifecycle_status,
-    publicationStatus: row.publication_status,
+    publicationState: getBatchPublicationState(row.lifecycle_status, getFedoraIngesterStatus(details)),
     metadata: (row.batch_to_batches_metadata ?? []).map((metadataLink) => ({
       name: metadataLink.batch_metadata.name,
       value: metadataLink.value ?? '',
@@ -321,7 +329,6 @@ const batchSelect = {
   created_at: true,
   started_at: true,
   lifecycle_status: true,
-  publication_status: true,
   processing_details: true,
   document_to_batches: {
     select: {
@@ -471,10 +478,6 @@ function buildBatchWhere(
 
   if (filters.lifecycleStatuses?.length) {
     advancedConditions.push({ lifecycle_status: { in: filters.lifecycleStatuses } })
-  }
-
-  if (filters.publicationStatuses?.length) {
-    advancedConditions.push({ publication_status: { in: filters.publicationStatuses } })
   }
 
   if (documentWhere) {

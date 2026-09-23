@@ -13,7 +13,7 @@ import { getProtectedTagDeletionMessage, isProtectedTagName, normalizeTagName } 
 import { normalizeDocumentEditValue, serializeDocumentMetadataValue } from '@lib/documentEditing'
 import { appendNeedsReviewReason, normalizeNeedsReviewValue } from '@lib/needsReview'
 import { ACCESS_LEVEL_OPTIONS, type AccessLevelOption } from '@constants/accessLevels'
-import { GENERATED_BATCH_PUBLICATION_STATUSES } from '@constants/generated/batchPublicationStatuses'
+import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
 import { GENERATED_DOCUMENT_STATES } from '@constants/generated/documentStates'
 import { NEEDS_REVIEW_METADATA_NAME } from '@constants/documentMetadata'
 import { DOCUMENT_ACCESS_LEVEL_FIELD, isEditableDocumentMetadataField } from '@constants/documentEditing'
@@ -755,7 +755,7 @@ export async function authorizeDocumentEditingInTransaction(
     tx.document_to_batches.findFirst({
       where: {
         document_id: params.documentId,
-        batches: { publication_status: GENERATED_BATCH_PUBLICATION_STATUSES.PUBLISHED },
+        batches: { lifecycle_status: GENERATED_BATCH_LIFECYCLE_STATUSES.PUBLISHED },
       },
       select: { id: true },
     }),

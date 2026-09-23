@@ -8,7 +8,11 @@ vi.mock('@lib/observability', () => ({
   logEvent: mockLogEvent,
 }))
 
-import { triggerDataIngesterReprocess, triggerMetadataExtractor } from '@lib/pipelineTriggerRequests'
+import {
+  triggerDataIngesterBatch,
+  triggerDataIngesterReprocess,
+  triggerMetadataExtractor,
+} from '@lib/pipelineTriggerRequests'
 import type { ProcessBatchStatus } from 'types/pipelineContracts'
 import { DATA_INGESTER_REPROCESS_CALLBACK_PATH, METADATA_EXTRACTOR_CALLBACK_PATH } from '@constants/paths'
 import { GENERATED_PIPELINE_EXECUTION_MODES } from '@constants/generated/pipelineExecutionModes'
@@ -19,7 +23,7 @@ function buildBatchStatus(overrides: Partial<ProcessBatchStatus> = {}): ProcessB
     batchName: 'Batch 1',
     startedBy: 'archivist@example.org',
     createdAt: '2026-07-03T01:33:45.041Z',
-    pipelineRequestedStages: ['metadata-extraction'],
+          pipelineRequestedStages: ['metadata_extractor'],
     pipelineConfig: null,
     ingester: null,
     documentSplitter: null,
@@ -80,6 +84,7 @@ describe('pipelineTriggerRequests', () => {
     const payload = JSON.parse(receivedBody) as Record<string, unknown>
     expect(payload.app).toBe('preserv-dashboard')
     expect(payload.batch_id).toBe('batch-1')
+    expect(payload).not.toHaveProperty('batch_name')
     expect(payload.request_id).toEqual(expect.any(String))
     expect(payload.started_by).toBe('archivist@example.org')
     expect(typeof payload.initiated_at).toBe('string')
@@ -124,6 +129,77 @@ describe('pipelineTriggerRequests', () => {
       },
     })
     expect(JSON.parse(receivedBody ?? '')).not.toHaveProperty('source_folder_ids')
+  })
+
+  it('includes the batch name when submitting a normal Data Ingester draft', async () => {
+    let receivedBody: string | null = null
+    vi.mocked(fetch).mockImplementation((_input, init) => {
+      receivedBody = typeof init?.body === 'string' ? init.body : null
+      return Promise.resolve(buildJsonResponse({ batchId: 'batch-1', status: 'queued', service: 'data_ingester' }))
+    })
+
+    await triggerDataIngesterBatch(buildBatchStatus(), {
+      pipelineConfig: {
+        profileId: 'custom',
+        mode: 'custom',
+        metadataExtraction: { mode: 'direct' },
+        executionPlan: [],
+        sourceFolderIds: ['folder-1'],
+        sourceDocumentIds: [],
+      },
+      requestedStages: ['document_splitter'],
+    })
+
+    expect(JSON.parse(receivedBody ?? '')).toMatchObject({
+      batch_id: 'batch-1',
+      batch_name: 'Batch 1',
+    })
+  })
+
+  it('reports structured pipeline validation details when a trigger is rejected', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          detail: [
+            {
+              loc: ['body', 'source_folder_ids'],
+              msg: 'a draft batch must contain at least one source folder or document',
+              type: 'value_error',
+            },
+          ],
+        }),
+        { status: 422, headers: { 'Content-Type': 'application/json' } },
+      ),
+    )
+
+    await expect(
+      triggerDataIngesterBatch(buildBatchStatus(), {
+        pipelineConfig: {
+          profileId: 'custom',
+          mode: 'custom',
+          metadataExtraction: { mode: 'direct' },
+          executionPlan: [],
+          sourceFolderIds: ['folder-1'],
+          sourceDocumentIds: [],
+        },
+        requestedStages: ['document_splitter'],
+      }),
+    ).rejects.toThrow('source_folder_ids: a draft batch must contain at least one source folder or document')
+
+    expect(mockLogEvent).toHaveBeenCalledWith(
+      'error',
+      'data_ingester_trigger_failed',
+      expect.objectContaining({
+        statusCode: 422,
+        responseDetails: [
+          {
+            loc: ['body', 'source_folder_ids'],
+            msg: 'a draft batch must contain at least one source folder or document',
+            type: 'value_error',
+          },
+        ],
+      }),
+    )
   })
 
   it('serializes an explicit retry execution context', async () => {

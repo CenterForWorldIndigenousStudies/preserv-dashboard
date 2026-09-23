@@ -1,9 +1,10 @@
 import type { PipelineExecutionStep } from '@lib/pipelineConfig'
+import { PIPELINE_STAGE_STATUSES } from '@constants/pipelineStageStatuses'
 import type { ProcessBatchStatus, ProcessStageStatus } from 'types/pipelineContracts'
 
 export function createPendingProcessStage(): ProcessStageStatus {
   return {
-    status: 'pending',
+    status: PIPELINE_STAGE_STATUSES.PENDING,
     mode: null,
     requestId: null,
     requestedByApp: 'preserv-dashboard',

@@ -2,11 +2,11 @@ import { randomUUID } from 'node:crypto'
 
 import { GENERATED_PIPELINE_EXECUTION_MODES } from '@constants/generated/pipelineExecutionModes'
 import {
-  CONTENT_DEDUP_STAGE,
-  DOCUMENT_SPLITTER_STAGE,
-  METADATA_EXTRACTOR_STAGE,
-  OCR_PROCESSOR_STAGE,
-  PAGE_ROTATOR_STAGE,
+  CONTENT_DEDUP_SERVICE,
+  DOCUMENT_SPLITTER_SERVICE,
+  METADATA_EXTRACTOR_SERVICE,
+  OCR_PROCESSOR_SERVICE,
+  PAGE_ROTATOR_SERVICE,
 } from '@constants/pipeline'
 import {
   getNextEligibleExecutionStep,
@@ -37,10 +37,11 @@ export function getPipelineContinuationContext(batch: ProcessBatchStatus): Pipel
     !execution.idempotencyKey ||
     !execution.executionMode ||
     ![
+      GENERATED_PIPELINE_EXECUTION_MODES.NORMAL,
       GENERATED_PIPELINE_EXECUTION_MODES.RETRY,
       GENERATED_PIPELINE_EXECUTION_MODES.RERUN,
       GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS,
-    ].includes(executionMode as Exclude<PipelineExecutionContextInput['executionMode'], undefined | 'normal'>)
+    ].includes(executionMode)
   ) {
     return undefined
   }
@@ -68,11 +69,11 @@ function normalizeRequestedStages(value: unknown): string[] {
 export function normalizeRequestedProcessStages(value: unknown): string[] {
   return normalizeRequestedStages(value).filter(
     (stage) =>
-      stage === DOCUMENT_SPLITTER_STAGE ||
-      stage === PAGE_ROTATOR_STAGE ||
-      stage === OCR_PROCESSOR_STAGE ||
-      stage === CONTENT_DEDUP_STAGE ||
-      stage === METADATA_EXTRACTOR_STAGE,
+      stage === DOCUMENT_SPLITTER_SERVICE ||
+      stage === PAGE_ROTATOR_SERVICE ||
+      stage === OCR_PROCESSOR_SERVICE ||
+      stage === CONTENT_DEDUP_SERVICE ||
+      stage === METADATA_EXTRACTOR_SERVICE,
   )
 }
 
@@ -87,27 +88,27 @@ function isNextEligibleStep(batch: ProcessBatchStatus, stage: PipelineExecutionS
 
 export function shouldTriggerDocumentSplitter(batch: ProcessBatchStatus): boolean {
   getPipelineConfigForBatch(batch)
-  return isNextEligibleStep(batch, DOCUMENT_SPLITTER_STAGE, 1) || isNextEligibleStep(batch, DOCUMENT_SPLITTER_STAGE, 2)
+  return isNextEligibleStep(batch, DOCUMENT_SPLITTER_SERVICE, 1) || isNextEligibleStep(batch, DOCUMENT_SPLITTER_SERVICE, 2)
 }
 
 export function shouldTriggerPageRotator(batch: ProcessBatchStatus): boolean {
   getPipelineConfigForBatch(batch)
-  return isNextEligibleStep(batch, PAGE_ROTATOR_STAGE, 1) || isNextEligibleStep(batch, PAGE_ROTATOR_STAGE, 2)
+  return isNextEligibleStep(batch, PAGE_ROTATOR_SERVICE, 1) || isNextEligibleStep(batch, PAGE_ROTATOR_SERVICE, 2)
 }
 
 export function shouldTriggerOcrProcessor(batch: ProcessBatchStatus): boolean {
   getPipelineConfigForBatch(batch)
-  return isNextEligibleStep(batch, OCR_PROCESSOR_STAGE)
+  return isNextEligibleStep(batch, OCR_PROCESSOR_SERVICE)
 }
 
 export function shouldTriggerContentDedup(batch: ProcessBatchStatus): boolean {
   getPipelineConfigForBatch(batch)
-  return isNextEligibleStep(batch, CONTENT_DEDUP_STAGE)
+  return isNextEligibleStep(batch, CONTENT_DEDUP_SERVICE)
 }
 
 export function shouldTriggerMetadataExtractor(batch: ProcessBatchStatus): boolean {
   getPipelineConfigForBatch(batch)
-  return isNextEligibleStep(batch, METADATA_EXTRACTOR_STAGE)
+  return isNextEligibleStep(batch, METADATA_EXTRACTOR_SERVICE)
 }
 
 export function shouldCloseProcessStream(batch: ProcessBatchStatus): boolean {

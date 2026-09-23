@@ -1,69 +1,75 @@
 // Pipeline configuration types and constants
 // Extensible step definitions for the document processing pipeline
 
-export type StepId =
-  | 'ingester'
-  | 'normalize-pass-1'
-  | 'normalize-pass-2'
-  | 'ocr-processor'
-  | 'content-dedup'
-  | 'metadata-extraction'
-  | 'fedora-ingester'
+import {
+  GENERATED_PIPELINE_SERVICE_KEYS,
+  type GeneratedPipelineServiceKey,
+  GENERATED_PIPELINE_SERVICES,
+} from '@constants/generated/pipelineServices'
 
-export type ServiceId =
-  | 'ingester'
-  | 'document-splitter'
-  | 'page-rotator'
-  | 'ocr-processor'
-  | 'content-dedup'
-  | 'metadata-extraction'
-  | 'fedora-ingester'
+export type ServiceId = GeneratedPipelineServiceKey
 
-export const INGESTER_STAGE = 'ingester' as const
+export const DATA_INGESTER_SERVICE = GENERATED_PIPELINE_SERVICE_KEYS.DATA_INGESTER
+export const DATA_COMBINER_SERVICE = GENERATED_PIPELINE_SERVICE_KEYS.DATA_COMBINER
+export const DOCUMENT_SPLITTER_SERVICE = GENERATED_PIPELINE_SERVICE_KEYS.DOCUMENT_SPLITTER
+export const PAGE_ROTATOR_SERVICE = GENERATED_PIPELINE_SERVICE_KEYS.PAGE_ROTATOR
+export const OCR_PROCESSOR_SERVICE = GENERATED_PIPELINE_SERVICE_KEYS.OCR_PROCESSOR
+export const CONTENT_DEDUP_SERVICE = GENERATED_PIPELINE_SERVICE_KEYS.CONTENT_DEDUP
+export const METADATA_EXTRACTOR_SERVICE = GENERATED_PIPELINE_SERVICE_KEYS.METADATA_EXTRACTOR
+export const FEDORA_INGESTER_SERVICE = GENERATED_PIPELINE_SERVICE_KEYS.FEDORA_INGESTER
 
-export const DOCUMENT_SPLITTER_STAGE = 'document-splitter' as const
-export const PAGE_ROTATOR_STAGE = 'page-rotator' as const
-export const OCR_PROCESSOR_STAGE = 'ocr-processor' as const
-export const CONTENT_DEDUP_STAGE = 'content-dedup' as const
-export const METADATA_EXTRACTOR_STAGE = 'metadata-extraction' as const
-export const FEDORA_INGESTER_STAGE = 'fedora-ingester' as const
+export const NORMALIZE_PASS_1_KEY = 'normalize-pass-1' as const
+export const NORMALIZE_PASS_2_KEY = 'normalize-pass-2' as const
 
-export const SUPPORTED_DOWNSTREAM_STAGES = [
-  DOCUMENT_SPLITTER_STAGE,
-  PAGE_ROTATOR_STAGE,
-  OCR_PROCESSOR_STAGE,
-  CONTENT_DEDUP_STAGE,
-  METADATA_EXTRACTOR_STAGE,
+export const CUSTOM_PIPELINE_PROFILE_ID = 'custom' as const
+
+export const PIPELINE_CONFIG_MODES = {
+  PRESET: 'preset',
+  CUSTOM: 'custom',
+} as const
+
+export const METADATA_EXTRACTION_MODES = {
+  DIRECT: 'direct',
+  OPENAI_BATCH: 'openai_batch',
+} as const
+
+export const SUPPORTED_DOWNSTREAM_SERVICES = [
+  DOCUMENT_SPLITTER_SERVICE,
+  PAGE_ROTATOR_SERVICE,
+  OCR_PROCESSOR_SERVICE,
+  CONTENT_DEDUP_SERVICE,
+  METADATA_EXTRACTOR_SERVICE,
 ] as const
 
-export interface StepDefinition {
-  id: StepId
+export function getServiceIdForCallbackStage(stage: string): ServiceId | null {
+  return stage in GENERATED_PIPELINE_SERVICES ? (stage as ServiceId) : null
+}
+
+export function getCallbackStageForService(service: ServiceId): string {
+  return service
+}
+
+export interface PipelineServiceDefinition {
+  id: ServiceId
   label: string
   description: string
-  service: ServiceId
   order: number
-  hasAdvancedOptions?: boolean
-  advancedLabel?: string
-  dependsOn?: StepId[]
 }
 
 export interface NormalizePassSubOption {
   id: 'split' | 'rotate'
-  label: string
-  description: string
+  service: ServiceId
 }
 
 // Normalize Pass 1 sub-options (Split and Rotate)
 export const NORMALIZE_PASS_1_SUB_OPTIONS: NormalizePassSubOption[] = [
   {
     id: 'split',
-    label: 'Split Pass 1',
-    description: 'Split original documents into child documents',
+    service: DOCUMENT_SPLITTER_SERVICE,
   },
   {
     id: 'rotate',
-    label: 'Rotate Pass 1',
-    description: 'Rotate pages of split documents',
+    service: PAGE_ROTATOR_SERVICE,
   },
 ]
 
@@ -71,80 +77,47 @@ export const NORMALIZE_PASS_1_SUB_OPTIONS: NormalizePassSubOption[] = [
 export const NORMALIZE_PASS_2_SUB_OPTIONS: NormalizePassSubOption[] = [
   {
     id: 'split',
-    label: 'Split Pass 2',
-    description: 'Split rotated documents from Pass 1',
+    service: DOCUMENT_SPLITTER_SERVICE,
   },
   {
     id: 'rotate',
-    label: 'Rotate Pass 2',
-    description: 'Rotate pages from Split Pass 2',
+    service: PAGE_ROTATOR_SERVICE,
   },
 ]
 
 // All pipeline steps in execution order
-export const PIPELINE_STEPS: StepDefinition[] = [
-  {
-    id: INGESTER_STAGE,
-    label: 'Ingest',
-    description: 'Ingest documents from Google Drive source folders',
-    service: INGESTER_STAGE,
-    order: 0,
-  },
-  {
-    id: 'normalize-pass-1',
-    label: 'Normalize Pass 1',
-    description: 'First pass: split and rotate original documents',
-    service: 'document-splitter',
-    order: 1,
-    hasAdvancedOptions: true,
-    advancedLabel: 'Advanced',
-    dependsOn: ['ingester'],
-  },
-  {
-    id: 'normalize-pass-2',
-    label: 'Normalize Pass 2',
-    description: 'Second pass: split and rotate artifacts from Pass 1',
-    service: 'document-splitter',
-    order: 2,
-    hasAdvancedOptions: true,
-    advancedLabel: 'Advanced',
-    dependsOn: ['normalize-pass-1'],
-  },
-  {
-    id: 'ocr-processor',
-    label: 'OCR Processor',
-    description: 'Run OCR on normalized documents',
-    service: 'ocr-processor',
-    order: 3,
-    dependsOn: ['ingester', 'normalize-pass-1', 'normalize-pass-2'],
-  },
-  {
-    id: 'content-dedup',
-    label: 'Content Dedup',
-    description: 'Detect and handle duplicate content',
-    service: 'content-dedup',
-    order: 4,
-    dependsOn: ['ocr-processor'],
-  },
-  {
-    id: 'metadata-extraction',
-    label: 'Metadata Extraction',
-    description: 'Extract metadata from documents (future)',
-    service: 'metadata-extraction',
-    order: 5,
-    dependsOn: ['content-dedup'],
-  },
-]
+const PIPELINE_SERVICE_ORDER = [
+  DATA_INGESTER_SERVICE,
+  DOCUMENT_SPLITTER_SERVICE,
+  PAGE_ROTATOR_SERVICE,
+  OCR_PROCESSOR_SERVICE,
+  CONTENT_DEDUP_SERVICE,
+  METADATA_EXTRACTOR_SERVICE,
+  FEDORA_INGESTER_SERVICE,
+] as const
+
+export const PIPELINE_SERVICE_DEFINITIONS: PipelineServiceDefinition[] = PIPELINE_SERVICE_ORDER.map(
+  (service, order) => ({
+    id: service,
+    label: GENERATED_PIPELINE_SERVICES[service].display_name,
+    description: GENERATED_PIPELINE_SERVICES[service].description,
+    order,
+  }),
+)
 
 // Lookup helpers
-export function getStepDefinition(id: StepId): StepDefinition | undefined {
-  return PIPELINE_STEPS.find((step) => step.id === id)
+export function getPipelineServiceDefinition(service: ServiceId): PipelineServiceDefinition {
+  const definition = PIPELINE_SERVICE_DEFINITIONS.find((item) => item.id === service)
+  if (!definition) {
+    throw new Error(`No pipeline service definition exists for ${service}`)
+  }
+  return definition
 }
 
-export function getStepsUpTo(untilId: StepId): StepDefinition[] {
-  const untilIndex = PIPELINE_STEPS.findIndex((s) => s.id === untilId)
+export function getPipelineServicesUpTo(service: ServiceId): PipelineServiceDefinition[] {
+  const untilIndex = PIPELINE_SERVICE_DEFINITIONS.findIndex((item) => item.id === service)
   if (untilIndex === -1) return []
-  return PIPELINE_STEPS.slice(0, untilIndex + 1)
+  return PIPELINE_SERVICE_DEFINITIONS.slice(0, untilIndex + 1)
 }
 
 // Preset profile definitions
@@ -159,8 +132,15 @@ export interface ProfileDefinition {
   id: ProfileId
   label: string
   description: string
-  steps: Partial<Record<StepId, boolean>>
+  steps: Partial<Record<ProfileSelectionKey, boolean>>
 }
+
+type ProfileSelectionKey =
+  | typeof DATA_INGESTER_SERVICE
+  | typeof NORMALIZE_PASS_1_KEY
+  | typeof NORMALIZE_PASS_2_KEY
+  | typeof OCR_PROCESSOR_SERVICE
+  | typeof CONTENT_DEDUP_SERVICE
 
 export const PIPELINE_PROFILES: ProfileDefinition[] = [
   {
@@ -168,11 +148,11 @@ export const PIPELINE_PROFILES: ProfileDefinition[] = [
     label: 'Custom',
     description: 'Build your own pipeline step by step',
     steps: {
-      ingester: true,
-      'normalize-pass-1': false,
-      'normalize-pass-2': false,
-      'ocr-processor': false,
-      'content-dedup': false,
+      [DATA_INGESTER_SERVICE]: true,
+      [NORMALIZE_PASS_1_KEY]: false,
+      [NORMALIZE_PASS_2_KEY]: false,
+      [OCR_PROCESSOR_SERVICE]: false,
+      [CONTENT_DEDUP_SERVICE]: false,
     },
   },
   {
@@ -180,11 +160,11 @@ export const PIPELINE_PROFILES: ProfileDefinition[] = [
     label: 'Ingest Only',
     description: 'Ingest documents without normalization or downstream processing',
     steps: {
-      ingester: true,
-      'normalize-pass-1': false,
-      'normalize-pass-2': false,
-      'ocr-processor': false,
-      'content-dedup': false,
+      [DATA_INGESTER_SERVICE]: true,
+      [NORMALIZE_PASS_1_KEY]: false,
+      [NORMALIZE_PASS_2_KEY]: false,
+      [OCR_PROCESSOR_SERVICE]: false,
+      [CONTENT_DEDUP_SERVICE]: false,
     },
   },
   {
@@ -192,11 +172,11 @@ export const PIPELINE_PROFILES: ProfileDefinition[] = [
     label: 'Ingest + Normalize',
     description: 'Ingest and normalize documents through two passes',
     steps: {
-      ingester: true,
-      'normalize-pass-1': true,
-      'normalize-pass-2': true,
-      'ocr-processor': false,
-      'content-dedup': false,
+      [DATA_INGESTER_SERVICE]: true,
+      [NORMALIZE_PASS_1_KEY]: true,
+      [NORMALIZE_PASS_2_KEY]: true,
+      [OCR_PROCESSOR_SERVICE]: false,
+      [CONTENT_DEDUP_SERVICE]: false,
     },
   },
   {
@@ -204,11 +184,11 @@ export const PIPELINE_PROFILES: ProfileDefinition[] = [
     label: 'Ingest + Normalize + OCR',
     description: 'Full normalization pipeline with OCR',
     steps: {
-      ingester: true,
-      'normalize-pass-1': true,
-      'normalize-pass-2': true,
-      'ocr-processor': true,
-      'content-dedup': false,
+      [DATA_INGESTER_SERVICE]: true,
+      [NORMALIZE_PASS_1_KEY]: true,
+      [NORMALIZE_PASS_2_KEY]: true,
+      [OCR_PROCESSOR_SERVICE]: true,
+      [CONTENT_DEDUP_SERVICE]: false,
     },
   },
   {
@@ -216,11 +196,11 @@ export const PIPELINE_PROFILES: ProfileDefinition[] = [
     label: 'Ingest + Normalize + OCR + Dedup',
     description: 'Complete pipeline from ingest through deduplication',
     steps: {
-      ingester: true,
-      'normalize-pass-1': true,
-      'normalize-pass-2': true,
-      'ocr-processor': true,
-      'content-dedup': true,
+      [DATA_INGESTER_SERVICE]: true,
+      [NORMALIZE_PASS_1_KEY]: true,
+      [NORMALIZE_PASS_2_KEY]: true,
+      [OCR_PROCESSOR_SERVICE]: true,
+      [CONTENT_DEDUP_SERVICE]: true,
     },
   },
 ]

@@ -104,7 +104,7 @@ describe('ingester callback route', () => {
     const response = await POST(request)
 
     expect(response.status).toBe(204)
-    expect(mockMarkProcessStageCallbackReceived).toHaveBeenCalledWith('batch-1', 'ingester', 1780031836)
+    expect(mockMarkProcessStageCallbackReceived).toHaveBeenCalledWith('batch-1', 'data_ingester', 1780031836)
     expect(mockTriggerDocumentSplitter).toHaveBeenCalledTimes(1)
 
     vi.useRealTimers()

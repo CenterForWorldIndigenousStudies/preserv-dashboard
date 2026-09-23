@@ -15,7 +15,7 @@ function buildBatchStatus(overrides: Partial<ProcessBatchStatus> = {}): ProcessB
     batchName: 'Batch 1',
     startedBy: 'archivist@example.org',
     createdAt: '2026-07-02T00:00:00.000Z',
-    pipelineRequestedStages: ['metadata-extraction'],
+    pipelineRequestedStages: ['metadata_extractor'],
     pipelineConfig: null,
     ingester: null,
     documentSplitter: null,

@@ -3,14 +3,13 @@ import { Box, Button, Card, CardContent, Stack, Typography } from '@mui/material
 
 import { PROCESS_DOCUMENTS_PATH } from '@constants/paths'
 import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
-import { GENERATED_BATCH_PUBLICATION_STATUSES } from '@constants/generated/batchPublicationStatuses'
 import { PAGE_LABELS } from '@constants/pageLabels'
 import { BatchesTable } from '@organisms/BatchesTable'
 import { PageHeader } from '@organisms/PageHeader'
 import { getBatchOverviewMetrics, getBatches, parseBatchQueryParams } from '@lib/queries/batchQueries'
 import { getDocumentFilterOptions } from '@lib/queries/queries'
-import { getReprocessingDrafts } from '@lib/queries/reprocessingDraftQueries'
-import { ReprocessingCart } from '@molecules/ReprocessingCart'
+import { getBatchDrafts } from '@lib/queries/batchDraftQueries'
+import { BatchCart } from '@molecules/BatchCart'
 
 export const dynamic = 'force-dynamic'
 
@@ -58,12 +57,11 @@ export default async function BatchesPage({ searchParams }: BatchesPageProps): P
     getBatches(initialQuery),
     getBatchOverviewMetrics(initialQuery),
     getDocumentFilterOptions(),
-    getReprocessingDrafts(),
+    getBatchDrafts(),
   ])
   const batchFilterOptions = {
     ...filterOptions,
     lifecycleStatuses: Object.values(GENERATED_BATCH_LIFECYCLE_STATUSES),
-    publicationStatuses: Object.values(GENERATED_BATCH_PUBLICATION_STATUSES),
   }
 
   return (
@@ -119,7 +117,7 @@ export default async function BatchesPage({ searchParams }: BatchesPageProps): P
       </Card>
 
       <SummaryCard totalBatches={overview.totalBatches} totalDocuments={overview.totalDocuments} />
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}><ReprocessingCart drafts={drafts} /></Box>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}><BatchCart drafts={drafts} /></Box>
       <BatchesTable initialData={initialData} initialQuery={initialQuery} filterOptions={batchFilterOptions} />
     </Stack>
   )

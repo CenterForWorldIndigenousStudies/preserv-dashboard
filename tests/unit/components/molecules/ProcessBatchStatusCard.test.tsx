@@ -17,7 +17,7 @@ function buildBatchStatus(overrides: Partial<ProcessBatchStatus> = {}): ProcessB
     batchName: 'Batch 1',
     startedBy: 'archivist@example.org',
     createdAt: '2026-07-02T00:00:00.000Z',
-    pipelineRequestedStages: ['metadata-extraction'],
+            pipelineRequestedStages: ['metadata_extractor'],
     pipelineConfig: null,
     ingester: null,
     documentSplitter: null,
@@ -67,7 +67,6 @@ describe('ProcessBatchStatusCard', () => {
         <ProcessBatchStatusCard
           batch={buildBatchStatus({
             lifecycleStatus: 'complete',
-            publicationStatus: 'not_started',
             manualEditAfterStart: true,
           })}
         />
@@ -83,7 +82,6 @@ describe('ProcessBatchStatusCard', () => {
         <ProcessBatchStatusCard
           batch={buildBatchStatus({
             lifecycleStatus: 'rollback_failed',
-            publicationStatus: 'not_started',
             rollbackStatus: 'failed',
             rollbackFailure: 'Tag is still referenced',
             rollbackCounts: {
@@ -109,7 +107,6 @@ describe('ProcessBatchStatusCard', () => {
         <ProcessBatchStatusCard
           batch={buildBatchStatus({
             lifecycleStatus: 'rolled_back',
-            publicationStatus: 'not_started',
             rollbackStatus: 'rolled_back',
           })}
         />
@@ -126,7 +123,7 @@ describe('ProcessBatchStatusCard', () => {
       <ThemeProvider>
         <ProcessBatchStatusCard
           batch={buildBatchStatus({
-            pipelineRequestedStages: ['ocr-processor'],
+            pipelineRequestedStages: ['ocr_processor'],
           })}
         />
       </ThemeProvider>,
@@ -154,7 +151,6 @@ describe('ProcessBatchStatusCard', () => {
           batch={buildBatchStatus({
             pipelineExecutionMode: 'legacy_import',
             legacyImportStatus: 'historical',
-            publicationStatus: 'not_started',
           })}
         />
       </ThemeProvider>,
@@ -192,7 +188,7 @@ describe('ProcessBatchStatusCard', () => {
       <ThemeProvider>
         <ProcessBatchStatusCard
           batch={buildBatchStatus({
-            pipelineRequestedStages: ['ocr-processor'],
+            pipelineRequestedStages: ['ocr_processor'],
             ocrProcessor: {
               status: 'completed',
               requestId: 'request-12',

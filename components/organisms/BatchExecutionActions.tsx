@@ -6,25 +6,16 @@ import { Alert, Button, Stack } from '@mui/material'
 import { PipelineExecutionDialog } from '@molecules/PipelineExecutionDialog'
 import { PIPELINE_EXECUTION_STAGE_ORDER } from '@lib/reprocessingDrafts'
 import type { PipelineExecutionMode, PipelineQueueAttemptSummary } from 'types/pipelineExecution'
-import type { CallbackStageKey, ProcessBatchStatus } from 'types/pipelineContracts'
+import type { ProcessBatchStatus } from 'types/pipelineContracts'
 import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
-import { GENERATED_BATCH_PUBLICATION_STATUSES } from '@constants/generated/batchPublicationStatuses'
+import { isBatchPublicationLocked, isBatchPublished } from '@lib/batchLifecycle'
+import { PIPELINE_STAGE_PROPERTIES } from '@constants/pipelineStageProperties'
 
 interface BatchExecutionActionsProps {
   batch: ProcessBatchStatus | null
   currentExecution?: ProcessBatchStatus['currentExecution']
   queueAttempts?: PipelineQueueAttemptSummary[]
   onExecutionQueued?: () => void
-}
-
-const STAGE_PROPERTIES: Record<CallbackStageKey, keyof ProcessBatchStatus> = {
-  ingester: 'ingester',
-  document_splitter: 'documentSplitter',
-  page_rotator: 'pageRotator',
-  ocr_processor: 'ocrProcessor',
-  content_dedup: 'contentDedup',
-  metadata_extractor: 'metadataExtractor',
-  fedora_ingester: 'fedoraIngester',
 }
 
 function getBatchExecutionState(batch: ProcessBatchStatus): {
@@ -34,18 +25,9 @@ function getBatchExecutionState(batch: ProcessBatchStatus): {
   rolledBack: boolean
   rerunDisabled: boolean
 } {
-  const processingReadyForLibrary =
-    batch.lifecycleStatus === GENERATED_BATCH_LIFECYCLE_STATUSES.COMPLETE &&
-    batch.publicationStatus === GENERATED_BATCH_PUBLICATION_STATUSES.NOT_STARTED
-  const published =
-    batch.lifecycleStatus === GENERATED_BATCH_LIFECYCLE_STATUSES.PUBLISHED ||
-    batch.publicationStatus === GENERATED_BATCH_PUBLICATION_STATUSES.PUBLISHED
-  const publicationUnavailable =
-    batch.lifecycleStatus === GENERATED_BATCH_LIFECYCLE_STATUSES.PUBLICATION_LOCKED ||
-    new Set<string>([
-      GENERATED_BATCH_PUBLICATION_STATUSES.PUBLICATION_LOCKED,
-      GENERATED_BATCH_PUBLICATION_STATUSES.UNKNOWN,
-    ]).has(batch.publicationStatus ?? '')
+  const processingReadyForLibrary = batch.lifecycleStatus === GENERATED_BATCH_LIFECYCLE_STATUSES.COMPLETE
+  const published = isBatchPublished(batch.lifecycleStatus)
+  const publicationUnavailable = isBatchPublicationLocked(batch.lifecycleStatus)
   const rolledBack = batch.lifecycleStatus === GENERATED_BATCH_LIFECYCLE_STATUSES.ROLLED_BACK
 
   return {
@@ -68,7 +50,7 @@ export function BatchExecutionActions({
     if (!batch) return null
     return (
       PIPELINE_EXECUTION_STAGE_ORDER.find((stage) => {
-        const value = batch[STAGE_PROPERTIES[stage]]
+        const value = batch[PIPELINE_STAGE_PROPERTIES[stage]]
         return value && typeof value === 'object' && 'status' in value && value.status === 'failed'
       }) ?? null
     )

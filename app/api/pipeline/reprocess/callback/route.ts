@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import { DATA_INGESTER_SERVICE } from '@constants/pipeline'
 import {
   finalizePipelineReadinessIfDue,
   getPipelineContinuationContext,
@@ -23,11 +24,11 @@ export const preferredRegion = 'sfo1'
 export async function POST(request: NextRequest): Promise<NextResponse> {
   return handlePipelineCallback({
     request,
-    stage: 'ingester',
+    stage: DATA_INGESTER_SERVICE,
     eventName: 'reprocess_callback',
     expectedExecutionMode: 'reprocess',
     onSuccess: async ({ parsed }) => {
-      await markProcessStageCallbackReceived(parsed.batchId, 'ingester', Math.floor(Date.now() / 1000))
+      await markProcessStageCallbackReceived(parsed.batchId, DATA_INGESTER_SERVICE, Math.floor(Date.now() / 1000))
       const batch = await getProcessBatchStatus(parsed.batchId)
       if (!batch) {
         throw new Error(`Batch ${parsed.batchId} was not found after recording reprocess callback.`)

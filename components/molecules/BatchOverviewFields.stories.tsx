@@ -1,6 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import Box from '@mui/material/Box'
 
+import {
+  METADATA_EXTRACTOR_SERVICE,
+  OCR_PROCESSOR_SERVICE,
+} from '@constants/pipeline'
+import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
+import { BATCH_PUBLICATION_STATES } from '@lib/batchLifecycle'
 import { BatchOverviewFields } from '@molecules/BatchOverviewFields'
 
 const meta = {
@@ -23,9 +29,9 @@ export const ProcessingBatch: Story = {
   args: {
     createdAt: '2026-09-01T10:00:00.000Z',
     startedAt: '2026-09-05T10:00:00.000Z',
-    requestedStages: ['ocr_processor', 'metadata_extractor'],
-    lifecycleStatus: 'running',
-    publicationStatus: 'not_started',
+    requestedStages: [OCR_PROCESSOR_SERVICE, METADATA_EXTRACTOR_SERVICE],
+    lifecycleStatus: GENERATED_BATCH_LIFECYCLE_STATUSES.RUNNING,
+    publicationState: BATCH_PUBLICATION_STATES.NOT_STARTED,
   },
 }
 
@@ -33,8 +39,8 @@ export const DraftBatch: Story = {
   args: {
     createdAt: '2026-09-01T10:00:00.000Z',
     startedAt: null,
-    requestedStages: ['ocr_processor'],
-    lifecycleStatus: 'draft',
-    publicationStatus: 'not_started',
+    requestedStages: [OCR_PROCESSOR_SERVICE],
+    lifecycleStatus: GENERATED_BATCH_LIFECYCLE_STATUSES.DRAFT,
+    publicationState: BATCH_PUBLICATION_STATES.NOT_STARTED,
   },
 }

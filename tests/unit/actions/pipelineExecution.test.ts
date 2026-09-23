@@ -3,6 +3,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const {
   mockGetDashboardSession,
   mockGetReprocessingDraft,
+  mockGetReprocessingDrafts,
+  mockGetOpenDraftForDocument,
+  mockGetOpenDraftDocumentIds,
+  mockCreateBatchDraft,
+  mockAddDocumentsToReprocessingDraft,
+  mockUpdateReprocessingDraft,
+  mockRemoveDocumentsFromReprocessingDrafts,
+  mockRemoveDocumentFromReprocessingDraft,
+  mockArchiveReprocessingDraft,
   mockGetPipelineExecutionSnapshot,
   mockTriggerMetadataExtractor,
   mockTriggerDataIngesterReprocess,
@@ -10,6 +19,15 @@ const {
 } = vi.hoisted(() => ({
   mockGetDashboardSession: vi.fn(),
   mockGetReprocessingDraft: vi.fn(),
+  mockGetReprocessingDrafts: vi.fn(),
+  mockGetOpenDraftForDocument: vi.fn(),
+  mockGetOpenDraftDocumentIds: vi.fn(),
+  mockCreateBatchDraft: vi.fn(),
+  mockAddDocumentsToReprocessingDraft: vi.fn(),
+  mockUpdateReprocessingDraft: vi.fn(),
+  mockRemoveDocumentsFromReprocessingDrafts: vi.fn(),
+  mockRemoveDocumentFromReprocessingDraft: vi.fn(),
+  mockArchiveReprocessingDraft: vi.fn(),
   mockGetPipelineExecutionSnapshot: vi.fn(),
   mockTriggerMetadataExtractor: vi.fn(),
   mockTriggerDataIngesterReprocess: vi.fn(),
@@ -17,7 +35,18 @@ const {
 }))
 
 vi.mock('@root/auth', () => ({ getDashboardSession: mockGetDashboardSession }))
-vi.mock('@lib/queries/reprocessingDraftQueries', () => ({ getReprocessingDraft: mockGetReprocessingDraft }))
+vi.mock('@lib/queries/reprocessingDraftQueries', () => ({
+  getReprocessingDraft: mockGetReprocessingDraft,
+  getReprocessingDrafts: mockGetReprocessingDrafts,
+  getOpenDraftForDocument: mockGetOpenDraftForDocument,
+  getOpenDraftDocumentIds: mockGetOpenDraftDocumentIds,
+  createBatchDraft: mockCreateBatchDraft,
+  addDocumentsToReprocessingDraft: mockAddDocumentsToReprocessingDraft,
+  updateReprocessingDraft: mockUpdateReprocessingDraft,
+  removeDocumentsFromReprocessingDrafts: mockRemoveDocumentsFromReprocessingDrafts,
+  removeDocumentFromReprocessingDraft: mockRemoveDocumentFromReprocessingDraft,
+  archiveReprocessingDraft: mockArchiveReprocessingDraft,
+}))
 vi.mock('@lib/queries/pipelineExecutionQueries', () => ({
   batchNameExists: vi.fn(),
   documentIdsExist: vi.fn(),

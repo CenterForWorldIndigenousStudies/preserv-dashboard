@@ -74,7 +74,6 @@ export interface DocumentToBatch {
   batch_legacy_id: string | null
   batch_name: string | null
   batch_status: string | null
-  batch_publication_status?: string | null
 }
 
 export interface DocumentToContributor {

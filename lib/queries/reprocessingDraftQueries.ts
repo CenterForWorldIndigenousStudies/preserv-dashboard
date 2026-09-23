@@ -1,7 +1,13 @@
 import { Prisma, type PrismaClient } from '@lib/prisma/generated/client'
 
 import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
-import { GENERATED_BATCH_PUBLICATION_STATUSES } from '@constants/generated/batchPublicationStatuses'
+import { GENERATED_PIPELINE_EXECUTION_MODES } from '@constants/generated/pipelineExecutionModes'
+import { BATCH_ORIGINS } from '@constants/batchOrigins'
+import {
+  DATA_INGESTER_SERVICE,
+  FEDORA_INGESTER_SERVICE,
+  SUPPORTED_DOWNSTREAM_SERVICES,
+} from '@constants/pipeline'
 import { db } from '@lib/db'
 import { createEditHistoryEntry } from '@lib/editHistory'
 import { buildNameHash } from '@lib/tagHash'
@@ -9,7 +15,7 @@ import {
   getReprocessingPipelineConfig,
   normalizeReprocessingRequestedStages,
 } from '@lib/reprocessingDrafts'
-import { parsePipelineConfig, type PipelineConfig } from '@lib/pipelineConfig'
+import { createDefaultDraft, draftToPipelineConfig, parsePipelineConfig, type PipelineConfig } from '@lib/pipelineConfig'
 import type { CallbackStageKey } from 'types/pipelineContracts'
 import type {
   AddDocumentToReprocessingDraftInput,
@@ -23,28 +29,24 @@ import type {
   ReprocessingDraftSummary,
   UpdateReprocessingDraftInput,
 } from 'types/reprocessingDrafts'
+import type { CreateBatchDraftInput } from 'types/batchDrafts'
 
 type DraftQueryClient = PrismaClient | Prisma.TransactionClient
 
 const REPROCESSABLE_START_STAGES = new Set<CallbackStageKey>([
-  'document_splitter',
-  'page_rotator',
-  'ocr_processor',
-  'content_dedup',
-  'metadata_extractor',
+  DATA_INGESTER_SERVICE,
+  ...SUPPORTED_DOWNSTREAM_SERVICES,
 ])
 
-const DRAFT_DETAILS_KEY = 'reprocessingDraft'
+interface StoredCollectionDetails {
+  name?: unknown
+  notes?: unknown
+}
 
-interface StoredDraftDetails {
-  restartStage?: unknown
-  requestedStages?: unknown
+interface StoredBatchDraftDetails {
   reason?: unknown
-  collectionName?: unknown
-  collectionNotes?: unknown
-  createdBy?: unknown
-  updatedBy?: unknown
-  pipelineConfig?: unknown
+  collection?: StoredCollectionDetails | null
+  pipeline?: Record<string, unknown>
 }
 
 function parseDetails(value: string | null): Record<string, unknown> {
@@ -62,9 +64,12 @@ function textValue(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value.trim() : null
 }
 
-function draftMetadata(details: Record<string, unknown>): StoredDraftDetails {
-  const value = details[DRAFT_DETAILS_KEY]
-  return value && typeof value === 'object' && !Array.isArray(value) ? value : {}
+function draftDetails(details: Record<string, unknown>): StoredBatchDraftDetails {
+  return details
+}
+
+function isUnknownArray(value: unknown): value is unknown[] {
+  return Array.isArray(value)
 }
 
 function pipelineRequestedStages(details: Record<string, unknown>): unknown {
@@ -75,23 +80,42 @@ function pipelineRequestedStages(details: Record<string, unknown>): unknown {
 }
 
 function pipelineConfig(details: Record<string, unknown>): PipelineConfig | undefined {
-  const metadata = draftMetadata(details)
-  const pipeline = details.pipeline
-  const pipelineRecord = pipeline && typeof pipeline === 'object' ? (pipeline as Record<string, unknown>) : undefined
-  const value = metadata.pipelineConfig ?? pipelineRecord?.config
+  const pipelineRecord =
+    details.pipeline && typeof details.pipeline === 'object' && !Array.isArray(details.pipeline)
+      ? (details.pipeline as Record<string, unknown>)
+      : undefined
+  const value = pipelineRecord?.config
   return parsePipelineConfig(value) ?? undefined
 }
 
+function collectionDetails(details: Record<string, unknown>): StoredCollectionDetails {
+  const collection = draftDetails(details).collection
+  return collection && typeof collection === 'object' && !Array.isArray(collection) ? collection : {}
+}
+
 function restartStageValue(value: unknown): CallbackStageKey | null {
-  return typeof value === 'string' && REPROCESSABLE_START_STAGES.has(value as CallbackStageKey)
-    ? (value as CallbackStageKey)
+  const stage = callbackStageValue(value)
+  return stage && REPROCESSABLE_START_STAGES.has(stage) ? stage : null
+}
+
+function callbackStageValue(value: unknown): CallbackStageKey | null {
+  if (typeof value !== 'string') return null
+  const normalized = value.trim().replaceAll('-', '_')
+  return REPROCESSABLE_START_STAGES.has(normalized as CallbackStageKey) || normalized === FEDORA_INGESTER_SERVICE
+    ? (normalized as CallbackStageKey)
     : null
 }
 
 function requestedStagesValue(value: unknown, restartStage: CallbackStageKey): CallbackStageKey[] {
   const requestedStages = Array.isArray(value)
-    ? value.filter((stage): stage is CallbackStageKey => typeof stage === 'string')
+    ? value.flatMap((stage) => {
+        const normalized = callbackStageValue(stage)
+        return normalized ? [normalized] : []
+      })
     : []
+  if (restartStage === DATA_INGESTER_SERVICE) {
+    return requestedStages.length > 0 ? requestedStages : [restartStage]
+  }
   const normalized = normalizeReprocessingRequestedStages(restartStage, requestedStages)
   return normalized.length > 0 ? normalized : [restartStage]
 }
@@ -108,31 +132,45 @@ function summaryFromRow(row: {
   updated_at: Date | null
   document_to_batches: unknown[]
 }): ReprocessingDraftSummary {
-  const metadata = draftMetadata(parseDetails(row.processing_details))
-  const restartStage = restartStageValue(metadata.restartStage)
+  const details = parseDetails(row.processing_details)
+  const pipeline = pipelineConfig(details)
+  const storedRequestedStages = pipelineRequestedStages(details)
+  const rawRequestedStages = isUnknownArray(storedRequestedStages)
+    ? storedRequestedStages
+    : pipeline?.executionPlan
+        .filter((step) => step.enabled && step.service !== DATA_INGESTER_SERVICE)
+        .map((step) => step.service)
+  const firstRequestedStage = Array.isArray(rawRequestedStages) ? rawRequestedStages[0] : undefined
+  const restartStage = restartStageValue(firstRequestedStage) ?? DATA_INGESTER_SERVICE
   if (!restartStage) {
     throw new Error(`Draft batch ${row.id} has no valid restart stage.`)
   }
 
-  const requestedStages = requestedStagesValue(
-    metadata.requestedStages ?? pipelineRequestedStages(parseDetails(row.processing_details)),
-    restartStage,
-  )
+  const normalizedRequestedStages = requestedStagesValue(rawRequestedStages, restartStage)
+  const collection = collectionDetails(details)
+  const storedDetails = draftDetails(details)
+  const pipelineRecord = details.pipeline && typeof details.pipeline === 'object' && !Array.isArray(details.pipeline)
+    ? details.pipeline as Record<string, unknown>
+    : undefined
+  const executionMode = typeof pipelineRecord?.executionMode === 'string'
+    ? pipelineRecord.executionMode
+    : undefined
 
   return {
     id: row.id,
     name: row.name?.trim() || row.id,
-    collectionName: textValue(metadata.collectionName),
-    collectionNotes: textValue(metadata.collectionNotes),
+    collectionName: textValue(collection.name),
+    collectionNotes: textValue(collection.notes),
     restartStage,
-    requestedStages,
-    pipelineConfig: pipelineConfig(parseDetails(row.processing_details)) ?? getReprocessingPipelineConfig(restartStage, requestedStages),
-    reason: textValue(metadata.reason) ?? '',
+    requestedStages: normalizedRequestedStages,
+    pipelineConfig: pipeline ?? getReprocessingPipelineConfig(restartStage, normalizedRequestedStages),
+    executionMode: executionMode as ReprocessingDraftSummary['executionMode'],
+    reason: textValue(storedDetails.reason) ?? '',
+    sourceFolderIds: pipeline?.sourceFolderIds ?? [],
+    sourceDocumentIds: pipeline?.sourceDocumentIds ?? [],
     documentCount: row.document_to_batches.length,
     createdAt: isoDate(row.created_at),
     updatedAt: isoDate(row.updated_at),
-    createdBy: textValue(metadata.createdBy),
-    updatedBy: textValue(metadata.updatedBy),
   }
 }
 
@@ -170,7 +208,7 @@ function validateDraftInput(input: {
     return 'Select a valid reprocessing start stage.'
   }
   if (input.restartStage && input.requestedStages) {
-    const normalized = normalizeReprocessingRequestedStages(input.restartStage, input.requestedStages)
+    const normalized = normalizeBatchDraftRequestedStages(input.restartStage, input.requestedStages)
     if (normalized.length === 0) return 'Select an ordered set of reprocessing stages beginning with the start stage.'
   }
   return null
@@ -182,23 +220,20 @@ function buildDraftProcessingDetails(input: {
   reason: string
   collectionName: string | null
   collectionNotes: string | null
-  createdBy?: string | null
-  updatedBy?: string | null
+  executionMode:
+    | typeof GENERATED_PIPELINE_EXECUTION_MODES.NORMAL
+    | typeof GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS
   pipelineConfig: PipelineConfig
 }): string {
   return JSON.stringify({
-    reprocessingDraft: {
-      restartStage: input.restartStage,
-      requestedStages: input.requestedStages,
-      reason: input.reason,
-      collectionName: input.collectionName,
-      collectionNotes: input.collectionNotes,
-      createdBy: input.createdBy ?? null,
-      updatedBy: input.updatedBy ?? input.createdBy ?? null,
-      pipelineConfig: input.pipelineConfig,
-    },
+    reason: input.reason,
+    collection: input.collectionName
+      ? { name: input.collectionName, notes: input.collectionNotes }
+      : input.collectionNotes
+        ? { name: null, notes: input.collectionNotes }
+        : null,
     pipeline: {
-      executionMode: 'reprocess',
+      executionMode: input.executionMode,
       requestedStages: input.requestedStages,
       config: input.pipelineConfig,
     },
@@ -206,15 +241,16 @@ function buildDraftProcessingDetails(input: {
 }
 
 function draftAuditValue(name: string | null, processingDetails: string | null): Record<string, unknown> {
-  const metadata = draftMetadata(parseDetails(processingDetails))
+  const details = parseDetails(processingDetails)
+  const collection = collectionDetails(details)
+  const pipeline = pipelineConfig(details)
   return {
     name: textValue(name),
-    collectionName: textValue(metadata.collectionName),
-    collectionNotes: textValue(metadata.collectionNotes),
-    restartStage: restartStageValue(metadata.restartStage),
-    requestedStages: metadata.requestedStages,
-    pipelineConfig: metadata.pipelineConfig,
-    reason: textValue(metadata.reason),
+    collectionName: textValue(collection.name),
+    collectionNotes: textValue(collection.notes),
+    requestedStages: pipelineRequestedStages(details),
+    pipelineConfig: pipeline,
+    reason: textValue(draftDetails(details).reason),
   }
 }
 
@@ -280,6 +316,49 @@ async function getOpenDraftMemberships(
   })
 }
 
+async function syncDraftSourceDocumentIds(
+  client: DraftQueryClient,
+  batchId: string,
+  sourceDocumentIds: readonly string[],
+  editSummary: string,
+): Promise<void> {
+  const draft = await client.batches.findFirst({
+    where: { id: batchId, lifecycle_status: GENERATED_BATCH_LIFECYCLE_STATUSES.DRAFT },
+    select: { processing_details: true },
+  })
+  if (!draft) return
+
+  const details = parseDetails(draft.processing_details)
+  const currentConfig = pipelineConfig(details)
+  if (!currentConfig) return
+
+  const normalizedSourceDocumentIds = normalizeDocumentIds(sourceDocumentIds)
+  if (JSON.stringify(currentConfig.sourceDocumentIds ?? []) === JSON.stringify(normalizedSourceDocumentIds)) return
+
+  const nextConfig: PipelineConfig = {
+    ...currentConfig,
+    sourceDocumentIds: normalizedSourceDocumentIds,
+  }
+  const nextDetails = {
+    ...details,
+    pipeline: {
+      ...(details.pipeline && typeof details.pipeline === 'object' ? details.pipeline : {}),
+      config: nextConfig,
+    },
+  }
+  await client.batches.update({
+    where: { id: batchId },
+    data: { processing_details: JSON.stringify(nextDetails) },
+  })
+  await createEditHistoryEntry(client, {
+    entityTable: 'batches',
+    entityId: batchId,
+    previousValue: { pipelineConfig: currentConfig },
+    newValue: { pipelineConfig: nextConfig },
+    editSummary,
+  })
+}
+
 export async function removeOpenDraftMemberships(
   client: DraftQueryClient,
   documentIds: readonly string[],
@@ -297,6 +376,21 @@ export async function removeOpenDraftMemberships(
         newValue: null,
         editSummary: `Removed document ${membership.document_id} from reprocessing draft ${membership.batch_id}.`,
       })
+    }),
+  )
+
+  await Promise.all(
+    [...new Set(memberships.map((membership) => membership.batch_id))].map(async (batchId) => {
+      const remaining = await client.document_to_batches.findMany({
+        where: { batch_id: batchId },
+        select: { document_id: true },
+      })
+      await syncDraftSourceDocumentIds(
+        client,
+        batchId,
+        remaining.map((membership) => membership.document_id),
+        `Updated source documents for draft batch ${batchId}.`,
+      )
     }),
   )
 
@@ -410,29 +504,59 @@ export async function removeDocumentsFromReprocessingDrafts(
 export async function createReprocessingDraft(
   input: CreateReprocessingDraftInput,
 ): Promise<ReprocessingDraftActionResult> {
-  return createReprocessingDraftForDocuments({ ...input, documentIds: [input.documentId] })
+  return createBatchDraft({ ...input, documentIds: [input.documentId] })
 }
 
 export async function createReprocessingDraftForDocuments(
   input: CreateReprocessingDraftForDocumentsInput,
 ): Promise<ReprocessingDraftActionResult> {
-  const documentIds = normalizeDocumentIds(input.documentIds)
+  return createBatchDraft(input)
+}
+
+function normalizeBatchDraftRequestedStages(
+  restartStage: CallbackStageKey,
+  requestedStages: readonly CallbackStageKey[],
+): CallbackStageKey[] {
+  if (restartStage === DATA_INGESTER_SERVICE) {
+    return [...new Set(requestedStages)]
+  }
+  return normalizeReprocessingRequestedStages(restartStage, requestedStages)
+}
+
+export async function createBatchDraft(input: CreateBatchDraftInput): Promise<ReprocessingDraftActionResult> {
+  const documentIds = normalizeDocumentIds(input.documentIds ?? [])
+  const sourceFolderIds = normalizeDocumentIds(input.sourceFolderIds ?? [])
   const name = input.name.trim()
   const reason = input.reason.trim()
   const restartStage = input.restartStage
-  const requestedStages = normalizeReprocessingRequestedStages(restartStage, input.requestedStages)
-  const pipelineConfig = input.pipelineConfig ?? getReprocessingPipelineConfig(restartStage, requestedStages)
-  const validationError =
-    documentIds.length > 0
-      ? validateDraftInput({ name, reason, restartStage, requestedStages })
-      : 'A document is required.'
+  const requestedStages = normalizeBatchDraftRequestedStages(restartStage, input.requestedStages)
+  const executionMode =
+    input.executionMode ??
+    (restartStage === DATA_INGESTER_SERVICE
+      ? GENERATED_PIPELINE_EXECUTION_MODES.NORMAL
+      : GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS)
+  const basePipelineConfig =
+    input.pipelineConfig ??
+    (restartStage === DATA_INGESTER_SERVICE
+      ? draftToPipelineConfig(createDefaultDraft())
+      : getReprocessingPipelineConfig(restartStage, requestedStages))
+  const pipelineConfig: PipelineConfig = {
+    ...basePipelineConfig,
+    sourceFolderIds,
+    sourceDocumentIds: documentIds,
+  }
+  const validationError = documentIds.length > 0 || sourceFolderIds.length > 0
+    ? validateDraftInput({ name, reason, restartStage, requestedStages })
+    : 'At least one source folder or document is required.'
   if (validationError) return { ok: false, error: validationError }
 
   try {
     return await db.$transaction(async (tx) => {
-      await lockDocuments(tx, documentIds)
-      const documentValidationError = await validateDraftDocuments(tx, documentIds)
-      if (documentValidationError) return { ok: false, error: documentValidationError }
+      if (documentIds.length > 0) {
+        await lockDocuments(tx, documentIds)
+        const documentValidationError = await validateDraftDocuments(tx, documentIds)
+        if (documentValidationError) return { ok: false, error: documentValidationError }
+      }
 
       const nameHash = buildNameHash(name)
       const existingName = await tx.batches.findFirst({
@@ -441,23 +565,22 @@ export async function createReprocessingDraftForDocuments(
       })
       if (existingName) return { ok: false, error: `Batch name “${name}” already exists.` }
 
-      await removeOpenDraftMemberships(tx, documentIds)
+      if (documentIds.length > 0) await removeOpenDraftMemberships(tx, documentIds)
 
       const batchId = crypto.randomUUID()
       await tx.batches.create({
         data: {
           id: batchId,
           name,
-          started_by: input.createdBy ?? null,
+          started_by: null,
           lifecycle_status: GENERATED_BATCH_LIFECYCLE_STATUSES.DRAFT,
-          publication_status: GENERATED_BATCH_PUBLICATION_STATUSES.NOT_STARTED,
           processing_details: buildDraftProcessingDetails({
             restartStage,
             requestedStages,
             reason,
             collectionName: textValue(input.collectionName),
             collectionNotes: textValue(input.collectionNotes),
-            createdBy: input.createdBy,
+            executionMode,
             pipelineConfig,
           }),
         },
@@ -470,7 +593,7 @@ export async function createReprocessingDraftForDocuments(
               document_id: documentId,
               batch_id: batchId,
               added_at: new Date(),
-              batch_origin: 'reprocessing_draft',
+              batch_origin: BATCH_ORIGINS.DRAFT,
               processing_details: '{}',
             },
           }),
@@ -487,14 +610,15 @@ export async function createReprocessingDraftForDocuments(
           requested_stages: requestedStages,
           document_ids: documentIds,
         },
-        editSummary: 'Created reprocessing draft batch.',
+        editorEmail: input.createdBy ?? undefined,
+        editSummary: 'Created batch draft.',
       })
       return { ok: true, batchId }
     })
   } catch (error: unknown) {
     return isUniqueConstraintError(error)
       ? { ok: false, error: `Batch name “${name}” already exists.` }
-      : { ok: false, error: error instanceof Error ? error.message : 'The reprocessing draft could not be created.' }
+      : { ok: false, error: error instanceof Error ? error.message : 'The batch draft could not be created.' }
   }
 }
 
@@ -530,7 +654,7 @@ export async function addDocumentsToReprocessingDraft(
               document_id: documentId,
               batch_id: batchId,
               added_at: new Date(),
-              batch_origin: 'reprocessing_draft',
+              batch_origin: BATCH_ORIGINS.DRAFT,
               processing_details: '{}',
             },
           }),
@@ -546,6 +670,12 @@ export async function addDocumentsToReprocessingDraft(
             editSummary: `Added document ${documentIdsToAdd[index]} to reprocessing draft ${batchId}.`,
           }),
         ),
+      )
+      await syncDraftSourceDocumentIds(
+        tx,
+        batchId,
+        [...existingDocumentIds, ...documentIdsToAdd],
+        `Updated source documents for draft batch ${batchId}.`,
       )
       return { ok: true, batchId }
     })
@@ -563,8 +693,7 @@ export async function updateReprocessingDraft(
   const batchId = input.batchId.trim()
   const name = input.name.trim()
   const reason = input.reason.trim()
-  const requestedStages = normalizeReprocessingRequestedStages(input.restartStage, input.requestedStages)
-  const pipelineConfig = input.pipelineConfig ?? getReprocessingPipelineConfig(input.restartStage, requestedStages)
+  const requestedStages = normalizeBatchDraftRequestedStages(input.restartStage, input.requestedStages)
   const validationError = validateDraftInput({
     name,
     reason,
@@ -584,16 +713,32 @@ export async function updateReprocessingDraft(
         select: { id: true },
       })
       if (existingName) return { ok: false, error: `Batch name “${name}” already exists.` }
-      const current = draftMetadata(parseDetails(draft.processing_details))
+      const currentDetails = parseDetails(draft.processing_details)
+      const currentConfig = pipelineConfig(currentDetails)
+      const basePipelineConfig =
+        input.pipelineConfig ??
+        currentConfig ??
+        (input.restartStage === DATA_INGESTER_SERVICE
+          ? draftToPipelineConfig(createDefaultDraft())
+          : getReprocessingPipelineConfig(input.restartStage, requestedStages))
+      const effectiveSourceDocumentIds = input.sourceDocumentIds ?? draft.document_to_batches.map((membership) => membership.document_id)
+      const effectivePipelineConfig: PipelineConfig = {
+        ...basePipelineConfig,
+        sourceFolderIds: normalizeDocumentIds(input.sourceFolderIds ?? basePipelineConfig.sourceFolderIds ?? []),
+        sourceDocumentIds: normalizeDocumentIds(effectiveSourceDocumentIds),
+      }
       const processingDetails = buildDraftProcessingDetails({
         restartStage: input.restartStage,
         requestedStages,
         reason,
         collectionName: textValue(input.collectionName),
         collectionNotes: textValue(input.collectionNotes),
-        createdBy: textValue(current.createdBy),
-        updatedBy: input.updatedBy,
-        pipelineConfig,
+        executionMode:
+          input.executionMode ??
+          (input.restartStage === DATA_INGESTER_SERVICE
+            ? GENERATED_PIPELINE_EXECUTION_MODES.NORMAL
+            : GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS),
+        pipelineConfig: effectivePipelineConfig,
       })
       const previousValue = draftAuditValue(draft.name, draft.processing_details)
       const newValue = draftAuditValue(name, processingDetails)
@@ -604,7 +749,7 @@ export async function updateReprocessingDraft(
           entityId: batchId,
           previousValue,
           newValue,
-          editSummary: 'Updated reprocessing draft batch details.',
+          editSummary: 'Updated batch draft details.',
         })
       }
       return { ok: true, batchId }
@@ -637,6 +782,14 @@ export async function removeDocumentFromReprocessingDraft(
       newValue: null,
       editSummary: `Removed document ${documentId} from reprocessing draft ${batchId}.`,
     })
+    await syncDraftSourceDocumentIds(
+      tx,
+      batchId.trim(),
+      draft.document_to_batches
+        .map((draftMembership) => draftMembership.document_id)
+        .filter((draftDocumentId) => draftDocumentId !== documentId.trim()),
+      `Updated source documents for draft batch ${batchId.trim()}.`,
+    )
     return { ok: true, batchId: batchId.trim() }
   })
 }
@@ -657,7 +810,7 @@ export async function archiveReprocessingDraft(batchId: string): Promise<Reproce
       entityId: normalizedBatchId,
       previousValue: { lifecycle_status: GENERATED_BATCH_LIFECYCLE_STATUSES.DRAFT },
       newValue: { lifecycle_status: GENERATED_BATCH_LIFECYCLE_STATUSES.ARCHIVE },
-      editSummary: 'Archived reprocessing draft batch.',
+      editSummary: 'Archived batch draft.',
     })
     return { ok: true, batchId: normalizedBatchId }
   })

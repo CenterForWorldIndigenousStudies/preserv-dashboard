@@ -3,11 +3,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { logEvent } from '@lib/observability'
 import { parseBearerToken } from '@lib/pipelineCallbacks'
 import { getProcessBatchStatus } from '@lib/processBatches'
+import { BATCH_ROLLBACK_STATUSES } from '@constants/batchRollbackStatuses'
 
 export const dynamic = 'force-dynamic'
 export const preferredRegion = 'sfo1'
 
-const TERMINAL_ROLLBACK_STATUSES = new Set(['failed', 'rolled_back'])
+const TERMINAL_ROLLBACK_STATUSES = new Set<string>([
+  BATCH_ROLLBACK_STATUSES.FAILED,
+  BATCH_ROLLBACK_STATUSES.ROLLED_BACK,
+])
 
 interface RollbackCallbackBody {
   batch_id?: unknown

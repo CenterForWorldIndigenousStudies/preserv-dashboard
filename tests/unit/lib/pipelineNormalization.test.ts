@@ -25,7 +25,7 @@ describe('pipelineNormalization', () => {
   test('uses canonical dataIngester and pass-based splitter/rotator keys', () => {
     const normalized = normalizeProcessBatchDetails({
       pipeline: {
-        requestedStages: ['document-splitter', 'page-rotator'],
+        requestedStages: ['document_splitter', 'page_rotator'],
       },
       dataIngester: {
         status: 'completed',
@@ -49,7 +49,7 @@ describe('pipelineNormalization', () => {
       },
     })
 
-    expect(normalized.pipelineRequestedStages).toEqual(['document-splitter', 'page-rotator'])
+    expect(normalized.pipelineRequestedStages).toEqual(['document_splitter', 'page_rotator'])
     expect(normalized.ingester?.status).toBe('completed')
     expect(normalized.ingester?.startedAt).toBe('2024-05-29T16:26:40.000Z')
     expect(normalized.documentSplitter?.status).toBe('running')
@@ -61,7 +61,7 @@ describe('pipelineNormalization', () => {
     const normalized = normalizeProcessBatchDetails({
       pipeline: {
         executionMode: 'normal',
-        requestedStages: ['ocr-processor'],
+        requestedStages: ['ocr_processor'],
       },
       ocrProcessor: {
         status: 'running',
@@ -76,7 +76,7 @@ describe('pipelineNormalization', () => {
     })
 
     expect(normalized.pipelineExecutionMode).toBe('normal')
-    expect(normalized.pipelineRequestedStages).toEqual(['ocr-processor'])
+    expect(normalized.pipelineRequestedStages).toEqual(['ocr_processor'])
     expect(normalized.ocrProcessor?.requestId).toBe('request-10')
     expect(normalized.documentSplitter?.currentPass).toBe(1)
   })
@@ -135,7 +135,7 @@ describe('pipelineNormalization', () => {
   test('parses metadata extractor stage details', () => {
     const normalized = normalizeProcessBatchDetails({
       pipeline: {
-        requestedStages: ['content-dedup', 'metadata-extraction'],
+        requestedStages: ['content_dedup', 'metadata_extractor'],
       },
       metadataExtractor: {
         status: 'running',
@@ -145,7 +145,7 @@ describe('pipelineNormalization', () => {
       },
     })
 
-    expect(normalized.pipelineRequestedStages).toEqual(['content-dedup', 'metadata-extraction'])
+    expect(normalized.pipelineRequestedStages).toEqual(['content_dedup', 'metadata_extractor'])
     expect(normalized.metadataExtractor?.status).toBe('running')
     expect(normalized.metadataExtractor?.requestId).toBe('request-9')
     expect(normalized.metadataExtractor?.startedAt).toBe('2024-05-29T16:31:40.000Z')

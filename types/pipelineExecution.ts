@@ -2,7 +2,7 @@ import type { CallbackStageKey, ProcessBatchStatus } from 'types/pipelineContrac
 import type { PipelineConfig } from '@lib/pipelineConfig'
 import type { PipelineExecutionCollection } from '@lib/pipelineExecutionContext'
 
-export type PipelineExecutionMode = 'retry' | 'rerun' | 'reprocess'
+export type PipelineExecutionMode = 'normal' | 'retry' | 'rerun' | 'reprocess'
 
 export interface PipelineExecutionRequest {
   mode: PipelineExecutionMode

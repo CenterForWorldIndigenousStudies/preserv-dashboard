@@ -19,7 +19,6 @@ export interface AdvancedSearchFilters {
   tag?: string
   statuses?: StatusOption[]
   lifecycleStatuses?: StatusOption[]
-  publicationStatuses?: StatusOption[]
   documentType?: DocumentTypeOption
   batch?: string
   createdFrom?: string
@@ -33,7 +32,6 @@ export interface FilterOptions {
   accessLevels: AccessLevelOption[]
   statuses: StatusOption[]
   lifecycleStatuses?: StatusOption[]
-  publicationStatuses?: StatusOption[]
 }
 
 function firstSearchParam(value: string | string[] | undefined): string | undefined {

@@ -40,7 +40,6 @@ function currentRequestId(batch: ProcessBatchStatus): string | null {
 function buildRollbackStatusLogFields(batch: ProcessBatchStatus): Record<string, unknown> {
   return {
     lifecycleStatus: batch.lifecycleStatus,
-    publicationStatus: batch.publicationStatus,
     rollbackStatus: batch.rollbackStatus,
     rollbackFailure: batch.rollbackFailure,
     rollbackCounts: batch.rollbackCounts,

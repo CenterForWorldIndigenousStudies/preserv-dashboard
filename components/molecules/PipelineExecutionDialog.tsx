@@ -20,6 +20,15 @@ import {
 import { requestPipelineExecution } from '@actions/pipelineExecution'
 import { getPipelineConfigForBatch } from '@lib/pipelineExecution'
 import {
+  FEDORA_INGESTER_SERVICE,
+  METADATA_EXTRACTOR_SERVICE,
+  getServiceIdForCallbackStage,
+} from '@constants/pipeline'
+import { GENERATED_PIPELINE_EXECUTION_MODES } from '@constants/generated/pipelineExecutionModes'
+import { PIPELINE_STAGE_PROPERTIES } from '@constants/pipelineStageProperties'
+import { PIPELINE_STAGE_STATUSES } from '@constants/pipelineStageStatuses'
+import { getPipelineServiceDisplayName } from '@constants/pipelineServices'
+import {
   getDefaultReprocessingPipelineConfig,
   getReprocessingDownstreamStages,
   pipelineConfigToReprocessingRequestedStages,
@@ -49,26 +58,6 @@ interface PipelineExecutionDialogProps {
   initialStage?: CallbackStageKey
 }
 
-const STAGE_LABELS: Record<CallbackStageKey, string> = {
-  ingester: 'Data Ingester',
-  document_splitter: 'Document Splitter',
-  page_rotator: 'Page Rotator',
-  ocr_processor: 'OCR Processor',
-  content_dedup: 'Content Deduplication',
-  metadata_extractor: 'Metadata Extractor',
-  fedora_ingester: 'Fedora Ingester',
-}
-
-const STAGE_PROPERTIES: Record<CallbackStageKey, keyof ProcessBatchStatus> = {
-  ingester: 'ingester',
-  document_splitter: 'documentSplitter',
-  page_rotator: 'pageRotator',
-  ocr_processor: 'ocrProcessor',
-  content_dedup: 'contentDedup',
-  metadata_extractor: 'metadataExtractor',
-  fedora_ingester: 'fedoraIngester',
-}
-
 function availableStages(
   batch: ProcessBatchStatus,
   mode: PipelineExecutionMode,
@@ -79,18 +68,20 @@ function availableStages(
     : null
 
   return PIPELINE_EXECUTION_STAGE_ORDER.filter((stage) => {
-    if (mode === 'reprocess' && stage === 'fedora_ingester') {
+    if (mode === GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS && stage === FEDORA_INGESTER_SERVICE) {
       return false
     }
-    const service = stage.replace('_', '-') as PipelineConfig['executionPlan'][number]['service']
-    if (configuredServices && !configuredServices.has(service)) {
+    const service = getServiceIdForCallbackStage(stage)
+    if (!service || (configuredServices && !configuredServices.has(service))) {
       return false
     }
-    const value = batch[STAGE_PROPERTIES[stage]]
+    const value = batch[PIPELINE_STAGE_PROPERTIES[stage]]
     if (!value || typeof value !== 'object' || !('status' in value)) {
       return false
     }
-    return mode === 'retry' ? value.status === 'failed' : true
+    return mode === GENERATED_PIPELINE_EXECUTION_MODES.RETRY
+      ? value.status === PIPELINE_STAGE_STATUSES.FAILED
+      : true
   })
 }
 
@@ -106,16 +97,16 @@ export function PipelineExecutionDialog({
   const [rerunDraft, setRerunDraft] = useState<PipelineSelectionDraft>(createDefaultDraft)
   const [isPipelineStepsModalOpen, setIsPipelineStepsModalOpen] = useState(false)
   const rerunPipelineConfig = useMemo(
-    () => (mode === 'rerun' ? draftToPipelineConfig(rerunDraft) : undefined),
+    () => (mode === GENERATED_PIPELINE_EXECUTION_MODES.RERUN ? draftToPipelineConfig(rerunDraft) : undefined),
     [mode, rerunDraft],
   )
   const stages = useMemo(() => availableStages(batch, mode, rerunPipelineConfig), [batch, mode, rerunPipelineConfig])
-  const [stage, setStage] = useState<CallbackStageKey>(initialStage ?? stages[0] ?? 'metadata_extractor')
+  const [stage, setStage] = useState<CallbackStageKey>(initialStage ?? stages[0] ?? METADATA_EXTRACTOR_SERVICE)
   const [requestedStages, setRequestedStages] = useState<CallbackStageKey[]>(
-    getReprocessingDownstreamStages(initialStage ?? stages[0] ?? 'metadata_extractor'),
+    getReprocessingDownstreamStages(initialStage ?? stages[0] ?? METADATA_EXTRACTOR_SERVICE),
   )
   const [reprocessPipelineConfig, setReprocessPipelineConfig] = useState<PipelineConfig>(() =>
-    getDefaultReprocessingPipelineConfig(initialStage ?? stages[0] ?? 'metadata_extractor'),
+    getDefaultReprocessingPipelineConfig(initialStage ?? stages[0] ?? METADATA_EXTRACTOR_SERVICE),
   )
   const [reason, setReason] = useState('')
   const [newBatchName, setNewBatchName] = useState('')
@@ -123,7 +114,7 @@ export function PipelineExecutionDialog({
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (mode !== 'rerun' || !open) {
+    if (mode !== GENERATED_PIPELINE_EXECUTION_MODES.RERUN || !open) {
       return
     }
 
@@ -132,12 +123,12 @@ export function PipelineExecutionDialog({
   }, [batch, batch.batchId, mode, open])
 
   useEffect(() => {
-    if (mode !== 'reprocess' || !open) {
+    if (mode !== GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS || !open) {
       return
     }
 
     const selectedStage =
-      initialStage && stages.includes(initialStage) ? initialStage : (stages[0] ?? 'metadata_extractor')
+      initialStage && stages.includes(initialStage) ? initialStage : (stages[0] ?? METADATA_EXTRACTOR_SERVICE)
     setStage(selectedStage)
     const defaultConfig = getDefaultReprocessingPipelineConfig(selectedStage)
     setReprocessPipelineConfig(defaultConfig)
@@ -146,9 +137,9 @@ export function PipelineExecutionDialog({
 
   useEffect(() => {
     if (!stages.includes(stage)) {
-      const nextStage = stages[0] ?? 'metadata_extractor'
+      const nextStage = stages[0] ?? METADATA_EXTRACTOR_SERVICE
       setStage(nextStage)
-      if (mode === 'reprocess') {
+      if (mode === GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS) {
         const defaultConfig = getDefaultReprocessingPipelineConfig(nextStage)
         setReprocessPipelineConfig(defaultConfig)
         setRequestedStages(pipelineConfigToReprocessingRequestedStages(defaultConfig))
@@ -161,14 +152,14 @@ export function PipelineExecutionDialog({
     setError(null)
     const request: PipelineExecutionRequest = {
       mode,
-      batchId: mode === 'reprocess' ? undefined : batch.batchId,
+      batchId: mode === GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS ? undefined : batch.batchId,
       documentIds,
       restartStage: stage,
-      newBatchName: mode === 'reprocess' ? newBatchName : undefined,
+      newBatchName: mode === GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS ? newBatchName : undefined,
       reason,
-      requestedStages: mode === 'reprocess' ? requestedStages : undefined,
+      requestedStages: mode === GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS ? requestedStages : undefined,
       sourceBatchId: batch.batchId || undefined,
-      pipelineConfig: mode === 'rerun' ? rerunPipelineConfig : reprocessPipelineConfig,
+      pipelineConfig: mode === GENERATED_PIPELINE_EXECUTION_MODES.RERUN ? rerunPipelineConfig : reprocessPipelineConfig,
     }
     const result = await requestPipelineExecution(request)
     setSubmitting(false)
@@ -180,14 +171,19 @@ export function PipelineExecutionDialog({
     onClose()
   }
 
-  const title = mode === 'retry' ? 'Retry Pipeline Stage' : mode === 'rerun' ? 'Rerun Pipeline' : 'Reprocess Documents'
+  const title =
+    mode === GENERATED_PIPELINE_EXECUTION_MODES.RETRY
+      ? 'Retry Pipeline Stage'
+      : mode === GENERATED_PIPELINE_EXECUTION_MODES.RERUN
+        ? 'Rerun Pipeline'
+        : 'Reprocess Documents'
   const description =
-    mode === 'retry'
+    mode === GENERATED_PIPELINE_EXECUTION_MODES.RETRY
       ? 'This creates a new queue attempt and preserves the failed attempt in history.'
-      : mode === 'rerun'
+      : mode === GENERATED_PIPELINE_EXECUTION_MODES.RERUN
         ? 'This starts the existing unpublished batch again from the selected stage.'
         : 'This creates new document artifacts in a new batch and preserves the existing documents and history.'
-  const stageFieldLabel = mode === 'rerun' ? 'Start from stage' : 'Restart stage'
+  const stageFieldLabel = mode === GENERATED_PIPELINE_EXECUTION_MODES.RERUN ? 'Start from stage' : 'Restart stage'
 
   return (
     <Dialog open={open} onClose={submitting ? undefined : onClose} fullWidth maxWidth={'sm'}>
@@ -197,7 +193,7 @@ export function PipelineExecutionDialog({
           <Typography variant={'body2'} color={'text.secondary'}>
             {description}
           </Typography>
-          {mode === 'rerun' ? (
+          {mode === GENERATED_PIPELINE_EXECUTION_MODES.RERUN ? (
             <>
               <PipelineProfileSelector
                 draft={rerunDraft}
@@ -215,7 +211,7 @@ export function PipelineExecutionDialog({
               />
             </>
           ) : null}
-          {mode === 'reprocess' ? (
+          {mode === GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS ? (
             <ReprocessingStageSelector
               restartStage={stage}
               requestedStages={requestedStages}
@@ -243,13 +239,13 @@ export function PipelineExecutionDialog({
               >
                 {stages.map((option) => (
                   <MenuItem key={option} value={option}>
-                    {STAGE_LABELS[option]}
+                    {getPipelineServiceDisplayName(getServiceIdForCallbackStage(option) ?? option)}
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
           )}
-          {mode === 'reprocess' ? (
+          {mode === GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS ? (
             <TextField
               label={'New batch name'}
               value={newBatchName}

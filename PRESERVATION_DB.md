@@ -101,7 +101,6 @@ erDiagram
         datetime last_processed
         varchar started_by
         varchar lifecycle_status
-        varchar publication_status
         varchar publication_target
     }
 
@@ -408,10 +407,9 @@ erDiagram
   Current values are `draft`, `queued`, `running`, `complete`, `published`, `failed`, `publication_locked`, `archive`, `rollback_requested`, `draining`, `rollback_in_progress`, `rollback_failed`, and `rolled_back`.
   Drafts are editable cart batches, `failed` is rerunnable before manual edits, `complete` means configured processing finished before publication, and `published` means Fedora publication was verified.
   `publication_locked` prevents rerun after an edit or uncertain/irreversible publication.
-  A `complete` batch with `publication_status = 'not_started'` is the Dashboard's derived Ready for Library state.
-  Rollback is eligible for pre-publication `queued`, `running`, `complete`, and `failed` states; `publication_locked`, `published`, and `unknown` publication outcomes are not rollback eligible.
-- `batches.publication_status` records the provider boundary independently from the workflow state.
-  `publication_target` identifies the configured provider, currently `fedora`.
+  A `complete` batch is the Dashboard's derived Ready for Library state.
+  Rollback is eligible for pre-publication `queued`, `running`, `complete`, and `failed` states; `publication_locked` and `published` are not rollback eligible.
+- `publication_target` identifies the configured provider, currently `fedora`.
 - `batch_rollbacks` retains the requested rollback, operator information, progress counts, failures, retries, and explicit resolutions.
   There is at most one rollback record per batch.
 - `batch_mutations` is the rollback journal.
@@ -790,7 +788,6 @@ Core batch/process-run records.
 | `last_processed` | `DATETIME` | Last processing datetime. |
 | `started_by` | `VARCHAR(255)` | Initiator name/process label. |
 | `lifecycle_status` | `VARCHAR(32)` | Durable workflow state: `draft`, `queued`, `running`, `complete`, `published`, `failed`, `publication_locked`, `archive`, and rollback states. |
-| `publication_status` | `VARCHAR(32)` | Publication boundary state: `not_started`, `publication_locked`, `published`, or `unknown`. |
 | `publication_target` | `VARCHAR(64)` | Provider identifier for the publication endpoint; currently `fedora`. |
 
 Query note: batch-specific metrics and registry-derived attributes often live in `batch_to_batches_metadata`, not as top-level columns here.

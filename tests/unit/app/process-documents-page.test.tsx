@@ -9,9 +9,9 @@ vi.mock('@lib/processBatches', () => ({
   getProcessBatchStatuses: mockGetProcessBatchStatuses,
 }))
 
-vi.mock('@lib/queries/reprocessingDraftQueries', () => ({
-  getReprocessingDrafts: vi.fn().mockResolvedValue([]),
-  getReprocessingDraft: vi.fn().mockResolvedValue(null),
+vi.mock('@lib/queries/batchDraftQueries', () => ({
+  getBatchDrafts: vi.fn().mockResolvedValue([]),
+  getBatchDraft: vi.fn().mockResolvedValue(null),
 }))
 
 vi.mock('@organisms/ProcessDocumentsWorkspace', () => ({

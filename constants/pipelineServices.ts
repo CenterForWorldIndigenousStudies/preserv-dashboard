@@ -1,17 +1,10 @@
-import { GENERATED_PIPELINE_SERVICES, type GeneratedPipelineServiceKey } from '@constants/generated/pipelineServices'
-import { INGESTER_STAGE, type ServiceId } from '@constants/pipeline'
+import {
+  GENERATED_PIPELINE_SERVICES,
+  type GeneratedPipelineServiceContract,
+  type GeneratedPipelineServiceKey,
+} from '@constants/generated/pipelineServices'
 
 export type PipelineServiceKey = GeneratedPipelineServiceKey
-
-const CONTRACT_KEY_BY_DASHBOARD_SERVICE: Record<ServiceId, PipelineServiceKey> = {
-  [INGESTER_STAGE]: 'data_ingester',
-  'document-splitter': 'document_splitter',
-  'page-rotator': 'page_rotator',
-  'ocr-processor': 'ocr_processor',
-  'content-dedup': 'content_dedup',
-  'metadata-extraction': 'metadata_extractor',
-  'fedora-ingester': 'fedora_ingester',
-}
 
 const passSuffixPattern = /^(.*)_(\d+)$/
 
@@ -38,8 +31,14 @@ export function getPipelineServiceDisplayName(serviceKey: string): string {
   return passNumber === null ? baseDisplayName : `${baseDisplayName} Pass ${passNumber}`
 }
 
-export function getPipelineServiceDisplayNameForService(service: ServiceId): string {
-  return getPipelineServiceDisplayName(CONTRACT_KEY_BY_DASHBOARD_SERVICE[service])
+export function getPipelineServiceContractForService(
+  serviceKey: PipelineServiceKey,
+): GeneratedPipelineServiceContract {
+  return GENERATED_PIPELINE_SERVICES[serviceKey]
+}
+
+export function getPipelineServiceDescriptionForService(serviceKey: PipelineServiceKey): string {
+  return getPipelineServiceContractForService(serviceKey).description
 }
 
 export const pipelineServiceDisplayNames = Object.freeze(

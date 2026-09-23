@@ -33,6 +33,7 @@ const meta = {
   ],
   args: {
     initialBatches: [],
+    initialDrafts: [],
   },
   beforeEach: () => {
     const originalFetch = globalThis.fetch
@@ -74,7 +75,7 @@ export const WithCompletedBatch: Story = {
     initialBatches: [
       createProcessBatch({
         batchName: 'Completed Ingest Batch',
-        pipelineRequestedStages: ['ingester'],
+        pipelineRequestedStages: ['data_ingester'],
         pipelineConfig: null,
         ingester: createProcessStage({
           status: 'completed',
@@ -85,5 +86,6 @@ export const WithCompletedBatch: Story = {
         }),
       }),
     ],
+    initialDrafts: [],
   },
 }

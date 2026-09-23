@@ -64,7 +64,6 @@ const initialQuery = {
     tag: 'Refugee',
     statuses: ['APPROVED'],
     lifecycleStatuses: ['DRAFT', 'FAILED'],
-    publicationStatuses: ['NOT_STARTED'],
     documentType: 'duplicate' as const,
     batch: 'Special_RCR',
     createdFrom: '2026-01-01',
@@ -200,7 +199,6 @@ describe('BatchesTable', () => {
     expect(nextUrl).toContain('tag=Refugee')
     expect(nextUrl).toContain('statuses=APPROVED')
     expect(nextUrl).toContain('lifecycleStatuses=DRAFT%2CFAILED')
-    expect(nextUrl).toContain('publicationStatuses=NOT_STARTED')
     expect(nextUrl).toContain('documentType=duplicate')
     expect(nextUrl).toContain('batch=Special_RCR')
     expect(nextUrl).toContain('createdFrom=2026-01-01')

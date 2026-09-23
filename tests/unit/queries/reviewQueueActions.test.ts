@@ -31,6 +31,9 @@ import {
 import type { ReviewHistoryValue } from 'types/reviewHistory'
 
 interface MockTransactionClient {
+  batches: {
+    findFirst: ReturnType<typeof vi.fn>
+  }
   metadata: {
     findFirst: ReturnType<typeof vi.fn>
     create: ReturnType<typeof vi.fn>
@@ -91,6 +94,9 @@ function parseReviewHistory(value: string | undefined): ReviewHistoryValue {
 
 function createTransactionClient(): MockTransactionClient {
   return {
+    batches: {
+      findFirst: vi.fn().mockResolvedValue(null),
+    },
     metadata: {
       findFirst: vi.fn(),
       create: vi.fn(),

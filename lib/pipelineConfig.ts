@@ -1,15 +1,23 @@
 import {
-  CONTENT_DEDUP_STAGE,
-  DOCUMENT_SPLITTER_STAGE,
-  METADATA_EXTRACTOR_STAGE,
-  OCR_PROCESSOR_STAGE,
-  PAGE_ROTATOR_STAGE,
+  CONTENT_DEDUP_SERVICE,
+  DATA_INGESTER_SERVICE,
+  DOCUMENT_SPLITTER_SERVICE,
+  METADATA_EXTRACTOR_SERVICE,
+  NORMALIZE_PASS_1_KEY,
+  NORMALIZE_PASS_2_KEY,
+  OCR_PROCESSOR_SERVICE,
+  PAGE_ROTATOR_SERVICE,
   PIPELINE_PROFILES,
-  SUPPORTED_DOWNSTREAM_STAGES,
+  SUPPORTED_DOWNSTREAM_SERVICES,
   type ProfileId,
   type ServiceId,
-  type StepId,
 } from '@constants/pipeline'
+import { GENERATED_PIPELINE_SERVICES } from '@constants/generated/pipelineServices'
+
+function getServiceLabel(service: ServiceId, pass?: 1 | 2): string {
+  const label = GENERATED_PIPELINE_SERVICES[service].display_name
+  return pass === undefined ? label : `${label} Pass ${pass}`
+}
 
 export interface NormalizePassSubSelection {
   split: boolean
@@ -29,6 +37,8 @@ export interface MetadataExtractionConfig {
 export interface PipelineSelectionDraft {
   profileId: ProfileId
   mode: 'preset' | 'custom'
+  sourceFolderIds?: string[]
+  sourceDocumentIds?: string[]
   metadataExtraction: MetadataExtractionConfig
   steps: {
     ingester: true
@@ -44,7 +54,7 @@ export type PipelineServiceId = ServiceId
 
 export interface PipelineExecutionStep {
   id: string
-  stepId: StepId
+  stepId: ServiceId
   service: PipelineServiceId
   label: string
   order: number
@@ -57,32 +67,14 @@ export interface PipelineExecutionStep {
 export interface PipelineConfig {
   profileId: ProfileId
   mode: 'preset' | 'custom'
+  sourceFolderIds?: string[]
+  sourceDocumentIds?: string[]
   metadataExtraction: MetadataExtractionConfig
   executionPlan: PipelineExecutionStep[]
 }
 
 function isServiceId(value: unknown): value is ServiceId {
-  return (
-    value === 'ingester' ||
-    value === 'document-splitter' ||
-    value === 'page-rotator' ||
-    value === 'ocr-processor' ||
-    value === 'content-dedup' ||
-    value === 'metadata-extraction' ||
-    value === 'fedora-ingester'
-  )
-}
-
-function isStepId(value: unknown): value is StepId {
-  return (
-    value === 'ingester' ||
-    value === 'normalize-pass-1' ||
-    value === 'normalize-pass-2' ||
-    value === 'ocr-processor' ||
-    value === 'content-dedup' ||
-    value === 'metadata-extraction' ||
-    value === 'fedora-ingester'
-  )
+  return typeof value === 'string' && value in GENERATED_PIPELINE_SERVICES
 }
 
 function parseDependsOn(value: unknown): string[] | undefined {
@@ -93,6 +85,21 @@ function parseDependsOn(value: unknown): string[] | undefined {
   const dependsOn = value.map((item) => (typeof item === 'string' ? item.trim() : '')).filter((item) => item.length > 0)
 
   return dependsOn.length > 0 ? dependsOn : undefined
+}
+
+function normalizeStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return Array.from(
+    new Set(
+      value
+        .filter((item): item is string => typeof item === 'string')
+        .map((item) => item.trim())
+        .filter(Boolean),
+    ),
+  )
 }
 
 function parseNormalizePassSubSelection(value: unknown): NormalizePassSubSelection | undefined {
@@ -120,8 +127,9 @@ function parseExecutionPlan(value: unknown): PipelineExecutionStep[] {
     const record = item as Record<string, unknown>
     if (
       typeof record.id !== 'string' ||
-      !isStepId(record.stepId) ||
+      !isServiceId(record.stepId) ||
       !isServiceId(record.service) ||
+      record.stepId !== record.service ||
       typeof record.label !== 'string' ||
       typeof record.order !== 'number' ||
       !Number.isFinite(record.order)
@@ -141,9 +149,9 @@ function parseExecutionPlan(value: unknown): PipelineExecutionStep[] {
         label: record.label.trim() || record.id.trim() || `Step ${index + 1}`,
         order: record.order,
         enabled: record.enabled !== false,
-        pass,
-        subSelection,
-        dependsOn,
+        ...(pass === undefined ? {} : { pass }),
+        ...(subSelection === undefined ? {} : { subSelection }),
+        ...(dependsOn === undefined ? {} : { dependsOn }),
       },
     ]
   })
@@ -178,6 +186,8 @@ export function parsePipelineConfig(value: unknown): PipelineConfig | null {
   return {
     profileId: record.profileId as ProfileId,
     mode: record.mode === 'custom' ? 'custom' : 'preset',
+    sourceFolderIds: normalizeStringArray(record.sourceFolderIds),
+    sourceDocumentIds: normalizeStringArray(record.sourceDocumentIds),
     metadataExtraction: parseMetadataExtractionConfig(record.metadataExtraction),
     executionPlan: executionPlan.sort((left, right) => left.order - right.order),
   }
@@ -218,12 +228,14 @@ export function expandPresetToDraft(profileId: ProfileId): PipelineSelectionDraf
     return createDefaultDraft()
   }
 
-  const pass1Enabled = profile.steps['normalize-pass-1'] ?? false
-  const pass2Enabled = profile.steps['normalize-pass-2'] ?? false
+  const pass1Enabled = profile.steps[NORMALIZE_PASS_1_KEY] ?? false
+  const pass2Enabled = profile.steps[NORMALIZE_PASS_2_KEY] ?? false
 
   return {
     profileId,
     mode: profileId === 'custom' ? 'custom' : 'preset',
+    sourceFolderIds: [],
+    sourceDocumentIds: [],
     metadataExtraction: {
       mode: 'direct',
     },
@@ -245,8 +257,8 @@ export function expandPresetToDraft(profileId: ProfileId): PipelineSelectionDraf
           rotate: pass2Enabled,
         },
       },
-      ocrProcessor: profile.steps['ocr-processor'] ?? false,
-      contentDedup: profile.steps['content-dedup'] ?? false,
+      ocrProcessor: profile.steps[OCR_PROCESSOR_SERVICE] ?? false,
+      contentDedup: profile.steps[CONTENT_DEDUP_SERVICE] ?? false,
       metadataExtraction: false,
     },
   }
@@ -281,9 +293,9 @@ function pushNormalizePassSteps(plan: PipelineExecutionStep[], draft: PipelineSe
     const sub = draft.steps.normalizePass1.subSelection
     plan.push({
       id: 'step-normalize-pass-1-split',
-      stepId: 'normalize-pass-1',
-      service: DOCUMENT_SPLITTER_STAGE,
-      label: 'Split Pass 1',
+      stepId: DOCUMENT_SPLITTER_SERVICE,
+      service: DOCUMENT_SPLITTER_SERVICE,
+      label: getServiceLabel(DOCUMENT_SPLITTER_SERVICE, 1),
       order: 1,
       enabled: sub.split,
       pass: 1,
@@ -291,9 +303,9 @@ function pushNormalizePassSteps(plan: PipelineExecutionStep[], draft: PipelineSe
     })
     plan.push({
       id: 'step-normalize-pass-1-rotate',
-      stepId: 'normalize-pass-1',
-      service: PAGE_ROTATOR_STAGE,
-      label: 'Rotate Pass 1',
+      stepId: PAGE_ROTATOR_SERVICE,
+      service: PAGE_ROTATOR_SERVICE,
+      label: getServiceLabel(PAGE_ROTATOR_SERVICE, 1),
       order: 2,
       enabled: sub.rotate,
       pass: 1,
@@ -305,9 +317,9 @@ function pushNormalizePassSteps(plan: PipelineExecutionStep[], draft: PipelineSe
     const sub = draft.steps.normalizePass2.subSelection
     plan.push({
       id: 'step-normalize-pass-2-split',
-      stepId: 'normalize-pass-2',
-      service: DOCUMENT_SPLITTER_STAGE,
-      label: 'Split Pass 2',
+      stepId: DOCUMENT_SPLITTER_SERVICE,
+      service: DOCUMENT_SPLITTER_SERVICE,
+      label: getServiceLabel(DOCUMENT_SPLITTER_SERVICE, 2),
       order: 3,
       enabled: sub.split,
       pass: 2,
@@ -315,9 +327,9 @@ function pushNormalizePassSteps(plan: PipelineExecutionStep[], draft: PipelineSe
     })
     plan.push({
       id: 'step-normalize-pass-2-rotate',
-      stepId: 'normalize-pass-2',
-      service: PAGE_ROTATOR_STAGE,
-      label: 'Rotate Pass 2',
+      stepId: PAGE_ROTATOR_SERVICE,
+      service: PAGE_ROTATOR_SERVICE,
+      label: getServiceLabel(PAGE_ROTATOR_SERVICE, 2),
       order: 4,
       enabled: sub.rotate,
       pass: 2,
@@ -330,9 +342,9 @@ export function draftToPipelineConfig(draft: PipelineSelectionDraft): PipelineCo
   const plan: PipelineExecutionStep[] = [
     {
       id: 'step-ingester',
-      stepId: 'ingester',
-      service: 'ingester',
-      label: 'Ingest',
+      stepId: DATA_INGESTER_SERVICE,
+      service: DATA_INGESTER_SERVICE,
+      label: GENERATED_PIPELINE_SERVICES[DATA_INGESTER_SERVICE].display_name,
       order: 0,
       enabled: true,
     },
@@ -343,9 +355,9 @@ export function draftToPipelineConfig(draft: PipelineSelectionDraft): PipelineCo
   if (draft.steps.ocrProcessor) {
     plan.push({
       id: 'step-ocr-processor',
-      stepId: 'ocr-processor',
-      service: OCR_PROCESSOR_STAGE,
-      label: 'OCR Processor',
+      stepId: OCR_PROCESSOR_SERVICE,
+      service: OCR_PROCESSOR_SERVICE,
+      label: GENERATED_PIPELINE_SERVICES[OCR_PROCESSOR_SERVICE].display_name,
       order: 5,
       enabled: true,
       dependsOn: getNormalizationUpstreamDependencyId(draft),
@@ -355,9 +367,9 @@ export function draftToPipelineConfig(draft: PipelineSelectionDraft): PipelineCo
   if (draft.steps.contentDedup) {
     plan.push({
       id: 'step-content-dedup',
-      stepId: 'content-dedup',
-      service: CONTENT_DEDUP_STAGE,
-      label: 'Content Dedup',
+      stepId: CONTENT_DEDUP_SERVICE,
+      service: CONTENT_DEDUP_SERVICE,
+      label: GENERATED_PIPELINE_SERVICES[CONTENT_DEDUP_SERVICE].display_name,
       order: 6,
       enabled: true,
       dependsOn: draft.steps.ocrProcessor ? ['step-ocr-processor'] : undefined,
@@ -367,9 +379,9 @@ export function draftToPipelineConfig(draft: PipelineSelectionDraft): PipelineCo
   if (draft.steps.metadataExtraction) {
     plan.push({
       id: 'step-metadata-extraction',
-      stepId: 'metadata-extraction',
-      service: METADATA_EXTRACTOR_STAGE,
-      label: 'Metadata Extraction',
+      stepId: METADATA_EXTRACTOR_SERVICE,
+      service: METADATA_EXTRACTOR_SERVICE,
+      label: GENERATED_PIPELINE_SERVICES[METADATA_EXTRACTOR_SERVICE].display_name,
       order: 7,
       enabled: true,
       dependsOn: getDownstreamDependencyId(draft),
@@ -379,6 +391,8 @@ export function draftToPipelineConfig(draft: PipelineSelectionDraft): PipelineCo
   return {
     profileId: draft.profileId,
     mode: draft.mode,
+    sourceFolderIds: normalizeStringArray(draft.sourceFolderIds),
+    sourceDocumentIds: normalizeStringArray(draft.sourceDocumentIds),
     metadataExtraction: {
       mode: draft.metadataExtraction.mode,
     },
@@ -387,8 +401,8 @@ export function draftToPipelineConfig(draft: PipelineSelectionDraft): PipelineCo
 }
 
 export function pipelineConfigToDraft(config: PipelineConfig): PipelineSelectionDraft {
-  const passOneSteps = config.executionPlan.filter((step) => step.stepId === 'normalize-pass-1' && step.enabled)
-  const passTwoSteps = config.executionPlan.filter((step) => step.stepId === 'normalize-pass-2' && step.enabled)
+  const passOneSteps = config.executionPlan.filter((step) => step.pass === 1 && step.enabled)
+  const passTwoSteps = config.executionPlan.filter((step) => step.pass === 2 && step.enabled)
   const hasService = (service: PipelineServiceId): boolean =>
     config.executionPlan.some((step) => step.service === service && step.enabled)
   const profileId = PIPELINE_PROFILES.some((profile) => profile.id === config.profileId) ? config.profileId : 'custom'
@@ -396,6 +410,8 @@ export function pipelineConfigToDraft(config: PipelineConfig): PipelineSelection
   return {
     profileId,
     mode: config.mode,
+    sourceFolderIds: [...(config.sourceFolderIds ?? [])],
+    sourceDocumentIds: [...(config.sourceDocumentIds ?? [])],
     metadataExtraction: { ...config.metadataExtraction },
     steps: {
       ingester: true,
@@ -403,21 +419,21 @@ export function pipelineConfigToDraft(config: PipelineConfig): PipelineSelection
         enabled: passOneSteps.length > 0,
         advancedOpen: false,
         subSelection: {
-          split: passOneSteps.some((step) => step.service === DOCUMENT_SPLITTER_STAGE),
-          rotate: passOneSteps.some((step) => step.service === PAGE_ROTATOR_STAGE),
+          split: passOneSteps.some((step) => step.service === DOCUMENT_SPLITTER_SERVICE),
+          rotate: passOneSteps.some((step) => step.service === PAGE_ROTATOR_SERVICE),
         },
       },
       normalizePass2: {
         enabled: passTwoSteps.length > 0,
         advancedOpen: false,
         subSelection: {
-          split: passTwoSteps.some((step) => step.service === DOCUMENT_SPLITTER_STAGE),
-          rotate: passTwoSteps.some((step) => step.service === PAGE_ROTATOR_STAGE),
+          split: passTwoSteps.some((step) => step.service === DOCUMENT_SPLITTER_SERVICE),
+          rotate: passTwoSteps.some((step) => step.service === PAGE_ROTATOR_SERVICE),
         },
       },
-      ocrProcessor: hasService(OCR_PROCESSOR_STAGE),
-      contentDedup: hasService(CONTENT_DEDUP_STAGE),
-      metadataExtraction: hasService(METADATA_EXTRACTOR_STAGE),
+      ocrProcessor: hasService(OCR_PROCESSOR_SERVICE),
+      contentDedup: hasService(CONTENT_DEDUP_SERVICE),
+      metadataExtraction: hasService(METADATA_EXTRACTOR_SERVICE),
     },
   }
 }
@@ -426,12 +442,12 @@ export function createDefaultDraft(): PipelineSelectionDraft {
   return expandPresetToDraft('custom')
 }
 
-export function pipelineConfigToRequestedStages(config: PipelineConfig): string[] {
+export function pipelineConfigToRequestedStages(config: PipelineConfig): PipelineServiceId[] {
   const requestedStages = config.executionPlan
-    .filter((step) => step.enabled && step.service !== 'ingester')
+    .filter((step) => step.enabled && step.service !== DATA_INGESTER_SERVICE)
     .map((step) => step.service)
-    .filter((service): service is (typeof SUPPORTED_DOWNSTREAM_STAGES)[number] =>
-      SUPPORTED_DOWNSTREAM_STAGES.includes(service as (typeof SUPPORTED_DOWNSTREAM_STAGES)[number]),
+    .filter((service): service is (typeof SUPPORTED_DOWNSTREAM_SERVICES)[number] =>
+      SUPPORTED_DOWNSTREAM_SERVICES.includes(service as (typeof SUPPORTED_DOWNSTREAM_SERVICES)[number]),
     )
 
   return Array.from(new Set(requestedStages))
