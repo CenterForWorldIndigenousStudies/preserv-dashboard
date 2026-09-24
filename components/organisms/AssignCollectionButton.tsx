@@ -9,11 +9,10 @@ import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
-import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { Button } from '@atoms/Button'
 import { IconX } from '@atoms/icons/IconX'
-import { DOCUMENTS_API_PATH, getDocumentCollectionsPath } from '@constants/paths'
+import { getDocumentCollectionsPath } from '@constants/paths'
 import { TagPill } from '@atoms/TagPill'
 
 interface AssignCollectionButtonProps {
@@ -40,14 +39,12 @@ interface SaveCollectionTagsResponse {
  * Renders an inline "Assign Collection" control on the document detail page.
  * Shown when a document has no collection_tags at ingest time (Path A = assigned
  * at ingest, Path B = assigned later by a human). Allows a human to select one
- * or more collections from the pool of known collection tags and persist the
- * selection to the MySQL documents table via PATCH /api/documents/[id].
+ * or more known collections and persist their document-to-tag associations.
  */
 export function AssignCollectionButton({ documentId, currentTags }: AssignCollectionButtonProps): ReactElement {
   const [isOpen, setIsOpen] = useState(false)
   const [availableTags, setAvailableTags] = useState<string[]>([])
   const [selectedTags, setSelectedTags] = useState<string[]>(currentTags)
-  const [customTag, setCustomTag] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isFetchingTags, setIsFetchingTags] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -82,7 +79,6 @@ export function AssignCollectionButton({ documentId, currentTags }: AssignCollec
     setIsOpen(true)
     setSuccess(false)
     setError(null)
-    setCustomTag('')
   }, [])
 
   const closeModal = useCallback(() => {
@@ -93,25 +89,14 @@ export function AssignCollectionButton({ documentId, currentTags }: AssignCollec
     setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]))
   }, [])
 
-  const addCustomTag = useCallback(() => {
-    const trimmedTag = customTag.trim()
-    if (!trimmedTag) return
-
-    toggleTag(trimmedTag)
-    setCustomTag('')
-  }, [customTag, toggleTag])
-
   const handleSave = useCallback(async () => {
     const tagsToSave = selectedTags.filter((t) => t.trim().length > 0)
-    if (customTag.trim().length > 0 && !tagsToSave.includes(customTag.trim())) {
-      tagsToSave.push(customTag.trim())
-    }
 
     setIsLoading(true)
     setError(null)
 
     try {
-      const res = await fetch(`${DOCUMENTS_API_PATH}/${documentId}`, {
+      const res = await fetch(getDocumentCollectionsPath(documentId), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ collection_tags: tagsToSave }),
@@ -137,7 +122,7 @@ export function AssignCollectionButton({ documentId, currentTags }: AssignCollec
     } finally {
       setIsLoading(false)
     }
-  }, [selectedTags, customTag, documentId, closeModal])
+  }, [selectedTags, documentId, closeModal])
 
   const alreadyAssigned = currentTags.length > 0
 
@@ -232,32 +217,6 @@ export function AssignCollectionButton({ documentId, currentTags }: AssignCollec
                 </Box>
               )}
 
-              {/* Custom tag input */}
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ alignItems: { sm: 'flex-start' } }}>
-                <TextField
-                  label={'Add Custom Collection'}
-                  value={customTag}
-                  onChange={(event) => setCustomTag(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      event.preventDefault()
-                      addCustomTag()
-                    }
-                  }}
-                  placeholder={'Enter collection name...'}
-                  size={'small'}
-                  fullWidth
-                />
-                <Button
-                  onClick={addCustomTag}
-                  variant={'primary'}
-                  size={'sm'}
-                  sx={{ flexShrink: 0, alignSelf: { xs: 'flex-start', sm: 'center' } }}
-                >
-                  {'Add'}
-                </Button>
-              </Stack>
-
               {/* Selected preview */}
               {selectedTags.length > 0 && (
                 <Box>
@@ -281,7 +240,7 @@ export function AssignCollectionButton({ documentId, currentTags }: AssignCollec
           </Button>
           <Button
             onClick={() => void handleSave()}
-            disabled={isLoading || selectedTags.length === 0}
+            disabled={isLoading}
             variant={'primary'}
             loading={isLoading}
           >

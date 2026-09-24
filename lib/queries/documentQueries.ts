@@ -235,7 +235,7 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
     }),
     db.document_to_tags.findMany({
       where: { document_id: documentId },
-      include: { tags: true },
+      include: { tags: { include: { collections: true } } },
     }),
     db.version_groups.findUnique({
       where: { canonical_document_id: documentId },
@@ -497,6 +497,7 @@ export async function getDocumentDetail(documentId: string): Promise<DocumentDet
         id: String(t.tags.id),
         name: t.tags.name ?? null,
         notes: t.tags.notes ?? null,
+        is_collection: Boolean(t.tags.collections),
       },
     })),
     audits: auditRows.map((audit) => ({

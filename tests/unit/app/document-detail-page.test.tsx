@@ -16,6 +16,7 @@ const {
   mockDocumentCommentsSection,
   mockDocumentBatchesSection,
   mockDocumentHistorySections,
+  mockAssignCollectionButton,
 } = vi.hoisted(() => ({
   mockGetDocumentDetail: vi.fn(),
   mockDocumentVersionsButton: vi.fn(() => null),
@@ -96,6 +97,9 @@ const {
   )),
   mockDocumentBatchesSection: vi.fn(() => <section>{'Batches Processing Diagnostics June 3 Ingest'}</section>),
   mockDocumentHistorySections: vi.fn(() => <section>{'Audit History State History'}</section>),
+  mockAssignCollectionButton: vi.fn(({ currentTags }: { currentTags: string[] }) => (
+    <div data-testid={'assign-collection-button'}>{currentTags.join(',')}</div>
+  )),
 }))
 
 vi.mock('@lib/queries/documentQueries', () => ({
@@ -128,6 +132,10 @@ vi.mock('@molecules/ValuePillList', () => ({
 
 vi.mock('@organisms/DocumentTagsEditor', () => ({
   DocumentTagsEditor: () => null,
+}))
+
+vi.mock('@organisms/AssignCollectionButton', () => ({
+  AssignCollectionButton: mockAssignCollectionButton,
 }))
 
 vi.mock('@organisms/DocumentEditCoordinator', () => ({
@@ -366,7 +374,15 @@ describe('DocumentDetailPage', () => {
           notes: 'Original publisher.',
         },
       ],
-      document_to_tags: [],
+      document_to_tags: [
+        {
+          id: 'document-tag-1',
+          document_id: 'doc-1',
+          tag_id: 'collection-tag-1',
+          notes: null,
+          tags: { id: 'collection-tag-1', name: 'Collection A', notes: null, is_collection: true },
+        },
+      ],
       audits: [],
       state_history: [],
     })
@@ -383,6 +399,7 @@ describe('DocumentDetailPage', () => {
 
     expect(markup).toContain('Return to Ready for Library')
     expect(markup).toContain('Document Properties')
+    expect(markup).toContain('assign-collection-button')
     expect(markup).toContain('Versions')
     expect(markup).toContain('Metadata')
     expect(markup).toContain('Comments')
@@ -409,6 +426,10 @@ describe('DocumentDetailPage', () => {
     expect(mockDocumentCommentsSection).toHaveBeenCalledTimes(1)
     expect(mockDocumentBatchesSection).toHaveBeenCalledTimes(1)
     expect(mockDocumentHistorySections).toHaveBeenCalledTimes(1)
+    expect(mockAssignCollectionButton).toHaveBeenCalledWith(
+      { documentId: 'doc-1', currentTags: ['Collection A'] },
+      undefined,
+    )
     expect(mockDocumentReviewToolbar).toHaveBeenCalledWith(
       expect.objectContaining({
         documentId: 'doc-1',

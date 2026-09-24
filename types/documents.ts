@@ -98,6 +98,7 @@ export interface Tag {
   id: string
   name: string | null
   notes: string | null
+  is_collection?: boolean
 }
 
 export interface DocumentToTag {

@@ -8,6 +8,7 @@ import { DocumentHistorySections } from '@organisms/DocumentHistorySections'
 import { DocumentMetadataSection } from '@organisms/DocumentMetadataSection'
 import { DocumentPropertiesSection } from '@organisms/DocumentPropertiesSection'
 import { DocumentTagsEditor } from '@organisms/DocumentTagsEditor'
+import { AssignCollectionButton } from '@organisms/AssignCollectionButton'
 import { DocumentEditCoordinator } from '@organisms/DocumentEditCoordinator'
 import { DocumentVersionsSection } from '@organisms/DocumentVersionsSection'
 import { DetailPageSection } from '@organisms/DetailPageSection'
@@ -206,6 +207,13 @@ export default async function DocumentDetailPage({
             <DetailPageSection title={'Tags'}>
               <Box sx={{ mt: 3 }}>
                 <DocumentTagsEditor documentId={document.id} initialTags={detail.document_to_tags} />
+                <AssignCollectionButton
+                  documentId={document.id}
+                  currentTags={detail.document_to_tags
+                    .filter((tag) => tag.tags.is_collection)
+                    .map((tag) => tag.tags.name)
+                    .filter((name): name is string => Boolean(name))}
+                />
               </Box>
             </DetailPageSection>
             <DocumentMetadataSection

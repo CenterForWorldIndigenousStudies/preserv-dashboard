@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import { getDashboardSession } from '@root/auth'
 import { getDocumentDetail } from '@lib/queries/documentQueries'
 import { updateDocumentCollectionTags } from '@lib/queries/collectionQueries'
 
@@ -37,6 +38,11 @@ export async function GET(_: Request, context: RouteContext): Promise<NextRespon
  */
 export async function PATCH(request: NextRequest, context: RouteContext): Promise<NextResponse> {
   try {
+    const session = await getDashboardSession()
+    if (!session?.user?.email?.trim()) {
+      return NextResponse.json({ error: 'Authentication is required.' }, { status: 401 })
+    }
+
     const { id } = await context.params
 
     // Verify document exists first

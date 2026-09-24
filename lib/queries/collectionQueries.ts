@@ -671,24 +671,23 @@ export async function addDocumentsToCollection(collectionId: string, documentIds
     return
   }
 
-  const collection = await db.collections.findUnique({
-    where: { id: collectionId },
-    include: { tags: true },
-  })
+  await db.$transaction(async (tx) => {
+    const collection = await tx.collections.findUnique({
+      where: { id: collectionId },
+      include: { tags: true },
+    })
 
-  if (!collection) {
-    throw new Error('Collection not found')
-  }
+    if (!collection) {
+      throw new Error('Collection not found')
+    }
 
-  const documentNames = await db.documents.findMany({
-    where: { id: { in: documentIds } },
-    select: { id: true, name: true },
-  })
+    const documentNames = await tx.documents.findMany({
+      where: { id: { in: documentIds } },
+      select: { id: true, name: true },
+    })
 
-  const nameMap = new Map(documentNames.map((d) => [d.id, d.name ?? 'Untitled']))
-
-  const upsertResults = await db.$transaction(async (tx) => {
-    return Promise.all(
+    const nameMap = new Map(documentNames.map((d) => [d.id, d.name ?? 'Untitled']))
+    const upsertResults = await Promise.all(
       documentIds.map(async (documentId) =>
         tx.document_to_tags.upsert({
           where: {
@@ -707,9 +706,7 @@ export async function addDocumentsToCollection(collectionId: string, documentIds
         }),
       ),
     )
-  })
 
-  await db.$transaction(async (tx) => {
     await Promise.all(
       upsertResults.map((result) =>
         createEditHistoryEntry(tx, {
@@ -741,24 +738,24 @@ export async function removeDocumentsFromCollection(collectionId: string, docume
     return
   }
 
-  const collection = await db.collections.findUnique({
-    where: { id: collectionId },
-    include: { tags: true },
-  })
-
-  if (!collection) {
-    throw new Error('Collection not found')
-  }
-
-  const rowsToDelete = await db.document_to_tags.findMany({
-    where: {
-      document_id: { in: documentIds },
-      tag_id: collection.tag_id,
-    },
-    include: { documents: { select: { name: true } }, tags: true },
-  })
-
   await db.$transaction(async (tx) => {
+    const collection = await tx.collections.findUnique({
+      where: { id: collectionId },
+      include: { tags: true },
+    })
+
+    if (!collection) {
+      throw new Error('Collection not found')
+    }
+
+    const rowsToDelete = await tx.document_to_tags.findMany({
+      where: {
+        document_id: { in: documentIds },
+        tag_id: collection.tag_id,
+      },
+      include: { documents: { select: { name: true } }, tags: true },
+    })
+
     await tx.document_to_tags.deleteMany({
       where: {
         document_id: { in: documentIds },
@@ -791,11 +788,85 @@ export async function removeDocumentsFromCollection(collectionId: string, docume
     await Promise.all(rowsToDelete.map((row) => markDocumentBatchesPublicationLocked(tx, row.document_id)))
   })
 }
-// updateDocumentCollectionTags
-// Returns false.  The documents table has no `collection_tags` column,
-// so this operation cannot be performed.
-// ---------------------------------------------------------------------------
-export async function updateDocumentCollectionTags(_documentId: string, _collectionTags: string[]): Promise<boolean> {
-  // documents table has no collection_tags column — operation not supported
-  return await Promise.resolve(false)
+export async function updateDocumentCollectionTags(documentId: string, collectionTags: string[]): Promise<boolean> {
+  const requestedNames = [...new Set(collectionTags.map((tag) => tag.trim()).filter(Boolean))]
+
+  return db.$transaction(async (tx) => {
+    const document = await tx.documents.findUnique({
+      where: { id: documentId },
+      select: { id: true },
+    })
+    if (!document) {
+      return false
+    }
+
+    const collections = await tx.collections.findMany({
+      include: { tags: true },
+    })
+    const collectionsByName = new Map(
+      collections
+        .map((collection) => [collection.tags.name?.trim(), collection] as const)
+        .filter(([name]) => Boolean(name)),
+    )
+    const requestedCollections = requestedNames
+      .map((name) => collectionsByName.get(name))
+      .filter((collection): collection is (typeof collections)[number] => collection !== undefined)
+
+    if (requestedCollections.length !== requestedNames.length) {
+      throw new Error('One or more selected collections could not be found.')
+    }
+
+    const collectionTagIds = collections.map((collection) => collection.tag_id)
+    const currentAssociations = await tx.document_to_tags.findMany({
+      where: {
+        document_id: documentId,
+        tag_id: { in: collectionTagIds },
+      },
+      include: { documents: { select: { name: true } }, tags: true },
+    })
+
+    const requestedTagIds = new Set(requestedCollections.map((collection) => collection.tag_id))
+    const currentTagIds = new Set(currentAssociations.map((association) => association.tag_id))
+    const associationsToRemove = currentAssociations.filter((association) => !requestedTagIds.has(association.tag_id))
+    const collectionsToAdd = requestedCollections.filter((collection) => !currentTagIds.has(collection.tag_id))
+
+    await Promise.all(
+      associationsToRemove.map(async (association) => {
+        await tx.document_to_tags.delete({ where: { id: association.id } })
+        await createEditHistoryEntry(tx, {
+          entityTable: 'document_to_tags',
+          entityId: association.id,
+          previousValue: association,
+          newValue: null,
+          editSummary: `Removed document "${association.documents?.name ?? 'Untitled'}" from collection "${association.tags.name}"`,
+        })
+      }),
+    )
+
+    await Promise.all(
+      collectionsToAdd.map(async (collection) => {
+        const association = await tx.document_to_tags.create({
+          data: {
+            id: crypto.randomUUID(),
+            document_id: documentId,
+            tag_id: collection.tag_id,
+          },
+          include: { documents: { select: { name: true } }, tags: true },
+        })
+        await createEditHistoryEntry(tx, {
+          entityTable: 'document_to_tags',
+          entityId: association.id,
+          previousValue: null,
+          newValue: association,
+          editSummary: `Added document "${association.documents?.name ?? 'Untitled'}" to collection "${collection.tags.name}"`,
+        })
+      }),
+    )
+
+    if (associationsToRemove.length > 0 || collectionsToAdd.length > 0) {
+      await markDocumentBatchesPublicationLocked(tx, documentId)
+    }
+
+    return true
+  })
 }
