@@ -37,6 +37,7 @@ interface AdvancedSearchModalProps {
   filters: AdvancedSearchFilters
   filterOptions: FilterOptions
   onApply: (filters: AdvancedSearchFilters) => void
+  showActiveFilterCount?: boolean
 }
 
 interface StatusFilterGroupProps {
@@ -150,7 +151,12 @@ function StatusFilterGroups({
   )
 }
 
-export function AdvancedSearchModal({ filters, filterOptions, onApply }: AdvancedSearchModalProps): ReactElement {
+export function AdvancedSearchModal({
+  filters,
+  filterOptions,
+  onApply,
+  showActiveFilterCount = true,
+}: AdvancedSearchModalProps): ReactElement {
   const [isOpen, setIsOpen] = useState(false)
   const [draftFilters, setDraftFilters] = useState<AdvancedSearchFilters>(filters)
   const tagSearch = useTagSearch(draftFilters.tag ?? '', { enabled: isOpen, limit: 7 })
@@ -254,7 +260,7 @@ export function AdvancedSearchModal({ filters, filterOptions, onApply }: Advance
         <Button onClick={openModal} variant={'secondary'}>
           {'Advanced Search'}
         </Button>
-        {activeFilterCount > 0 ? (
+          {showActiveFilterCount && activeFilterCount > 0 ? (
           <Typography
             variant={'overline'}
             sx={(theme) => ({

@@ -9,8 +9,10 @@ import type { DocumentSourceLinkOptions } from '@lib/documentSourceLinks'
 interface IdsRowProps extends DocumentSourceLinkOptions {
   /** Document UUID */
   id: string
-  /** Optional legacy ID to display alongside the document name */
-  legacyId?: string | null
+  /** Optional additional ID to display alongside the document name */
+  additionalId?: string | null
+  /** Label for the additional ID (default: Legacy ID) */
+  additionalIdLabel?: string
   /** Optional source ID to display alongside the document name */
   sourceId?: string | null
   /** Maximum character length before truncating secondary IDs (default: 12) */
@@ -24,7 +26,8 @@ function formatShortDocumentId(documentId: string): string {
 
 export function IdsRow({
   id,
-  legacyId,
+  additionalId,
+  additionalIdLabel = 'Legacy ID',
   sourceId,
   maxTruncationLength = 12,
   fileExtension,
@@ -32,7 +35,7 @@ export function IdsRow({
   mimeType,
 }: IdsRowProps): ReactElement {
   const shortId = formatShortDocumentId(id)
-  const truncatedLegacyId = truncateString(legacyId, maxTruncationLength)
+  const truncatedAdditionalId = truncateString(additionalId, maxTruncationLength)
   const truncatedSourceId = truncateString(sourceId, maxTruncationLength)
 
   return (
@@ -59,7 +62,9 @@ export function IdsRow({
         />
       )}
 
-      {truncatedLegacyId && <IdElement id={truncatedLegacyId} label={`Legacy`} title={legacyId} />}
+      {truncatedAdditionalId && (
+        <IdElement id={truncatedAdditionalId} label={additionalIdLabel} title={additionalId} />
+      )}
     </Stack>
   )
 }

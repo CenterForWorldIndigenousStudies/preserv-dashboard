@@ -80,6 +80,17 @@ describe('document table query normalization', () => {
 
     expect(queryCall(0).values.at(-1)).toBe(51)
   })
+
+  it('returns the filtered overview total for the document table header', async () => {
+    mockQueryRaw
+      .mockResolvedValueOnce([DEFAULT_ROW])
+      .mockResolvedValueOnce([{ total_count: BigInt(7) }])
+
+    const result = await getAllDocuments()
+
+    expect(result.totalCount).toBe(7)
+    expect(queryText(1)).toContain('COUNT(DISTINCT d.id)')
+  })
 })
 
 describe('document table default ordering', () => {
@@ -115,7 +126,7 @@ describe('document table default ordering', () => {
       cursorId: endCursor?.id,
     })
 
-    const sql = queryText(1)
+    const sql = queryText(2)
     expect(sql).toContain("COALESCE(d.name, '') >")
     expect(sql).toContain("COALESCE(d.updated_at, TIMESTAMP('1000-01-01 00:00:00')) >")
     expect(sql).toContain('AND d.id >')

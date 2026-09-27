@@ -71,6 +71,24 @@ describeDbIntegration('documents queries (integration)', () => {
     return { id: `d${ts}`, idLegacy: `l${ts}`, token: ts }
   }
 
+  async function linkToMappedCollection(tx: Prisma.TransactionClient, documentIds: string[]): Promise<void> {
+    const token = makeIds().token
+    const tag = await tx.tags.create({
+      data: { id: `mct${token}`.slice(0, 36), name: `Mapped collection ${token}` },
+      select: { id: true },
+    })
+    await tx.collections.create({
+      data: { id: `mcc${token}`.slice(0, 36), tag_id: tag.id, fedora_node_id: '1' },
+    })
+    await tx.document_to_tags.createMany({
+      data: documentIds.map((documentId, index) => ({
+        id: `mcl${token}${index}`.slice(0, 36),
+        document_id: documentId,
+        tag_id: tag.id,
+      })),
+    })
+  }
+
   // ---------------------------------------------------------------------------
   // Helper: create a test document with retry on uniqueness collisions
   // ---------------------------------------------------------------------------
@@ -227,6 +245,8 @@ describeDbIntegration('documents queries (integration)', () => {
             },
           }),
         ])
+
+        await linkToMappedCollection(tx, [document.id])
 
         await applyReviewQueueDecisionInTransaction(tx, {
           documentId: document.id,
@@ -1110,6 +1130,8 @@ describeDbIntegration('documents queries (integration)', () => {
           ]),
         })
 
+        await linkToMappedCollection(tx, [matchingDocument.id, nonMatchingDocument.id])
+
         const result = await getReadyForLibraryDocuments(
           {
             page: 1,
@@ -1194,6 +1216,8 @@ describeDbIntegration('documents queries (integration)', () => {
             },
           ]),
         })
+
+        await linkToMappedCollection(tx, [candidate.id])
 
         const result = await getReadyForLibraryDocuments({}, tx)
 

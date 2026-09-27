@@ -13,6 +13,10 @@ import { db } from '@lib/db'
 import { Prisma } from '@lib/prisma/generated/client'
 import { resolveBatchSearchIds, resolveTagSearchIds } from '@lib/queries/searchResolvers'
 import {
+  getDocumentCollectionMemberships,
+  type CollectionMembershipDataClient,
+} from '@lib/queries/collectionMembershipQueries'
+import {
   buildLatestStateConditionSql,
   buildPreservationCandidateConditionSql,
   getPreservationCandidateDocumentIds,
@@ -169,9 +173,34 @@ export async function getReadyForLibraryDocuments(
     return { items: [], total: 0 }
   }
 
+  const collectionEligibleDocumentIds = new Set(
+    (
+      await Promise.all(
+        approvedWithAccess.map(async (documentId) => ({
+          documentId,
+          memberships: await getDocumentCollectionMemberships(
+            documentId,
+            client as unknown as CollectionMembershipDataClient,
+          ),
+        })),
+      )
+    ).flatMap(({ documentId, memberships }) =>
+      memberships.length > 0 && memberships.every((membership) => Boolean(membership.fedoraNodeId?.trim()))
+        ? [documentId]
+        : [],
+    ),
+  )
+  const approvedWithEligibleCollections = approvedWithAccess.filter((documentId) =>
+    collectionEligibleDocumentIds.has(documentId),
+  )
+
+  if (approvedWithEligibleCollections.length === 0) {
+    return { items: [], total: 0 }
+  }
+
   const metadataRows = await client.document_to_metadata.findMany({
     where: {
-      document_id: { in: approvedWithAccess },
+      document_id: { in: approvedWithEligibleCollections },
       metadata_id: { in: [...dcMetaIds] },
     },
     select: { document_id: true, metadata_id: true },
@@ -192,7 +221,7 @@ export async function getReadyForLibraryDocuments(
 
   // Hydrate names from documents table
   const docRows = await client.documents.findMany({
-    where: { id: { in: approvedWithAccess } },
+    where: { id: { in: approvedWithEligibleCollections } },
     select: { id: true, name: true },
   })
   const nameMap = new Map(docRows.map((d) => [d.id, d.name ?? null]))
@@ -206,7 +235,7 @@ export async function getReadyForLibraryDocuments(
   const filteredResult = await getOverviewDocumentsPage(
     {
       page: 1,
-      pageSize: approvedWithAccess.length,
+      pageSize: approvedWithEligibleCollections.length,
       contributor: normalizeTextFilter(params.contributor ?? params.search),
       publisher: normalizeTextFilter(params.publisher),
       tagIds,
@@ -217,7 +246,7 @@ export async function getReadyForLibraryDocuments(
       createdTo: normalizeDateFilter(params.createdTo),
       collection: normalizeTextFilter(params.collection),
       accessLevel: normalizeAccessLevel(params.accessLevel),
-      documentIds: approvedWithAccess,
+      documentIds: approvedWithEligibleCollections,
       additionalConditions: [
         buildPreservationCandidateConditionSql('d'),
         Prisma.sql`NOT ${buildLatestStateConditionSql('latest_ready_state', GENERATED_DOCUMENT_STATES.INGESTED_FEDORA)}`,

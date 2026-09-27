@@ -8,6 +8,7 @@ const {
   mockDetailFieldGrid,
   mockValuePillList,
   mockGetReprocessingDrafts,
+  mockGetDocumentCollectionMemberships,
   mockReprocessingCart,
   mockDocumentReviewToolbar,
   mockDocumentPropertiesSection,
@@ -50,6 +51,7 @@ const {
     ),
   ),
   mockGetReprocessingDrafts: vi.fn().mockResolvedValue([]),
+  mockGetDocumentCollectionMemberships: vi.fn().mockResolvedValue([]),
   mockReprocessingCart: vi.fn(() => <div data-testid={'batch-cart'}>{'Batch cart'}</div>),
   mockDocumentReviewToolbar: vi.fn(
     ({
@@ -108,6 +110,10 @@ vi.mock('@lib/queries/documentQueries', () => ({
 
 vi.mock('@lib/queries/batchDraftQueries', () => ({
   getBatchDrafts: mockGetReprocessingDrafts,
+}))
+
+vi.mock('@lib/queries/collectionMembershipQueries', () => ({
+  getDocumentCollectionMemberships: mockGetDocumentCollectionMemberships,
 }))
 
 vi.mock('@organisms/DocumentVersionsButton', () => ({
@@ -204,6 +210,10 @@ describe('DocumentDetailPage', () => {
   })
 
   it('passes the current detail href into version navigation', async () => {
+    mockGetDocumentCollectionMemberships.mockResolvedValueOnce([
+      { collectionId: 'collection-1', collectionName: 'Metadata-only collection', fedoraNodeId: '50', evidence: [] },
+      { collectionId: 'collection-2', collectionName: 'Tagged collection', fedoraNodeId: '65', evidence: [] },
+    ])
     mockGetReprocessingDrafts.mockResolvedValueOnce([
       {
         id: 'draft-1',
@@ -423,6 +433,16 @@ describe('DocumentDetailPage', () => {
     expect(mockDocumentPropertiesSection).toHaveBeenCalledTimes(1)
     expect(mockDocumentVersionsSection).toHaveBeenCalledTimes(1)
     expect(mockDocumentMetadataSection).toHaveBeenCalledTimes(1)
+    expect(mockGetDocumentCollectionMemberships).toHaveBeenCalledWith('doc-1')
+    expect(mockDocumentMetadataSection).toHaveBeenCalledWith(
+      expect.objectContaining({
+        collections: [
+          { id: 'collection-1', name: 'Metadata-only collection' },
+          { id: 'collection-2', name: 'Tagged collection' },
+        ],
+      }),
+      undefined,
+    )
     expect(mockDocumentCommentsSection).toHaveBeenCalledTimes(1)
     expect(mockDocumentBatchesSection).toHaveBeenCalledTimes(1)
     expect(mockDocumentHistorySections).toHaveBeenCalledTimes(1)

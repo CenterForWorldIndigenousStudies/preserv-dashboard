@@ -74,6 +74,7 @@ describe('DocumentTable', () => {
       leadingToolbarSlot: <span>Leading</span>,
       trailingToolbarSlot: <span>Trailing</span>,
       enableRowSelection: true,
+      enableMultiRowSelection: false,
     })
 
     renderToStaticMarkup(<DocumentTable config={config} initialQuery={initialQuery} />)
@@ -86,6 +87,7 @@ describe('DocumentTable', () => {
       leadingToolbarSlot: config.leadingToolbarSlot,
       trailingToolbarSlot: config.trailingToolbarSlot,
       enableRowSelection: true,
+      enableMultiRowSelection: false,
     })
   })
 
@@ -97,6 +99,7 @@ describe('DocumentTable', () => {
         filters,
         filterOptions,
         onApply,
+        showActiveFilterCount: false,
       },
     })
 
@@ -104,7 +107,7 @@ describe('DocumentTable', () => {
 
     const leadingToolbarSlot = mocks.dataTableProps?.leadingToolbarSlot as ReactNode
     expect(renderToStaticMarkup(<>{leadingToolbarSlot}</>)).toContain('Advanced Search')
-    expect(mocks.advancedSearchProps).toMatchObject({ filters, filterOptions, onApply })
+    expect(mocks.advancedSearchProps).toMatchObject({ filters, filterOptions, onApply, showActiveFilterCount: false })
   })
 
   it('resolves configured row actions through stable action IDs', () => {

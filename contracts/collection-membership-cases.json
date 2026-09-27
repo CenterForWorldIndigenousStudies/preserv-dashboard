@@ -1,0 +1,130 @@
+{
+  "cases": [
+    {
+      "name": "matches a canonical tag",
+      "document": {
+        "tagIds": ["tag-canonical"],
+        "metadata": {}
+      },
+      "collections": [
+        {
+          "id": "collection-archive",
+          "name": "Archive",
+          "canonicalTag": {
+            "id": "tag-canonical",
+            "name": "Archive"
+          },
+          "qualifiers": [],
+          "fedoraNodeId": "17"
+        }
+      ],
+      "expected": {
+        "collectionIds": ["collection-archive"],
+        "sources": ["tag"]
+      }
+    },
+    {
+      "name": "matches a normalized list metadata value",
+      "document": {
+        "tagIds": [],
+        "metadata": {
+          "dc_subject": ["  Community   History  "]
+        }
+      },
+      "collections": [
+        {
+          "id": "collection-archive",
+          "name": "Archive",
+          "canonicalTag": {
+            "id": "tag-canonical",
+            "name": "Archive"
+          },
+          "qualifiers": [
+            {
+              "id": "tag-community-history",
+              "name": "community history"
+            }
+          ],
+          "fedoraNodeId": "17"
+        }
+      ],
+      "expected": {
+        "collectionIds": ["collection-archive"],
+        "sources": ["metadata"]
+      }
+    },
+    {
+      "name": "does not match a substring or non-string metadata values",
+      "document": {
+        "tagIds": [],
+        "metadata": {
+          "seo_keywords": ["Community History Project", 12, null]
+        }
+      },
+      "collections": [
+        {
+          "id": "collection-archive",
+          "name": "Archive",
+          "canonicalTag": {
+            "id": "tag-canonical",
+            "name": "Archive"
+          },
+          "qualifiers": [
+            {
+              "id": "tag-community-history",
+              "name": "Community History"
+            }
+          ],
+          "fedoraNodeId": null
+        }
+      ],
+      "expected": {
+        "collectionIds": [],
+        "sources": []
+      }
+    },
+    {
+      "name": "matches every collection with a shared additional tag",
+      "document": {
+        "tagIds": ["tag-shared"],
+        "metadata": {}
+      },
+      "collections": [
+        {
+          "id": "collection-a",
+          "name": "Collection A",
+          "canonicalTag": {
+            "id": "tag-a",
+            "name": "Collection A"
+          },
+          "qualifiers": [
+            {
+              "id": "tag-shared",
+              "name": "Shared qualifier"
+            }
+          ],
+          "fedoraNodeId": "17"
+        },
+        {
+          "id": "collection-b",
+          "name": "Collection B",
+          "canonicalTag": {
+            "id": "tag-b",
+            "name": "Collection B"
+          },
+          "qualifiers": [
+            {
+              "id": "tag-shared",
+              "name": "Shared qualifier"
+            }
+          ],
+          "fedoraNodeId": "29"
+        }
+      ],
+      "expected": {
+        "collectionIds": ["collection-a", "collection-b"],
+        "sources": ["tag", "tag"]
+      }
+    }
+  ]
+}

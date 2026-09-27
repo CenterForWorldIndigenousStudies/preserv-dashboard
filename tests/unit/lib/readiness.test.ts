@@ -3,6 +3,15 @@ import { describe, expect, it } from 'vitest'
 import { ACCESS_LEVEL_OPTIONS } from '@constants/accessLevels'
 import { REQUIRED_READINESS_FIELDS, evaluateCandidateReadiness, projectCandidateMetadata } from '@lib/readiness'
 
+const mappedCollectionMemberships = [
+  {
+    collectionId: 'collection-mapped',
+    collectionName: 'Mapped collection',
+    fedoraNodeId: '50',
+    evidence: [{ source: 'tag' as const, qualifierTagId: 'tag-mapped', qualifierName: 'Mapped collection' }],
+  },
+]
+
 const completeMetadata = (): Record<string, unknown> => ({
   dc_title: 'A document',
   dc_date: '2025',
@@ -24,6 +33,7 @@ describe('candidate readiness', () => {
       metadata,
       validatedFields: Object.fromEntries(REQUIRED_READINESS_FIELDS.map((field) => [field, true])),
       accessLevels: [ACCESS_LEVEL_OPTIONS[0]],
+      collectionMemberships: mappedCollectionMemberships,
     })
 
     expect(metadata.dc_subject).toBe('Indigenous peoples')
@@ -38,6 +48,7 @@ describe('candidate readiness', () => {
       metadata: projectCandidateMetadata({ metadata, validatedFields: {} }),
       validatedFields: {},
       accessLevels: [ACCESS_LEVEL_OPTIONS[0]],
+      collectionMemberships: mappedCollectionMemberships,
     })
 
     expect(result.unmetRequirements).toEqual(['dc_description_abstract'])
@@ -57,6 +68,7 @@ describe('candidate readiness', () => {
       }),
       validatedFields: { dc_title: false, dc_subject_unesco: true },
       accessLevels: [],
+      collectionMemberships: mappedCollectionMemberships,
     })
 
     expect(result.unmetRequirements).toEqual(['dc_title', 'access_level'])
@@ -74,6 +86,7 @@ describe('candidate readiness', () => {
       metadata: projectCandidateMetadata({ metadata, validatedFields: {} }),
       validatedFields: {},
       accessLevels: [ACCESS_LEVEL_OPTIONS[0]],
+      collectionMemberships: mappedCollectionMemberships,
     })
 
     expect(result.unmetRequirements).toEqual(['dc_subject'])
@@ -90,5 +103,38 @@ describe('candidate readiness', () => {
       dc_subject_unesco: 'Indigenous peoples',
       dc_subject: 'Indigenous peoples',
     })
+  })
+
+  it('blocks a complete candidate with no calculated collection', () => {
+    const result = evaluateCandidateReadiness({
+      metadata: projectCandidateMetadata({ metadata: completeMetadata(), validatedFields: {} }),
+      validatedFields: {},
+      accessLevels: [ACCESS_LEVEL_OPTIONS[0]],
+      collectionMemberships: [],
+    })
+
+    expect(result.approved).toBe(false)
+    expect(result.unmetRequirements).toContain('collection_membership')
+  })
+
+  it('blocks every calculated collection that lacks a Library ID', () => {
+    const result = evaluateCandidateReadiness({
+      metadata: projectCandidateMetadata({ metadata: completeMetadata(), validatedFields: {} }),
+      validatedFields: {},
+      accessLevels: [ACCESS_LEVEL_OPTIONS[0]],
+      collectionMemberships: [
+        ...mappedCollectionMemberships,
+        {
+          collectionId: 'collection-unmapped',
+          collectionName: 'Unmapped',
+          fedoraNodeId: null,
+          evidence: [{ source: 'tag', qualifierTagId: 'tag-unmapped', qualifierName: 'Unmapped' }],
+        },
+      ],
+    })
+
+    expect(result.approved).toBe(false)
+    expect(result.unmetRequirements).toContain('collection_fedora_mapping:collection-unmapped')
+    expect(result.reasonGroups[0]?.reasons).toContain('Collection "Unmapped" has no Library ID.')
   })
 })

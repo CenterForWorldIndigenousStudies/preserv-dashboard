@@ -2,6 +2,18 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@lib/db', () => ({ db: {} }))
 
+vi.mock('@lib/queries/collectionMembershipQueries', () => ({
+  getDocumentCollectionMemberships: () =>
+    Promise.resolve([
+      {
+        collectionId: 'collection-1',
+        collectionName: 'Mapped Collection',
+        fedoraNodeId: '50',
+        evidence: [{ source: 'tag', qualifierTagId: 'tag-1', qualifierName: 'Mapped Collection' }],
+      },
+    ]),
+}))
+
 import { evaluateDocumentReadiness } from '@lib/pipelineReadiness'
 import type { PrismaClient } from '@lib/prisma/generated/client'
 

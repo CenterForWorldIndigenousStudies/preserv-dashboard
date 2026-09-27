@@ -1,12 +1,11 @@
 'use client'
 
-import { useEffect, useMemo, type ReactElement } from 'react'
+import { memo, useEffect, useMemo, type ReactElement, type ReactNode } from 'react'
 import type { MRT_ColumnDef } from 'material-react-table'
 
 import { getDocumentsForCollectionAction } from '@actions/collections'
 import { DateAtom } from '@atoms/Date'
 import { getDocumentDetailPath } from '@constants/paths'
-import { PAGE_LABELS } from '@constants/pageLabels'
 import { EntityNameBlock } from '@molecules/EntityNameBlock'
 import { DocumentTable } from '@organisms/DocumentTable/DocumentTable'
 import type { DocumentTableConfig, DocumentTableQuery } from '@organisms/DocumentTable/types'
@@ -21,11 +20,12 @@ export interface CollectionDocumentsTableProps {
   filterOptions: FilterOptions
   initialQuery: DocumentTableQuery<AdvancedSearchFilters>
   originHref: string
-  onQueryChange: (query: DocumentTableQuery<AdvancedSearchFilters>) => void
+  onQueryChange: (collectionId: string, query: DocumentTableQuery<AdvancedSearchFilters>) => void
+  trailingToolbarSlot?: ReactNode
 }
 
-function buildCollectionDocumentHref(documentId: string, returnHref: string): string {
-  return getDocumentDetailPath(documentId, returnHref, PAGE_LABELS.collections)
+function buildCollectionDocumentHref(documentId: string, returnHref: string, collectionName: string): string {
+  return getDocumentDetailPath(documentId, returnHref, collectionName)
 }
 
 function buildCollectionDocumentsPageInfo(page: number, pageSize: number, total: number) {
@@ -40,7 +40,7 @@ function buildCollectionDocumentsPageInfo(page: number, pageSize: number, total:
   }
 }
 
-export function CollectionDocumentsTable({
+export const CollectionDocumentsTable = memo(function CollectionDocumentsTable({
   collectionId,
   collectionName,
   documentCount,
@@ -48,12 +48,13 @@ export function CollectionDocumentsTable({
   initialQuery,
   originHref,
   onQueryChange,
+  trailingToolbarSlot,
 }: CollectionDocumentsTableProps): ReactElement {
   const controller = useDocumentTableController<AdvancedSearchFilters>({ initialQuery })
 
   useEffect(() => {
-    onQueryChange(controller.query)
-  }, [controller.currentQueryKey, controller.query, onQueryChange])
+    onQueryChange(collectionId, controller.query)
+  }, [collectionId, controller.currentQueryKey, controller.query, onQueryChange])
 
   const columns = useMemo<MRT_ColumnDef<Document>[]>(
     () => [
@@ -69,9 +70,9 @@ export function CollectionDocumentsTable({
           <EntityNameBlock
             name={name}
             id={id}
-            legacyId={id_legacy}
+            additionalId={id_legacy}
             sourceId={source_id}
-            href={buildCollectionDocumentHref(id, originHref)}
+            href={buildCollectionDocumentHref(id, originHref, collectionName)}
           />
         ),
       },
@@ -117,10 +118,12 @@ export function CollectionDocumentsTable({
     advancedSearch: {
       filters: controller.filters,
       filterOptions,
+      showActiveFilterCount: false,
       onApply: (filters) => {
         controller.setFilters({ ...filters, collection: collectionName })
       },
     },
+    trailingToolbarSlot,
   }
 
   return (
@@ -145,4 +148,4 @@ export function CollectionDocumentsTable({
       initialQuery={initialQuery}
     />
   )
-}
+})

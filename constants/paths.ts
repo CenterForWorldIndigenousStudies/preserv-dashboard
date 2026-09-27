@@ -21,6 +21,19 @@ export const getBatchDetailPath = (batchId: string, returnHref?: string, returnL
 }
 
 export const COLLECTIONS_PATH = `/collections` as const
+export const getCollectionDetailPath = (collectionId: string, returnHref?: string, returnLabel?: string): string => {
+  const searchParams = new URLSearchParams()
+
+  if (returnHref) {
+    searchParams.set('from', returnHref)
+  }
+  if (returnLabel) {
+    searchParams.set('fromLabel', returnLabel)
+  }
+
+  const search = searchParams.toString()
+  return `${COLLECTIONS_PATH}/${encodeURIComponent(collectionId)}${search ? `?${search}` : ''}`
+}
 
 export const COMPONENT_LIBRARY_PATH = '/component-library' as const
 

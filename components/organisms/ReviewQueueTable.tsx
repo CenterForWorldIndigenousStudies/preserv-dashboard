@@ -158,7 +158,7 @@ function buildReviewQueueColumns(params: {
         <EntityNameBlock
           name={original.name}
           id={original.id}
-          legacyId={original.id_legacy}
+          additionalId={original.id_legacy}
           sourceId={original.source_id}
           href={getDocumentDetailPath(original.id, params.preservedOverviewHref, PAGE_LABELS.reviewQueue)}
         />

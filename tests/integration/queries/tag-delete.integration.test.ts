@@ -2,7 +2,11 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { db } from '@lib/db'
 import { DUPLICATE_DOCUMENT } from '@constants/tags'
 
-import { deleteCollectionWithOptionsInTransaction, deleteTagInTransaction } from '@lib/queries/collectionQueries'
+import {
+  deleteCollectionWithOptionsInTransaction,
+  deleteTagInTransaction,
+  getCollectionDeletionPreview,
+} from '@lib/queries/collectionQueries'
 vi.mock('@root/auth', () => ({
   auth: () => Promise.resolve({ user: { email: 'test@example.com' } }),
   getDashboardSession: () => Promise.resolve({ user: { email: 'test@example.com' } }),
@@ -158,6 +162,28 @@ describeDbIntegration('deleteTag (integration)', () => {
     })
   })
 
+  it('rejects deleting a tag used as an additional qualifier', async () => {
+    await withRollbackTransaction(async (tx) => {
+      const canonicalTag = await tx.tags.create({
+        data: { id: 'tag-qualifier-canonical-000000001', name: 'Qualifier Collection' },
+      })
+      const qualifierTag = await tx.tags.create({
+        data: { id: 'tag-qualifier-additional-00000001', name: 'Shared Qualifier' },
+      })
+      const collection = await tx.collections.create({
+        data: { id: 'collection-qualifier-delete-000001', tag_id: canonicalTag.id },
+      })
+      await tx.collection_qualifiers.create({
+        data: { id: 'collection-qualifier-link-00000001', collection_id: collection.id, tag_id: qualifierTag.id },
+      })
+
+      await expect(deleteTagInTransaction(tx, qualifierTag.id, true)).rejects.toThrow(
+        'Tag "Shared Qualifier" cannot be deleted because it is associated with the Qualifier Collection collection.',
+      )
+      expect(await tx.tags.findUnique({ where: { id: qualifierTag.id } })).not.toBeNull()
+    })
+  })
+
   it('deletes the collection, tag, and document links when collection deletion cascades', async () => {
     await withRollbackTransaction(async (tx) => {
       const tag = await tx.tags.create({
@@ -211,6 +237,104 @@ describeDbIntegration('deleteTag (integration)', () => {
       expect(remainingTag).toBeNull()
       expect(remainingLinks).toHaveLength(0)
       expect(historyRows.map((row) => row.entity_table).sort()).toEqual(['collections', 'document_to_tags', 'tags'])
+    })
+  })
+
+  it('deletes unshared canonical and qualifier tags while retaining a shared qualifier', async () => {
+    await withRollbackTransaction(async (tx) => {
+      const canonicalTag = await tx.tags.create({
+        data: { id: 'collection-delete-canonical-000001', name: 'Delete Canonical' },
+      })
+      const uniqueQualifierTag = await tx.tags.create({
+        data: { id: 'collection-delete-unique-qualifier1', name: 'Delete Unique Qualifier' },
+      })
+      const sharedQualifierTag = await tx.tags.create({
+        data: { id: 'collection-delete-shared-qualifier1', name: 'Delete Shared Qualifier' },
+      })
+      const deletedCollection = await tx.collections.create({
+        data: { id: 'collection-delete-qualified-00001', tag_id: canonicalTag.id },
+      })
+      const otherCanonicalTag = await tx.tags.create({
+        data: { id: 'collection-delete-other-canonical1', name: 'Other Collection' },
+      })
+      const otherCollection = await tx.collections.create({
+        data: { id: 'collection-delete-other-00000001', tag_id: otherCanonicalTag.id },
+      })
+      await tx.collection_qualifiers.createMany({
+        data: [
+          {
+            id: 'collection-delete-unique-link-00001',
+            collection_id: deletedCollection.id,
+            tag_id: uniqueQualifierTag.id,
+          },
+          {
+            id: 'collection-delete-shared-link-00001',
+            collection_id: deletedCollection.id,
+            tag_id: sharedQualifierTag.id,
+          },
+          {
+            id: 'collection-delete-other-shared-link1',
+            collection_id: otherCollection.id,
+            tag_id: sharedQualifierTag.id,
+          },
+        ],
+      })
+      const document = await tx.documents.create({
+        data: {
+          id: 'collection-delete-qualified-doc001',
+          id_legacy: 'collection-delete-qualified-legacy',
+          name: 'Collection Delete Qualified Document',
+          hash_binary: 'collection-delete-qualified-hash',
+          hash_content: 'collection-delete-qualified-content',
+          filesize: BigInt(1),
+        },
+      })
+      await tx.document_to_tags.createMany({
+        data: [
+          {
+            id: 'collection-delete-canonical-doclink1',
+            document_id: document.id,
+            tag_id: canonicalTag.id,
+          },
+          {
+            id: 'collection-delete-unique-doclink001',
+            document_id: document.id,
+            tag_id: uniqueQualifierTag.id,
+          },
+          {
+            id: 'collection-delete-shared-doclink001',
+            document_id: document.id,
+            tag_id: sharedQualifierTag.id,
+          },
+        ],
+      })
+
+      await expect(getCollectionDeletionPreview(deletedCollection.id, tx)).resolves.toEqual({
+        collectionId: deletedCollection.id,
+        tagsToDelete: [
+          { tagId: canonicalTag.id, tagName: canonicalTag.name },
+          { tagId: uniqueQualifierTag.id, tagName: uniqueQualifierTag.name },
+        ],
+        blockedTags: [
+          {
+            tagId: sharedQualifierTag.id,
+            tagName: sharedQualifierTag.name,
+            collectionId: otherCollection.id,
+            collectionName: otherCanonicalTag.name,
+          },
+        ],
+      })
+
+      await deleteCollectionWithOptionsInTransaction(tx, deletedCollection.id, { deleteTagFromSystem: true })
+
+      expect(await tx.collections.findUnique({ where: { id: deletedCollection.id } })).toBeNull()
+      await expect(tx.tags.findUnique({ where: { id: canonicalTag.id } })).resolves.toBeNull()
+      await expect(tx.tags.findUnique({ where: { id: uniqueQualifierTag.id } })).resolves.toBeNull()
+      await expect(tx.document_to_tags.findMany({ where: { tag_id: canonicalTag.id } })).resolves.toHaveLength(0)
+      await expect(tx.document_to_tags.findMany({ where: { tag_id: uniqueQualifierTag.id } })).resolves.toHaveLength(0)
+      await expect(tx.tags.findUnique({ where: { id: sharedQualifierTag.id } })).resolves.not.toBeNull()
+      await expect(tx.document_to_tags.findMany({ where: { tag_id: sharedQualifierTag.id } })).resolves.toHaveLength(1)
+      await expect(tx.collection_qualifiers.findMany({ where: { collection_id: deletedCollection.id } })).resolves.toHaveLength(0)
     })
   })
 })

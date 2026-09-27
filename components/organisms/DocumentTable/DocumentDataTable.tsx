@@ -38,6 +38,7 @@ interface DocumentDataTableProps<TData extends MRT_RowData & { id: string }, TFi
   rowSelection?: MRT_RowSelectionState
   onRowSelectionChange?: (updater: MRT_Updater<MRT_RowSelectionState>) => void
   enableRowSelection?: boolean
+  enableMultiRowSelection?: boolean
   enableSorting?: boolean
   getRowId?: (row: TData) => string
   getRowProps?: (row: TData) => TableRowProps
@@ -70,6 +71,7 @@ export function DocumentDataTable<TData extends MRT_RowData & { id: string }, TF
   rowSelection,
   onRowSelectionChange,
   enableRowSelection = false,
+  enableMultiRowSelection,
   enableSorting = true,
   getRowId,
   getRowProps,
@@ -83,6 +85,7 @@ export function DocumentDataTable<TData extends MRT_RowData & { id: string }, TF
   const controller = providedController ?? internalController
   const [data, setData] = useState<TData[]>(initialData?.data ?? [])
   const [pageInfo, setPageInfo] = useState(initialData?.pageInfo ?? emptyPageInfo(initialQuery.pageSize))
+  const [totalCount, setTotalCount] = useState<number | undefined>(initialData?.totalCount)
   const [isLoading, setIsLoading] = useState(!initialData)
 
   const shouldUseInitialData = useMemo(
@@ -94,6 +97,7 @@ export function DocumentDataTable<TData extends MRT_RowData & { id: string }, TF
     if (shouldUseInitialData && initialData) {
       setData(initialData.data)
       setPageInfo(initialData.pageInfo)
+      setTotalCount(initialData.totalCount)
       setIsLoading(false)
       return
     }
@@ -110,6 +114,9 @@ export function DocumentDataTable<TData extends MRT_RowData & { id: string }, TF
 
         setData(result.data)
         setPageInfo(result.pageInfo)
+        if (typeof result.totalCount === 'number') {
+          setTotalCount(result.totalCount)
+        }
         setIsLoading(false)
       })
       .catch(() => {
@@ -119,6 +126,7 @@ export function DocumentDataTable<TData extends MRT_RowData & { id: string }, TF
 
         setData([])
         setPageInfo(emptyPageInfo(controller.pageSize))
+        setTotalCount(0)
         setIsLoading(false)
       })
 
@@ -166,6 +174,7 @@ export function DocumentDataTable<TData extends MRT_RowData & { id: string }, TF
     }),
     enableSorting,
     enableRowSelection,
+    enableMultiRowSelection,
     getRowId: getRowId ?? ((row) => row.id),
     manualFiltering: true,
     manualPagination: true,
@@ -189,7 +198,7 @@ export function DocumentDataTable<TData extends MRT_RowData & { id: string }, TF
           pageSize={controller.pageSize}
           pageSizeOptions={DOCUMENT_TABLE_PAGE_SIZE_OPTIONS}
           onPageSizeChange={controller.setPageSize}
-          totalCount={initialData?.totalCount}
+          totalCount={totalCount}
           leadingSlot={leadingToolbarSlot}
           trailingSlot={trailingToolbarSlot}
         />

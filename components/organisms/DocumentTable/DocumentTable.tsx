@@ -53,6 +53,7 @@ export function DocumentTable<TData extends MRT_RowData & { id: string }, TFilte
           filters={config.advancedSearch.filters}
           filterOptions={config.advancedSearch.filterOptions}
           onApply={config.advancedSearch.onApply}
+          showActiveFilterCount={config.advancedSearch.showActiveFilterCount}
         />
         {config.leadingToolbarSlot}
       </Stack>
@@ -72,6 +73,7 @@ export function DocumentTable<TData extends MRT_RowData & { id: string }, TFilte
       rowSelection={config.rowSelection}
       onRowSelectionChange={config.onRowSelectionChange}
       enableRowSelection={config.enableRowSelection}
+      enableMultiRowSelection={config.enableMultiRowSelection}
       enableSorting={config.enableSorting}
       getRowId={config.getRowId}
       getRowProps={config.getRowProps}

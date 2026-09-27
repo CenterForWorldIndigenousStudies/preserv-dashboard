@@ -1,6 +1,6 @@
 {
   "name": "cwis-preservation-dashboard",
-  "version": "0.2.121",
+  "version": "0.2.122",
   "private": true,
   "scripts": {
     "build": "run-s db:prisma:generate build:next",
@@ -10,11 +10,13 @@
     "db:prisma:pull": "prisma db pull --schema=./lib/prisma/schema.prisma --force",
     "db:prisma:studio": "prisma studio",
     "dev": "run-p storybook dev:next",
-    "dev:next": "next dev --webpack",
+    "dev:next": "run-s db:prisma:generate dev:next:server",
+    "dev:next:server": "next dev --webpack",
     "format:check": "prettier --check .",
     "format:fix": "prettier --write .",
     "lint": "run-p lint:project lint:markdown",
     "lint:markdown": "markdownlint-cli2 \"**/*.md\"",
+    "prelint:project": "npm run contracts:sync",
     "lint:project": "eslint --max-warnings=0 --cache --cache-location .eslintcache --cache-strategy content",
     "lint:semantic-theme": "node ../../scripts/dashboard/check-semantic-theme.mjs",
     "predev": "npm run contracts:sync",

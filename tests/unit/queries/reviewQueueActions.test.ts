@@ -23,6 +23,18 @@ vi.mock('@lib/editHistory', () => ({
   markDocumentBatchesPublicationLocked: mockMarkDocumentBatchesPublicationLocked,
 }))
 
+vi.mock('@lib/queries/collectionMembershipQueries', () => ({
+  getDocumentCollectionMemberships: () =>
+    Promise.resolve([
+      {
+        collectionId: 'collection-1',
+        collectionName: 'Mapped Collection',
+        fedoraNodeId: '50',
+        evidence: [{ source: 'tag', qualifierTagId: 'tag-1', qualifierName: 'Mapped Collection' }],
+      },
+    ]),
+}))
+
 import {
   applyReviewQueueDecision,
   ReviewQueueApprovalBlockedError,

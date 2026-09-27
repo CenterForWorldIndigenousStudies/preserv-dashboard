@@ -11,8 +11,10 @@ interface EntityNameBlockProps {
   name: string | null
   /** Entity UUID or other primary identifier */
   id: string
-  /** Optional legacy identifier to display alongside the entity name */
-  legacyId?: string | null
+  /** Optional additional identifier to display alongside the entity name */
+  additionalId?: string | null
+  /** Label for the additional identifier (default: Legacy ID) */
+  additionalIdLabel?: string
   /** Optional source identifier to display alongside the entity name */
   sourceId?: string | null
   /** Optional content displayed beside the entity name */
@@ -26,13 +28,14 @@ interface EntityNameBlockProps {
 }
 
 /**
- * Molecule: Entity name with compact ID and optional legacy/source ID metadata.
+ * Molecule: Entity name with compact ID and optional additional/source ID metadata.
  * Renders as a clickable MUI Link when href is provided, or plain Typography otherwise.
  */
 export function EntityNameBlock({
   name,
   id,
-  legacyId,
+  additionalId,
+  additionalIdLabel,
   sourceId,
   badges,
   fallbackName = 'Untitled document',
@@ -47,7 +50,8 @@ export function EntityNameBlock({
       </Stack>
       <IdsRow
         id={id}
-        legacyId={legacyId}
+        additionalId={additionalId}
+        additionalIdLabel={additionalIdLabel}
         sourceId={sourceId}
         fileName={name}
         maxTruncationLength={maxTruncationLength}

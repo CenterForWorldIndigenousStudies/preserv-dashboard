@@ -35,7 +35,7 @@ function buildOverviewColumns(preservedOverviewHref: string): MRT_ColumnDef<Docu
         <EntityNameBlock
           name={original.name}
           id={original.id}
-          legacyId={original.id_legacy}
+          additionalId={original.id_legacy}
           sourceId={original.source_id}
           href={getDocumentDetailPath(original.id, preservedOverviewHref, PAGE_LABELS.documents)}
         />

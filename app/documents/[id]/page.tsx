@@ -19,6 +19,7 @@ import { getDocumentEditWarning } from '@lib/documentEditAccess'
 import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
 import { getDocumentDetail } from '@lib/queries/documentQueries'
 import { getBatchDrafts } from '@lib/queries/batchDraftQueries'
+import { getDocumentCollectionMemberships } from '@lib/queries/collectionMembershipQueries'
 import {
   COLLECTIONS_PATH,
   DOCUMENTS_PATH,
@@ -162,7 +163,13 @@ export default async function DocumentDetailPage({
       batchLinks: pipelineBatchLinks,
       diagnosticsHref,
     } = buildPipelineDiagnostics(detail, metadata, currentDocumentHref)
-    const reprocessingDrafts = await getBatchDrafts()
+    const [reprocessingDrafts, collectionMemberships] = await Promise.all([
+      getBatchDrafts(),
+      getDocumentCollectionMemberships(document.id),
+    ])
+    const collections = collectionMemberships
+      .map((membership) => ({ id: membership.collectionId, name: membership.collectionName }))
+      .sort((left, right) => left.name.localeCompare(right.name))
 
     return (
       <Stack spacing={4} sx={{ width: '100%' }}>
@@ -218,10 +225,13 @@ export default async function DocumentDetailPage({
             </DetailPageSection>
             <DocumentMetadataSection
               metadata={metadata}
+              collections={collections}
               accessLevels={detail.access_levels}
               contributors={detail.document_to_contributors}
               publishers={detail.document_to_publishers}
               documentName={document.name}
+              collectionReturnHref={currentDocumentHref}
+              collectionReturnLabel={document.name?.trim() || document.id}
             />
             <DocumentCommentsSection metadata={metadata} quality={detail.quality} />
             <DocumentBatchesSection

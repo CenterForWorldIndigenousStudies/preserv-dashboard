@@ -8,6 +8,7 @@ export const PAGE_LABELS = {
   readyForLibrary: 'Ready for Library',
   library: 'Library',
   collections: 'Collections',
+  collectionDetail: 'Collection Details',
   tags: 'Tags',
   reports: 'Reports',
   db: 'DataBase',

@@ -158,13 +158,29 @@ model batches {
   @@index([name(length: 255)], map: "idx_batches_name")
 }
 
+model collection_qualifiers {
+  id            String      @id @db.VarChar(36)
+  collection_id String      @db.VarChar(36)
+  tag_id        String      @db.VarChar(36)
+  created_at    DateTime?   @default(now()) @db.DateTime(0)
+  updated_at    DateTime?   @default(now()) @db.DateTime(0)
+  collections   collections @relation(fields: [collection_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_collection_qualifiers_collection_id")
+  tags          tags        @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_collection_qualifiers_tag_id")
+
+  @@unique([collection_id, tag_id], map: "uk_collection_qualifiers_collection_tag")
+  @@index([collection_id], map: "idx_collection_qualifiers_collection_id")
+  @@index([tag_id], map: "idx_collection_qualifiers_tag_id")
+}
+
 model collections {
-  id         String    @id @db.VarChar(36)
-  tag_id     String    @unique(map: "uk_collections_tag_id") @db.VarChar(36)
-  notes      String?   @db.Text
-  created_at DateTime? @default(now()) @db.DateTime(0)
-  updated_at DateTime? @default(now()) @db.DateTime(0)
-  tags       tags      @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_collections_tag_id")
+  id                    String                  @id @db.VarChar(36)
+  tag_id                String                  @unique(map: "uk_collections_tag_id") @db.VarChar(36)
+  fedora_node_id        String?                 @db.VarChar(255)
+  notes                 String?                 @db.Text
+  created_at            DateTime?               @default(now()) @db.DateTime(0)
+  updated_at            DateTime?               @default(now()) @db.DateTime(0)
+  collection_qualifiers collection_qualifiers[]
+  tags                  tags                    @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_collections_tag_id")
 
   @@index([tag_id], map: "idx_collections_tag_id")
 }
@@ -462,14 +478,15 @@ model state_history {
 }
 
 model tags {
-  id               String             @id @db.VarChar(36)
-  name             String             @db.Text
-  name_hash        String?            @unique(map: "uk_tags_name_hash") @db.VarChar(64)
-  notes            String?            @db.Text
-  created_at       DateTime?          @default(now()) @db.DateTime(0)
-  updated_at       DateTime?          @default(now()) @db.DateTime(0)
-  collections      collections?
-  document_to_tags document_to_tags[]
+  id                    String                  @id @db.VarChar(36)
+  name                  String                  @db.Text
+  name_hash             String?                 @unique(map: "uk_tags_name_hash") @db.VarChar(64)
+  notes                 String?                 @db.Text
+  created_at            DateTime?               @default(now()) @db.DateTime(0)
+  updated_at            DateTime?               @default(now()) @db.DateTime(0)
+  collection_qualifiers collection_qualifiers[]
+  collections           collections?
+  document_to_tags      document_to_tags[]
 
   @@index([name(length: 255)], map: "idx_tags_name")
 }

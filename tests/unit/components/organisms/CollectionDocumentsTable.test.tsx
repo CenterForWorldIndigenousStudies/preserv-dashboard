@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
 import { ACCESS_LEVEL_OPTIONS } from '@constants/accessLevels'
-import { COLLECTIONS_PATH, DOCUMENTS_PATH } from '@constants/paths'
+import { DOCUMENTS_PATH, getCollectionDetailPath } from '@constants/paths'
 import type { FilterOptions } from '@lib/search'
 
 const mocks = vi.hoisted(() => ({
@@ -51,6 +51,7 @@ const filterOptions: FilterOptions = {
 
 describe('CollectionDocumentsTable', () => {
   it('configures the shared table shell and preserves collection detail links', () => {
+    const actionSlot = <button type={'button'}>{'Actions (1)'}</button>
     const markup = renderToStaticMarkup(
       <CollectionDocumentsTable
         collectionId="collection-1"
@@ -58,18 +59,23 @@ describe('CollectionDocumentsTable', () => {
         initialQuery={{ page: 1, pageSize: 25, filters: {} }}
         filterOptions={filterOptions}
         collectionName="Collection One"
-        originHref={`${COLLECTIONS_PATH}?expanded=collection-1`}
+        originHref={getCollectionDetailPath('collection-1')}
         onQueryChange={vi.fn()}
+        trailingToolbarSlot={actionSlot}
       />,
     )
 
-    expect(markup).toContain(`${DOCUMENTS_PATH}/doc-1?from=%2Fcollections%3Fexpanded%3Dcollection-1`)
+    expect(markup).toContain(
+      `${DOCUMENTS_PATH}/doc-1?from=%2Fcollections%2Fcollection-1&amp;fromLabel=Collection+One`,
+    )
     expect(mocks.documentTableProps?.config).toMatchObject({
       definition: { tableId: 'collection-documents-collection-1' },
       emptyMessage: 'No documents associated with this collection.',
       advancedSearch: {
         filterOptions,
+        showActiveFilterCount: false,
       },
+      trailingToolbarSlot: actionSlot,
     })
   })
 })

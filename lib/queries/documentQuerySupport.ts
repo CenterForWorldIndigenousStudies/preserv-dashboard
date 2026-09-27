@@ -128,6 +128,26 @@ export async function getOverviewDocumentsPage(
     documentIds: params.documentIds,
     additionalConditions: params.additionalConditions,
   })
+  const totalWhereSql = buildOverviewDocumentsWhereSql({
+    accessLevel: params.accessLevel,
+    batchIds: params.batchIds,
+    collection: params.collection,
+    createdFrom: params.createdFrom,
+    cursor: null,
+    cursorDirection,
+    defaultSecondarySortExpression,
+    documentType: params.documentType,
+    requireValidationStatus: params.requireValidationStatus,
+    contributorTerm,
+    publisherTerm,
+    sortDirection,
+    sortExpression,
+    sortField,
+    statuses: params.statuses,
+    tagIds: params.tagIds,
+    documentIds: params.documentIds,
+    additionalConditions: params.additionalConditions,
+  })
   const orderBySql = buildOverviewDocumentsOrderBySql({
     cursorDirection,
     defaultSecondarySortExpression,
@@ -154,31 +174,38 @@ export async function getOverviewDocumentsPage(
     LEFT JOIN access_levels al ON al.id = da.access_level_id
   `
 
-  const items = await client.$queryRaw<OverviewDocumentRow[]>(Prisma.sql`
-      SELECT
-        d.id,
-        d.filesize,
-        d.hash_binary,
-        d.hash_content,
-        d.id_legacy,
-        COALESCE(
-          JSON_UNQUOTE(JSON_EXTRACT(source_meta.value, '$.value')),
-          JSON_UNQUOTE(JSON_EXTRACT(source_meta.value, '$')),
-          source_meta.value
-        ) AS source_id,
-        d.name,
-        dq.validation_status,
-        dq.validation_timestamp,
-        dq.validator_name,
-        d.created_at,
-        d.updated_at,
-        CASE WHEN dup.document_id IS NULL THEN 0 ELSE 1 END AS is_duplicate,
-        ${sortExpression} AS sort_value
-      ${baseFromSql}
-      ${whereSql}
-      ${orderBySql}
-      LIMIT ${params.pageSize + 1}
-    `)
+  const [items, countRows] = await Promise.all([
+    client.$queryRaw<OverviewDocumentRow[]>(Prisma.sql`
+        SELECT
+          d.id,
+          d.filesize,
+          d.hash_binary,
+          d.hash_content,
+          d.id_legacy,
+          COALESCE(
+            JSON_UNQUOTE(JSON_EXTRACT(source_meta.value, '$.value')),
+            JSON_UNQUOTE(JSON_EXTRACT(source_meta.value, '$')),
+            source_meta.value
+          ) AS source_id,
+          d.name,
+          dq.validation_status,
+          dq.validation_timestamp,
+          dq.validator_name,
+          d.created_at,
+          d.updated_at,
+          CASE WHEN dup.document_id IS NULL THEN 0 ELSE 1 END AS is_duplicate,
+          ${sortExpression} AS sort_value
+        ${baseFromSql}
+        ${whereSql}
+        ${orderBySql}
+        LIMIT ${params.pageSize + 1}
+      `),
+    client.$queryRaw<Array<{ total_count: bigint | number | string }>>(Prisma.sql`
+        SELECT COUNT(DISTINCT d.id) AS total_count
+        ${baseFromSql}
+        ${totalWhereSql}
+      `),
+  ])
 
   const hasMore = items.length > params.pageSize
   const slicedItems = hasMore ? items.slice(0, params.pageSize) : items
@@ -186,9 +213,14 @@ export async function getOverviewDocumentsPage(
   const normalizedItems = orderedItems.map(normalizeOverviewDocumentRow)
   const startCursor = buildDocumentsCursor(orderedItems[0], sortField, usesDefaultSort)
   const endCursor = buildDocumentsCursor(orderedItems.at(-1), sortField, usesDefaultSort)
+  const countRow = Array.isArray(countRows) ? countRows[0] : undefined
+  const totalCountValue = countRow?.total_count
+  const totalCount =
+    typeof totalCountValue === 'bigint' ? Number(totalCountValue) : totalCountValue === undefined ? undefined : Number(totalCountValue)
 
   return {
     data: normalizedItems,
+    ...(totalCount === undefined ? {} : { totalCount }),
     pageInfo: {
       page: params.page,
       pageSize: params.pageSize,

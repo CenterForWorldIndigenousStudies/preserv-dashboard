@@ -1,4 +1,6 @@
 import type { AccessLevelOption } from '@constants/accessLevels'
+import { COLLECTION_LIBRARY_ID_LABEL } from '@constants/collections'
+import type { CollectionMembership } from '@lib/collectionMembership'
 
 export const REQUIRED_READINESS_FIELDS = [
   'dc_title',
@@ -44,10 +46,12 @@ export function evaluateCandidateReadiness({
   metadata,
   validatedFields,
   accessLevels,
+  collectionMemberships,
 }: {
   metadata: ReadinessMetadata
   validatedFields: ReadinessMetadata
   accessLevels: readonly AccessLevelOption[]
+  collectionMemberships: readonly CollectionMembership[]
 }): ReadinessEvaluation {
   const unmetRequirements: string[] = []
   const reasons: string[] = []
@@ -67,6 +71,17 @@ export function evaluateCandidateReadiness({
   if (!accessLevels.some((level) => level.trim())) {
     unmetRequirements.push(READINESS_ACCESS_REQUIREMENT)
     reasons.push('At least one access level is required.')
+  }
+
+  if (collectionMemberships.length === 0) {
+    unmetRequirements.push('collection_membership')
+    reasons.push('At least one calculated collection is required.')
+  }
+
+  for (const membership of collectionMemberships) {
+    if (membership.fedoraNodeId?.trim()) continue
+    unmetRequirements.push(`collection_fedora_mapping:${membership.collectionId}`)
+    reasons.push(`Collection "${membership.collectionName}" has no ${COLLECTION_LIBRARY_ID_LABEL}.`)
   }
 
   return {

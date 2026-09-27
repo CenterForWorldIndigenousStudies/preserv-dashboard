@@ -1,0 +1,10 @@
+{
+  "eligible_metadata_fields": [
+    "dc_coverage_cultural",
+    "dc_subject",
+    "dc_subject_unesco",
+    "long_tail_keywords",
+    "seo_keywords"
+  ],
+  "normalization": "trim-collapse-whitespace-casefold"
+}

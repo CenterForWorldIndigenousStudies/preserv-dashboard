@@ -33,7 +33,7 @@ export function ReprocessingDraftDocumentsTable({
           <EntityNameBlock
             name={row.original.name}
             id={row.original.id}
-            legacyId={row.original.idLegacy}
+            additionalId={row.original.idLegacy}
             fallbackName={'Untitled document'}
           />
         ),
@@ -48,7 +48,7 @@ export function ReprocessingDraftDocumentsTable({
             <EntityNameBlock
               name={row.original.sourceBatchName}
               id={row.original.sourceBatchId}
-              legacyId={row.original.sourceBatchLegacyId}
+              additionalId={row.original.sourceBatchLegacyId}
               fallbackName={'Untitled batch'}
               href={getBatchDetailPath(row.original.sourceBatchId)}
             />

@@ -91,7 +91,7 @@ export function BatchesTable({ initialData, initialQuery, filterOptions }: Batch
           <EntityNameBlock
             name={row.original.name}
             id={row.original.id}
-            legacyId={row.original.idLegacy}
+            additionalId={row.original.idLegacy}
             fallbackName={'Untitled batch'}
             href={getBatchDetailPath(row.original.id, currentBatchListHref, PAGE_LABELS.batches)}
           />

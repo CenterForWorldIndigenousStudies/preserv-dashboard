@@ -9,6 +9,10 @@ import { db } from '@lib/db'
 import { normalizeNeedsReviewValue } from '@lib/needsReview'
 import { appendReviewHistoryEpisode } from '@lib/reviewHistory'
 import { normalizeAccessLevel } from '@lib/search'
+import {
+  getDocumentCollectionMemberships,
+  type CollectionMembershipDataClient,
+} from '@lib/queries/collectionMembershipQueries'
 import { evaluateCandidateReadiness, projectCandidateMetadata, type ReadinessReasonGroup } from '@lib/readiness'
 import type { Prisma, PrismaClient } from '@lib/prisma/generated/client'
 
@@ -38,9 +42,23 @@ interface CandidateReadinessDocument {
 
 export async function finalizePipelineBatchReadiness(batchId: string, client: ReadinessDbClient = db): Promise<void> {
   await client.$transaction(async (tx) => {
-    const documents = await loadCandidateReadinessDocuments(tx, batchId)
-    await Promise.all(documents.map((document) => finalizeCandidateReadiness(tx, document)))
+    const links = (await tx.document_to_batches.findMany({
+      where: { batch_id: batchId },
+      select: { document_id: true },
+    })) as BatchLinkRow[]
+    await refreshDocumentReadinessInTransaction(tx, links.map((link) => link.document_id))
   })
+}
+
+export async function refreshDocumentReadinessInTransaction(
+  client: Prisma.TransactionClient,
+  documentIds: readonly string[],
+): Promise<void> {
+  const normalizedDocumentIds = [...new Set(documentIds.map((documentId) => documentId.trim()).filter(Boolean))]
+  if (normalizedDocumentIds.length === 0) return
+
+  const documents = await loadCandidateReadinessDocuments(client, normalizedDocumentIds)
+  await Promise.all(documents.map((document) => finalizeCandidateReadiness(client, document)))
 }
 
 export async function evaluateDocumentReadiness(
@@ -50,7 +68,7 @@ export async function evaluateDocumentReadiness(
   isPreservationCandidate: boolean
   evaluation: ReturnType<typeof evaluateCandidateReadiness>
 }> {
-  const [metadataRows, accessRows] = await Promise.all([
+  const [metadataRows, accessRows, collectionMemberships] = await Promise.all([
     client.document_to_metadata.findMany({
       where: { document_id: documentId },
       select: { value: true, metadata: { select: { name: true } } },
@@ -59,6 +77,7 @@ export async function evaluateDocumentReadiness(
       where: { document_id: documentId },
       select: { access_levels: { select: { level_name: true } } },
     }),
+    getDocumentCollectionMemberships(documentId, client as unknown as CollectionMembershipDataClient),
   ])
   const metadata: Record<string, unknown> = {}
   for (const row of metadataRows) {
@@ -75,36 +94,33 @@ export async function evaluateDocumentReadiness(
         const accessLevel = normalizeAccessLevel(row.access_levels.level_name)
         return accessLevel ? [accessLevel] : []
       }),
+      collectionMemberships,
     }),
   }
 }
 
 async function loadCandidateReadinessDocuments(
   client: Prisma.TransactionClient,
-  batchId: string,
+  documentIds: readonly string[],
 ): Promise<CandidateReadinessDocument[]> {
-  const links = (await client.document_to_batches.findMany({
-    where: { batch_id: batchId },
-    select: { document_id: true },
-  })) as BatchLinkRow[]
-  const documentIds = [...new Set(links.map((link) => link.document_id))]
-  if (documentIds.length === 0) return []
+  const requestedDocumentIds = [...documentIds]
+  if (requestedDocumentIds.length === 0) return []
 
   const [metadataRows, accessRows, qualityRows, stateRows] = await Promise.all([
     client.document_to_metadata.findMany({
-      where: { document_id: { in: documentIds } },
+      where: { document_id: { in: requestedDocumentIds } },
       select: { document_id: true, value: true, value_type: true, metadata: { select: { name: true } } },
     }),
     client.document_access.findMany({
-      where: { document_id: { in: documentIds } },
+      where: { document_id: { in: requestedDocumentIds } },
       select: { document_id: true, access_levels: { select: { level_name: true } } },
     }),
     client.document_quality.findMany({
-      where: { document_id: { in: documentIds } },
+      where: { document_id: { in: requestedDocumentIds } },
       select: { document_id: true, validation_status: true },
     }),
     client.state_history.findMany({
-      where: { document_id: { in: documentIds } },
+      where: { document_id: { in: requestedDocumentIds } },
       select: { id: true, document_id: true, new_state: true, changed_at: true },
       orderBy: [{ changed_at: 'desc' }, { id: 'desc' }],
     }),
@@ -135,7 +151,7 @@ async function loadCandidateReadinessDocuments(
     }
   }
 
-  return documentIds.flatMap((documentId) => {
+  return requestedDocumentIds.flatMap((documentId) => {
     const rows = metadataByDocumentId.get(documentId) ?? []
     const metadata: Record<string, unknown> = {}
     let activeReviewValue: unknown
@@ -177,6 +193,10 @@ async function finalizeCandidateReadiness(
     metadata: projectedMetadata,
     validatedFields: {},
     accessLevels: document.accessLevels,
+    collectionMemberships: await getDocumentCollectionMemberships(
+      document.id,
+      client as unknown as CollectionMembershipDataClient,
+    ),
   })
   const activeReasons = mergeActiveReasons(document.activeReviewValue, evaluation.reasonGroups)
   const targetState = activeReasons ? GENERATED_DOCUMENT_STATES.NEEDS_REVIEW : GENERATED_DOCUMENT_STATES.APPROVED

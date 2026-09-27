@@ -54,7 +54,7 @@ function buildDocumentDetailHref(documentId: string, returnHref: string): string
 }
 
 function buildCollectionHref(collectionId: string): string {
-  return `${COLLECTIONS_PATH}?expanded=${encodeURIComponent(collectionId)}`
+  return `${COLLECTIONS_PATH}/${encodeURIComponent(collectionId)}`
 }
 
 export function LibraryTable({ filterOptions, initialQuery, initialData }: LibraryTableProps): ReactElement {
@@ -121,7 +121,7 @@ export function LibraryTable({ filterOptions, initialQuery, initialData }: Libra
           <EntityNameBlock
             name={row.original.name}
             id={row.original.id}
-            legacyId={row.original.legacyId}
+            additionalId={row.original.legacyId}
             sourceId={row.original.sourceId}
             href={buildDocumentDetailHref(row.original.id, returnHref)}
           />

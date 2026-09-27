@@ -13,6 +13,7 @@ const {
   mockDocumentsFindMany,
   mockTagsFindMany,
   mockBatchesFindMany,
+  mockGetDocumentCollectionMemberships,
 } = vi.hoisted(() => ({
   mockQueryRaw: vi.fn(),
   mockMetadataFindMany: vi.fn(),
@@ -22,6 +23,7 @@ const {
   mockDocumentsFindMany: vi.fn(),
   mockTagsFindMany: vi.fn(),
   mockBatchesFindMany: vi.fn(),
+  mockGetDocumentCollectionMemberships: vi.fn(),
 }))
 
 vi.mock('@lib/db', () => ({
@@ -39,6 +41,10 @@ vi.mock('@lib/db', () => ({
 
 vi.mock('@lib/editHistory', () => ({
   createEditHistoryEntry: vi.fn(),
+}))
+
+vi.mock('@lib/queries/collectionMembershipQueries', () => ({
+  getDocumentCollectionMemberships: mockGetDocumentCollectionMemberships,
 }))
 
 import { getAllDocuments, getDocuments } from '@lib/queries/documentQueries'
@@ -144,6 +150,7 @@ describe('getReadyForLibraryDocuments advanced filters', () => {
     mockDocumentsFindMany.mockReset()
     mockTagsFindMany.mockReset()
     mockBatchesFindMany.mockReset()
+    mockGetDocumentCollectionMemberships.mockReset()
 
     mockMetadataFindMany.mockResolvedValue([
       { id: 'meta-title', name: 'dc_title' },
@@ -170,6 +177,14 @@ describe('getReadyForLibraryDocuments advanced filters', () => {
     mockDocumentsFindMany.mockResolvedValue([{ id: 'doc-ready', name: 'Ready document' }])
     mockTagsFindMany.mockResolvedValue([{ id: 'tag-collection', name: 'collection-tag', notes: null }])
     mockBatchesFindMany.mockResolvedValue([{ id: 'batch-2026', name: 'batch-2026' }])
+    mockGetDocumentCollectionMemberships.mockResolvedValue([
+      {
+        collectionId: 'collection-1',
+        collectionName: 'Mapped Collection',
+        fedoraNodeId: '50',
+        evidence: [{ source: 'tag', qualifierTagId: 'tag-collection', qualifierName: 'Mapped Collection' }],
+      },
+    ])
     mockQueryRaw.mockResolvedValueOnce([{ id: 'doc-ready' }]).mockResolvedValueOnce([])
   })
 
@@ -211,6 +226,21 @@ describe('getReadyForLibraryDocuments advanced filters', () => {
 
     expect(result).toEqual({ items: [], total: 0 })
     expect(mockQueryRaw).not.toHaveBeenCalled()
+  })
+
+  it('excludes approved documents with no calculated or unmapped collection', async () => {
+    mockGetDocumentCollectionMemberships.mockResolvedValue([
+      {
+        collectionId: 'collection-unmapped',
+        collectionName: 'Unmapped Collection',
+        fedoraNodeId: null,
+        evidence: [{ source: 'tag', qualifierTagId: 'tag-unmapped', qualifierName: 'Unmapped Collection' }],
+      },
+    ])
+
+    const result = await getReadyForLibraryDocuments({ statuses: ['APPROVED'] })
+
+    expect(result).toEqual({ items: [], total: 0 })
   })
 })
 
@@ -272,6 +302,7 @@ describe('getAllDocuments', () => {
   })
 
   it('uses default pageSize of 25', async () => {
+    mockQueryRaw.mockReset()
     mockQueryRaw.mockResolvedValueOnce([defaultRow])
 
     await getAllDocuments()

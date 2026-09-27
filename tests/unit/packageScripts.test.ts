@@ -14,7 +14,12 @@ const packageJsonPath = path.resolve(testDir, '..', '..', 'package.json')
 const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as DashboardPackageJson
 
 describe('dashboard package scripts', () => {
-  it('runs the Next.js dev server with webpack for local development', () => {
-    expect(packageJson.scripts?.['dev:next']).toBe('next dev --webpack')
+  it('generates Prisma before starting the webpack development server', () => {
+    expect(packageJson.scripts?.['dev:next']).toBe('run-s db:prisma:generate dev:next:server')
+    expect(packageJson.scripts?.['dev:next:server']).toBe('next dev --webpack')
+  })
+
+  it('syncs generated contracts before dashboard lint', () => {
+    expect(packageJson.scripts?.['prelint:project']).toBe('npm run contracts:sync')
   })
 })

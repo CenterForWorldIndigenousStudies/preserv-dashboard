@@ -61,14 +61,36 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   args: {
-    collections: sampleCollections,
     filterOptions,
+    initialData: {
+      data: sampleCollections,
+      totalCount: sampleCollections.length,
+      pageInfo: {
+        pageSize: 25,
+        hasNextPage: false,
+        hasPreviousPage: false,
+        startCursor: null,
+        endCursor: null,
+      },
+    },
+    initialQuery: { page: 1, pageSize: 25, filters: {} },
   },
 }
 
 export const Empty: Story = {
   args: {
-    collections: [],
     filterOptions,
+    initialData: {
+      data: [],
+      totalCount: 0,
+      pageInfo: {
+        pageSize: 25,
+        hasNextPage: false,
+        hasPreviousPage: false,
+        startCursor: null,
+        endCursor: null,
+      },
+    },
+    initialQuery: { page: 1, pageSize: 25, filters: {} },
   },
 }

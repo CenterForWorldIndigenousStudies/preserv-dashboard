@@ -131,7 +131,7 @@ export function DocumentVersionsButton({
             <EntityNameBlock
               name={name}
               id={id}
-              legacyId={id_legacy}
+              additionalId={id_legacy}
               sourceId={source_id}
               badges={
                 <DocumentRoleBadges isCandidate={Boolean(is_preservation_candidate)} isCanonical={is_canonical} />

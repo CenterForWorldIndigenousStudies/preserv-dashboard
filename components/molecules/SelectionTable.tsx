@@ -218,7 +218,7 @@ export function SelectionTable(props: SelectionTableProps): ReactElement {
             <EntityNameBlock
               name={name}
               id={id}
-              legacyId={id_legacy}
+              additionalId={id_legacy}
               sourceId={source_id}
               href={`${DOCUMENTS_PATH}/${id}`}
             />

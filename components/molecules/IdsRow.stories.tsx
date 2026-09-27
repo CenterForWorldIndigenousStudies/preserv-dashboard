@@ -7,7 +7,7 @@ const meta = {
   tags: ['autodocs'],
   args: {
     id: 'fd14a84b-72fa-4bba-83cf-340fc0790950',
-    legacyId: '42',
+    additionalId: '42',
     maxTruncationLength: 12,
     sourceId: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
   },
@@ -16,9 +16,9 @@ const meta = {
       control: 'text',
       description: 'The Document UUID',
     },
-    legacyId: {
+    additionalId: {
       control: 'text',
-      description: 'Optional legacy ID to display alongside the document name',
+      description: 'Optional additional ID to display alongside the document name',
     },
     maxTruncationLength: {
       control: 'number',

@@ -141,7 +141,7 @@ describe('BatchesTable', () => {
     expect(renderCell(0)).toContain('/batches/batch%2F1')
     expect(renderCell(0)).toContain('Batch One')
     expect(renderCell(0)).toContain('ID batch/1')
-    expect(renderCell(0)).toContain('Legacy LEGACY-BATCH-1')
+    expect(renderCell(0)).toContain('Legacy ID LEGACY-BATCH-1')
     expect(renderCell(3)).toContain('/documents?batch=Batch+One')
     expect(renderCell(3)).toContain('5')
     expect(renderCell(5)).toContain('42 seconds')

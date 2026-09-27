@@ -10,13 +10,14 @@ const meta = {
   args: {
     name: 'Annual Report 2023',
     id: 'abc12345-6789-def0-1234-567890abcdef',
-    legacyId: 'AR-2023-001',
+    additionalId: 'AR-2023-001',
     sourceId: '1ABC123XYZ',
   },
   argTypes: {
     name: { control: 'text' },
     id: { control: 'text' },
-    legacyId: { control: 'text' },
+    additionalId: { control: 'text' },
+    additionalIdLabel: { control: 'text' },
     sourceId: { control: 'text' },
     fallbackName: { control: 'text' },
     href: { control: 'text' },
@@ -37,7 +38,7 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'All fields populated: name, id, legacyId, and sourceId.',
+        story: 'All fields populated: name, id, additionalId, and sourceId.',
       },
     },
   },
@@ -65,7 +66,7 @@ export const WithLongLegacyId: Story = {
   args: {
     name: 'Quarterly Review Q4 2023',
     id: 'abc12345-6789-def0-1234-567890abcdef',
-    legacyId: 'AR-VERY-LONG-LEGACY-ID-THAT-EXCEEDS-TWENTY-CHARS',
+    additionalId: 'AR-VERY-LONG-LEGACY-ID-THAT-EXCEEDS-TWENTY-CHARS',
     sourceId: null,
   },
   parameters: {
@@ -83,7 +84,7 @@ export const WithLongSourceId: Story = {
   args: {
     name: 'Meeting Notes January',
     id: '1a2B3c4D5e6F7g8H9I0J',
-    legacyId: null,
+    additionalId: null,
     sourceId: 'this_source_id_is_also_very_long_and_will_be_truncated',
   },
   parameters: {
@@ -100,7 +101,7 @@ export const Untitled: Story = {
   args: {
     name: null,
     id: 'abc12345-6789-def0-1234-567890abcdef',
-    legacyId: 'LEG-001',
+    additionalId: 'LEG-001',
     sourceId: null,
   },
   parameters: {
@@ -117,7 +118,7 @@ export const UntitledBatch: Story = {
     name: null,
     id: '12345678-90ab-cdef-1234-567890abcdef',
     fallbackName: 'Untitled batch',
-    legacyId: 'BATCH-001',
+    additionalId: 'BATCH-001',
     sourceId: null,
   },
   parameters: {
@@ -134,7 +135,7 @@ export const NoSecondaryIds: Story = {
   args: {
     name: 'Project Proposal',
     id: 'f0e1d2c3-b4a5-6789-abcd-ef0123456789',
-    legacyId: null,
+    additionalId: null,
     sourceId: null,
   },
   parameters: {
@@ -151,7 +152,7 @@ export const AsPlainText: Story = {
   args: {
     name: 'Budget Spreadsheet 2024',
     id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-    legacyId: 'BUD-2024',
+    additionalId: 'BUD-2024',
     sourceId: null,
     href: undefined,
   },
@@ -170,7 +171,7 @@ export const WithShortId: Story = {
   args: {
     name: 'Invoice 2024-03',
     id: 'abc12345',
-    legacyId: null,
+    additionalId: null,
     sourceId: null,
   },
   parameters: {
@@ -187,7 +188,7 @@ export const WithHref: Story = {
   args: {
     name: 'Strategic Plan 2025',
     id: 'doc-2025-strat-plan-001',
-    legacyId: 'SP-2025',
+    additionalId: 'SP-2025',
     sourceId: 'drive_abc123',
     href: `${DOCUMENTS_PATH}/doc-2025-strat-plan-001`,
   },

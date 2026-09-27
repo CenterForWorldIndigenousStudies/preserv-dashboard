@@ -1,13 +1,28 @@
 import type { ReactElement } from 'react'
 
 import { CollectionsPageClient } from '@organisms/CollectionsPageClient'
-import { getCollections } from '@lib/queries/collectionQueries'
+import { getCollectionPage, parseCollectionQueryParams } from '@lib/queries/collectionQueries'
 import { getDocumentFilterOptions } from '@lib/queries/queries'
 
 export const dynamic = 'force-dynamic'
 
-export default async function CollectionsPage(): Promise<ReactElement> {
-  const [collections, filterOptions] = await Promise.all([getCollections(), getDocumentFilterOptions()])
+interface CollectionsPageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}
 
-  return <CollectionsPageClient collections={collections} filterOptions={filterOptions} />
+export default async function CollectionsPage({ searchParams }: CollectionsPageProps): Promise<ReactElement> {
+  const resolvedSearchParams = await searchParams
+  const initialQuery = parseCollectionQueryParams(resolvedSearchParams)
+  const [initialData, filterOptions] = await Promise.all([
+    getCollectionPage(initialQuery),
+    getDocumentFilterOptions(),
+  ])
+
+  return (
+    <CollectionsPageClient
+      filterOptions={filterOptions}
+      initialData={initialData}
+      initialQuery={initialQuery}
+    />
+  )
 }

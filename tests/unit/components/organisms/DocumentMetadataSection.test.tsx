@@ -1,9 +1,23 @@
 import { renderToStaticMarkup } from 'react-dom/server'
+import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@molecules/MetadataTable', () => ({
-  MetadataTable: ({ fields }: { fields: Array<{ name: string }> }) => (
-    <div data-testid={'metadata-table'}>{fields.map((field) => field.name).join('|')}</div>
+  MetadataTable: ({
+    fields,
+    renderValue,
+  }: {
+    fields: Array<{ name: string }>
+    renderValue?: (field: { name: string }) => ReactNode
+  }) => (
+    <div data-testid={'metadata-table'}>
+      {fields.map((field) => (
+        <div key={field.name}>
+          {field.name}
+          {renderValue?.(field)}
+        </div>
+      ))}
+    </div>
   ),
 }))
 
@@ -41,5 +55,33 @@ describe('DocumentMetadataSection', () => {
     expect(markup).toContain('source_id')
     expect(markup).toContain('access_level')
     expect(markup.indexOf('access_level')).toBeLessThan(markup.indexOf('dc_title'))
+  })
+
+  it('renders calculated collections as links before all metadata fields', () => {
+    const markup = renderToStaticMarkup(
+      <DocumentMetadataSection
+        metadata={[field('dc_title')]}
+        collections={[
+          { id: 'metadata-only-collection', name: 'Metadata-only collection' },
+          { id: 'tagged-collection', name: 'Tagged collection' },
+        ]}
+        accessLevels={['restricted']}
+        contributors={[] as DocumentDetail['document_to_contributors']}
+        publishers={[] as DocumentDetail['document_to_publishers']}
+        collectionReturnHref={'/documents/doc-1'}
+        collectionReturnLabel={'My Document'}
+      />,
+    )
+
+    expect(markup).toContain('collections')
+    expect(markup).toContain('Metadata-only collection')
+    expect(markup).toContain('Tagged collection')
+    expect(markup).toContain(
+      'href="/collections/metadata-only-collection?from=%2Fdocuments%2Fdoc-1&amp;fromLabel=My+Document"',
+    )
+    expect(markup).toContain(
+      'href="/collections/tagged-collection?from=%2Fdocuments%2Fdoc-1&amp;fromLabel=My+Document"',
+    )
+    expect(markup.indexOf('collections')).toBeLessThan(markup.indexOf('access_level'))
   })
 })

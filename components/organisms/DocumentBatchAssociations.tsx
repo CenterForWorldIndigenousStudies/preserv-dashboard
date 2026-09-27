@@ -36,7 +36,7 @@ export function DocumentBatchAssociations({
           <EntityNameBlock
             name={row.original.batch_name}
             id={row.original.batch_id}
-            legacyId={row.original.batch_legacy_id}
+            additionalId={row.original.batch_legacy_id}
             fallbackName={'Untitled batch'}
             href={getBatchDetailPath(row.original.batch_id, batchReturnHref, batchReturnLabel)}
           />

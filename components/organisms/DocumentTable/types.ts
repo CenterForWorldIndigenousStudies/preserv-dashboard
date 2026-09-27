@@ -66,6 +66,7 @@ export interface DocumentTableAdvancedSearchConfig {
   filters: AdvancedSearchFilters
   filterOptions: FilterOptions
   onApply: (filters: AdvancedSearchFilters) => void
+  showActiveFilterCount?: boolean
 }
 
 export interface DocumentTableRowActionContext<TData> {
@@ -91,6 +92,7 @@ export interface DocumentTableConfig<TData extends MRT_RowData & { id: string },
   rowSelection?: MRT_RowSelectionState
   onRowSelectionChange?: (updater: MRT_Updater<MRT_RowSelectionState>) => void
   enableRowSelection?: boolean
+  enableMultiRowSelection?: boolean
   enableSorting?: boolean
   getRowId?: (row: TData) => string
   getRowProps?: (row: TData) => TableRowProps

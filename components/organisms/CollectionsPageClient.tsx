@@ -1,43 +1,56 @@
 'use client'
 
-import { useState, type ReactElement } from 'react'
-import Box from '@mui/material/Box'
+import type { ReactElement } from 'react'
 import Stack from '@mui/material/Stack'
 
-import { Button } from '@atoms/Button'
-import { IconPlus } from '@atoms/icons/IconPlus'
-import { CollectionsAccordion } from '@organisms/CollectionsAccordion'
-import { PageHeader } from '@organisms/PageHeader'
-import { AddCollectionDialog } from '@organisms/AddCollectionDialog'
+import { COLLECTIONS_PATH } from '@constants/paths'
 import { PAGE_LABELS } from '@constants/pageLabels'
+import { ReturnToPreviousPage } from '@atoms/ReturnToPreviousPage'
+import { CollectionDetails } from '@organisms/CollectionDetails'
+import { CollectionsTable } from '@organisms/CollectionsTable'
+import { PageHeader } from '@organisms/PageHeader'
 import type { FilterOptions } from '@lib/search'
-import type { CollectionWithMeta } from 'types/collections'
+import type { CollectionListPageResult, CollectionTableQuery, CollectionWithMeta } from 'types/collections'
 
 interface CollectionsPageClientProps {
-  collections: CollectionWithMeta[]
   filterOptions: FilterOptions
+  collection?: CollectionWithMeta
+  initialData?: CollectionListPageResult
+  initialQuery?: CollectionTableQuery
+  returnHref?: string
+  returnLocation?: string
 }
 
-export function CollectionsPageClient({ collections, filterOptions }: CollectionsPageClientProps): ReactElement {
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+export function CollectionsPageClient({
+  filterOptions,
+  collection,
+  initialData,
+  initialQuery,
+  returnHref = COLLECTIONS_PATH,
+  returnLocation = PAGE_LABELS.collections,
+}: CollectionsPageClientProps): ReactElement {
+  const isCollectionDetail = Boolean(collection)
 
   return (
     <Stack spacing={4}>
+      {collection ? (
+        <ReturnToPreviousPage href={returnHref} label={`Return to ${returnLocation}`} />
+      ) : null}
       <PageHeader
-        eyebrow={PAGE_LABELS.collections}
-        title={'Document Collections'}
-        description={'Browse all document collections and their associated documents.'}
+        eyebrow={isCollectionDetail ? PAGE_LABELS.collectionDetail : PAGE_LABELS.collections}
+        title={collection?.collection_name ?? 'Document Collections'}
+        description={
+          isCollectionDetail
+            ? 'Manage this document collection and its associated documents.'
+            : 'Browse all document collections and their associated documents.'
+        }
       />
 
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <Button variant={'primary'} startIcon={<IconPlus size={16} />} onClick={() => setIsAddDialogOpen(true)}>
-          {'Add Collection'}
-        </Button>
-      </Box>
-
-      <CollectionsAccordion collections={collections} filterOptions={filterOptions} />
-
-      <AddCollectionDialog open={isAddDialogOpen} collections={collections} onClose={() => setIsAddDialogOpen(false)} />
+      {collection ? (
+        <CollectionDetails collection={collection} filterOptions={filterOptions} />
+      ) : initialData && initialQuery ? (
+        <CollectionsTable initialData={initialData} initialQuery={initialQuery} filterOptions={filterOptions} />
+      ) : null}
     </Stack>
   )
 }
