@@ -67,7 +67,15 @@ function initialData(data: LibraryDocumentItem[]): DocumentTableFetchResult<Libr
 const meta: Meta<typeof LibraryTable> = {
   title: 'Organisms/LibraryTable',
   component: LibraryTable,
-  parameters: { layout: 'padded' },
+  parameters: {
+    layout: 'padded',
+    nextjs: {
+      appDirectory: true,
+      navigation: {
+        pathname: '/library',
+      },
+    },
+  },
 }
 
 export default meta

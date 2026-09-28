@@ -1,6 +1,6 @@
 {
   "name": "cwis-preservation-dashboard",
-  "version": "0.2.124",
+  "version": "0.2.125",
   "private": true,
   "scripts": {
     "build": "run-s db:prisma:generate build:next",

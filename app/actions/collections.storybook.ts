@@ -1,4 +1,23 @@
+import type {
+  RenameCollectionInput,
+  UpdateCollectionInput,
+} from '@lib/queries/collectionQueries'
+import type { CollectionListPageResult, CollectionTableQuery } from 'types/collections'
 import type { PaginatedDocumentsResult } from 'types/pagination'
+
+export function getCollectionsAction(_query: CollectionTableQuery): Promise<CollectionListPageResult> {
+  return Promise.resolve({
+    data: [],
+    totalCount: 0,
+    pageInfo: {
+      pageSize: 25,
+      hasNextPage: false,
+      hasPreviousPage: false,
+      startCursor: null,
+      endCursor: null,
+    },
+  })
+}
 
 export function getDocumentsForCollectionAction(_collectionId: string): Promise<PaginatedDocumentsResult> {
   return Promise.resolve({ documents: [], total: 0 })
@@ -32,6 +51,14 @@ export function createCollectionWithNewTagAction(_input: {
   collectionNotes?: string
   fedoraNodeId?: string
 }): Promise<void> {
+  return Promise.resolve()
+}
+
+export function updateCollectionAction(_input: UpdateCollectionInput): Promise<void> {
+  return Promise.resolve()
+}
+
+export function renameCollectionAction(_input: RenameCollectionInput): Promise<void> {
   return Promise.resolve()
 }
 
