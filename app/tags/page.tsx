@@ -28,6 +28,27 @@ const TAG_WORKFLOWS: WorkflowAction[] = [
   },
 ]
 
+function TagsInfo(): ReactElement {
+  return (
+    <Box
+      component={'ul'}
+      sx={{
+        color: 'text.secondary',
+        mb: 0,
+        mt: 0,
+        pl: 3,
+        '& li + li': {
+          mt: 1.5,
+        },
+      }}
+    >
+      <li>{'Add and remove tags from a document in Document Detail.'}</li>
+      <li>{'Create a new tag while assigning it to a document.'}</li>
+      <li>{'Search and filter documents by tag from Documents and Review Queue advanced search.'}</li>
+    </Box>
+  )
+}
+
 export default function TagsPage(): ReactElement {
   return (
     <Stack spacing={8}>
@@ -37,31 +58,9 @@ export default function TagsPage(): ReactElement {
         description={
           'Tags help organize, classify, and filter preservation documents across the dashboard. Current tag management happens in Document Detail, while this workspace provides a starting point for tag-focused navigation.'
         }
+        infoTitle={'What you can do today'}
+        infoContent={<TagsInfo />}
       />
-
-      <Card component={'section'}>
-        <CardContent>
-          <Typography component={'h2'} variant={'h5'} sx={{ color: 'text.primary' }}>
-            {'What you can do today'}
-          </Typography>
-          <Box
-            component={'ul'}
-            sx={{
-              color: 'text.secondary',
-              mb: 0,
-              mt: 2,
-              pl: 3,
-              '& li + li': {
-                mt: 1.5,
-              },
-            }}
-          >
-            <li>{'Add and remove tags from a document in Document Detail.'}</li>
-            <li>{'Create a new tag while assigning it to a document.'}</li>
-            <li>{'Search and filter documents by tag from Documents and Review Queue advanced search.'}</li>
-          </Box>
-        </CardContent>
-      </Card>
 
       <Stack component={'section'} spacing={2}>
         <Box>

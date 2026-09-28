@@ -2,15 +2,12 @@
 
 import type { ReactElement } from 'react'
 import Alert from '@mui/material/Alert'
-import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
 import List from '@mui/material/List'
 import ListItem from '@mui/material/ListItem'
 import ListItemText from '@mui/material/ListItemText'
 
 import { Button } from '@atoms/Button'
+import { Modal } from '@organisms/Modal'
 import type { DocumentEditChange } from 'types/documentEditing'
 
 interface DocumentEditConfirmationDialogProps {
@@ -41,9 +38,22 @@ export function DocumentEditConfirmationDialog({
   const isSave = mode === 'save'
 
   return (
-    <Dialog open={open} onClose={isSubmitting ? undefined : onClose} fullWidth maxWidth={'sm'}>
-      <DialogTitle>{isSave ? 'Save document changes?' : 'Discard unsaved changes?'}</DialogTitle>
-      <DialogContent>
+    <Modal
+      open={open}
+      onClose={onClose}
+      disableClose={isSubmitting}
+      title={isSave ? 'Save document changes?' : 'Discard unsaved changes?'}
+      actions={
+        <>
+          <Button variant={'ghost'} disabled={isSubmitting} onClick={onClose}>
+            {'Keep Editing'}
+          </Button>
+          <Button variant={isSave ? 'primary' : 'secondary'} loading={isSubmitting} onClick={onConfirm}>
+            {isSave ? 'Confirm Save' : 'Discard Changes'}
+          </Button>
+        </>
+      }
+    >
         {error ? (
           <Alert severity={'error'} sx={{ mb: 2 }}>
             {error}
@@ -67,15 +77,6 @@ export function DocumentEditConfirmationDialog({
         ) : (
           <Alert severity={'warning'}>{'Your unsaved changes will be lost.'}</Alert>
         )}
-      </DialogContent>
-      <DialogActions>
-        <Button variant={'ghost'} disabled={isSubmitting} onClick={onClose}>
-          {'Keep Editing'}
-        </Button>
-        <Button variant={isSave ? 'primary' : 'secondary'} loading={isSubmitting} onClick={onConfirm}>
-          {isSave ? 'Confirm Save' : 'Discard Changes'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+    </Modal>
   )
 }

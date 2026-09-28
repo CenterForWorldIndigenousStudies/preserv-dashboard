@@ -2,10 +2,6 @@
 
 import { useCallback, useMemo, useState, type ReactElement } from 'react'
 import Box from '@mui/material/Box'
-import Dialog from '@mui/material/Dialog'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
-import IconButton from '@mui/material/IconButton'
 import Typography from '@mui/material/Typography'
 import { alpha, type Theme } from '@mui/material/styles'
 import {
@@ -17,9 +13,9 @@ import {
 import { DateAtom } from '@atoms/Date'
 import { FileSize } from '@atoms/FileSize'
 import { Button } from '@atoms/Button'
-import { IconX } from '@atoms/icons/IconX'
 import { getDocumentDetailPath } from '@constants/paths'
 import { PAGE_LABELS } from '@constants/pageLabels'
+import { Modal } from '@organisms/Modal'
 import { EntityNameBlock } from '@molecules/EntityNameBlock'
 import { DocumentRoleBadges } from '@molecules/DocumentRoleBadges'
 import type { VersionFamily, VersionFamilyDocument } from 'types/documents'
@@ -275,19 +271,13 @@ export function DocumentVersionsButton({
         {`View Versions (${versionFamily.documents.length})`}
       </Button>
 
-      <Dialog
+      <Modal
         open={isOpen}
         onClose={closeModal}
-        keepMounted
-        fullWidth
         maxWidth={'xl'}
-        aria-labelledby={'document-versions-dialog-title'}
-        sx={{ '& .MuiDialog-paper': { borderRadius: 2, maxHeight: '90vh' } }}
-      >
-        <DialogTitle
-          id={'document-versions-dialog-title'}
-          sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, pr: 1.5 }}
-        >
+        dialogProps={{ keepMounted: true }}
+        paperSx={{ maxHeight: '90vh' }}
+        title={
           <Box>
             <Typography component={'span'} variant={'h5'} color={'text.primary'}>
               {'Document Versions'}
@@ -296,14 +286,12 @@ export function DocumentVersionsButton({
               {'The canonical document is pinned to the top and highlighted separately from duplicate variants.'}
             </Typography>
           </Box>
-          <IconButton onClick={closeModal} aria-label={'Close'}>
-            <IconX size={20} />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent dividers sx={{ px: 3, py: 2, minHeight: 0 }}>
-          <MaterialReactTable table={table} />
-        </DialogContent>
-      </Dialog>
+        }
+        contentDividers
+        contentSx={{ px: 3, py: 2, minHeight: 0 }}
+      >
+        <MaterialReactTable table={table} />
+      </Modal>
     </>
   )
 }

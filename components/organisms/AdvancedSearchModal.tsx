@@ -3,14 +3,9 @@
 import { useCallback, useEffect, useMemo, useState, type ReactElement, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Chip from '@mui/material/Chip'
-import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
 import FormControl from '@mui/material/FormControl'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import FormLabel from '@mui/material/FormLabel'
-import IconButton from '@mui/material/IconButton'
 import MenuItem from '@mui/material/MenuItem'
 import Radio from '@mui/material/Radio'
 import RadioGroup from '@mui/material/RadioGroup'
@@ -19,7 +14,6 @@ import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { alpha, type Theme } from '@mui/material/styles'
 import { Button } from '@atoms/Button'
-import { IconX } from '@atoms/icons/IconX'
 import { ACCESS_LEVEL_LABELS } from '@constants/accessLevels'
 import { useBatchSearch } from '@lib/hooks/useBatchSearch'
 import { useTagSearch, type TagSuggestion } from '@lib/hooks/useTagSearch'
@@ -31,6 +25,7 @@ import {
   type StatusOption,
 } from '@lib/search'
 import { SearchEntityBox } from '@molecules/SearchEntityBox'
+import { Modal } from '@organisms/Modal'
 import type { BatchSearchSuggestion } from 'types/batches'
 
 interface AdvancedSearchModalProps {
@@ -272,62 +267,51 @@ export function AdvancedSearchModal({
         ) : null}
       </Stack>
 
-      <Dialog
+      <Modal
         open={isOpen}
         onClose={closeModal}
-        fullWidth
         maxWidth={'md'}
-        sx={{
-          '& .MuiBackdrop-root': {
-            backgroundColor: (theme) => alpha(theme.palette.text.primary, 0.3),
-          },
-          '& .MuiDialog-paper': {
-            borderRadius: '1.5rem',
-            border: (theme) => `1px solid ${alpha(theme.palette.primary.main, 0.15)}`,
-            boxShadow: '0 24px 80px rgba(35, 31, 32, 0.18)',
-          },
-        }}
-      >
-        <DialogTitle sx={{ pb: 1.5 }}>
-          <Stack
-            direction={'row'}
-            spacing={2}
-            sx={{
-              alignItems: 'flex-start',
-              justifyContent: 'space-between',
-            }}
-          >
-            <Box>
-              <Typography variant={'h6'} component={'h2'}>
-                Advanced Search
-              </Typography>
-              <Typography
-                variant={'body2'}
-                sx={(theme) => ({
-                  mt: 0.75,
-                  color: alpha(theme.palette.text.primary, 0.72),
-                })}
-              >
-                {'All filters are optional and combine with AND logic.'}
-              </Typography>
-            </Box>
-            <IconButton
-              onClick={closeModal}
-              aria-label={'Close advanced search'}
+        closeLabel={'Close advanced search'}
+        title={
+          <Box>
+            <Typography variant={'h6'} component={'h2'}>
+              Advanced Search
+            </Typography>
+            <Typography
+              variant={'body2'}
               sx={(theme) => ({
-                color: alpha(theme.palette.text.primary, 0.56),
-                '&:hover': {
-                  backgroundColor: theme.palette.background.default,
-                  color: theme.palette.text.primary,
-                },
+                mt: 0.75,
+                color: alpha(theme.palette.text.primary, 0.72),
               })}
             >
-              <IconX size={20} />
-            </IconButton>
-          </Stack>
-        </DialogTitle>
-
-        <DialogContent sx={{ display: 'grid', gap: 3, pt: 1.5 }}>
+              {'All filters are optional and combine with AND logic.'}
+            </Typography>
+          </Box>
+        }
+        contentSx={{ display: 'grid', gap: 3, pt: 1.5 }}
+        actionsSx={{
+          pt: 0,
+          flexDirection: { xs: 'column-reverse', sm: 'row' },
+          justifyContent: { sm: 'flex-end' },
+          gap: 1.5,
+          '& > :not(style) ~ :not(style)': {
+            ml: 0,
+          },
+        }}
+        actions={
+          <>
+            <Button onClick={resetFilters} variant={'ghost'}>
+              {'Reset'}
+            </Button>
+            <Button onClick={closeModal} variant={'secondary'}>
+              {'Cancel'}
+            </Button>
+            <Button onClick={applyFilters} variant={'primary'}>
+              {'Apply Filters'}
+            </Button>
+          </>
+        }
+      >
           <Box
             sx={{
               display: 'grid',
@@ -523,32 +507,7 @@ export function AdvancedSearchModal({
               slotProps={{ inputLabel: { shrink: true } }}
             />
           </Box>
-        </DialogContent>
-
-        <DialogActions
-          sx={{
-            px: 3,
-            pb: 3,
-            pt: 0,
-            flexDirection: { xs: 'column-reverse', sm: 'row' },
-            justifyContent: { sm: 'flex-end' },
-            gap: 1.5,
-            '& > :not(style) ~ :not(style)': {
-              ml: 0,
-            },
-          }}
-        >
-          <Button onClick={resetFilters} variant={'ghost'}>
-            {'Reset'}
-          </Button>
-          <Button onClick={closeModal} variant={'secondary'}>
-            {'Cancel'}
-          </Button>
-          <Button onClick={applyFilters} variant={'primary'}>
-            {'Apply Filters'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      </Modal>
     </>
   )
 }

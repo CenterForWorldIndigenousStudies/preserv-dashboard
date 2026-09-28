@@ -2,12 +2,13 @@
 
 import Link from 'next/link'
 import { useState, type ReactElement } from 'react'
-import { Badge, Box, Button as MuiButton, Dialog, DialogActions, DialogContent, DialogTitle, Stack, Typography } from '@mui/material'
+import { Badge, Box, Button as MuiButton, Stack, Typography } from '@mui/material'
 
 import { Button } from '@atoms/Button'
 import { IconBatchProcessing } from '@atoms/icons/IconBatchProcessing'
 import { PROCESS_DOCUMENTS_PATH } from '@constants/paths'
 import { getBatchDraftStageLabel } from '@lib/batchDraftPipeline'
+import { Modal } from '@organisms/Modal'
 import type { BatchDraftSummary } from 'types/batchDrafts'
 
 interface BatchCartProps {
@@ -39,9 +40,18 @@ export function BatchCart({ drafts, onRefresh, onManageDraft }: BatchCartProps):
           }}
         />
       </Button>
-      <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth={'sm'}>
-        <DialogTitle>{'Batch drafts'}</DialogTitle>
-        <DialogContent dividers>
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title={'Batch drafts'}
+        contentDividers
+        actions={
+          <>
+            {onRefresh ? <MuiButton onClick={onRefresh}>{'Refresh'}</MuiButton> : null}
+            <MuiButton onClick={() => setOpen(false)}>{'Close'}</MuiButton>
+          </>
+        }
+      >
           {drafts.length === 0 ? (
             <Typography color={'text.secondary'}>{'No batch drafts yet.'}</Typography>
           ) : (
@@ -76,12 +86,7 @@ export function BatchCart({ drafts, onRefresh, onManageDraft }: BatchCartProps):
               ))}
             </Stack>
           )}
-        </DialogContent>
-        <DialogActions>
-          {onRefresh ? <MuiButton onClick={onRefresh}>{'Refresh'}</MuiButton> : null}
-          <MuiButton onClick={() => setOpen(false)}>{'Close'}</MuiButton>
-        </DialogActions>
-      </Dialog>
+      </Modal>
     </>
   )
 }

@@ -1,19 +1,24 @@
-import type { ReactElement } from 'react'
+import type { ReactElement, ReactNode } from 'react'
 
 import { Paper, Stack, Typography } from '@mui/material'
+
+import { PageInfoModal } from '@organisms/PageInfoModal'
 
 interface PageHeaderProps {
   eyebrow: string
   title: string
   description: string
+  infoContent?: ReactNode
+  infoTitle?: string
 }
 
-export function PageHeader({ eyebrow, title, description }: PageHeaderProps): ReactElement {
+export function PageHeader({ eyebrow, title, description, infoContent, infoTitle }: PageHeaderProps): ReactElement {
   return (
     <Paper
       component={'header'}
       elevation={0}
       sx={{
+        position: 'relative',
         backgroundColor: 'var(--cwis-surface-inverse)',
         borderRadius: 2,
         boxShadow: 3,
@@ -22,7 +27,12 @@ export function PageHeader({ eyebrow, title, description }: PageHeaderProps): Re
         py: { xs: 4, md: 5 },
       }}
     >
-      <Stack spacing={2}>
+      {infoContent && infoTitle ? (
+        <Stack sx={{ position: 'absolute', right: { xs: 16, md: 24 }, top: { xs: 16, md: 24 } }}>
+          <PageInfoModal title={infoTitle}>{infoContent}</PageInfoModal>
+        </Stack>
+      ) : null}
+      <Stack spacing={2} sx={{ pr: { xs: 10, md: 12 } }}>
         <Typography component={'p'} variant={'overline'} sx={{ color: 'info.main', letterSpacing: '0.3em' }}>
           {eyebrow}
         </Typography>

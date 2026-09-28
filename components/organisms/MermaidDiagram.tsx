@@ -3,15 +3,11 @@
 import { useEffect, useId, useState, useCallback, type ReactElement } from 'react'
 import mermaid from 'mermaid'
 import Box from '@mui/material/Box'
-import Dialog from '@mui/material/Dialog'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
-import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { alpha, type Theme } from '@mui/material/styles'
 import { Button } from '@atoms/Button'
-import { IconX } from '@atoms/icons/IconX'
+import { Modal } from '@organisms/Modal'
 
 let mermaidInitialized = false
 
@@ -102,27 +98,16 @@ export function MermaidDiagram({ source, className = '' }: MermaidDiagramProps):
       </Box>
 
       {/* Full-screen modal */}
-      <Dialog
+      <Modal
         open={isModalOpen}
         onClose={closeModal}
-        fullScreen
-        aria-labelledby={'mermaid-diagram-dialog-title'}
-        sx={(theme: Theme) => ({
-          '& .MuiDialog-paper': {
-            backgroundColor: theme.palette.background.paper,
-          },
-        })}
+        maxWidth={false}
+        dialogProps={{ fullScreen: true }}
+        closeLabel={'Close diagram preview'}
+        title={'Diagram preview'}
+        contentDividers
+        contentSx={{ overflow: 'auto', p: 2 }}
       >
-        <DialogTitle
-          id={'mermaid-diagram-dialog-title'}
-          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pr: 1.5 }}
-        >
-          {'Diagram preview'}
-          <IconButton onClick={closeModal} aria-label={'Close diagram preview'}>
-            <IconX size={20} />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent dividers sx={{ overflow: 'auto', p: 2 }}>
           {svg ? (
             <Box
               component={'div'}
@@ -143,8 +128,7 @@ export function MermaidDiagram({ source, className = '' }: MermaidDiagramProps):
               </Typography>
             </Stack>
           )}
-        </DialogContent>
-      </Dialog>
+      </Modal>
     </>
   )
 }

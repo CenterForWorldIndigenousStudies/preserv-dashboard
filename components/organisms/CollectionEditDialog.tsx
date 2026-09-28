@@ -5,10 +5,6 @@ import { useRouter } from 'next/navigation'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Chip from '@mui/material/Chip'
-import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
@@ -19,6 +15,7 @@ import { COLLECTION_LIBRARY_ID_LABEL } from '@constants/collections'
 import type { TagSuggestion } from '@lib/hooks/useTagSearch'
 import { normalizeTagName } from '@lib/tagUtils'
 import { TagSearchCombobox } from '@molecules/TagSearchCombobox'
+import { Modal } from '@organisms/Modal'
 import type { CollectionWithMeta } from 'types/collections'
 
 interface SelectedQualifier {
@@ -104,15 +101,24 @@ export function CollectionEditDialog({ collection, open, onClose }: CollectionEd
   }
 
   return (
-    <Dialog
+    <Modal
       open={open}
-      onClose={isSubmitting ? undefined : onClose}
-      fullWidth
+      onClose={onClose}
+      disableClose={isSubmitting}
       maxWidth={'sm'}
-      sx={{ '& .MuiDialog-paper': { borderRadius: '1rem' } }}
+      title={'Edit Collection'}
+      contentSx={{ display: 'grid', gap: 2.5, pt: 1.5 }}
+      actions={
+        <>
+          <Button variant={'ghost'} onClick={onClose} disabled={isSubmitting}>
+            {'Cancel'}
+          </Button>
+          <Button variant={'primary'} onClick={() => void submit()} loading={isSubmitting}>
+            {'Save collection'}
+          </Button>
+        </>
+      }
     >
-      <DialogTitle>{'Edit Collection'}</DialogTitle>
-      <DialogContent sx={{ display: 'grid', gap: 2.5, pt: 1.5 }}>
         {error ? <Alert severity={'error'}>{error}</Alert> : null}
         <Stack spacing={1}>
           <Typography variant={'body2'} sx={{ color: 'text.secondary', fontWeight: 600 }}>
@@ -168,15 +174,6 @@ export function CollectionEditDialog({ collection, open, onClose }: CollectionEd
           multiline
           minRows={3}
         />
-      </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button variant={'ghost'} onClick={onClose} disabled={isSubmitting}>
-          {'Cancel'}
-        </Button>
-        <Button variant={'primary'} onClick={() => void submit()} loading={isSubmitting}>
-          {'Save collection'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+    </Modal>
   )
 }

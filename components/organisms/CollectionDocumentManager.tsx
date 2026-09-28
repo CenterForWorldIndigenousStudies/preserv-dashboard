@@ -3,14 +3,11 @@
 import { type ReactElement } from 'react'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
-import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
 
 import { Button } from '@atoms/Button'
 import { SelectionTable, type SelectionSortField, type SelectionSortState } from '@molecules/SelectionTable'
 import { ConfirmationDialog } from '@molecules/ConfirmationDialog'
+import { Modal } from '@organisms/Modal'
 import {
   useCollectionManager,
   type UseCollectionManagerOptions,
@@ -116,18 +113,32 @@ export function CollectionDocumentManager({
 
   return (
     <>
-      <Dialog
+      <Modal
         open={open}
         onClose={handleClose}
-        fullWidth
         maxWidth={'xl'}
-        sx={{ '& .MuiDialog-paper': { borderRadius: '1rem', height: '90vh', maxHeight: '90vh' } }}
+        paperSx={{ height: '90vh', maxHeight: '90vh' }}
+        title={buildDialogTitle(activeAction, collectionName)}
+        contentDividers
+        contentSx={{ px: 3, py: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0, flex: 1 }}
+        actions={
+          <>
+            <Button variant={'ghost'} onClick={handleClose} disabled={isSubmitting}>
+              {'Cancel'}
+            </Button>
+            <Button
+              variant={'secondary'}
+              disabled={isLoading || isSubmitting || selectedCount === 0}
+              onClick={() => {
+                setPendingAction(activeAction)
+                setShowConfirm(true)
+              }}
+            >
+              {buildActionLabel(activeAction, selectedCount)}
+            </Button>
+          </>
+        }
       >
-        <DialogTitle>{buildDialogTitle(activeAction, collectionName)}</DialogTitle>
-        <DialogContent
-          dividers
-          sx={{ px: 3, py: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0, flex: 1 }}
-        >
           {error ? <Alert severity={'error'}>{error}</Alert> : null}
           {isLoading ? (
             <Box aria-live={'polite'} sx={{ display: 'flex', justifyContent: 'center' }}>
@@ -176,23 +187,7 @@ export function CollectionDocumentManager({
               emptyMessage={'No documents associated with this collection.'}
             />
           )}
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3, pt: 2 }}>
-          <Button variant={'ghost'} onClick={handleClose} disabled={isSubmitting}>
-            {'Cancel'}
-          </Button>
-          <Button
-            variant={'secondary'}
-            disabled={isLoading || isSubmitting || selectedCount === 0}
-            onClick={() => {
-              setPendingAction(activeAction)
-              setShowConfirm(true)
-            }}
-          >
-            {buildActionLabel(activeAction, selectedCount)}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      </Modal>
       <ConfirmationDialog
         open={showConfirm}
         title={pendingAction ? buildDialogTitle(pendingAction, collectionName) : 'Confirm action'}

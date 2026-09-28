@@ -4,15 +4,12 @@ import { useEffect, useState, type ReactElement } from 'react'
 import { useRouter } from 'next/navigation'
 import Alert from '@mui/material/Alert'
 import Checkbox from '@mui/material/Checkbox'
-import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
 import FormControlLabel from '@mui/material/FormControlLabel'
 
 import { renameCollectionAction } from '@actions/collections'
 import { Button } from '@atoms/Button'
 import { TagSearchCombobox } from '@molecules/TagSearchCombobox'
+import { Modal } from '@organisms/Modal'
 import type { TagSuggestion } from '@lib/hooks/useTagSearch'
 import type { CollectionWithMeta } from 'types/collections'
 
@@ -65,9 +62,23 @@ export function CollectionRenameDialog({ collection, open, onClose }: Collection
   }
 
   return (
-    <Dialog open={open} onClose={isSubmitting ? undefined : onClose} fullWidth maxWidth={'sm'}>
-      <DialogTitle>{'Rename Collection'}</DialogTitle>
-      <DialogContent sx={{ display: 'grid', gap: 2.5, pt: 1.5 }}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      disableClose={isSubmitting}
+      title={'Rename Collection'}
+      contentSx={{ display: 'grid', gap: 2.5, pt: 1.5 }}
+      actions={
+        <>
+          <Button variant={'ghost'} onClick={onClose} disabled={isSubmitting}>
+            {'Cancel'}
+          </Button>
+          <Button variant={'primary'} onClick={() => void submit()} loading={isSubmitting}>
+            {'Rename collection'}
+          </Button>
+        </>
+      }
+    >
         {error ? <Alert severity={'error'}>{error}</Alert> : null}
         <TagSearchCombobox
           open={open}
@@ -94,11 +105,6 @@ export function CollectionRenameDialog({ collection, open, onClose }: Collection
           }
           label={'Keep currently associated documents'}
         />
-      </DialogContent>
-      <DialogActions>
-        <Button variant={'ghost'} onClick={onClose} disabled={isSubmitting}>{'Cancel'}</Button>
-        <Button variant={'primary'} onClick={() => void submit()} loading={isSubmitting}>{'Rename collection'}</Button>
-      </DialogActions>
-    </Dialog>
+    </Modal>
   )
 }

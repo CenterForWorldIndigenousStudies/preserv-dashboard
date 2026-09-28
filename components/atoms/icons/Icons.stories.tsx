@@ -1,6 +1,7 @@
 import type { StoryObj } from '@storybook/nextjs-vite'
 import { IconBatchReprocessing } from '@atoms/icons/IconBatchReprocessing'
 import { IconGoogle } from '@atoms/icons/IconGoogle'
+import { IconInfo } from '@atoms/icons/IconInfo'
 import { IconPlus } from '@atoms/icons/IconPlus'
 import { IconSpinner } from '@atoms/icons/IconSpinner'
 import { IconX } from '@atoms/icons/IconX'
@@ -74,6 +75,15 @@ export const Plus: Story = {
     size: 20,
   },
   render: (args) => <IconPlus {...args} />,
+}
+
+export const Info: Story = {
+  name: 'Info Icon',
+  args: {
+    color: 'currentColor',
+    size: 24,
+  },
+  render: (args) => <IconInfo {...args} />,
 }
 
 export const Spinner: Story = {

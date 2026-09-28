@@ -1,8 +1,18 @@
 import { renderToStaticMarkup } from 'react-dom/server'
-import { describe, expect, it } from 'vitest'
+import type { ReactNode } from 'react'
+import { describe, expect, it, vi } from 'vitest'
 
 import ReportsPage from '@root/app/reports/page'
 import { FAILED_PATH } from '@constants/paths'
+
+vi.mock('@organisms/PageInfoModal', () => ({
+  PageInfoModal: ({ children, title }: { children: ReactNode; title: string }) => (
+    <section>
+      <h2>{title}</h2>
+      {children}
+    </section>
+  ),
+}))
 
 describe('ReportsPage', () => {
   it('keeps failures as a reporting concept without exposing a standalone failures workspace link', () => {

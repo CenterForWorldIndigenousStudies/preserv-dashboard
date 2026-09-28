@@ -5,16 +5,13 @@ import { useRouter } from 'next/navigation'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Chip from '@mui/material/Chip'
-import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { createCollectionAction } from '@actions/collections'
 import { Button } from '@atoms/Button'
 import { COLLECTION_LIBRARY_ID_LABEL } from '@constants/collections'
 import { TagSearchCombobox } from '@molecules/TagSearchCombobox'
+import { Modal } from '@organisms/Modal'
 import type { TagSuggestion } from '@lib/hooks/useTagSearch'
 import { normalizeTagName } from '@lib/tagUtils'
 import type { CollectionWithMeta } from 'types/collections'
@@ -115,15 +112,24 @@ export function AddCollectionDialog({ open, collections, onClose }: AddCollectio
   }
 
   return (
-    <Dialog
+    <Modal
       open={open}
-      onClose={isSubmitting ? undefined : onClose}
-      fullWidth
+      onClose={onClose}
+      disableClose={isSubmitting}
       maxWidth={'sm'}
-      sx={{ '& .MuiDialog-paper': { borderRadius: '1rem' } }}
+      title={'Add Collection'}
+      contentSx={{ display: 'grid', gap: 2.5, pt: 1.5 }}
+      actions={
+        <>
+          <Button variant={'ghost'} onClick={onClose} disabled={isSubmitting}>
+            {'Cancel'}
+          </Button>
+          <Button variant={'primary'} onClick={() => void handleSubmit()} loading={isSubmitting}>
+            {'Add Collection'}
+          </Button>
+        </>
+      }
     >
-      <DialogTitle>{'Add Collection'}</DialogTitle>
-      <DialogContent sx={{ display: 'grid', gap: 2.5, pt: 1.5 }}>
         {error ? <Alert severity={'error'}>{error}</Alert> : null}
         <TagSearchCombobox
           open={open}
@@ -218,15 +224,6 @@ export function AddCollectionDialog({ open, collections, onClose }: AddCollectio
           disabled={isSubmitting}
           fullWidth
         />
-      </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button variant={'ghost'} onClick={onClose} disabled={isSubmitting}>
-          {'Cancel'}
-        </Button>
-        <Button variant={'primary'} onClick={() => void handleSubmit()} loading={isSubmitting}>
-          {'Add Collection'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+    </Modal>
   )
 }

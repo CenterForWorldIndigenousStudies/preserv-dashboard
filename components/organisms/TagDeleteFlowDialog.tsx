@@ -2,13 +2,10 @@
 
 import { useEffect, useMemo, useState, type ReactElement } from 'react'
 import Checkbox from '@mui/material/Checkbox'
-import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Typography from '@mui/material/Typography'
 import { Button } from '@atoms/Button'
+import { Modal } from '@organisms/Modal'
 
 interface TagDeleteFlowDialogProps {
   open: boolean
@@ -102,15 +99,30 @@ export function TagDeleteFlowDialog({
   }
 
   return (
-    <Dialog
+    <Modal
       open={open}
       onClose={handleClose}
-      fullWidth
       maxWidth={'sm'}
-      sx={{ '& .MuiDialog-paper': { borderRadius: '1rem' } }}
+      disableClose={isSubmitting}
+      title={currentStep === 1 ? title : 'Are you sure?'}
+      contentSx={{ display: 'grid', gap: 2, pt: 1.5 }}
+      actions={
+        <>
+          <Button variant={'ghost'} onClick={handleClose} disabled={isSubmitting}>
+            {'Cancel'}
+          </Button>
+          {currentStep === 1 ? (
+            <Button variant={'secondary'} onClick={() => void handlePrimaryConfirm()} loading={isSubmitting}>
+              {'Yes'}
+            </Button>
+          ) : (
+            <Button variant={'secondary'} onClick={() => void handleSecondaryConfirm()} loading={isSubmitting}>
+              {'Yes, delete'}
+            </Button>
+          )}
+        </>
+      }
     >
-      <DialogTitle>{currentStep === 1 ? title : 'Are you sure?'}</DialogTitle>
-      <DialogContent sx={{ display: 'grid', gap: 2, pt: 1.5 }}>
         {error ? <Typography sx={{ color: 'error.main', fontSize: '0.9rem' }}>{error}</Typography> : null}
         {currentStep === 1 ? (
           <>
@@ -132,21 +144,6 @@ export function TagDeleteFlowDialog({
         ) : (
           <Typography sx={{ color: 'text.secondary', fontSize: '0.95rem' }}>{secondConfirmMessage}</Typography>
         )}
-      </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button variant={'ghost'} onClick={handleClose} disabled={isSubmitting}>
-          {'Cancel'}
-        </Button>
-        {currentStep === 1 ? (
-          <Button variant={'secondary'} onClick={() => void handlePrimaryConfirm()} loading={isSubmitting}>
-            {'Yes'}
-          </Button>
-        ) : (
-          <Button variant={'secondary'} onClick={() => void handleSecondaryConfirm()} loading={isSubmitting}>
-            {'Yes, delete'}
-          </Button>
-        )}
-      </DialogActions>
-    </Dialog>
+    </Modal>
   )
 }

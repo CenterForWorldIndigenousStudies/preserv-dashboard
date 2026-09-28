@@ -2,14 +2,11 @@
 
 import type { ReactElement } from 'react'
 import Alert from '@mui/material/Alert'
-import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
 import TextField from '@mui/material/TextField'
 
 import { Button } from '@atoms/Button'
 import type { DocumentEditWarning } from '@lib/documentEditAccess'
+import { Modal } from '@organisms/Modal'
 
 interface DocumentEditAccessDialogProps {
   open: boolean
@@ -40,9 +37,22 @@ export function DocumentEditAccessDialog({
   onConfirm,
 }: DocumentEditAccessDialogProps): ReactElement {
   return (
-    <Dialog open={open} onClose={isSubmitting ? undefined : onClose} fullWidth maxWidth={'sm'}>
-      <DialogTitle>{'Confirm document editing'}</DialogTitle>
-      <DialogContent>
+    <Modal
+      open={open}
+      onClose={onClose}
+      disableClose={isSubmitting}
+      title={'Confirm document editing'}
+      actions={
+        <>
+          <Button variant={'ghost'} disabled={isSubmitting} onClick={onClose}>
+            {'No'}
+          </Button>
+          <Button variant={'primary'} loading={isSubmitting} disabled={!reason.trim()} onClick={onConfirm}>
+            {'Yes'}
+          </Button>
+        </>
+      }
+    >
         <Alert severity={'warning'} sx={{ mb: 2 }}>
           {WARNING_COPY[warning]}
         </Alert>
@@ -61,15 +71,6 @@ export function DocumentEditAccessDialog({
           disabled={isSubmitting}
           helperText={'Explain why this document needs to be edited.'}
         />
-      </DialogContent>
-      <DialogActions>
-        <Button variant={'ghost'} disabled={isSubmitting} onClick={onClose}>
-          {'No'}
-        </Button>
-        <Button variant={'primary'} loading={isSubmitting} disabled={!reason.trim()} onClick={onConfirm}>
-          {'Yes'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+    </Modal>
   )
 }

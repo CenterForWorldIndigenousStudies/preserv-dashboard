@@ -4,10 +4,6 @@ import { type ReactElement } from 'react'
 import {
   Box,
   Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Stack,
   Typography,
   useMediaQuery,
@@ -17,6 +13,7 @@ import {
 import type { PipelineSelectionDraft } from '@lib/pipelineConfig'
 import { PipelineSelectionSummary } from '@molecules/PipelineSelectionSummary'
 import { PipelineStepSelector } from '@molecules/PipelineStepSelector'
+import { Modal } from '@organisms/Modal'
 
 interface PipelineStepsModalProps {
   open: boolean
@@ -30,30 +27,30 @@ export function PipelineStepsModal({ open, draft, onClose, onDraftChange }: Pipe
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'))
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth={'md'} fullScreen={fullScreen} scroll={'paper'}>
-      <DialogTitle component={'div'}>
-        <Stack spacing={0.5}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      maxWidth={'md'}
+      dialogProps={{ fullScreen, scroll: 'paper' }}
+      title={
+        <>
           <Typography component={'h2'} variant={'h5'}>
             {'Pipeline Steps'}
           </Typography>
           <Typography variant={'body2'} sx={{ color: 'text.secondary' }}>
             {'Configure the steps for this processing run. Changes update the summary right away.'}
           </Typography>
-        </Stack>
-      </DialogTitle>
-      <DialogContent dividers>
+        </>
+      }
+      contentDividers
+      actions={<Button onClick={onClose} variant={'contained'}>{'Done'}</Button>}
+    >
         <Stack spacing={3}>
           <PipelineStepSelector draft={draft} mode={draft.mode} onDraftChange={onDraftChange} />
           <Box>
             <PipelineSelectionSummary draft={draft} />
           </Box>
         </Stack>
-      </DialogContent>
-      <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={onClose} variant={'contained'}>
-          {'Done'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+    </Modal>
   )
 }

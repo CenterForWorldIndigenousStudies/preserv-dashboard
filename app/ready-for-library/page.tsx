@@ -1,5 +1,5 @@
 import { Suspense, type ReactElement } from 'react'
-import { Stack, Typography } from '@mui/material'
+import { Stack } from '@mui/material'
 
 import { NeedsReviewReasons } from '@molecules/NeedsReviewReasons'
 import { PageHeader } from '@organisms/PageHeader'
@@ -11,7 +11,6 @@ import { getReadyForLibraryDocuments, parseReadyForLibraryQueryParams } from '@l
 import type { DocumentsQueryParams } from '@lib/queries/documentQueries'
 import type { AdvancedSearchFilters } from '@lib/search'
 import { PAGE_LABELS } from '@constants/pageLabels'
-import { READY_FOR_LIBRARY_READINESS_EXPLANATION_ID } from '@constants/pageContent'
 import type { ReadyForLibraryItem } from 'types/documents'
 
 export const dynamic = 'force-dynamic'
@@ -29,16 +28,9 @@ const READINESS_EXPLANATION_GROUPS = {
   ],
 }
 
-function ReadyForLibraryReadinessExplanation() {
+function ReadyForLibraryReadinessExplanation(): ReactElement {
   return (
-    <Stack component={'section'} spacing={1.5} aria-labelledby={READY_FOR_LIBRARY_READINESS_EXPLANATION_ID}>
-      <Typography
-        id={READY_FOR_LIBRARY_READINESS_EXPLANATION_ID}
-        variant={'caption'}
-        sx={{ color: 'text.secondary', fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase' }}
-      >
-        {'What this workspace tells you'}
-      </Typography>
+    <Stack spacing={1.5}>
       <NeedsReviewReasons value={READINESS_EXPLANATION_GROUPS} />
     </Stack>
   )
@@ -147,9 +139,9 @@ export default function ReadyForLibraryPage({ searchParams }: ReadyForLibraryPag
         description={
           'Use this workspace to inspect approved documents with an access level and queue the downstream library handoff when the current review is complete. Metadata completeness is shown to support review, but runtime checks still apply.'
         }
+        infoTitle={'What this workspace tells you'}
+        infoContent={<ReadyForLibraryReadinessExplanation />}
       />
-
-      <ReadyForLibraryReadinessExplanation />
 
       <ReadyForLibraryHandoff />
 

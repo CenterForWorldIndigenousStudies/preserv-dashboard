@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server'
+import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { ACCESS_LEVEL_OPTIONS } from '@constants/accessLevels'
@@ -27,6 +28,15 @@ vi.mock('@organisms/ReadyForLibraryTable', () => ({
 
 vi.mock('@organisms/ReadyForLibraryHandoff', () => ({
   ReadyForLibraryHandoff: () => <div>Ready for library handoff stub</div>,
+}))
+
+vi.mock('@organisms/PageInfoModal', () => ({
+  PageInfoModal: ({ children, title }: { children: ReactNode; title: string }) => (
+    <section>
+      <h2>{title}</h2>
+      {children}
+    </section>
+  ),
 }))
 
 import ReadyForLibraryPage from '@root/app/ready-for-library/page'

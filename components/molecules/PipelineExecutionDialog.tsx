@@ -4,10 +4,6 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   Alert,
   Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   FormControl,
   InputLabel,
   MenuItem,
@@ -44,6 +40,7 @@ import {
 } from '@lib/pipelineConfig'
 import { PipelineProfileSelector } from '@molecules/PipelineProfileSelector'
 import { ReprocessingStageSelector } from '@molecules/ReprocessingStageSelector'
+import { Modal } from '@organisms/Modal'
 import { PipelineStepsModal } from '@organisms/PipelineStepsModal'
 import type { PipelineExecutionMode, PipelineExecutionRequest } from 'types/pipelineExecution'
 import type { CallbackStageKey, ProcessBatchStatus } from 'types/pipelineContracts'
@@ -186,9 +183,26 @@ export function PipelineExecutionDialog({
   const stageFieldLabel = mode === GENERATED_PIPELINE_EXECUTION_MODES.RERUN ? 'Start from stage' : 'Restart stage'
 
   return (
-    <Dialog open={open} onClose={submitting ? undefined : onClose} fullWidth maxWidth={'sm'}>
-      <DialogTitle>{title}</DialogTitle>
-      <DialogContent>
+    <Modal
+      open={open}
+      onClose={onClose}
+      disableClose={submitting}
+      title={title}
+      actions={
+        <>
+          <Button onClick={onClose} disabled={submitting}>
+            {'Cancel'}
+          </Button>
+          <Button
+            onClick={() => void submit()}
+            variant={'contained'}
+            disabled={submitting || !reason.trim() || stages.length === 0}
+          >
+            {submitting ? 'Queuing…' : 'Confirm'}
+          </Button>
+        </>
+      }
+    >
         <Stack spacing={2.5} sx={{ pt: 1 }}>
           <Typography variant={'body2'} color={'text.secondary'}>
             {description}
@@ -267,19 +281,6 @@ export function PipelineExecutionDialog({
           />
           {error ? <Alert severity={'error'}>{error}</Alert> : null}
         </Stack>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={submitting}>
-          {'Cancel'}
-        </Button>
-        <Button
-          onClick={() => void submit()}
-          variant={'contained'}
-          disabled={submitting || !reason.trim() || stages.length === 0}
-        >
-          {submitting ? 'Queuing…' : 'Confirm'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+    </Modal>
   )
 }

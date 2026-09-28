@@ -3,17 +3,12 @@
 import { useCallback, useEffect, useState, type ReactElement } from 'react'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
-import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
-import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { Button } from '@atoms/Button'
-import { IconX } from '@atoms/icons/IconX'
 import { getDocumentCollectionsPath } from '@constants/paths'
 import { TagPill } from '@atoms/TagPill'
+import { Modal } from '@organisms/Modal'
 
 interface AssignCollectionButtonProps {
   /** The document ID to update */
@@ -157,26 +152,24 @@ export function AssignCollectionButton({ documentId, currentTags }: AssignCollec
         )}
       </Stack>
 
-      {/* Modal dialog */}
-      <Dialog
+      <Modal
         open={isOpen}
-        onClose={isLoading ? undefined : closeModal}
-        fullWidth
+        onClose={closeModal}
+        disableClose={isLoading}
         maxWidth={'sm'}
-        aria-labelledby={'assign-collection-dialog-title'}
-        sx={{ '& .MuiDialog-paper': { borderRadius: 2 } }}
+        title={'Assign Collection'}
+        contentSx={{ display: 'grid', gap: 2.5, pt: 1.5 }}
+        actions={
+          <>
+            <Button onClick={closeModal} variant={'ghost'} disabled={isLoading}>
+              {'Cancel'}
+            </Button>
+            <Button onClick={() => void handleSave()} disabled={isLoading} variant={'primary'} loading={isLoading}>
+              {'Save Collection Tags'}
+            </Button>
+          </>
+        }
       >
-        <DialogTitle
-          id={'assign-collection-dialog-title'}
-          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pr: 1.5 }}
-        >
-          {'Assign Collection'}
-          <IconButton onClick={closeModal} disabled={isLoading} aria-label={'Close'}>
-            <IconX size={20} />
-          </IconButton>
-        </DialogTitle>
-
-        <DialogContent sx={{ display: 'grid', gap: 2.5, pt: 1.5 }}>
           <Typography variant={'body2'} color={'text.secondary'}>
             {`Select one or more collections to assign to this document. This is the Path B fallback for documents that arrived without a{' '}`}
             <Box component={'code'} sx={{ fontSize: '0.75rem' }}>
@@ -232,22 +225,7 @@ export function AssignCollectionButton({ documentId, currentTags }: AssignCollec
               )}
             </>
           )}
-        </DialogContent>
-
-        <DialogActions sx={{ px: 3, pt: 2, pb: 3 }}>
-          <Button onClick={closeModal} variant={'ghost'} disabled={isLoading}>
-            {'Cancel'}
-          </Button>
-          <Button
-            onClick={() => void handleSave()}
-            disabled={isLoading}
-            variant={'primary'}
-            loading={isLoading}
-          >
-            {'Save Collection Tags'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      </Modal>
     </>
   )
 }

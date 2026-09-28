@@ -1,12 +1,13 @@
 'use client'
 
 import type { ReactElement } from 'react'
-import { Dialog, DialogActions, DialogContent, DialogTitle, Divider, Stack, Tab, Tabs, Typography } from '@mui/material'
+import { Divider, Stack, Tab, Tabs, Typography } from '@mui/material'
 
 import { Button } from '@atoms/Button'
 import { useBatchSearch } from '@lib/hooks/useBatchSearch'
 import { ReprocessingDraftForm } from '@molecules/ReprocessingDraftForm'
 import { ReprocessingDraftPicker } from '@molecules/ReprocessingDraftPicker'
+import { Modal } from '@organisms/Modal'
 import type { CallbackStageKey } from 'types/pipelineContracts'
 import type { PipelineConfig } from '@lib/pipelineConfig'
 import type { ReprocessingDraftSummary } from 'types/reprocessingDrafts'
@@ -76,9 +77,27 @@ export function ReviewQueueReprocessDialog({
   const batchNameExists = Boolean(name.trim()) && batchNameSearch.exactMatch !== null
 
   return (
-    <Dialog open={open} onClose={pending ? undefined : onClose} fullWidth maxWidth={'sm'} disablePortal>
-      <DialogTitle>{'Add document to a reprocessing batch'}</DialogTitle>
-      <DialogContent dividers>
+    <Modal
+      open={open}
+      onClose={onClose}
+      disableClose={pending}
+      maxWidth={'sm'}
+      dialogProps={{ disablePortal: true }}
+      title={'Add document to a reprocessing batch'}
+      contentDividers
+      actions={
+        activeMode === 'existing' ? (
+          <>
+            <Button variant={'secondary'} onClick={onClose} disabled={pending}>
+              {'Cancel'}
+            </Button>
+            <Button onClick={onSubmit} disabled={!selectedDraftId} loading={pending}>
+              {'Add document'}
+            </Button>
+          </>
+        ) : null
+      }
+    >
         <Stack spacing={2.5} sx={{ pt: 1 }}>
           {!hasExistingDrafts ? (
             <Typography variant={'body2'} color={'text.secondary'}>
@@ -130,17 +149,6 @@ export function ReviewQueueReprocessDialog({
             <ReprocessingDraftPicker drafts={drafts} value={selectedDraftId} onChange={onSelectedDraftChange} />
           )}
         </Stack>
-      </DialogContent>
-      {activeMode === 'existing' ? (
-        <DialogActions>
-          <Button variant={'secondary'} onClick={onClose} disabled={pending}>
-            {'Cancel'}
-          </Button>
-          <Button onClick={onSubmit} disabled={!selectedDraftId} loading={pending}>
-            {'Add document'}
-          </Button>
-        </DialogActions>
-      ) : null}
-    </Dialog>
+    </Modal>
   )
 }

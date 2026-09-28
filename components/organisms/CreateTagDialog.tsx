@@ -3,15 +3,12 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react'
 import { List, ListItem, Stack, Typography } from '@mui/material'
 import Alert from '@mui/material/Alert'
-import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
 import TextField from '@mui/material/TextField'
 import { alpha } from '@mui/material/styles'
 import { Button } from '@atoms/Button'
 import { useTagSearch } from '@lib/hooks/useTagSearch'
 import { normalizeTagName } from '@lib/tagUtils'
+import { Modal } from '@organisms/Modal'
 
 interface CreateTagDialogProps {
   open: boolean
@@ -72,15 +69,24 @@ export function CreateTagDialog({
   }
 
   return (
-    <Dialog
+    <Modal
       open={open}
-      onClose={isSubmitting ? undefined : onClose}
-      fullWidth
+      onClose={onClose}
+      disableClose={isSubmitting}
       maxWidth={'sm'}
-      sx={{ '& .MuiDialog-paper': { borderRadius: '1rem' } }}
+      title={'Create New Tag'}
+      contentSx={{ display: 'grid', gap: 2.5, pt: 1.5 }}
+      actions={
+        <>
+          <Button variant={'ghost'} onClick={onClose} disabled={isSubmitting}>
+            {'Cancel'}
+          </Button>
+          <Button variant={'primary'} onClick={() => void handleCreate()} loading={isSubmitting}>
+            {'Create New Tag'}
+          </Button>
+        </>
+      }
     >
-      <DialogTitle>Create New Tag</DialogTitle>
-      <DialogContent sx={{ display: 'grid', gap: 2.5, pt: 1.5 }}>
         {error ? <Alert severity={'error'}>{error}</Alert> : null}
         {normalizedName && similarTags.length > 0 ? (
           <Alert severity={'warning'}>
@@ -147,15 +153,6 @@ export function CreateTagDialog({
             )}
           </Stack>
         ) : null}
-      </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button variant={'ghost'} onClick={onClose} disabled={isSubmitting}>
-          {'Cancel'}
-        </Button>
-        <Button variant={'primary'} onClick={() => void handleCreate()} loading={isSubmitting}>
-          {'Create New Tag'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+    </Modal>
   )
 }

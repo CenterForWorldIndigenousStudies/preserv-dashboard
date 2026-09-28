@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server'
+import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
@@ -33,6 +34,15 @@ vi.mock('@organisms/BatchesTable', () => ({
     mocks.batchesTableProps = props
     return <div>Batch table stub</div>
   },
+}))
+
+vi.mock('@organisms/PageInfoModal', () => ({
+  PageInfoModal: ({ children, title }: { children: ReactNode; title: string }) => (
+    <section>
+      <h2>{title}</h2>
+      {children}
+    </section>
+  ),
 }))
 
 import BatchesPage from '@root/app/batches/page'

@@ -3,16 +3,13 @@
 import { useEffect, useState, type ReactElement } from 'react'
 import Alert from '@mui/material/Alert'
 import Checkbox from '@mui/material/Checkbox'
-import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 
 import { Button } from '@atoms/Button'
 import type { CollectionDeletionPreview } from '@lib/queries/collectionQueries'
+import { Modal } from '@organisms/Modal'
 import type { CollectionWithMeta } from 'types/collections'
 
 interface CollectionDeleteDialogProps {
@@ -58,15 +55,24 @@ export function CollectionDeleteDialog({
   }
 
   return (
-    <Dialog
+    <Modal
       open={open}
-      onClose={isSubmitting ? undefined : onClose}
-      fullWidth
+      onClose={onClose}
+      disableClose={isSubmitting}
       maxWidth={'sm'}
-      sx={{ '& .MuiDialog-paper': { borderRadius: '1rem' } }}
+      title={'Remove collection?'}
+      contentSx={{ display: 'grid', gap: 2, pt: 1.5 }}
+      actions={
+        <>
+          <Button variant={'ghost'} onClick={onClose} disabled={isSubmitting}>
+            {'Cancel'}
+          </Button>
+          <Button variant={'secondary'} onClick={() => void submit()} loading={isSubmitting} disabled={isLoadingPreview}>
+            {'Delete collection'}
+          </Button>
+        </>
+      }
     >
-      <DialogTitle>{'Remove collection?'}</DialogTitle>
-      <DialogContent sx={{ display: 'grid', gap: 2, pt: 1.5 }}>
         {error ? <Alert severity={'error'}>{error}</Alert> : null}
         <Typography sx={{ color: 'text.secondary' }}>{`Remove "${collection.collection_name}"?`}</Typography>
         <Typography sx={{ color: 'text.secondary', fontSize: '0.9rem' }}>
@@ -98,13 +104,6 @@ export function CollectionDeleteDialog({
         {deleteTags && preview && preview.tagsToDelete.length === 0 ? (
           <Alert severity={'info'}>{'No collection tags can be deleted because they are shared.'}</Alert>
         ) : null}
-      </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button variant={'ghost'} onClick={onClose} disabled={isSubmitting}>{'Cancel'}</Button>
-        <Button variant={'secondary'} onClick={() => void submit()} loading={isSubmitting} disabled={isLoadingPreview}>
-          {'Delete collection'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+    </Modal>
   )
 }

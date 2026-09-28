@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server'
+import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const { mockGetProcessBatchStatuses } = vi.hoisted(() => ({
@@ -16,6 +17,15 @@ vi.mock('@lib/queries/batchDraftQueries', () => ({
 
 vi.mock('@organisms/ProcessDocumentsWorkspace', () => ({
   ProcessDocumentsWorkspace: () => <div>Process workspace stub</div>,
+}))
+
+vi.mock('@organisms/PageInfoModal', () => ({
+  PageInfoModal: ({ children, title }: { children: ReactNode; title: string }) => (
+    <section>
+      <h2>{title}</h2>
+      {children}
+    </section>
+  ),
 }))
 
 import ProcessDocumentsPage from '@root/app/process-documents/page'

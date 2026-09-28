@@ -50,6 +50,26 @@ const listStyles = {
   },
 } as const
 
+function ReportsInfo(): ReactElement {
+  return (
+    <Box component={'ul'} sx={{ ...listStyles, mt: 0 }}>
+      <li>{'Dashboard provides a live snapshot of review backlog, library-ready work, and current batch activity.'}</li>
+      <li>{'Batches shows batch processing details by batch from the current operational view.'}</li>
+      <li>
+        {
+          'Failures remain part of the reporting scope as an operational signal alongside queue pressure, readiness, and batch activity.'
+        }
+      </li>
+      <li>{'Review Queue defaults to documents whose validation status still needs human review.'}</li>
+      <li>
+        {
+          'Ready for Library shows approved documents with an access level and metadata completeness displayed for review.'
+        }
+      </li>
+    </Box>
+  )
+}
+
 export default function ReportsPage(): ReactElement {
   return (
     <Stack spacing={8}>
@@ -59,32 +79,9 @@ export default function ReportsPage(): ReactElement {
         description={
           'Use this workspace as a starting point for current reporting-related workflows across the preservation dashboard. These links point to live operational views that already surface review, batch, readiness, and failure signals.'
         }
+        infoTitle={'What you can review today'}
+        infoContent={<ReportsInfo />}
       />
-
-      <Card component={'section'}>
-        <CardContent>
-          <Typography component={'h2'} variant={'h5'} sx={{ color: 'text.primary' }}>
-            {'What you can review today'}
-          </Typography>
-          <Box component={'ul'} sx={listStyles}>
-            <li>
-              {'Dashboard provides a live snapshot of review backlog, library-ready work, and current batch activity.'}
-            </li>
-            <li>{'Batches shows batch processing details by batch from the current operational view.'}</li>
-            <li>
-              {
-                'Failures remain part of the reporting scope as an operational signal alongside queue pressure, readiness, and batch activity.'
-              }
-            </li>
-            <li>{'Review Queue defaults to documents whose validation status still needs human review.'}</li>
-            <li>
-              {
-                'Ready for Library shows approved documents with an access level and metadata completeness displayed for review.'
-              }
-            </li>
-          </Box>
-        </CardContent>
-      </Card>
 
       <Stack component={'section'} spacing={2}>
         <Box>
