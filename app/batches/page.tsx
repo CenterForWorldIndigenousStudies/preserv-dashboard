@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react'
-import { Box, Button, Card, CardContent, Stack, Typography } from '@mui/material'
+import { Box, Button, Stack, Typography } from '@mui/material'
 
 import { PROCESS_DOCUMENTS_PATH } from '@constants/paths'
 import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
@@ -12,39 +12,6 @@ import { getBatchDrafts } from '@lib/queries/batchDraftQueries'
 import { BatchCart } from '@molecules/BatchCart'
 
 export const dynamic = 'force-dynamic'
-
-function SummaryCard({ totalBatches, totalDocuments }: { totalBatches: number; totalDocuments: number }) {
-  const metrics = [
-    { label: 'Total Batches', value: totalBatches },
-    { label: 'Total Documents', value: totalDocuments },
-  ]
-
-  return (
-    <Box
-      sx={{
-        display: 'grid',
-        gap: 2,
-        gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
-      }}
-    >
-      {metrics.map(({ label, value }) => (
-        <Card key={label} component={'section'} sx={{ border: '1px solid', borderColor: 'rgba(53, 88, 52, 0.15)' }}>
-          <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
-            <Typography
-              variant={'caption'}
-              sx={{ color: 'text.secondary', letterSpacing: '0.15em', textTransform: 'uppercase' }}
-            >
-              {label}
-            </Typography>
-            <Typography component={'p'} variant={'h3'} sx={{ color: 'text.primary', mt: 1 }}>
-              {value}
-            </Typography>
-          </CardContent>
-        </Card>
-      ))}
-    </Box>
-  )
-}
 
 function BatchesInfo(): ReactElement {
   return (
@@ -113,9 +80,13 @@ export default async function BatchesPage({ searchParams }: BatchesPageProps): P
         infoContent={<BatchesInfo />}
       />
 
-      <SummaryCard totalBatches={overview.totalBatches} totalDocuments={overview.totalDocuments} />
       <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}><BatchCart drafts={drafts} /></Box>
-      <BatchesTable initialData={initialData} initialQuery={initialQuery} filterOptions={batchFilterOptions} />
+      <BatchesTable
+        initialData={initialData}
+        initialQuery={initialQuery}
+        filterOptions={batchFilterOptions}
+        totalDocuments={overview.totalDocuments}
+      />
     </Stack>
   )
 }

@@ -70,6 +70,7 @@ export function DocumentTable<TData extends MRT_RowData & { id: string }, TFilte
       searchPlaceholder={config.searchPlaceholder}
       leadingToolbarSlot={leadingToolbarSlot}
       trailingToolbarSlot={config.trailingToolbarSlot}
+      additionalStats={config.additionalStats}
       rowSelection={config.rowSelection}
       onRowSelectionChange={config.onRowSelectionChange}
       enableRowSelection={config.enableRowSelection}

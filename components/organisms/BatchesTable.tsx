@@ -23,6 +23,7 @@ interface BatchesTableProps {
   initialData?: DocumentTableFetchResult<BatchListItem>
   initialQuery: BatchTableQuery
   filterOptions: FilterOptions
+  totalDocuments?: number
 }
 
 function syncSearchParam(nextParams: URLSearchParams, key: string, value: string | undefined): void {
@@ -39,7 +40,7 @@ function getCurrentBatchListHref(pathname: string, searchParams: URLSearchParams
   return currentSearch ? `${pathname}?${currentSearch}` : pathname
 }
 
-export function BatchesTable({ initialData, initialQuery, filterOptions }: BatchesTableProps): ReactElement {
+export function BatchesTable({ initialData, initialQuery, filterOptions, totalDocuments }: BatchesTableProps): ReactElement {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -152,6 +153,7 @@ export function BatchesTable({ initialData, initialQuery, filterOptions }: Batch
     },
     emptyMessage: 'No batches are available.',
     searchPlaceholder: 'Search batches...',
+    additionalStats: typeof totalDocuments === 'number' ? [{ label: 'documents', value: totalDocuments }] : undefined,
     advancedSearch: {
       filters: controller.filters,
       filterOptions,

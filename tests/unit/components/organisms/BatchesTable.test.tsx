@@ -90,6 +90,7 @@ describe('BatchesTable', () => {
     renderToStaticMarkup(
       <BatchesTable
         initialQuery={initialQuery}
+        totalDocuments={5}
         initialData={{
           data: [row],
           totalCount: 1,
@@ -117,6 +118,7 @@ describe('BatchesTable', () => {
         filterOptions: FilterOptions
         onApply: (filters: typeof initialQuery.filters) => void
       }
+      additionalStats?: Array<{ label: string; value: number }>
     }
 
     expect(config).toMatchObject({
@@ -126,6 +128,7 @@ describe('BatchesTable', () => {
     })
     expect(config.advancedSearch?.filters).toEqual(initialQuery.filters)
     expect(config.advancedSearch?.filterOptions).toEqual(filterOptions)
+    expect(config.additionalStats).toEqual([{ label: 'documents', value: 5 }])
     expect(config.definition.columns.map((column) => column.header)).toEqual([
       'Batch',
       'Status',

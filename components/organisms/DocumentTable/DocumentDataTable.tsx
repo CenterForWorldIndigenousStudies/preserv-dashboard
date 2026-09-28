@@ -24,6 +24,7 @@ import type {
   DocumentTableDefinition,
   DocumentTableFetchResult,
   DocumentTableQuery,
+  DocumentTableStat,
 } from './types'
 
 interface DocumentDataTableProps<TData extends MRT_RowData & { id: string }, TFilters> {
@@ -35,6 +36,7 @@ interface DocumentDataTableProps<TData extends MRT_RowData & { id: string }, TFi
   searchPlaceholder?: string
   leadingToolbarSlot?: ReactNode
   trailingToolbarSlot?: ReactNode
+  additionalStats?: readonly DocumentTableStat[]
   rowSelection?: MRT_RowSelectionState
   onRowSelectionChange?: (updater: MRT_Updater<MRT_RowSelectionState>) => void
   enableRowSelection?: boolean
@@ -68,6 +70,7 @@ export function DocumentDataTable<TData extends MRT_RowData & { id: string }, TF
   searchPlaceholder,
   leadingToolbarSlot,
   trailingToolbarSlot,
+  additionalStats,
   rowSelection,
   onRowSelectionChange,
   enableRowSelection = false,
@@ -199,6 +202,7 @@ export function DocumentDataTable<TData extends MRT_RowData & { id: string }, TF
           pageSizeOptions={DOCUMENT_TABLE_PAGE_SIZE_OPTIONS}
           onPageSizeChange={controller.setPageSize}
           totalCount={totalCount}
+          additionalStats={additionalStats}
           leadingSlot={leadingToolbarSlot}
           trailingSlot={trailingToolbarSlot}
         />

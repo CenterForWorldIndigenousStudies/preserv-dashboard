@@ -3,6 +3,7 @@ import { Stack, TextField } from '@mui/material'
 
 import { TableStat } from '@atoms/TableStat'
 import { DocumentTablePageSizeSelect } from '@molecules/DocumentTablePageSizeSelect'
+import type { DocumentTableStat } from '@organisms/DocumentTable/types'
 
 interface DocumentTableToolbarProps {
   searchPlaceholder?: string
@@ -12,6 +13,7 @@ interface DocumentTableToolbarProps {
   pageSizeOptions: readonly number[]
   onPageSizeChange: (value: number) => void
   totalCount?: number
+  additionalStats?: readonly DocumentTableStat[]
   leadingSlot?: ReactNode
   trailingSlot?: ReactNode
 }
@@ -24,6 +26,7 @@ export function DocumentTableToolbar({
   pageSizeOptions,
   onPageSizeChange,
   totalCount,
+  additionalStats,
   leadingSlot,
   trailingSlot,
 }: DocumentTableToolbarProps): ReactElement {
@@ -49,6 +52,7 @@ export function DocumentTableToolbar({
         />
         {leadingSlot}
         {typeof totalCount === 'number' ? <TableStat label={'results'} value={totalCount} /> : null}
+        {additionalStats?.map((stat) => <TableStat key={stat.label} label={stat.label} value={stat.value} />)}
       </Stack>
       <Stack direction={'row'} spacing={1} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
         {trailingSlot}

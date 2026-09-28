@@ -25,6 +25,11 @@ export interface DocumentTableFetchResult<TData> {
   pageInfo: DocumentTablePageInfo
 }
 
+export interface DocumentTableStat {
+  label: string
+  value: ReactNode
+}
+
 export interface DocumentTableQuery<TFilters> {
   page: number
   pageSize: number
@@ -89,6 +94,7 @@ export interface DocumentTableConfig<TData extends MRT_RowData & { id: string },
   advancedSearch?: DocumentTableAdvancedSearchConfig
   leadingToolbarSlot?: ReactNode
   trailingToolbarSlot?: ReactNode
+  additionalStats?: readonly DocumentTableStat[]
   rowSelection?: MRT_RowSelectionState
   onRowSelectionChange?: (updater: MRT_Updater<MRT_RowSelectionState>) => void
   enableRowSelection?: boolean

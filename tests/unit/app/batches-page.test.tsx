@@ -103,10 +103,11 @@ describe('BatchesPage', () => {
     expect(markup).toContain('Batches owns monitoring and investigation.')
     expect(markup).toContain('Back to Process')
     expect(markup).toContain(PROCESS_DOCUMENTS_PATH)
-    expect(markup).toContain('Total Batches')
-    expect(markup).toContain('Total Documents')
+    expect(markup).not.toContain('Total Batches')
+    expect(markup).not.toContain('Total Documents')
     expect(markup).toContain('Batch cart')
     expect(markup).not.toContain('Draft reprocessing batches')
+    expect(mocks.batchesTableProps).toMatchObject({ totalDocuments: 5 })
   })
 
   it('loads the parsed list query and passes the result to BatchesTable', async () => {
@@ -122,7 +123,7 @@ describe('BatchesPage', () => {
     expect(mockGetBatches).toHaveBeenCalledWith(initialQuery)
     expect(mockGetBatchOverviewMetrics).toHaveBeenCalledWith(initialQuery)
     expect(mockGetDocumentFilterOptions).toHaveBeenCalledOnce()
-    expect(mocks.batchesTableProps).toEqual({ initialData, initialQuery, filterOptions })
+    expect(mocks.batchesTableProps).toEqual({ initialData, initialQuery, filterOptions, totalDocuments: 5 })
   })
 })
 vi.mock('@lib/queries/batchDraftQueries', () => ({
