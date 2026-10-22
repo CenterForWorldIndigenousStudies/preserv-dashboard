@@ -7,7 +7,7 @@ import {
 import { db } from '@lib/db'
 import { getBatchPublicationState } from '@lib/batchLifecycle'
 import { toBatchProperties } from '@lib/batchProperties'
-import { calculateTotalProcessingCost } from '@lib/processingCost'
+import { calculateBatchProcessingCost } from '@lib/processingCost'
 import { calculateCurrentProcessingTime } from '@lib/processingTime'
 import { resolveBatchSearchIds, resolveTagSearchIds } from '@lib/queries/searchResolvers'
 import {
@@ -49,6 +49,7 @@ interface BatchDatabaseRow {
   processing_details: string | null
   document_to_batches: Array<{
     cost: Prisma.Decimal | number | string | null
+    processing_details?: string | null
     processing_time_seconds: number | null
   }>
   batch_to_batches_metadata?: Array<{
@@ -226,7 +227,7 @@ function mapBatchListItem(row: BatchDatabaseRow): BatchListItem {
     name: row.name,
     startedAt: row.started_at,
     documentCount: getDocumentCount(row, details),
-    totalCost: calculateTotalProcessingCost(details, row.document_to_batches),
+    totalCost: calculateBatchProcessingCost(details, row.document_to_batches),
     processingTime: getTotalProcessingTime(row),
     lifecycleStatus: row.lifecycle_status,
     publicationState: getBatchPublicationState(row.lifecycle_status, getFedoraIngesterStatus(details)),
@@ -237,7 +238,7 @@ function mapBatchDetail(row: BatchDatabaseRow): BatchDetail {
   const details = parseProcessingDetails(row.processing_details)
   const properties: BatchProperty[] = toBatchProperties(details)
 
-  properties.push({ key: 'Total Cost', value: calculateTotalProcessingCost(details, row.document_to_batches) })
+  properties.push({ key: 'Total Cost', value: calculateBatchProcessingCost(details, row.document_to_batches) })
   properties.push({ key: 'Processing Time (seconds)', value: getTotalProcessingTime(row) })
 
   return {
@@ -333,6 +334,7 @@ const batchSelect = {
   document_to_batches: {
     select: {
       cost: true,
+      processing_details: true,
       processing_time_seconds: true,
     },
   },
