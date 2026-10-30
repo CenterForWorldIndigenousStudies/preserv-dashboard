@@ -7,8 +7,11 @@ import { ReadyForLibraryTable } from '@organisms/ReadyForLibraryTable'
 import { ReadyForLibraryHandoff } from '@organisms/ReadyForLibraryHandoff'
 import type { DocumentTableFetchResult, DocumentTableQuery } from '@organisms/DocumentTable/types'
 import { getDocumentFilterOptions } from '@lib/queries/queries'
-import { getReadyForLibraryDocuments, parseReadyForLibraryQueryParams } from '@lib/queries/readyForLibraryQueries'
-import type { DocumentsQueryParams } from '@lib/queries/documentQueries'
+import {
+  getReadyForLibraryDocuments,
+  parseReadyForLibraryQueryParams,
+  type ReadyForLibrarySortField,
+} from '@lib/queries/readyForLibraryQueries'
 import type { AdvancedSearchFilters } from '@lib/search'
 import { PAGE_LABELS } from '@constants/pageLabels'
 import type { ReadyForLibraryItem } from 'types/documents'
@@ -40,68 +43,17 @@ interface ReadyForLibraryPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-function normalizeReadyForLibrarySearch(value: string | undefined): string {
-  return value?.trim().toLowerCase() ?? ''
-}
-
-function getReadyForLibrarySortValue(item: ReadyForLibraryItem, orderBy: string): number | string {
-  switch (orderBy) {
-    case 'validation_timestamp':
-      return Number(item.validation_timestamp ?? 0)
-    case 'metadata_complete':
-      return Number(item.metadata_complete)
-    case 'access_level':
-      return String(item.access_level ?? '').toLowerCase()
-    case 'validation_status':
-      return String(item.validation_status ?? '').toLowerCase()
-    case 'name':
-    default:
-      return String(item.name ?? '').toLowerCase()
-  }
-}
-
-function sortReadyForLibraryItems(
-  items: ReadyForLibraryItem[],
-  orderBy?: string,
-  sortDirection?: 'asc' | 'desc',
-): ReadyForLibraryItem[] {
-  if (!orderBy) {
-    return items
-  }
-
-  const multiplier = sortDirection === 'desc' ? -1 : 1
-  return [...items].sort((left, right) => {
-    const leftValue = getReadyForLibrarySortValue(left, orderBy)
-    const rightValue = getReadyForLibrarySortValue(right, orderBy)
-
-    if (leftValue < rightValue) return -1 * multiplier
-    if (leftValue > rightValue) return 1 * multiplier
-    return String(left.id).localeCompare(String(right.id))
-  })
-}
-
 function buildReadyForLibraryInitialData(
   result: { items: ReadyForLibraryItem[]; total: number },
   query: DocumentTableQuery<AdvancedSearchFilters>,
 ): DocumentTableFetchResult<ReadyForLibraryItem> {
-  const normalizedSearch = normalizeReadyForLibrarySearch(query.search)
-  const filteredItems = normalizedSearch
-    ? result.items.filter((item) =>
-        String(item.name ?? '')
-          .toLowerCase()
-          .includes(normalizedSearch),
-      )
-    : result.items
-  const sortedItems = sortReadyForLibraryItems(filteredItems, query.orderBy, query.sortDirection)
   const offset = (query.page - 1) * query.pageSize
-  const pagedItems = sortedItems.slice(offset, offset + query.pageSize)
-
   return {
-    data: pagedItems,
-    totalCount: sortedItems.length,
+    data: result.items,
+    totalCount: result.total,
     pageInfo: {
       pageSize: query.pageSize,
-      hasNextPage: offset + query.pageSize < sortedItems.length,
+      hasNextPage: offset + result.items.length < result.total,
       hasPreviousPage: query.page > 1,
       startCursor: null,
       endCursor: null,
@@ -118,7 +70,7 @@ async function ReadyForLibraryContent({ searchParams }: ReadyForLibraryPageProps
       page: initialQuery.page,
       pageSize: initialQuery.pageSize,
       search: initialQuery.search,
-      orderBy: initialQuery.orderBy as DocumentsQueryParams['orderBy'],
+      orderBy: initialQuery.orderBy as ReadyForLibrarySortField,
       sortDirection: initialQuery.sortDirection,
     }),
     getDocumentFilterOptions(),
@@ -126,7 +78,7 @@ async function ReadyForLibraryContent({ searchParams }: ReadyForLibraryPageProps
   const initialData = buildReadyForLibraryInitialData(result, initialQuery)
 
   return (
-    <ReadyForLibraryTable initialData={initialData} initialQuery={initialQuery} filterOptions={filterOptions} />
+      <ReadyForLibraryTable initialData={initialData} initialQuery={initialQuery} filterOptions={filterOptions} />
   )
 }
 

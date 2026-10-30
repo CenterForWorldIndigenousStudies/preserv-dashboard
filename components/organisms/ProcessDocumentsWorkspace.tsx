@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation'
 import { Box, Button, Card, CardContent, Stack, Typography } from '@mui/material'
 
 import { BATCHES_PATH, PROCESS_DOCUMENTS_PATH, PROCESS_FOLDERS_PATH } from '@constants/paths'
-import { DATA_INGESTER_SERVICE } from '@constants/pipeline'
 import type { DriveFolderOption } from '@lib/googleDrive'
 import { useBatchSearch } from '@lib/hooks/useBatchSearch'
 import type { PipelineConfig } from '@lib/pipelineConfig'
@@ -18,6 +17,7 @@ import { GoogleDriveFolderTree } from '@molecules/GoogleDriveFolderTree'
 import { ProcessSelectedFoldersPanel } from '@molecules/ProcessSelectedFoldersPanel'
 import {
   BATCH_DRAFT_STAGE_OPTIONS,
+  DEFAULT_BATCH_DRAFT_START_STAGE,
   batchDraftPipelineConfigToRequestedStages,
   getBatchDraftDownstreamStages,
   getBatchDraftInitialConfig,
@@ -53,7 +53,7 @@ export function ProcessDocumentsWorkspace({
   const [collectionName, setCollectionName] = useState('')
   const [collectionNotes, setCollectionNotes] = useState('')
   const [reason, setReason] = useState('Initial preservation batch')
-  const [startStage, setStartStage] = useState<CallbackStageKey>(DATA_INGESTER_SERVICE)
+  const [startStage, setStartStage] = useState<CallbackStageKey>(DEFAULT_BATCH_DRAFT_START_STAGE)
   const [pipelineConfig, setPipelineConfig] = useState<PipelineConfig>(getBatchDraftInitialConfig)
   const [recentBatches, setRecentBatches] = useState(initialBatches)
   const [rootFolders, setRootFolders] = useState<DriveFolderOption[]>([])
@@ -108,7 +108,7 @@ export function ProcessDocumentsWorkspace({
     collectionName.length > 0 ||
     collectionNotes.length > 0 ||
     reason !== 'Initial preservation batch' ||
-    startStage !== DATA_INGESTER_SERVICE ||
+    startStage !== DEFAULT_BATCH_DRAFT_START_STAGE ||
     JSON.stringify(pipelineConfig) !== JSON.stringify(getBatchDraftInitialConfig()) ||
     selectedFolderList.length > 0
 
@@ -117,7 +117,7 @@ export function ProcessDocumentsWorkspace({
     setCollectionName('')
     setCollectionNotes('')
     setReason('Initial preservation batch')
-    setStartStage(DATA_INGESTER_SERVICE)
+    setStartStage(DEFAULT_BATCH_DRAFT_START_STAGE)
     setPipelineConfig(getBatchDraftInitialConfig())
     setSelectedFolders({})
     setExpandedFolderIds({})

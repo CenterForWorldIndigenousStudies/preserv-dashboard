@@ -77,8 +77,10 @@ export async function getOverviewDocumentsPage(
     page: number
     pageSize: number
     orderBy?: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
+    sortExpression?: Prisma.Sql
     sortDirection?: 'asc' | 'desc'
     contributor?: string
+    nameSearch?: string
     publisher?: string
     tagIds?: string[]
     statuses?: StatusOption[]
@@ -91,19 +93,20 @@ export async function getOverviewDocumentsPage(
     documentIds?: string[]
     requireValidationStatus?: boolean
     additionalConditions?: readonly Prisma.Sql[]
+    offset?: number
     cursor?: DocumentsCursor | null
     cursorDirection?: 'next' | 'prev'
   },
   client: QueryDbClient = db,
 ): Promise<DocumentsPageResult> {
-  const hasExplicitSort = isOverviewSortField(params.orderBy)
+  const hasExplicitSort = params.sortExpression !== undefined || isOverviewSortField(params.orderBy)
   const usesDefaultSort = !hasExplicitSort
   const sortField = normalizeOverviewSortField(params.orderBy)
   const sortDirection = usesDefaultSort ? 'asc' : params.sortDirection === 'asc' ? 'asc' : 'desc'
   const cursorDirection = params.cursorDirection === 'prev' ? 'prev' : 'next'
   const contributorTerm = params.contributor?.trim()
   const publisherTerm = params.publisher?.trim()
-  const sortExpression = Prisma.raw(OVERVIEW_SORT_EXPRESSIONS[sortField])
+  const sortExpression = params.sortExpression ?? Prisma.raw(OVERVIEW_SORT_EXPRESSIONS[sortField])
   const defaultSecondarySortExpression = usesDefaultSort
     ? Prisma.raw(OVERVIEW_SORT_EXPRESSIONS[DEFAULT_OVERVIEW_SECONDARY_SORT_FIELD])
     : undefined
@@ -119,6 +122,7 @@ export async function getOverviewDocumentsPage(
     documentType: params.documentType,
     requireValidationStatus: params.requireValidationStatus,
     contributorTerm,
+    nameSearch: params.nameSearch,
     publisherTerm,
     sortDirection,
     sortExpression,
@@ -139,6 +143,7 @@ export async function getOverviewDocumentsPage(
     documentType: params.documentType,
     requireValidationStatus: params.requireValidationStatus,
     contributorTerm,
+    nameSearch: params.nameSearch,
     publisherTerm,
     sortDirection,
     sortExpression,
@@ -173,6 +178,10 @@ export async function getOverviewDocumentsPage(
     LEFT JOIN document_access da ON da.document_id = d.id
     LEFT JOIN access_levels al ON al.id = da.access_level_id
   `
+  const paginationSql =
+    params.offset === undefined
+      ? Prisma.sql`LIMIT ${params.pageSize + 1}`
+      : Prisma.sql`LIMIT ${params.pageSize + 1} OFFSET ${Math.max(0, Math.floor(params.offset))}`
 
   const [items, countRows] = await Promise.all([
     client.$queryRaw<OverviewDocumentRow[]>(Prisma.sql`
@@ -198,7 +207,7 @@ export async function getOverviewDocumentsPage(
         ${baseFromSql}
         ${whereSql}
         ${orderBySql}
-        LIMIT ${params.pageSize + 1}
+        ${paginationSql}
       `),
     client.$queryRaw<Array<{ total_count: bigint | number | string }>>(Prisma.sql`
         SELECT COUNT(DISTINCT d.id) AS total_count
@@ -235,6 +244,7 @@ export async function getOverviewDocumentsPage(
 export function buildOverviewDocumentsWhereSql(params: {
   additionalConditions?: readonly Prisma.Sql[]
   contributorTerm?: string
+  nameSearch?: string
   publisherTerm?: string
   tagIds?: string[]
   statuses?: StatusOption[]
@@ -257,6 +267,11 @@ export function buildOverviewDocumentsWhereSql(params: {
 
   if (params.contributorTerm) {
     conditions.push(buildOverviewContributorSearchConditionSql(params.contributorTerm))
+  }
+
+  if (params.nameSearch) {
+    const escapedSearch = params.nameSearch.toLowerCase().replace(/[\\%_]/g, '\\$&')
+    conditions.push(Prisma.sql`LOWER(COALESCE(d.name, '')) LIKE ${`%${escapedSearch}%`}`)
   }
 
   if (params.publisherTerm) {

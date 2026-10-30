@@ -28,7 +28,11 @@ const NORMAL_BATCH_STAGE_VALUES: CallbackStageKey[] = [
   'metadata_extractor',
 ]
 
-export const BATCH_DRAFT_STAGE_OPTIONS = NORMAL_BATCH_STAGE_VALUES.map((value) => {
+export const DEFAULT_BATCH_DRAFT_START_STAGE: CallbackStageKey = 'document_splitter'
+
+export const BATCH_DRAFT_STAGE_OPTIONS = NORMAL_BATCH_STAGE_VALUES.filter(
+  (value) => value !== DATA_INGESTER_SERVICE,
+).map((value) => {
     const service = getServiceIdForCallbackStage(value)
     if (!service) {
       throw new Error(`No pipeline service exists for callback stage ${value}`)
@@ -73,5 +77,5 @@ export function getBatchDraftStageLabel(stage: CallbackStageKey): string {
 }
 
 export function getBatchDraftInitialConfig(): PipelineConfig {
-  return getDefaultBatchDraftPipelineConfig(DATA_INGESTER_SERVICE)
+  return getDefaultBatchDraftPipelineConfig(DEFAULT_BATCH_DRAFT_START_STAGE)
 }

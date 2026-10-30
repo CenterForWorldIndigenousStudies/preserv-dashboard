@@ -96,6 +96,11 @@ describe('Library query helpers', () => {
       fedoraUrl: null,
       uploadedAt: new Date(1770000000).toISOString(),
       collections: [{ id: 'collection-1', name: 'Collection 1' }],
+      removalStatus: null,
+      removalError: null,
+      removalRequestId: null,
+      removalItemId: null,
+      removalRetryable: false,
       batch: {
         id: 'batch-1',
         name: null,

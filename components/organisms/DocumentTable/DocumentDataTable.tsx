@@ -34,6 +34,7 @@ interface DocumentDataTableProps<TData extends MRT_RowData & { id: string }, TFi
   initialData?: DocumentTableFetchResult<TData>
   emptyMessage?: string
   searchPlaceholder?: string
+  searchDebounceMs?: number
   leadingToolbarSlot?: ReactNode
   trailingToolbarSlot?: ReactNode
   additionalStats?: readonly DocumentTableStat[]
@@ -68,6 +69,7 @@ export function DocumentDataTable<TData extends MRT_RowData & { id: string }, TF
   initialData,
   emptyMessage = 'No documents found.',
   searchPlaceholder,
+  searchDebounceMs,
   leadingToolbarSlot,
   trailingToolbarSlot,
   additionalStats,
@@ -196,6 +198,7 @@ export function DocumentDataTable<TData extends MRT_RowData & { id: string }, TF
       {showToolbar ? (
         <DocumentTableToolbar
           searchPlaceholder={searchPlaceholder}
+          searchDebounceMs={searchDebounceMs}
           searchValue={controller.search}
           onSearchChange={controller.setSearch}
           pageSize={controller.pageSize}

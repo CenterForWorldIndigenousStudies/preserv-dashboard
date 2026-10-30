@@ -51,6 +51,11 @@ interface LibraryDocumentBoundaryRow {
   uploadedAt: Date | string | number | bigint | null
   collections: LibraryCollection[]
   batch: (Omit<LibraryBatch, 'createdAt'> & { createdAt: Date | string | number | bigint | null }) | null
+  removalStatus?: string | null
+  removalError?: string | null
+  removalRequestId?: string | null
+  removalItemId?: string | null
+  removalRetryable?: boolean
 }
 
 interface LibraryDocumentRow extends OverviewDocumentRow {
@@ -95,6 +100,27 @@ function normalizeLibraryDateTime(value: Date | string | number | bigint | null)
   return Number.isNaN(date.getTime()) ? null : date.toISOString()
 }
 
+function isLibraryRemovalRetryable(
+  removal:
+    | {
+        status: string
+        fedora_delete_status: string
+        drive_quarantine_status: string
+        restoration_status: string
+      }
+    | undefined,
+): boolean {
+  if (!removal) return false
+  if (removal.status === 'failed') {
+    return removal.fedora_delete_status === 'failed' || removal.drive_quarantine_status === 'failed'
+  }
+  return (
+    removal.status === 'needs_attention' &&
+    removal.fedora_delete_status === 'unknown' &&
+    removal.restoration_status !== 'failed'
+  )
+}
+
 export function normalizeRawLibraryMetadataValue(value: unknown): string | null {
   if (value === null || value === undefined) return null
   if (typeof value === 'string') return value
@@ -123,6 +149,11 @@ export function normalizeLibraryDocument(row: LibraryDocumentBoundaryRow): Libra
           createdAt: normalizeLibraryDateTime(row.batch.createdAt),
         }
       : null,
+    removalStatus: row.removalStatus ?? null,
+    removalError: row.removalError ?? null,
+    removalRequestId: row.removalRequestId ?? null,
+    removalItemId: row.removalItemId ?? null,
+    removalRetryable: row.removalRetryable ?? false,
   }
 }
 
@@ -346,7 +377,7 @@ async function hydrateLibraryItems(rows: LibraryDocumentRow[], client: QueryDbCl
   const orderedRows = rows
   const documentIds = orderedRows.map((row) => String(row.id))
 
-  const [batchRows, collectionRows] = await Promise.all([
+  const [batchRows, collectionRows, removalRows] = await Promise.all([
     client.document_to_batches.findMany({
       where: { document_id: { in: documentIds } },
       select: {
@@ -362,6 +393,24 @@ async function hydrateLibraryItems(rows: LibraryDocumentRow[], client: QueryDbCl
         document_id: true,
         tags: { select: { id: true, name: true, collections: { select: { id: true } } } },
       },
+    }),
+    client.fedora_removal_items.findMany({
+      where: {
+        document_id: { in: documentIds },
+        status: { in: ['requested', 'in_progress', 'failed', 'needs_attention'] },
+      },
+      select: {
+        id: true,
+        request_id: true,
+        document_id: true,
+        status: true,
+        error_message: true,
+        requested_at: true,
+        fedora_delete_status: true,
+        drive_quarantine_status: true,
+        restoration_status: true,
+      },
+      orderBy: { requested_at: 'desc' },
     }),
   ])
 
@@ -387,11 +436,30 @@ async function hydrateLibraryItems(rows: LibraryDocumentRow[], client: QueryDbCl
     collectionsByDocument.set(row.document_id, collections)
   }
 
+  const latestRemovalByDocument = new Map<
+    string,
+    {
+      id: string
+      request_id: string
+      status: string
+      error_message: string | null
+      fedora_delete_status: string
+      drive_quarantine_status: string
+      restoration_status: string
+    }
+  >()
+  for (const row of removalRows) {
+    if (!latestRemovalByDocument.has(row.document_id)) {
+      latestRemovalByDocument.set(row.document_id, row)
+    }
+  }
+
   return orderedRows.map((row) => {
     const latestBatch = selectLatestLibraryBatch(batchAssociationsByDocument.get(String(row.id)) ?? [])
     const collections = (collectionsByDocument.get(String(row.id)) ?? []).sort(
       (left, right) => left.name.localeCompare(right.name) || left.id.localeCompare(right.id),
     )
+    const removal = latestRemovalByDocument.get(String(row.id))
 
     return normalizeLibraryDocument({
       id: String(row.id),
@@ -412,6 +480,11 @@ async function hydrateLibraryItems(rows: LibraryDocumentRow[], client: QueryDbCl
             createdAt: latestBatch.batchCreatedAt,
           }
         : null,
+      removalStatus: removal?.status ?? null,
+      removalError: removal?.error_message ?? null,
+      removalRequestId: removal?.request_id ?? null,
+      removalItemId: removal?.id ?? null,
+      removalRetryable: isLibraryRemovalRetryable(removal),
     })
   })
 }

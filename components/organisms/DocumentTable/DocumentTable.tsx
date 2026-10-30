@@ -68,6 +68,7 @@ export function DocumentTable<TData extends MRT_RowData & { id: string }, TFilte
       initialQuery={initialQuery}
       emptyMessage={config.emptyMessage}
       searchPlaceholder={config.searchPlaceholder}
+      searchDebounceMs={config.searchDebounceMs}
       leadingToolbarSlot={leadingToolbarSlot}
       trailingToolbarSlot={config.trailingToolbarSlot}
       additionalStats={config.additionalStats}

@@ -13,7 +13,7 @@ import { db } from '@lib/db'
 import { Prisma } from '@lib/prisma/generated/client'
 import { resolveBatchSearchIds, resolveTagSearchIds } from '@lib/queries/searchResolvers'
 import {
-  getDocumentCollectionMemberships,
+  getDocumentCollectionMembershipsByDocument,
   type CollectionMembershipDataClient,
 } from '@lib/queries/collectionMembershipQueries'
 import {
@@ -26,6 +26,17 @@ import {
 import type { DocumentsQueryParams } from '@lib/queries/documentQueries'
 import type { AccessLevelOption } from '@constants/accessLevels'
 import type { ReadyForLibraryItem } from 'types/documents'
+
+export type ReadyForLibrarySortField =
+  | 'name'
+  | 'validation_status'
+  | 'validation_timestamp'
+  | 'access_level'
+  | 'metadata_complete'
+
+export interface ReadyForLibraryQueryParams extends Omit<DocumentsQueryParams, 'orderBy'> {
+  orderBy?: ReadyForLibrarySortField
+}
 
 function firstSearchParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value
@@ -56,7 +67,7 @@ export function parseReadyForLibraryQueryParams(
     orderBy: firstSearchParam(params.orderBy),
     sortDirection: sortDirection === 'asc' ? 'asc' : sortDirection === 'desc' ? 'desc' : undefined,
     filters: {
-      contributor: contributor ?? search,
+      contributor,
       publisher,
       tag,
       statuses,
@@ -111,153 +122,219 @@ export function buildReadyForLibraryItems(
   return items
 }
 
-export async function getReadyForLibraryDocuments(
-  params: DocumentsQueryParams = {},
-  client: QueryDbClient = db,
-): Promise<{
-  items: ReadyForLibraryItem[]
-  total: number
-}> {
-  const requiredDcFields = ['dc_title', 'dc_type', 'dc_subject', 'dc_rights']
-  const normalizedStatuses = normalizeStatuses(params.statuses)
+const REQUIRED_DC_FIELDS = ['dc_title', 'dc_type', 'dc_subject', 'dc_rights']
 
+interface ReadyForLibraryCandidateContext {
+  documentIds: string[]
+  accessLevels: Map<string, AccessLevelOption>
+}
+
+function getReadySortExpression(orderBy?: ReadyForLibrarySortField): Prisma.Sql {
+  switch (orderBy ?? 'name') {
+    case 'validation_status':
+      return Prisma.raw("COALESCE(dq.validation_status, '')")
+    case 'validation_timestamp':
+      return Prisma.raw('COALESCE(dq.validation_timestamp, 0)')
+    case 'access_level':
+      return Prisma.raw("COALESCE(al.level_name, '')")
+    case 'metadata_complete':
+      return Prisma.raw(`CASE WHEN (
+        SELECT COUNT(DISTINCT required_metadata.name)
+        FROM document_to_metadata required_document_metadata
+        INNER JOIN metadata required_metadata
+          ON required_metadata.id = required_document_metadata.metadata_id
+        WHERE required_document_metadata.document_id = d.id
+          AND required_metadata.name IN ('dc_title', 'dc_type', 'dc_subject', 'dc_rights')
+      ) = 4 THEN 1 ELSE 0 END`)
+    case 'name':
+    default:
+      return Prisma.raw("COALESCE(d.name, '')")
+  }
+}
+
+async function getReadyForLibraryCandidateContext(
+  client: QueryDbClient,
+): Promise<ReadyForLibraryCandidateContext> {
+  const qualityDocs = await client.document_quality.findMany({
+    where: { validation_status: 'APPROVED' },
+    select: { document_id: true },
+  })
+  const approvedDocumentIds = [...new Set(qualityDocs.map(({ document_id }) => document_id))]
+  if (approvedDocumentIds.length === 0) {
+    return { documentIds: [], accessLevels: new Map() }
+  }
+
+  const preservationCandidateIds = await getPreservationCandidateDocumentIds(approvedDocumentIds, client)
+  const approvedCandidateIds = approvedDocumentIds.filter((documentId) => preservationCandidateIds.has(documentId))
+  if (approvedCandidateIds.length === 0) {
+    return { documentIds: [], accessLevels: new Map() }
+  }
+
+  const accessRows = await client.document_access.findMany({
+    where: { document_id: { in: approvedCandidateIds } },
+    select: { document_id: true, access_levels: { select: { level_name: true } } },
+  })
+  const accessLevels = new Map<string, AccessLevelOption>()
+  for (const row of accessRows) {
+    const accessLevel = normalizeAccessLevel(row.access_levels.level_name)
+    if (accessLevel && !accessLevels.has(row.document_id)) {
+      accessLevels.set(row.document_id, accessLevel)
+    }
+  }
+
+  const candidateIdsWithAccess = approvedCandidateIds.filter((documentId) => accessLevels.has(documentId))
+  if (candidateIdsWithAccess.length === 0) {
+    return { documentIds: [], accessLevels }
+  }
+
+  const membershipsByDocument = await getDocumentCollectionMembershipsByDocument(
+    candidateIdsWithAccess,
+    client as unknown as CollectionMembershipDataClient,
+  )
+  const documentIds = candidateIdsWithAccess.filter((documentId) => {
+    const memberships = membershipsByDocument.get(documentId) ?? []
+    return memberships.length > 0 && memberships.every((membership) => Boolean(membership.fedoraNodeId?.trim()))
+  })
+
+  return { documentIds, accessLevels }
+}
+
+function buildReadyForLibrarySqlParams(
+  params: ReadyForLibraryQueryParams,
+  documentIds: string[],
+  orderBy: ReadyForLibrarySortField = 'name',
+) {
+  return {
+    page: 1,
+    pageSize: Math.max(1, documentIds.length),
+    orderBy: 'name' as const,
+    sortExpression: getReadySortExpression(orderBy),
+    sortDirection: params.sortDirection === 'desc' ? 'desc' as const : 'asc' as const,
+    nameSearch: normalizeTextFilter(params.search),
+    contributor: normalizeTextFilter(params.contributor),
+    publisher: normalizeTextFilter(params.publisher),
+    statuses: normalizeStatuses(params.statuses) ?? ['APPROVED'],
+    documentType: normalizeDocumentType(params.documentType),
+    createdFrom: normalizeDateFilter(params.createdFrom),
+    createdTo: normalizeDateFilter(params.createdTo),
+    collection: normalizeTextFilter(params.collection),
+    accessLevel: normalizeAccessLevel(params.accessLevel),
+    documentIds,
+    additionalConditions: [
+      buildPreservationCandidateConditionSql('d'),
+      Prisma.sql`NOT ${buildLatestStateConditionSql('latest_ready_state', GENERATED_DOCUMENT_STATES.INGESTED_FEDORA)}`,
+    ],
+  }
+}
+
+async function getFilteredReadyDocumentsPage(
+  params: ReadyForLibraryQueryParams,
+  documentIds: string[],
+  client: QueryDbClient,
+) {
+  const [tagIds, batchIds] = await Promise.all([
+    resolveTagSearchIds(normalizeTextFilter(params.tag), client),
+    resolveBatchSearchIds(normalizeTextFilter(params.batch), client),
+  ])
+  const page = Math.max(1, Math.floor(params.page ?? 1))
+  const pageSize = Math.max(1, Math.min(500, Math.floor(params.pageSize ?? 25)))
+
+  return getOverviewDocumentsPage(
+    {
+      ...buildReadyForLibrarySqlParams(params, documentIds, params.orderBy),
+      page,
+      pageSize,
+      offset: (page - 1) * pageSize,
+      tagIds,
+      batchIds,
+    },
+    client,
+  )
+}
+
+export async function getReadyForLibraryDocuments(
+  params: ReadyForLibraryQueryParams = {},
+  client: QueryDbClient = db,
+): Promise<{ items: ReadyForLibraryItem[]; total: number }> {
+  const normalizedStatuses = normalizeStatuses(params.statuses)
   if (normalizedStatuses && !normalizedStatuses.includes('APPROVED')) {
     return { items: [], total: 0 }
   }
 
+  const { documentIds, accessLevels } = await getReadyForLibraryCandidateContext(client)
+  if (documentIds.length === 0) {
+    return { items: [], total: 0 }
+  }
+
+  const result = await getFilteredReadyDocumentsPage(params, documentIds, client)
+  const pageDocumentIds = result.data.map(({ id }) => id)
+  if (pageDocumentIds.length === 0) {
+    return { items: [], total: result.totalCount ?? 0 }
+  }
+
   const dcMetadata = await client.metadata.findMany({
-    where: { name: { in: requiredDcFields } },
+    where: { name: { in: REQUIRED_DC_FIELDS } },
     select: { id: true, name: true },
   })
-
-  const dcMetaMap = new Map(dcMetadata.map((m) => [m.id, m.name]))
-  const dcMetaIds = new Set(dcMetadata.map((m) => m.id))
-
-  const qualityDocs = await client.document_quality.findMany({
-    where: {
-      validation_status: 'APPROVED',
-    },
-    select: { document_id: true, validation_status: true, validation_timestamp: true },
-  })
-
-  if (qualityDocs.length === 0) {
-    return { items: [], total: 0 }
-  }
-
-  const approvedDocIds = [...new Set(qualityDocs.map((d) => d.document_id))]
-  const candidateDocumentIds = await getPreservationCandidateDocumentIds(approvedDocIds, client)
-  const approvedCandidateDocIds = approvedDocIds.filter((id) => candidateDocumentIds.has(id))
-
-  if (approvedCandidateDocIds.length === 0) {
-    return { items: [], total: 0 }
-  }
-
-  // Get documents that have at least one access_level set via document_access
-  const accessRows = await client.document_access.findMany({
-    where: { document_id: { in: approvedCandidateDocIds } },
-    select: { document_id: true, access_level_id: true, access_levels: { select: { level_name: true } } },
-  })
-  const docAccessMap = new Map<string, AccessLevelOption>()
-  for (const row of accessRows) {
-    const accessLevel = normalizeAccessLevel(row.access_levels.level_name)
-    if (!accessLevel) continue
-
-    if (!docAccessMap.has(row.document_id)) {
-      docAccessMap.set(row.document_id, accessLevel)
-    }
-  }
-
-  const approvedWithAccess = approvedCandidateDocIds.filter((id) => docAccessMap.has(id))
-
-  if (approvedWithAccess.length === 0) {
-    return { items: [], total: 0 }
-  }
-
-  const collectionEligibleDocumentIds = new Set(
-    (
-      await Promise.all(
-        approvedWithAccess.map(async (documentId) => ({
-          documentId,
-          memberships: await getDocumentCollectionMemberships(
-            documentId,
-            client as unknown as CollectionMembershipDataClient,
-          ),
-        })),
-      )
-    ).flatMap(({ documentId, memberships }) =>
-      memberships.length > 0 && memberships.every((membership) => Boolean(membership.fedoraNodeId?.trim()))
-        ? [documentId]
-        : [],
-    ),
-  )
-  const approvedWithEligibleCollections = approvedWithAccess.filter((documentId) =>
-    collectionEligibleDocumentIds.has(documentId),
-  )
-
-  if (approvedWithEligibleCollections.length === 0) {
-    return { items: [], total: 0 }
-  }
-
+  const dcMetaMap = new Map(dcMetadata.map(({ id, name }) => [id, name]))
   const metadataRows = await client.document_to_metadata.findMany({
     where: {
-      document_id: { in: approvedWithEligibleCollections },
-      metadata_id: { in: [...dcMetaIds] },
+      document_id: { in: pageDocumentIds },
+      metadata_id: { in: dcMetadata.map(({ id }) => id) },
     },
     select: { document_id: true, metadata_id: true },
   })
-
-  // Group by document_id and check which have all required fields
   const docDcFields = new Map<string, Set<string>>()
   for (const row of metadataRows) {
     const metaName = dcMetaMap.get(row.metadata_id)
     if (!metaName) continue
-    if (!docDcFields.has(row.document_id)) {
-      docDcFields.set(row.document_id, new Set())
-    }
-    docDcFields.get(row.document_id)!.add(metaName)
+    const fields = docDcFields.get(row.document_id) ?? new Set<string>()
+    fields.add(metaName)
+    docDcFields.set(row.document_id, fields)
   }
 
-  const items = buildReadyForLibraryItems(qualityDocs, docAccessMap, docDcFields, requiredDcFields)
-
-  // Hydrate names from documents table
-  const docRows = await client.documents.findMany({
-    where: { id: { in: approvedWithEligibleCollections } },
-    select: { id: true, name: true },
-  })
-  const nameMap = new Map(docRows.map((d) => [d.id, d.name ?? null]))
-
+  const pageQualityRows = result.data.map(({ id, validation_status, validation_timestamp }) => ({
+    document_id: id,
+    validation_status: validation_status ?? null,
+    validation_timestamp: validation_timestamp ?? null,
+  }))
+  const items = buildReadyForLibraryItems(pageQualityRows, accessLevels, docDcFields, REQUIRED_DC_FIELDS)
+  const namesById = new Map(result.data.map(({ id, name }) => [id, name]))
   for (const item of items) {
-    item.name = nameMap.get(item.id) ?? null
+    item.name = namesById.get(item.id) ?? null
   }
 
-  const tagIds = await resolveTagSearchIds(normalizeTextFilter(params.tag), client)
-  const batchIds = await resolveBatchSearchIds(normalizeTextFilter(params.batch), client)
-  const filteredResult = await getOverviewDocumentsPage(
+  return { items, total: result.totalCount ?? 0 }
+}
+
+export async function getReadyForLibraryDocumentIds(
+  params: ReadyForLibraryQueryParams = {},
+  client: QueryDbClient = db,
+): Promise<string[]> {
+  const normalizedStatuses = normalizeStatuses(params.statuses)
+  if (normalizedStatuses && !normalizedStatuses.includes('APPROVED')) {
+    return []
+  }
+  const { documentIds } = await getReadyForLibraryCandidateContext(client)
+  if (documentIds.length === 0) {
+    return []
+  }
+
+  const [tagIds, batchIds] = await Promise.all([
+    resolveTagSearchIds(normalizeTextFilter(params.tag), client),
+    resolveBatchSearchIds(normalizeTextFilter(params.batch), client),
+  ])
+  const result = await getOverviewDocumentsPage(
     {
+      ...buildReadyForLibrarySqlParams(params, documentIds),
       page: 1,
-      pageSize: approvedWithEligibleCollections.length,
-      contributor: normalizeTextFilter(params.contributor ?? params.search),
-      publisher: normalizeTextFilter(params.publisher),
+      pageSize: documentIds.length,
       tagIds,
-      statuses: normalizedStatuses ?? ['APPROVED'],
-      documentType: normalizeDocumentType(params.documentType),
       batchIds,
-      createdFrom: normalizeDateFilter(params.createdFrom),
-      createdTo: normalizeDateFilter(params.createdTo),
-      collection: normalizeTextFilter(params.collection),
-      accessLevel: normalizeAccessLevel(params.accessLevel),
-      documentIds: approvedWithEligibleCollections,
-      additionalConditions: [
-        buildPreservationCandidateConditionSql('d'),
-        Prisma.sql`NOT ${buildLatestStateConditionSql('latest_ready_state', GENERATED_DOCUMENT_STATES.INGESTED_FEDORA)}`,
-      ],
     },
     client,
   )
-  const filteredDocumentIds = new Set(filteredResult.data.map((document) => document.id))
-  const filteredItems = items.filter((item) => filteredDocumentIds.has(item.id))
-
-  return { items: filteredItems, total: filteredItems.length }
+  return result.data.map(({ id }) => id)
 }
 
 /**
@@ -268,7 +345,7 @@ export async function getReadyForLibraryDocuments(
 export async function getReadyForLibraryBatchIds(documentIds?: readonly string[]): Promise<string[]> {
   const eligibleDocumentIds = documentIds
     ? [...new Set(documentIds.map((documentId) => documentId.trim()).filter(Boolean))]
-    : (await getReadyForLibraryDocuments()).items.map((item) => item.id)
+    : await getReadyForLibraryDocumentIds()
 
   if (eligibleDocumentIds.length === 0) {
     return []

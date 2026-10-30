@@ -253,6 +253,73 @@ describeDbIntegration('library documents query (integration)', () => {
     })
   })
 
+  it('includes active and attention removal state without removing Library rows', async () => {
+    await withRollbackTransaction(async (tx) => {
+      const token = makeToken()
+      const uploadedAt = new Date('2026-07-12T12:00:00.000Z')
+      const active = await createDocument(tx, {
+        name: 'Library Removal Active',
+        state: 'ingested_fedora',
+        token: `${token}active`,
+        uploadedAt,
+      })
+      const attention = await createDocument(tx, {
+        name: 'Library Removal Attention',
+        state: 'ingested_fedora',
+        token: `${token}attention`,
+        uploadedAt,
+      })
+
+      const createRemoval = async (suffix: string, documentId: string, status: string, error: string | null) => {
+        await tx.fedora_removal_requests.create({
+          data: {
+            id: `rr${token}${suffix}`,
+            requested_by: 'operator@example.test',
+            idempotency_key: `library-removal-${token}-${suffix}`,
+            status,
+            fedora_removal_items: {
+              create: {
+                id: `ri${token}${suffix}`,
+                document_id: documentId,
+                publication_document_id: documentId,
+                source_candidate_document_id: `source-${token}-${suffix}`,
+                original_batch_id: `batch-${token}-${suffix}`,
+                submission_file_id: `file-${token}-${suffix}`,
+                submission_folder_id: `folder-${token}-${suffix}`,
+                submission_parent_folder_id: `parent-${token}-${suffix}`,
+                status,
+                error_message: error,
+                fedora_delete_status: status === 'needs_attention' ? 'unknown' : 'pending',
+              },
+            },
+          },
+        })
+      }
+      await Promise.all([
+        createRemoval('active', active.id, 'in_progress', null),
+        createRemoval('attention', attention.id, 'needs_attention', 'Could not confirm Fedora state'),
+      ])
+
+      const result = await getLibraryDocuments({ pageSize: 100 }, tx)
+      expect(result.items.some((item) => item.id === active.id)).toBe(true)
+      expect(result.items.some((item) => item.id === attention.id)).toBe(true)
+      expect(result.items.find((item) => item.id === active.id)).toMatchObject({
+        removalStatus: 'in_progress',
+        removalError: null,
+        removalRequestId: `rr${token}active`,
+        removalItemId: `ri${token}active`,
+        removalRetryable: false,
+      })
+      expect(result.items.find((item) => item.id === attention.id)).toMatchObject({
+        removalStatus: 'needs_attention',
+        removalError: 'Could not confirm Fedora state',
+        removalRequestId: `rr${token}attention`,
+        removalItemId: `ri${token}attention`,
+        removalRetryable: true,
+      })
+    })
+  })
+
   it('fuzzy-matches Batch names and excludes a different Batch name', async () => {
     await withRollbackTransaction(async (tx) => {
       const token = makeToken()

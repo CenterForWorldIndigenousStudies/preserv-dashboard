@@ -1,5 +1,7 @@
 # Preservation Dashboard
 
+For the Library removal workflow, its confirmation, per-document progress, and retry behavior, see [Library Document Removal](../../documentation/dashboard/LIBRARY_REMOVAL.md).
+
 ## Overview
 
 The Preservation Dashboard (`preserv-dashboard`) is the CWIS (Center for World Indigenous Studies) Preservation Next.js application for browsing, reviewing, and managing preservation data stored in the shared MariaDB database.

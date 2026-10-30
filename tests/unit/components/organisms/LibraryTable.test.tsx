@@ -25,6 +25,14 @@ vi.mock('@molecules/DocumentReprocessingActions', () => ({
   DocumentReprocessingActions: () => null,
 }))
 
+vi.mock('@organisms/LibraryRemovalActions', () => ({
+  LibraryRemovalActions: () => null,
+}))
+
+vi.mock('@organisms/LibraryRemovalItemStatus', () => ({
+  LibraryRemovalItemStatus: () => null,
+}))
+
 vi.mock('@organisms/DocumentTable/DocumentTable', () => ({
   DocumentTable: ({ config }: { config: Record<string, unknown> }) => {
     mocks.documentTableProps = { config }
@@ -89,6 +97,7 @@ describe('LibraryTable', () => {
       }
       advancedSearch?: { filterOptions: FilterOptions }
       emptyMessage?: string
+      getSelectCheckboxProps?: (row: { removalStatus?: string | null }) => { disabled?: boolean }
     }
 
     expect(config).toMatchObject({
@@ -102,7 +111,10 @@ describe('LibraryTable', () => {
       'Uploaded',
       'Collection(s)',
       'Batch',
+      'Removal status',
     ])
+    expect(config.getSelectCheckboxProps?.({ removalStatus: 'in_progress' })).toEqual({ disabled: true })
+    expect(config.getSelectCheckboxProps?.({})).toEqual({ disabled: false })
 
     const row = {
       id: 'doc-1',

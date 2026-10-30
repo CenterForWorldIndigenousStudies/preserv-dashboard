@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from 'react'
 import type { Updater } from '@tanstack/react-table'
 import Box from '@mui/material/Box'
 import Paper from '@mui/material/Paper'
@@ -80,6 +80,7 @@ interface BaseProps {
   isChecked: (documentId: string) => boolean
   onToggle: (documentId: string, checked: boolean) => void
   emptyMessage?: string
+  leadingToolbarSlot?: ReactNode
 }
 
 interface ClientModeProps extends BaseProps {
@@ -418,6 +419,7 @@ export function SelectionTable(props: SelectionTableProps): ReactElement {
             filters: {},
           }}
           searchPlaceholder={props.searchLabel}
+          leadingToolbarSlot={props.leadingToolbarSlot}
           emptyMessage={props.emptyMessage ?? 'No documents found.'}
           enableRowSelection
           rowSelection={rowSelection}

@@ -3,6 +3,7 @@ import { CollectionDocumentManager } from '@organisms/CollectionDocumentManager'
 import type { Document } from 'types/documents'
 import type { PaginatedDocumentsResult } from 'types/pagination'
 import type { SelectionSortField } from '@molecules/SelectionTable'
+import { ACCESS_LEVEL_OPTIONS } from '@constants/accessLevels'
 
 const NAME_POOL = [
   'Cherokee Syllabary Guide',
@@ -168,6 +169,11 @@ const meta = {
   args: {
     collectionId: 'collection-1',
     collectionName: 'Cherokee Language Collection',
+    filterOptions: {
+      collections: ['Cherokee Language Collection'],
+      accessLevels: [...ACCESS_LEVEL_OPTIONS],
+      statuses: ['APPROVED', 'NEEDS_REVIEW'],
+    },
     open: true,
     onClose: () => undefined,
     loadInCollection: () => Promise.resolve({ documents: inCollectionDocuments, total: inCollectionDocuments.length }),

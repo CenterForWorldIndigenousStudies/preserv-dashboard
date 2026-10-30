@@ -15,7 +15,7 @@ import { DocumentTable } from '@organisms/DocumentTable/DocumentTable'
 import { useDocumentTableController } from '@organisms/DocumentTable/useDocumentTableController'
 import type { DocumentTableConfig, DocumentTableFetchResult, DocumentTableQuery } from '@organisms/DocumentTable/types'
 import { serializeStatusesParam, type AdvancedSearchFilters, type FilterOptions } from '@lib/search'
-import type { DocumentsQueryParams } from '@lib/queries/documentQueries'
+import type { ReadyForLibrarySortField } from '@lib/queries/readyForLibraryQueries'
 import type { ReadyForLibraryItem } from 'types/documents'
 
 interface ReadyForLibraryTableProps {
@@ -39,42 +39,6 @@ function syncReadyForLibrarySearchParam(nextParams: URLSearchParams, key: string
 
 function buildDocumentDetailHref(documentId: string, returnHref: string): string {
   return getDocumentDetailPath(documentId, returnHref, PAGE_LABELS.readyForLibrary)
-}
-
-function getReadyForLibrarySortValue(item: ReadyForLibraryItem, orderBy: string): number | string {
-  switch (orderBy) {
-    case 'validation_timestamp':
-      return Number(item.validation_timestamp ?? 0)
-    case 'metadata_complete':
-      return Number(item.metadata_complete)
-    case 'access_level':
-      return String(item.access_level ?? '').toLowerCase()
-    case 'validation_status':
-      return String(item.validation_status ?? '').toLowerCase()
-    case 'name':
-    default:
-      return String(item.name ?? '').toLowerCase()
-  }
-}
-
-export function sortReadyForLibraryItems(
-  items: ReadyForLibraryItem[],
-  orderBy?: string,
-  sortDirection?: 'asc' | 'desc',
-): ReadyForLibraryItem[] {
-  if (!orderBy) {
-    return items
-  }
-
-  const multiplier = sortDirection === 'desc' ? -1 : 1
-  return [...items].sort((left, right) => {
-    const leftValue = getReadyForLibrarySortValue(left, orderBy)
-    const rightValue = getReadyForLibrarySortValue(right, orderBy)
-
-    if (leftValue < rightValue) return -1 * multiplier
-    if (leftValue > rightValue) return 1 * multiplier
-    return String(left.id).localeCompare(String(right.id))
-  })
 }
 
 export function ReadyForLibraryTable({
@@ -198,27 +162,17 @@ export function ReadyForLibraryTable({
           page: query.page,
           pageSize: query.pageSize,
           search: query.search,
-          orderBy: query.orderBy as DocumentsQueryParams['orderBy'],
+          orderBy: query.orderBy as ReadyForLibrarySortField,
           sortDirection: query.sortDirection,
         })
-        const normalizedSearch = normalizeReadyForLibrarySearch(query.search)
-        const filteredItems = normalizedSearch
-          ? result.items.filter((item) =>
-              String(item.name ?? '')
-                .toLowerCase()
-                .includes(normalizedSearch),
-            )
-          : result.items
-        const sortedItems = sortReadyForLibraryItems(filteredItems, query.orderBy, query.sortDirection)
         const offset = (query.page - 1) * query.pageSize
-        const pagedItems = sortedItems.slice(offset, offset + query.pageSize)
 
         return {
-          data: pagedItems,
-          totalCount: sortedItems.length,
+          data: result.items,
+          totalCount: result.total,
           pageInfo: {
             pageSize: query.pageSize,
-            hasNextPage: offset + query.pageSize < sortedItems.length,
+            hasNextPage: offset + result.items.length < result.total,
             hasPreviousPage: query.page > 1,
             startCursor: null,
             endCursor: null,
@@ -228,6 +182,7 @@ export function ReadyForLibraryTable({
     },
     emptyMessage: 'No documents currently meet the dashboard-visible library eligibility criteria.',
     searchPlaceholder: 'Search ready for library...',
+    searchDebounceMs: 300,
     advancedSearch: {
       filters: controller.filters,
       filterOptions,

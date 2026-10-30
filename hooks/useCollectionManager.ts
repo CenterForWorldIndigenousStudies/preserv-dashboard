@@ -9,12 +9,13 @@ import {
   removeDocumentsFromCollectionAction,
 } from '@actions/collections'
 import { sortDocuments, DEFAULT_SELECTION_SORT, type SelectionSortState } from '@molecules/SelectionTable'
+import type { AdvancedSearchFilters } from '@lib/search'
 import type { Document } from 'types/documents'
 import type { PaginatedDocumentsResult } from 'types/pagination'
 
 export type CollectionManagerAction = 'add' | 'remove'
 
-export interface CollectionDocumentsParams {
+export interface CollectionDocumentsParams extends AdvancedSearchFilters {
   search?: string
   sortField?: SelectionSortState['field']
   sortDirection?: SelectionSortState['direction']
@@ -44,6 +45,7 @@ export interface UseCollectionManagerReturn {
   error: string | null
   inSearch: string
   outSearch: string
+  outFilters: AdvancedSearchFilters
   inSort: SelectionSortState
   outSort: SelectionSortState
   inPage: number
@@ -53,6 +55,7 @@ export interface UseCollectionManagerReturn {
   setActiveAction: (action: CollectionManagerAction) => void
   setInSearch: (value: string) => void
   setOutSearch: (value: string) => void
+  setOutFilters: (filters: AdvancedSearchFilters) => void
   setInSort: (state: SelectionSortState) => void
   setOutSort: (state: SelectionSortState) => void
   setInPage: (page: number) => void
@@ -101,6 +104,7 @@ export function useCollectionManager(
   const [error, setError] = useState<string | null>(null)
   const [inSearch, setInSearch] = useState('')
   const [outSearch, setOutSearch] = useState('')
+  const [outFilters, setOutFilters] = useState<AdvancedSearchFilters>({})
   const [inSort, setInSort] = useState<SelectionSortState>(DEFAULT_SELECTION_SORT)
   const [outSort, setOutSort] = useState<SelectionSortState>(DEFAULT_SELECTION_SORT)
   const [inPage, setInPage] = useState(1)
@@ -122,12 +126,13 @@ export function useCollectionManager(
   const outParams = useMemo<CollectionDocumentsParams>(
     () => ({
       search: outSearch.trim() || undefined,
+      ...outFilters,
       sortField: outSort.field,
       sortDirection: outSort.direction,
       page: outPage,
       pageSize: outPageSize,
     }),
-    [outSearch, outSort.field, outSort.direction, outPage, outPageSize],
+    [outSearch, outFilters, outSort.field, outSort.direction, outPage, outPageSize],
   )
 
   useEffect(() => {
@@ -293,6 +298,7 @@ export function useCollectionManager(
     error,
     inSearch,
     outSearch,
+    outFilters,
     inSort,
     outSort,
     inPage,
@@ -302,6 +308,10 @@ export function useCollectionManager(
     setActiveAction,
     setInSearch: handleSearchChange(setInSearch, setInPage),
     setOutSearch: handleSearchChange(setOutSearch, setOutPage),
+    setOutFilters: (filters: AdvancedSearchFilters) => {
+      setOutFilters(filters)
+      setOutPage(1)
+    },
     setInSort,
     setOutSort,
     setInPage: (page: number) => setInPage(normalizePage(page)),

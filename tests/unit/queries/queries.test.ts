@@ -13,7 +13,7 @@ const {
   mockDocumentsFindMany,
   mockTagsFindMany,
   mockBatchesFindMany,
-  mockGetDocumentCollectionMemberships,
+  mockGetDocumentCollectionMembershipsByDocument,
 } = vi.hoisted(() => ({
   mockQueryRaw: vi.fn(),
   mockMetadataFindMany: vi.fn(),
@@ -23,7 +23,7 @@ const {
   mockDocumentsFindMany: vi.fn(),
   mockTagsFindMany: vi.fn(),
   mockBatchesFindMany: vi.fn(),
-  mockGetDocumentCollectionMemberships: vi.fn(),
+  mockGetDocumentCollectionMembershipsByDocument: vi.fn(),
 }))
 
 vi.mock('@lib/db', () => ({
@@ -44,7 +44,7 @@ vi.mock('@lib/editHistory', () => ({
 }))
 
 vi.mock('@lib/queries/collectionMembershipQueries', () => ({
-  getDocumentCollectionMemberships: mockGetDocumentCollectionMemberships,
+  getDocumentCollectionMembershipsByDocument: mockGetDocumentCollectionMembershipsByDocument,
 }))
 
 import { getAllDocuments, getDocuments } from '@lib/queries/documentQueries'
@@ -150,7 +150,7 @@ describe('getReadyForLibraryDocuments advanced filters', () => {
     mockDocumentsFindMany.mockReset()
     mockTagsFindMany.mockReset()
     mockBatchesFindMany.mockReset()
-    mockGetDocumentCollectionMemberships.mockReset()
+    mockGetDocumentCollectionMembershipsByDocument.mockReset()
 
     mockMetadataFindMany.mockResolvedValue([
       { id: 'meta-title', name: 'dc_title' },
@@ -177,15 +177,27 @@ describe('getReadyForLibraryDocuments advanced filters', () => {
     mockDocumentsFindMany.mockResolvedValue([{ id: 'doc-ready', name: 'Ready document' }])
     mockTagsFindMany.mockResolvedValue([{ id: 'tag-collection', name: 'collection-tag', notes: null }])
     mockBatchesFindMany.mockResolvedValue([{ id: 'batch-2026', name: 'batch-2026' }])
-    mockGetDocumentCollectionMemberships.mockResolvedValue([
-      {
-        collectionId: 'collection-1',
-        collectionName: 'Mapped Collection',
-        fedoraNodeId: '50',
-        evidence: [{ source: 'tag', qualifierTagId: 'tag-collection', qualifierName: 'Mapped Collection' }],
-      },
-    ])
-    mockQueryRaw.mockResolvedValueOnce([{ id: 'doc-ready' }]).mockResolvedValueOnce([])
+    mockGetDocumentCollectionMembershipsByDocument.mockResolvedValue(
+      new Map([
+        [
+          'doc-ready',
+          [
+            {
+              collectionId: 'collection-1',
+              collectionName: 'Mapped Collection',
+              fedoraNodeId: '50',
+              evidence: [{ source: 'tag', qualifierTagId: 'tag-collection', qualifierName: 'Mapped Collection' }],
+            },
+          ],
+        ],
+      ]),
+    )
+    mockQueryRaw
+      .mockResolvedValueOnce([{ id: 'doc-ready' }])
+      .mockResolvedValueOnce([
+        { id: 'doc-ready', name: 'Ready document', validation_status: 'APPROVED', validation_timestamp: null },
+      ])
+      .mockResolvedValueOnce([{ total_count: 1 }])
   })
 
   it('applies the full Advanced Search filter set to ready candidates before returning items', async () => {
@@ -229,14 +241,21 @@ describe('getReadyForLibraryDocuments advanced filters', () => {
   })
 
   it('excludes approved documents with no calculated or unmapped collection', async () => {
-    mockGetDocumentCollectionMemberships.mockResolvedValue([
-      {
-        collectionId: 'collection-unmapped',
-        collectionName: 'Unmapped Collection',
-        fedoraNodeId: null,
-        evidence: [{ source: 'tag', qualifierTagId: 'tag-unmapped', qualifierName: 'Unmapped Collection' }],
-      },
-    ])
+    mockGetDocumentCollectionMembershipsByDocument.mockResolvedValue(
+      new Map([
+        [
+          'doc-ready',
+          [
+            {
+              collectionId: 'collection-unmapped',
+              collectionName: 'Unmapped Collection',
+              fedoraNodeId: null,
+              evidence: [{ source: 'tag', qualifierTagId: 'tag-unmapped', qualifierName: 'Unmapped Collection' }],
+            },
+          ],
+        ],
+      ]),
+    )
 
     const result = await getReadyForLibraryDocuments({ statuses: ['APPROVED'] })
 

@@ -295,6 +295,36 @@ export function normalizePassStage(
     return parsed
   }
 
+  const passMetrics = entries.map(({ passNumber, details: passDetails }) => {
+    const pass = normalizeStage(passDetails)
+    if (!pass) {
+      throw new Error(`Pass ${passNumber} must have stage details`)
+    }
+
+    return {
+      passNumber,
+      status: pass.status,
+      processedCount: pass.processedCount,
+      ingestedCount: pass.ingestedCount,
+      duplicateCount: pass.duplicateCount,
+      exactDuplicateCount: pass.exactDuplicateCount,
+      skippedSameOriginCount: pass.skippedSameOriginCount,
+      splitCount: pass.splitCount,
+      childCount: pass.childCount,
+      passedThroughCount: pass.passedThroughCount,
+      rotatedCount: pass.rotatedCount,
+      normalizedCount: pass.normalizedCount,
+      ocrCompletedCount: pass.ocrCompletedCount,
+      extractedCount: pass.extractedCount,
+      needsReviewCount: pass.needsReviewCount,
+      versionedCount: pass.versionedCount,
+      resolvedCount: pass.resolvedCount,
+      skippedCount: pass.skippedCount,
+      reviewNeededCount: pass.reviewNeededCount,
+      failedCount: pass.failedCount,
+    }
+  })
+
   const inferredCompletedPasses = entries
     .filter((entry) => {
       const status = entry.details.status?.trim()
@@ -304,6 +334,7 @@ export function normalizePassStage(
 
   return {
     ...parsed,
+    passMetrics,
     currentPass:
       parseNumber(latestEntry?.details.currentPass) ||
       latestEntry?.passNumber ||

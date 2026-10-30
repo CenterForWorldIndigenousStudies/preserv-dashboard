@@ -146,25 +146,7 @@ export interface PipelineCallbackBody {
 
 export type CallbackStageKey = Exclude<GeneratedPipelineServiceKey, 'data_combiner'>
 
-export interface NormalizedProcessStageStatus {
-  status: string | null
-  mode: string | null
-  requestId: string | null
-  operationId?: string | null
-  idempotencyKey?: string | null
-  executionMode?: string | null
-  requestedByApp: string | null
-  initiatedAt: string | null
-  startedAt: string | null
-  completedAt: string | null
-  lastTransitionAt: string | null
-  error: string | null
-  callbackDeliveryStatus: string | null
-  callbackNotifiedAt: string | null
-  callbackReceivedAt: string | null
-  callbackHttpStatus: number | null
-  callbackErrorType: string | null
-  callbackErrorMessage: string | null
+export interface NormalizedProcessMetricCounts {
   processedCount: number
   ingestedCount: number
   duplicateCount: number
@@ -183,6 +165,27 @@ export interface NormalizedProcessStageStatus {
   skippedCount: number
   reviewNeededCount: number
   failedCount: number
+}
+
+export interface NormalizedProcessStageStatus extends NormalizedProcessMetricCounts {
+  status: string | null
+  mode: string | null
+  requestId: string | null
+  operationId?: string | null
+  idempotencyKey?: string | null
+  executionMode?: string | null
+  requestedByApp: string | null
+  initiatedAt: string | null
+  startedAt: string | null
+  completedAt: string | null
+  lastTransitionAt: string | null
+  error: string | null
+  callbackDeliveryStatus: string | null
+  callbackNotifiedAt: string | null
+  callbackReceivedAt: string | null
+  callbackHttpStatus: number | null
+  callbackErrorType: string | null
+  callbackErrorMessage: string | null
   currentPass: number
   maxPasses: number
   completedPasses: number[]
@@ -191,6 +194,12 @@ export interface NormalizedProcessStageStatus {
   collectionNotes: string | null
   openaiBatchWave1: NormalizedOpenAIBatchWaveStatus | null
   openaiBatchWave2: NormalizedOpenAIBatchWaveStatus | null
+  passMetrics?: NormalizedProcessPassMetrics[]
+}
+
+export interface NormalizedProcessPassMetrics extends NormalizedProcessMetricCounts {
+  passNumber: number
+  status: string | null
 }
 
 export interface NormalizedOpenAIBatchWaveStatus {

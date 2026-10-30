@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type ReactElement } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import type { MRT_ColumnDef, MRT_RowSelectionState } from 'material-react-table'
+import { Stack } from '@mui/material'
 
 import { getLibraryDocumentsAction } from '@actions/library'
 import { DateAtom } from '@atoms/Date'
@@ -11,6 +12,8 @@ import { getBatchDetailPath, getDocumentDetailPath, COLLECTIONS_PATH } from '@co
 import { PAGE_LABELS } from '@constants/pageLabels'
 import { EntityNameBlock } from '@molecules/EntityNameBlock'
 import { DocumentReprocessingActions } from '@molecules/DocumentReprocessingActions'
+import { LibraryRemovalActions } from '@organisms/LibraryRemovalActions'
+import { LibraryRemovalItemStatus } from '@organisms/LibraryRemovalItemStatus'
 import { DocumentTable } from '@organisms/DocumentTable/DocumentTable'
 import type { DocumentTableConfig, DocumentTableFetchResult, DocumentTableQuery } from '@organisms/DocumentTable/types'
 import { useDocumentTableController } from '@organisms/DocumentTable/useDocumentTableController'
@@ -181,6 +184,24 @@ export function LibraryTable({ filterOptions, initialQuery, initialData }: Libra
             '—'
           ),
       },
+      {
+        accessorKey: 'removalStatus',
+        header: 'Removal status',
+        size: 220,
+        enableSorting: false,
+        Cell: ({ row }) =>
+          row.original.removalStatus ? (
+            <LibraryRemovalItemStatus
+              requestId={row.original.removalRequestId ?? null}
+              itemId={row.original.removalItemId ?? null}
+              status={row.original.removalStatus}
+              error={row.original.removalError ?? null}
+              retryable={row.original.removalRetryable ?? false}
+            />
+          ) : (
+            '—'
+          ),
+      },
     ],
     [returnHref],
   )
@@ -216,11 +237,17 @@ export function LibraryTable({ filterOptions, initialQuery, initialData }: Libra
       filterOptions,
       onApply: controller.setFilters,
     },
-    trailingToolbarSlot: <DocumentReprocessingActions documentIds={selectedDocumentIds} />,
+    trailingToolbarSlot: (
+      <Stack direction={'row'} spacing={1.5} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+        <DocumentReprocessingActions documentIds={selectedDocumentIds} />
+        <LibraryRemovalActions documentIds={selectedDocumentIds} onSubmitted={() => setRowSelection({})} />
+      </Stack>
+    ),
     rowSelection,
     onRowSelectionChange: setRowSelection,
     enableRowSelection: true,
     getRowId: (row) => row.id,
+    getSelectCheckboxProps: (row) => ({ disabled: Boolean(row.removalStatus) }),
   }
 
   return (

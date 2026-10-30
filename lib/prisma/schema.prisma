@@ -406,6 +406,57 @@ model edit_history {
   @@index([entity_table, entity_id, edited_at], map: "idx_edit_history_entity_edited_at")
 }
 
+model fedora_removal_items {
+  id                           String                  @id @db.VarChar(36)
+  request_id                   String                  @db.VarChar(36)
+  document_id                  String                  @db.VarChar(36)
+  publication_document_id      String                  @db.VarChar(36)
+  source_candidate_document_id String                  @db.VarChar(36)
+  source_state                 String?                 @db.VarChar(64)
+  original_batch_id            String                  @db.VarChar(36)
+  fedora_node_id               String?                 @db.VarChar(255)
+  fedora_url                   String?                 @db.Text
+  fedora_media_id              String?                 @db.VarChar(255)
+  submission_file_id           String                  @db.VarChar(255)
+  submission_folder_id         String                  @db.VarChar(255)
+  submission_parent_folder_id  String                  @db.VarChar(255)
+  workbench_csv_file_id        String?                 @db.VarChar(255)
+  status                       String                  @default("requested") @db.VarChar(32)
+  fedora_delete_status         String                  @default("pending") @db.VarChar(32)
+  drive_quarantine_status      String                  @default("pending") @db.VarChar(32)
+  restoration_status           String                  @default("pending") @db.VarChar(32)
+  error_type                   String?                 @db.VarChar(255)
+  error_message                String?                 @db.Text
+  last_retry_by                String?                 @db.VarChar(255)
+  last_retry_at                DateTime?               @db.DateTime(0)
+  requested_at                 DateTime?               @default(now()) @db.DateTime(0)
+  started_at                   DateTime?               @db.DateTime(0)
+  completed_at                 DateTime?               @db.DateTime(0)
+  created_at                   DateTime?               @default(now()) @db.DateTime(0)
+  updated_at                   DateTime?               @default(now()) @db.DateTime(0)
+  fedora_removal_requests      fedora_removal_requests @relation(fields: [request_id], references: [id], onUpdate: Restrict, map: "fk_fedora_removal_items_request_id")
+
+  @@index([document_id], map: "idx_fedora_removal_items_document_id")
+  @@index([request_id], map: "idx_fedora_removal_items_request_id")
+  @@index([status], map: "idx_fedora_removal_items_status")
+}
+
+model fedora_removal_requests {
+  id                   String                 @id @db.VarChar(36)
+  requested_by         String                 @db.VarChar(255)
+  idempotency_key      String                 @unique(map: "uk_fedora_removal_requests_idempotency_key") @db.VarChar(255)
+  status               String                 @default("requested") @db.VarChar(32)
+  requested_at         DateTime?              @default(now()) @db.DateTime(0)
+  started_at           DateTime?              @db.DateTime(0)
+  completed_at         DateTime?              @db.DateTime(0)
+  last_failure         String?                @db.Text
+  created_at           DateTime?              @default(now()) @db.DateTime(0)
+  updated_at           DateTime?              @default(now()) @db.DateTime(0)
+  fedora_removal_items fedora_removal_items[]
+
+  @@index([status], map: "idx_fedora_removal_requests_status")
+}
+
 model metadata {
   id                   String                 @id @db.VarChar(36)
   name                 String                 @db.Text

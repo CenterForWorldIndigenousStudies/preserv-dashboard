@@ -8,9 +8,10 @@ import { PIPELINE_STAGE_STATUSES } from '@constants/pipelineStageStatuses'
 import { getDashboardSession } from '@root/auth'
 import {
   getReadyForLibraryBatchIds,
+  getReadyForLibraryDocumentIds,
   getReadyForLibraryDocuments,
+  type ReadyForLibraryQueryParams,
 } from '@lib/queries/readyForLibraryQueries'
-import type { DocumentsQueryParams } from '@lib/queries/documentQueries'
 import { getProcessBatchStatus } from '@lib/processBatches'
 import { isPipelineBatchTerminal } from '@lib/pipelineExecution'
 import { triggerFedoraIngester } from '@lib/pipelineTriggers'
@@ -38,7 +39,7 @@ export type ReadyForLibraryHandoffActionResult =
       error: string
     }
 
-export async function getReadyForLibraryAction(params: DocumentsQueryParams = {}) {
+export async function getReadyForLibraryAction(params: ReadyForLibraryQueryParams = {}) {
   return getReadyForLibraryDocuments(params)
 }
 
@@ -75,8 +76,8 @@ export async function triggerReadyForLibraryAction(): Promise<ReadyForLibraryHan
     }
   }
 
-  const readyDocuments = await getReadyForLibraryDocuments()
-  const batchIds = await getReadyForLibraryBatchIds(readyDocuments.items.map((item) => item.id))
+  const readyDocumentIds = await getReadyForLibraryDocumentIds()
+  const batchIds = await getReadyForLibraryBatchIds(readyDocumentIds)
   const queuedBatchIds: string[] = []
   const skippedBatchIds: string[] = []
   const failed: ReadyForLibraryHandoffFailure[] = []
@@ -116,7 +117,7 @@ export async function triggerReadyForLibraryAction(): Promise<ReadyForLibraryHan
   if (queuedBatchIds.length === 0 && skippedBatchIds.length === 0) {
     return {
       ok: false,
-      eligibleDocumentCount: readyDocuments.items.length,
+      eligibleDocumentCount: readyDocumentIds.length,
       queuedBatchCount: 0,
       skippedBatchCount: 0,
       failed,
@@ -134,7 +135,7 @@ export async function triggerReadyForLibraryAction(): Promise<ReadyForLibraryHan
       : ''
   return {
     ok: true,
-    eligibleDocumentCount: readyDocuments.items.length,
+    eligibleDocumentCount: readyDocumentIds.length,
     queuedBatchCount: queuedBatchIds.length,
     skippedBatchCount: skippedBatchIds.length,
     failed,

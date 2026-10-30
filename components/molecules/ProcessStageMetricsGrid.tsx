@@ -1,14 +1,14 @@
 import type { ReactElement } from 'react'
-import { Box, Typography } from '@mui/material'
+import { Box, Stack, Typography } from '@mui/material'
 
-import type { ProcessStageStatus } from 'types/pipelineContracts'
+import type { NormalizedProcessMetricCounts, ProcessStageStatus } from 'types/pipelineContracts'
 
 interface ProcessStageMetricsGridProps {
   stageLabel: string
   stage: ProcessStageStatus
 }
 
-function getMetrics(stageLabel: string, stage: ProcessStageStatus): Array<{ label: string; value: number }> {
+function getMetrics(stageLabel: string, stage: NormalizedProcessMetricCounts): Array<{ label: string; value: number }> {
   switch (stageLabel) {
     case 'Ingest':
       return [
@@ -60,7 +60,7 @@ function getMetrics(stageLabel: string, stage: ProcessStageStatus): Array<{ labe
   }
 }
 
-export function ProcessStageMetricsGrid({ stageLabel, stage }: ProcessStageMetricsGridProps): ReactElement {
+function MetricGrid({ metrics }: { metrics: Array<{ label: string; value: number }> }): ReactElement {
   return (
     <Box
       sx={{
@@ -72,7 +72,7 @@ export function ProcessStageMetricsGrid({ stageLabel, stage }: ProcessStageMetri
         },
       }}
     >
-      {getMetrics(stageLabel, stage).map(({ label, value }) => (
+      {metrics.map(({ label, value }) => (
         <Box key={label}>
           <Typography
             variant={'caption'}
@@ -86,5 +86,26 @@ export function ProcessStageMetricsGrid({ stageLabel, stage }: ProcessStageMetri
         </Box>
       ))}
     </Box>
+  )
+}
+
+export function ProcessStageMetricsGrid({ stageLabel, stage }: ProcessStageMetricsGridProps): ReactElement {
+  if (stage.passMetrics?.length) {
+    return (
+      <Stack spacing={2}>
+        {stage.passMetrics.map((pass) => (
+          <Box key={pass.passNumber}>
+            <Typography variant={'subtitle2'} sx={{ color: 'text.secondary', mb: 1 }}>
+              {`Pass ${pass.passNumber}`}
+            </Typography>
+            <MetricGrid metrics={getMetrics(stageLabel, pass)} />
+          </Box>
+        ))}
+      </Stack>
+    )
+  }
+
+  return (
+    <MetricGrid metrics={getMetrics(stageLabel, stage)} />
   )
 }

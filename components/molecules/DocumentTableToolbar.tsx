@@ -1,4 +1,4 @@
-import type { ReactElement, ReactNode } from 'react'
+import { useEffect, useState, type ReactElement, type ReactNode } from 'react'
 import { Stack, TextField } from '@mui/material'
 
 import { TableStat } from '@atoms/TableStat'
@@ -7,6 +7,7 @@ import type { DocumentTableStat } from '@organisms/DocumentTable/types'
 
 interface DocumentTableToolbarProps {
   searchPlaceholder?: string
+  searchDebounceMs?: number
   searchValue: string
   onSearchChange: (value: string) => void
   pageSize: number
@@ -20,6 +21,7 @@ interface DocumentTableToolbarProps {
 
 export function DocumentTableToolbar({
   searchPlaceholder = 'Search documents',
+  searchDebounceMs = 0,
   searchValue,
   onSearchChange,
   pageSize,
@@ -30,6 +32,21 @@ export function DocumentTableToolbar({
   leadingSlot,
   trailingSlot,
 }: DocumentTableToolbarProps): ReactElement {
+  const [inputValue, setInputValue] = useState(searchValue)
+
+  useEffect(() => {
+    setInputValue(searchValue)
+  }, [searchValue])
+
+  useEffect(() => {
+    if (inputValue === searchValue) {
+      return
+    }
+
+    const timeoutId = setTimeout(() => onSearchChange(inputValue), searchDebounceMs)
+    return () => clearTimeout(timeoutId)
+  }, [inputValue, onSearchChange, searchDebounceMs, searchValue])
+
   return (
     <Stack
       direction={{ xs: 'column', md: 'row' }}
@@ -45,8 +62,8 @@ export function DocumentTableToolbar({
           type={'search'}
           size={'small'}
           placeholder={searchPlaceholder}
-          value={searchValue}
-          onChange={(event) => onSearchChange(event.target.value)}
+          value={inputValue}
+          onChange={(event) => setInputValue(event.target.value)}
           slotProps={{ htmlInput: { 'aria-label': searchPlaceholder } }}
           sx={{ width: { xs: '100%', sm: 256 } }}
         />

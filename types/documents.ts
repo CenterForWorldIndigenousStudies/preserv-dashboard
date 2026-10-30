@@ -192,6 +192,11 @@ export interface LibraryDocumentItem {
   uploadedAt: string | null
   collections: LibraryCollection[]
   batch: LibraryBatch | null
+  removalStatus?: string | null
+  removalError?: string | null
+  removalRequestId?: string | null
+  removalItemId?: string | null
+  removalRetryable?: boolean
 }
 
 export interface LibraryDocumentsPageResult {

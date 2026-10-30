@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
 import ThemeProvider from '@components/ThemeProvider'
+import { normalizeProcessBatchDetails } from '@lib/pipelineNormalization'
 import { ProcessStageMetricsGrid } from '@molecules/ProcessStageMetricsGrid'
 import type { ProcessStageStatus } from 'types/pipelineContracts'
 
@@ -64,5 +65,61 @@ describe('ProcessStageMetricsGrid', () => {
     expect(markup).toContain('Ingested')
     expect(markup).toContain('Duplicates')
     expect(markup).toContain('Same Origin Skips')
+  })
+
+  it('renders splitter metrics separately for each pass', () => {
+    const stage = normalizeProcessBatchDetails({
+      documentSplitterPass1: {
+        status: 'completed',
+        processedCount: 1,
+        splitCount: 1,
+        childCount: 2,
+      },
+      documentSplitterPass2: {
+        status: 'completed',
+        processedCount: 0,
+        splitCount: 0,
+        childCount: 0,
+      },
+    }).documentSplitter
+    if (!stage) throw new Error('Expected normalized document-splitter stage.')
+
+    const markup = renderToStaticMarkup(
+      <ThemeProvider>
+        <ProcessStageMetricsGrid stageLabel={'Document Splitter'} stage={stage} />
+      </ThemeProvider>,
+    )
+
+    expect(markup).toContain('Pass 1')
+    expect(markup).toContain('Pass 2')
+    expect(markup).toContain('Child Docs')
+    expect(markup.match(/>2<\/p>/)).not.toBeNull()
+  })
+
+  it('renders page-rotator metrics separately for each pass', () => {
+    const stage = normalizeProcessBatchDetails({
+      pageRotatorPass1: {
+        status: 'completed',
+        processedCount: 2,
+        passedThroughCount: 2,
+      },
+      pageRotatorPass2: {
+        status: 'completed',
+        processedCount: 0,
+        passedThroughCount: 0,
+      },
+    }).pageRotator
+    if (!stage) throw new Error('Expected normalized page-rotator stage.')
+
+    const markup = renderToStaticMarkup(
+      <ThemeProvider>
+        <ProcessStageMetricsGrid stageLabel={'Page Rotator'} stage={stage} />
+      </ThemeProvider>,
+    )
+
+    expect(markup).toContain('Pass 1')
+    expect(markup).toContain('Pass 2')
+    expect(markup).toContain('Pass Through')
+    expect(markup.match(/>2<\/p>/)).not.toBeNull()
   })
 })

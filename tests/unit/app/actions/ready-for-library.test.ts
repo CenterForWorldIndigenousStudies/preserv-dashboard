@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 const {
   mockGetDashboardSession,
   mockGetReadyForLibraryBatchIds,
+  mockGetReadyForLibraryDocumentIds,
   mockGetReadyForLibraryDocuments,
   mockGetProcessBatchStatus,
   mockTriggerFedoraIngester,
@@ -10,6 +11,7 @@ const {
 } = vi.hoisted(() => ({
   mockGetDashboardSession: vi.fn(),
   mockGetReadyForLibraryBatchIds: vi.fn(),
+  mockGetReadyForLibraryDocumentIds: vi.fn(),
   mockGetReadyForLibraryDocuments: vi.fn(),
   mockGetProcessBatchStatus: vi.fn(),
   mockTriggerFedoraIngester: vi.fn(),
@@ -30,6 +32,7 @@ vi.mock('@root/auth', () => ({
 
 vi.mock('@lib/queries/readyForLibraryQueries', () => ({
   getReadyForLibraryBatchIds: mockGetReadyForLibraryBatchIds,
+  getReadyForLibraryDocumentIds: mockGetReadyForLibraryDocumentIds,
   getReadyForLibraryDocuments: mockGetReadyForLibraryDocuments,
 }))
 
@@ -50,10 +53,7 @@ describe('triggerReadyForLibraryAction', () => {
 
   it('queues each eligible batch once and skips handoffs already started', async () => {
     mockGetDashboardSession.mockResolvedValue({ user: { email: 'operator@example.org' } })
-    mockGetReadyForLibraryDocuments.mockResolvedValue({
-      items: [{ id: 'doc-1' }, { id: 'doc-2' }],
-      total: 2,
-    })
+    mockGetReadyForLibraryDocumentIds.mockResolvedValue(['doc-1', 'doc-2'])
     mockGetReadyForLibraryBatchIds.mockResolvedValue(['batch-1', 'batch-2'])
     mockGetProcessBatchStatus.mockImplementation((batchId: string) => ({
       batchId,
@@ -74,6 +74,7 @@ describe('triggerReadyForLibraryAction', () => {
       expect.objectContaining({ batchId: 'batch-1', startedBy: 'operator@example.org' }),
     )
     expect(mockTriggerFedoraIngester).toHaveBeenCalledTimes(1)
+    expect(mockGetReadyForLibraryBatchIds).toHaveBeenCalledWith(['doc-1', 'doc-2'])
     expect(mockRevalidatePath).toHaveBeenCalledWith('/ready-for-library')
   })
 
@@ -83,7 +84,7 @@ describe('triggerReadyForLibraryAction', () => {
     const result = await triggerReadyForLibraryAction()
 
     expect(result).toMatchObject({ ok: false, error: 'Authentication required.' })
-    expect(mockGetReadyForLibraryDocuments).not.toHaveBeenCalled()
+    expect(mockGetReadyForLibraryDocumentIds).not.toHaveBeenCalled()
     expect(mockGetReadyForLibraryBatchIds).not.toHaveBeenCalled()
   })
 })

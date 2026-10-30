@@ -90,6 +90,7 @@ export interface DocumentTableConfig<TData extends MRT_RowData & { id: string },
   rowActionsColumnSize?: number
   emptyMessage?: string
   searchPlaceholder?: string
+  searchDebounceMs?: number
   styleVariant?: 'default' | 'reviewQueueDense'
   advancedSearch?: DocumentTableAdvancedSearchConfig
   leadingToolbarSlot?: ReactNode

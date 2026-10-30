@@ -5,9 +5,11 @@ import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 
 import { Button } from '@atoms/Button'
+import { AdvancedSearchModal } from '@organisms/AdvancedSearchModal'
 import { SelectionTable, type SelectionSortField, type SelectionSortState } from '@molecules/SelectionTable'
 import { ConfirmationDialog } from '@molecules/ConfirmationDialog'
 import { Modal } from '@organisms/Modal'
+import type { FilterOptions } from '@lib/search'
 import {
   useCollectionManager,
   type UseCollectionManagerOptions,
@@ -17,6 +19,7 @@ import {
 interface CollectionDocumentManagerProps extends UseCollectionManagerOptions {
   collectionId: string
   collectionName: string
+  filterOptions: FilterOptions
   open: boolean
   onClose: () => void
 }
@@ -53,6 +56,7 @@ function updateSort(current: SelectionSortState, field: SelectionSortField): Sel
 export function CollectionDocumentManager({
   collectionId,
   collectionName,
+  filterOptions,
   open,
   onClose,
   initialAction,
@@ -74,6 +78,7 @@ export function CollectionDocumentManager({
     error,
     inSearch,
     outSearch,
+    outFilters,
     inSort,
     outSort,
     inPage,
@@ -82,6 +87,7 @@ export function CollectionDocumentManager({
     outPageSize,
     setInSearch,
     setOutSearch,
+    setOutFilters,
     setInSort,
     setOutSort,
     setInPage,
@@ -155,6 +161,13 @@ export function CollectionDocumentManager({
               page={outPage}
               pageSize={outPageSize}
               searchValue={outSearch}
+              leadingToolbarSlot={
+                <AdvancedSearchModal
+                  filters={outFilters}
+                  filterOptions={filterOptions}
+                  onApply={setOutFilters}
+                />
+              }
               sortState={outSort}
               onSearch={setOutSearch}
               onSort={(field) => {

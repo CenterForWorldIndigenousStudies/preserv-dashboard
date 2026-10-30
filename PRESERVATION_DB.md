@@ -189,6 +189,49 @@ erDiagram
         datetime updated_at
     }
 
+    fedora_removal_requests {
+        varchar id PK
+        varchar requested_by
+        varchar idempotency_key UK
+        varchar status
+        datetime requested_at
+        datetime started_at
+        datetime completed_at
+        text last_failure
+        datetime created_at
+        datetime updated_at
+    }
+
+    fedora_removal_items {
+        varchar id PK
+        varchar request_id FK
+        varchar document_id
+        varchar publication_document_id
+        varchar source_candidate_document_id
+        varchar source_state
+        varchar original_batch_id
+        varchar fedora_node_id
+        text fedora_url
+        varchar fedora_media_id
+        varchar submission_file_id
+        varchar submission_folder_id
+        varchar submission_parent_folder_id
+        varchar workbench_csv_file_id
+        varchar status
+        varchar fedora_delete_status
+        varchar drive_quarantine_status
+        varchar restoration_status
+        varchar error_type
+        text error_message
+        varchar last_retry_by
+        datetime last_retry_at
+        datetime requested_at
+        datetime started_at
+        datetime completed_at
+        datetime created_at
+        datetime updated_at
+    }
+
     pipeline_worker_leases {
         varchar id PK
         varchar active_batch_id FK
@@ -352,6 +395,7 @@ erDiagram
     batches ||--o| batch_rollbacks : "rollback"
     batches ||--o{ batch_mutations : "mutations"
     batches ||--o{ batch_external_operations : "external work"
+    fedora_removal_requests ||--o{ fedora_removal_items : "items"
     batches ||--o{ pipeline_worker_leases : "active_batch"
     batch_rollbacks ||--o{ batch_mutations : "journal"
     metadata ||--o{ document_to_metadata : "document_to_metadata"
@@ -871,6 +915,42 @@ An operation may remain unresolved after a process crash; recovery reconciles it
 | `status` | `VARCHAR(32)` | `planned`, `executing`, `applied`, `uncertain`, `failed`, or `compensated`. |
 | `attempts` / timestamps / `last_error` | — | Recovery and failure tracking. |
 | `next_recovery_at` | `DATETIME` | Earliest time for the next provider reconciliation attempt; used for bounded backoff. |
+
+### fedora_removal_requests
+
+Durable audit record for an authenticated Dashboard request to remove one or more Fedora publications. The idempotency key is unique per submission; each document's progress is stored separately in `fedora_removal_items`.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `VARCHAR(36)` | Primary key. |
+| `requested_by` | `VARCHAR(255)` | Authenticated Dashboard user's email. |
+| `idempotency_key` | `VARCHAR(255)` | Unique key for request submission retries. |
+| `status` | `VARCHAR(32)` | Aggregate request status, derived from its independently processed items. |
+| `requested_at` / `started_at` / `completed_at` | `DATETIME` | Request lifecycle timestamps. |
+| `last_failure` | `TEXT` | Most recently recorded item failure. |
+
+### fedora_removal_items
+
+Durable per-document snapshot and progress record. The item retains publication, source, batch, Fedora, and generated Drive identities as audit values; only `request_id` is a foreign key.
+The publication document is deleted after successful restoration, while this audit row remains. The original batch and source history are not modified.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` / `request_id` | `VARCHAR(36)` | Primary key and FK to `fedora_removal_requests.id`. |
+| `document_id` / `publication_document_id` / `source_candidate_document_id` | `VARCHAR(36)` | Selected Library row and captured publication/source lineage IDs; retained as audit values. |
+| `source_state` | `VARCHAR(64)` | Captured pre-Fedora state restored after external cleanup succeeds. |
+| `original_batch_id` | `VARCHAR(36)` | Batch audit snapshot; not a foreign key and never changed by removal. |
+| `fedora_node_id` / `fedora_url` / `fedora_media_id` | — | Persisted Fedora target identity used for deletion and reconciliation. |
+| `submission_file_id` / `submission_folder_id` / `submission_parent_folder_id` / `workbench_csv_file_id` | — | Generated Drive artifact IDs and original parent used to verify quarantine. |
+| `status` | `VARCHAR(32)` | Item state: `requested`, `in_progress`, `failed`, `needs_attention`, or `completed`. |
+| `fedora_delete_status` / `drive_quarantine_status` / `restoration_status` | `VARCHAR(32)` | Durable step progress; provider outcomes distinguish pending, in progress, succeeded, failed, and unknown. |
+| `error_type` / `error_message` | — | Latest item failure detail. |
+| `last_retry_by` / `last_retry_at` | — | Operator and time for the latest explicit retry. |
+| `requested_at` / `started_at` / `completed_at` | `DATETIME` | Item lifecycle timestamps. |
+
+The worker processes each item independently and resumes unfinished steps after restart. The item's `updated_at` timestamp acts as a five-minute processing lease so another worker cannot claim active work.
+It restores the source candidate only after Fedora deletion and Drive quarantine are verified.
+Removal does not reopen a batch; after any successful Fedora ingestion, the batch remains ineligible for whole-batch rollback.
 
 ### pipeline_worker_leases
 

@@ -57,6 +57,83 @@ describe('pipelineNormalization', () => {
     expect(normalized.pageRotator?.status).toBe('queued')
   })
 
+  test('preserves metrics for each splitter and rotator pass', () => {
+    const normalized = normalizeProcessBatchDetails({
+      documentSplitterPass1: {
+        status: 'completed',
+        processedCount: 1,
+        splitCount: 1,
+        childCount: 2,
+      },
+      documentSplitterPass2: {
+        status: 'completed',
+        processedCount: 0,
+        splitCount: 0,
+        childCount: 0,
+      },
+      pageRotatorPass1: {
+        status: 'completed',
+        processedCount: 2,
+        passedThroughCount: 2,
+      },
+      pageRotatorPass2: {
+        status: 'completed',
+        processedCount: 0,
+        passedThroughCount: 0,
+      },
+    })
+
+    expect(normalized.documentSplitter?.processedCount).toBe(0)
+    expect(normalized.documentSplitter?.passMetrics).toMatchObject([
+      {
+        passNumber: 1,
+        status: 'completed',
+        processedCount: 1,
+        splitCount: 1,
+        childCount: 2,
+        passedThroughCount: 0,
+        rotatedCount: 0,
+        reviewNeededCount: 0,
+        failedCount: 0,
+      },
+      {
+        passNumber: 2,
+        status: 'completed',
+        processedCount: 0,
+        splitCount: 0,
+        childCount: 0,
+        passedThroughCount: 0,
+        rotatedCount: 0,
+        reviewNeededCount: 0,
+        failedCount: 0,
+      },
+    ])
+    expect(normalized.pageRotator?.passMetrics).toMatchObject([
+      {
+        passNumber: 1,
+        status: 'completed',
+        processedCount: 2,
+        splitCount: 0,
+        childCount: 0,
+        passedThroughCount: 2,
+        rotatedCount: 0,
+        reviewNeededCount: 0,
+        failedCount: 0,
+      },
+      {
+        passNumber: 2,
+        status: 'completed',
+        processedCount: 0,
+        splitCount: 0,
+        childCount: 0,
+        passedThroughCount: 0,
+        rotatedCount: 0,
+        reviewNeededCount: 0,
+        failedCount: 0,
+      },
+    ])
+  })
+
   test('reads canonical camelCase processing-details keys', () => {
     const normalized = normalizeProcessBatchDetails({
       pipeline: {

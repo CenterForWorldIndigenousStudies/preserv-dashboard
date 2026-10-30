@@ -318,6 +318,7 @@ export function CollectionDetails({ collection, filterOptions }: CollectionDetai
         <CollectionDocumentManager
           collectionId={managerState.collectionId}
           collectionName={managerState.collectionName}
+          filterOptions={filterOptions}
           initialAction={managerState.initialAction}
           open={true}
           onClose={() => setManagerState(null)}

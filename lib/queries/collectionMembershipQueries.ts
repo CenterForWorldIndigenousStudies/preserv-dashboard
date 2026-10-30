@@ -50,6 +50,7 @@ export interface CollectionMembershipIndex {
 
 export interface CollectionMembershipIndexOptions {
   collectionIds?: readonly string[]
+  documentIds?: readonly string[]
 }
 
 export async function getDocumentCollectionMemberships(
@@ -93,6 +94,18 @@ export async function getDocumentCollectionMemberships(
     documentTagIds: new Set(tagRows.map((row) => row.tag_id)),
     metadata,
   })
+}
+
+export async function getDocumentCollectionMembershipsByDocument(
+  documentIds: readonly string[],
+  client?: CollectionMembershipDataClient,
+): Promise<Map<string, CollectionMembership[]>> {
+  if (documentIds.length === 0) {
+    return new Map()
+  }
+
+  const records = await getAllDocumentCollectionMemberships(client, { documentIds })
+  return new Map(records.map(({ documentId, memberships }) => [documentId, memberships]))
 }
 
 export async function getCollectionMemberDocumentIds(
@@ -153,6 +166,10 @@ async function getAllDocumentCollectionMemberships(
   if (collections.length === 0) {
     return []
   }
+  const requestedDocumentIds = options.documentIds ? [...new Set(options.documentIds)] : undefined
+  if (requestedDocumentIds?.length === 0) {
+    return []
+  }
   const membershipResolver = buildCollectionMembershipResolver(collections)
   const qualifierTagIds = collections.flatMap((collection) => [
     collection.canonicalTag.id,
@@ -160,11 +177,17 @@ async function getAllDocumentCollectionMemberships(
   ])
   const [tagRows, metadataRows] = await Promise.all([
     dataClient.document_to_tags.findMany({
-      where: { tag_id: { in: qualifierTagIds } },
+      where: {
+        tag_id: { in: qualifierTagIds },
+        ...(requestedDocumentIds ? { document_id: { in: requestedDocumentIds } } : {}),
+      },
       select: { document_id: true, tag_id: true },
     }),
     dataClient.document_to_metadata.findMany({
-      where: { metadata: { name: { in: GENERATED_COLLECTION_MEMBERSHIP_METADATA_FIELDS } } },
+      where: {
+        metadata: { name: { in: GENERATED_COLLECTION_MEMBERSHIP_METADATA_FIELDS } },
+        ...(requestedDocumentIds ? { document_id: { in: requestedDocumentIds } } : {}),
+      },
       select: { document_id: true, value: true, metadata: { select: { name: true } } },
     }),
   ])
@@ -183,12 +206,12 @@ async function getAllDocumentCollectionMemberships(
     metadataByDocument.set(row.document_id, metadata)
   }
 
-  const documentIds = new Set<string>([
+  const matchedDocumentIds = new Set<string>([
     ...tagIdsByDocument.keys(),
     ...metadataByDocument.keys(),
   ])
 
-  return [...documentIds].map((documentId) => ({
+  return [...matchedDocumentIds].map((documentId) => ({
     documentId,
     memberships: membershipResolver.resolve({
       documentTagIds: tagIdsByDocument.get(documentId) ?? new Set<string>(),
