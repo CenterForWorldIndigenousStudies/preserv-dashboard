@@ -27,6 +27,12 @@ vi.mock('@molecules/DocumentReprocessingActions', () => ({
   DocumentReprocessingActions: () => null,
 }))
 
+vi.mock('@organisms/ReadyForLibraryActions', () => ({
+  ReadyForLibraryActions: ({ documentIds }: { documentIds: string[] }) => (
+    <button disabled={documentIds.length === 0}>{`Actions (${documentIds.length})`}</button>
+  ),
+}))
+
 vi.mock('@organisms/DocumentTable/DocumentTable', () => ({
   DocumentTable: ({
     config,
@@ -131,5 +137,20 @@ describe('ReadyForLibraryTable', () => {
 
     expect(markup).toContain('Needs Review')
     expect(markup).not.toContain('>NEEDS_REVIEW<')
+  })
+
+  it('offers one selection-scoped Actions control', () => {
+    renderToStaticMarkup(
+      <ReadyForLibraryTable
+        initialQuery={{ page: 1, pageSize: 25, filters: {} }}
+        filterOptions={filterOptions}
+      />,
+    )
+    const config = mocks.documentTableProps?.config as { trailingToolbarSlot?: ReactNode }
+    const markup = renderToStaticMarkup(<>{config.trailingToolbarSlot}</>)
+    expect(markup).toContain('Actions (0)')
+    expect(markup).not.toContain('Publish selected')
+    expect(markup).not.toContain('Reprocess selected')
+    expect(markup).toContain('disabled')
   })
 })

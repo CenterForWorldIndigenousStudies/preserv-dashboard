@@ -154,9 +154,13 @@ function getReadySortExpression(orderBy?: ReadyForLibrarySortField): Prisma.Sql 
 
 async function getReadyForLibraryCandidateContext(
   client: QueryDbClient,
+  requestedDocumentIds?: readonly string[],
 ): Promise<ReadyForLibraryCandidateContext> {
   const qualityDocs = await client.document_quality.findMany({
-    where: { validation_status: 'APPROVED' },
+    where: {
+      validation_status: 'APPROVED',
+      ...(requestedDocumentIds ? { document_id: { in: [...requestedDocumentIds] } } : {}),
+    },
     select: { document_id: true },
   })
   const approvedDocumentIds = [...new Set(qualityDocs.map(({ document_id }) => document_id))]
@@ -199,6 +203,27 @@ async function getReadyForLibraryCandidateContext(
   return { documentIds, accessLevels }
 }
 
+export async function getEligibleReadyForLibraryDocumentIds(
+  documentIds: readonly string[],
+  client: QueryDbClient = db,
+): Promise<string[]> {
+  const requestedIds = [...new Set(documentIds.map((id) => id.trim()).filter(Boolean))]
+  if (requestedIds.length === 0) return []
+  const context = await getReadyForLibraryCandidateContext(client, requestedIds)
+  const latestStates = await client.state_history.findMany({
+    where: { document_id: { in: requestedIds } },
+    orderBy: [{ changed_at: 'desc' }, { id: 'desc' }],
+    select: { document_id: true, new_state: true },
+  })
+  const stateByDocument = new Map<string, string | null>()
+  for (const state of latestStates) {
+    if (!stateByDocument.has(state.document_id)) stateByDocument.set(state.document_id, state.new_state)
+  }
+  return requestedIds.filter((id) =>
+    context.documentIds.includes(id) && stateByDocument.get(id) === GENERATED_DOCUMENT_STATES.APPROVED,
+  )
+}
+
 function buildReadyForLibrarySqlParams(
   params: ReadyForLibraryQueryParams,
   documentIds: string[],
@@ -222,7 +247,7 @@ function buildReadyForLibrarySqlParams(
     documentIds,
     additionalConditions: [
       buildPreservationCandidateConditionSql('d'),
-      Prisma.sql`NOT ${buildLatestStateConditionSql('latest_ready_state', GENERATED_DOCUMENT_STATES.INGESTED_FEDORA)}`,
+      buildLatestStateConditionSql('latest_ready_state', GENERATED_DOCUMENT_STATES.APPROVED),
     ],
   }
 }

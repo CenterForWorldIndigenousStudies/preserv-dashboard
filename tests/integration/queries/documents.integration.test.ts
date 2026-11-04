@@ -1095,6 +1095,15 @@ describeDbIntegration('documents queries (integration)', () => {
               validation_status: 'APPROVED',
             },
           }),
+          tx.state_history.createMany({
+            data: [matchingDocument.id, nonMatchingDocument.id].map((documentId) => ({
+              id: `rfs-${documentId}`.slice(0, 36),
+              document_id: documentId,
+              previous_state: 'metadata_validated',
+              new_state: 'approved',
+              changed_at: new Date('2026-08-01T12:00:00.000Z'),
+            })),
+          }),
           tx.document_access.create({
             data: {
               id: `rfa-${matchingDocument.id}`.slice(0, 36),
@@ -1181,6 +1190,15 @@ describeDbIntegration('documents queries (integration)', () => {
               document_id: candidate.id,
               validation_status: 'APPROVED',
             },
+          }),
+          tx.state_history.createMany({
+            data: [ancestor.id, candidate.id].map((documentId) => ({
+              id: `rfcs-${documentId}`.slice(0, 36),
+              document_id: documentId,
+              previous_state: 'metadata_validated',
+              new_state: 'approved',
+              changed_at: new Date('2026-08-01T12:00:00.000Z'),
+            })),
           }),
           tx.document_access.create({
             data: {

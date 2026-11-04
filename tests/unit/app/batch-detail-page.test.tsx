@@ -1,9 +1,10 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { mockGetBatchDetail, mockGetPipelineExecutionSnapshot, mockNotFound } = vi.hoisted(() => ({
+const { mockGetBatchDetail, mockGetPipelineExecutionSnapshot, mockGetPublicationDraftForRetry, mockNotFound } = vi.hoisted(() => ({
   mockGetBatchDetail: vi.fn(),
   mockGetPipelineExecutionSnapshot: vi.fn(),
+  mockGetPublicationDraftForRetry: vi.fn(),
   mockNotFound: vi.fn(() => {
     throw new Error('NEXT_NOT_FOUND')
   }),
@@ -11,6 +12,14 @@ const { mockGetBatchDetail, mockGetPipelineExecutionSnapshot, mockNotFound } = v
 
 vi.mock('@lib/queries/reprocessingDraftQueries', () => ({
   getReprocessingDraft: vi.fn().mockResolvedValue(null),
+}))
+
+vi.mock('@lib/queries/readyForLibraryPublicationQueries', () => ({
+  getPublicationDraftForRetry: mockGetPublicationDraftForRetry,
+}))
+
+vi.mock('@organisms/PublicationDraftRetry', () => ({
+  PublicationDraftRetry: () => <button>Retry queueing publication</button>,
 }))
 
 vi.mock('@lib/queries/batchQueries', () => ({
@@ -160,6 +169,19 @@ describe('BatchDetailPage', () => {
     )
 
     expect(markup).not.toContain('Started By')
+  })
+
+  it('shows a retry control for a publication draft after queue failure', async () => {
+    mockGetBatchDetail.mockResolvedValue({ ...detail, lifecycleStatus: 'draft' })
+    mockGetPipelineExecutionSnapshot.mockResolvedValue({ batch: null, queueAttempts: [] })
+    mockGetPublicationDraftForRetry.mockResolvedValue({
+      name: 'Batch One', operationId: 'operation-one', documentIds: ['doc-one'], requestedBy: 'mary@example.org',
+    })
+    const markup = renderToStaticMarkup(await BatchDetailPage({
+      params: Promise.resolve({ batchId: 'batch-1' }), searchParams: Promise.resolve({}),
+    }))
+    expect(markup).toContain('Retry queueing publication')
+    expect(markup).not.toContain('Reprocessing draft')
   })
 
   it('renders historical processing details when there is no live pipeline state', async () => {

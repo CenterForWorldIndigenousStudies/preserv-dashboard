@@ -79,6 +79,12 @@ function pipelineRequestedStages(details: Record<string, unknown>): unknown {
     : undefined
 }
 
+function isPublicationDraft(details: string | null): boolean {
+  const pipeline = parseDetails(details).pipeline
+  return Boolean(pipeline && typeof pipeline === 'object' && 'workflow' in pipeline
+    && pipeline.workflow === 'ready_for_library_publish')
+}
+
 function pipelineConfig(details: Record<string, unknown>): PipelineConfig | undefined {
   const pipelineRecord =
     details.pipeline && typeof details.pipeline === 'object' && !Array.isArray(details.pipeline)
@@ -190,10 +196,11 @@ async function lockRow(client: Prisma.TransactionClient, table: 'batches' | 'doc
 }
 
 async function draftById(client: DraftQueryClient, batchId: string) {
-  return client.batches.findFirst({
+  const row = await client.batches.findFirst({
     where: { id: batchId, lifecycle_status: GENERATED_BATCH_LIFECYCLE_STATUSES.DRAFT },
     select: draftSelect(),
   })
+  return row && !isPublicationDraft(row.processing_details) ? row : null
 }
 
 function validateDraftInput(input: {
@@ -290,6 +297,7 @@ type DraftMembership = {
   document_id: string
   batch_origin?: string | null
   processing_details?: string | null
+  batches?: { processing_details: string | null }
 }
 
 async function getOpenDraftMemberships(
@@ -312,6 +320,7 @@ async function getOpenDraftMemberships(
       document_id: true,
       batch_origin: true,
       processing_details: true,
+      batches: { select: { processing_details: true } },
     },
   })
 }
@@ -365,6 +374,9 @@ export async function removeOpenDraftMemberships(
   excludedBatchId?: string,
 ): Promise<string[]> {
   const memberships = await getOpenDraftMemberships(client, documentIds, excludedBatchId)
+  if (memberships.some((membership) => isPublicationDraft(membership.batches?.processing_details ?? null))) {
+    throw new Error('A selected document has an active publication draft and cannot be reassigned.')
+  }
 
   await Promise.all(
     memberships.map(async (membership) => {
@@ -403,7 +415,7 @@ export async function getReprocessingDrafts(client: DraftQueryClient = db): Prom
     orderBy: [{ updated_at: 'desc' }, { id: 'desc' }],
     select: draftSelect(),
   })
-  return rows.map(summaryFromRow)
+  return rows.filter((row) => !isPublicationDraft(row.processing_details)).map(summaryFromRow)
 }
 
 export async function getReprocessingDraft(
@@ -438,7 +450,7 @@ export async function getReprocessingDraft(
       },
     },
   })
-  if (!row) return null
+  if (!row || isPublicationDraft(row.processing_details)) return null
 
   const summary = summaryFromRow(row)
   const documents: ReprocessingDraftDocument[] = row.document_to_batches.map((membership) => ({
@@ -461,7 +473,7 @@ export async function getOpenDraftForDocument(
     where: { document_id: documentId, batches: { lifecycle_status: GENERATED_BATCH_LIFECYCLE_STATUSES.DRAFT } },
     select: { batches: { select: draftSelect() } },
   })
-  return row ? summaryFromRow(row.batches) : null
+  return row && !isPublicationDraft(row.batches.processing_details) ? summaryFromRow(row.batches) : null
 }
 
 export async function getOpenDraftDocumentIds(

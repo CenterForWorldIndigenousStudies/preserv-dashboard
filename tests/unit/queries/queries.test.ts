@@ -226,11 +226,12 @@ describe('getReadyForLibraryDocuments advanced filters', () => {
     expect(sql).toContain('LOWER(al.level_name)')
   })
 
-  it('excludes already-published approved candidates from Ready for Library', async () => {
+  it('requires the latest state to be approved for Ready for Library', async () => {
     await getReadyForLibraryDocuments({ statuses: ['APPROVED'] })
 
     const sql = queryText(1)
-    expect(sql).toContain("latest_ready_state.new_state = 'ingested_fedora'")
+    expect(sql).toContain('latest_ready_state.new_state =')
+    expect(queryCall(1).values).toContain('approved')
   })
 
   it('returns no ready documents when an explicit status filter excludes APPROVED', async () => {

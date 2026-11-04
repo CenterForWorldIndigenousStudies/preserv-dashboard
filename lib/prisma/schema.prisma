@@ -153,6 +153,7 @@ model batches {
   batch_to_batches_metadata batch_to_batches_metadata[]
   document_to_batches       document_to_batches[]
   pipeline_worker_leases    pipeline_worker_leases[]
+  publication_attempts      publication_attempts?
 
   @@index([id_legacy], map: "idx_batches_id_legacy")
   @@index([name(length: 255)], map: "idx_batches_name")
@@ -352,6 +353,7 @@ model documents {
   document_versions        document_versions[]
   state_history            state_history[]
   version_groups           version_groups?
+  publication_source_claims publication_source_claims?
 
   @@index([created_at, id], map: "idx_documents_created_at_id")
   @@index([filesize], map: "idx_documents_filesize")
@@ -455,6 +457,25 @@ model fedora_removal_requests {
   fedora_removal_items fedora_removal_items[]
 
   @@index([status], map: "idx_fedora_removal_requests_status")
+}
+
+model publication_attempts {
+  id                        String                      @id @db.VarChar(36)
+  operation_id              String                      @unique(map: "uk_publication_attempts_operation_id") @db.VarChar(255)
+  batch_id                  String                      @unique(map: "uk_publication_attempts_batch_id") @db.VarChar(36)
+  requested_by              String                      @db.VarChar(255)
+  created_at                DateTime?                   @default(now()) @db.DateTime(0)
+  batches                   batches                     @relation(fields: [batch_id], references: [id], onUpdate: Restrict, map: "fk_publication_attempts_batch_id")
+  publication_source_claims publication_source_claims[]
+}
+
+model publication_source_claims {
+  id                 String               @id @db.VarChar(36)
+  attempt_id         String               @db.VarChar(36)
+  source_document_id String               @unique(map: "uk_publication_source_claims_source_document_id") @db.VarChar(36)
+  created_at         DateTime?            @default(now()) @db.DateTime(0)
+  publication_attempts publication_attempts @relation(fields: [attempt_id], references: [id], onUpdate: Restrict, map: "fk_publication_source_claims_attempt_id")
+  documents          documents            @relation(fields: [source_document_id], references: [id], onUpdate: Restrict, map: "fk_publication_source_claims_source_document_id")
 }
 
 model metadata {

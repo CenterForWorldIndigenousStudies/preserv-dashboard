@@ -27,6 +27,7 @@ import {
   createReprocessingDraft,
   createReprocessingDraftForDocuments,
   getOpenDraftForDocument,
+  removeOpenDraftMemberships,
   getOpenDraftDocumentIds,
   getReprocessingDraft,
   getReprocessingDrafts,
@@ -42,6 +43,34 @@ describe('reprocessing draft queries', () => {
     mockDb.document_to_batches.findFirst.mockResolvedValue(null)
     mockDb.document_to_batches.findMany.mockResolvedValue([])
     mockDb.$transaction.mockImplementation((callback: (tx: typeof mockDb) => unknown) => callback(mockDb))
+  })
+
+  it('keeps publication drafts out of the editable reprocessing cart', async () => {
+    const publicationDraft = {
+      id: 'publication-batch',
+      name: 'Publish selected',
+      processing_details: JSON.stringify({ pipeline: {
+        workflow: 'ready_for_library_publish',
+        requestedStages: ['fedora_ingester'],
+      } }),
+      created_at: new Date(),
+      updated_at: new Date(),
+      document_to_batches: [],
+    }
+    mockDb.batches.findMany.mockResolvedValue([publicationDraft])
+    mockDb.batches.findFirst.mockResolvedValue(publicationDraft)
+    mockDb.document_to_batches.findFirst.mockResolvedValue({ batches: publicationDraft })
+    await expect(getReprocessingDrafts()).resolves.toEqual([])
+    await expect(getReprocessingDraft('publication-batch')).resolves.toBeNull()
+    await expect(getOpenDraftForDocument('source-1')).resolves.toBeNull()
+  })
+
+  it('does not let ordinary draft operations steal a publication source', async () => {
+    mockDb.document_to_batches.findMany.mockResolvedValue([{ id: 'link-one', batch_id: 'publication-batch', document_id: 'source-1',
+      batches: { processing_details: JSON.stringify({ pipeline: { workflow: 'ready_for_library_publish' } }) },
+    }])
+    await expect(removeOpenDraftMemberships(mockDb as never, ['source-1'])).rejects.toThrow('active publication')
+    expect(mockDb.document_to_batches.delete).not.toHaveBeenCalled()
   })
 
   it('lists only draft batches and maps stored draft metadata', async () => {

@@ -1,10 +1,8 @@
 'use client'
 
-import { useState, type ReactElement } from 'react'
-import Menu from '@mui/material/Menu'
-import MenuItem from '@mui/material/MenuItem'
+import type { ReactElement } from 'react'
 
-import { Button } from '@atoms/Button'
+import { SelectionActionsButton } from '@molecules/SelectionActionsButton'
 
 export interface ReviewQueueActionButtonProps {
   batchActionPending: boolean
@@ -25,61 +23,16 @@ export function ReviewQueueActionButton({
   onReprocess,
   onRemove,
 }: ReviewQueueActionButtonProps): ReactElement {
-  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
-  const menuOpen = Boolean(anchorEl)
-
-  const closeMenu = (): void => {
-    setAnchorEl(null)
-  }
-
   return (
-    <>
-      <Button
-        variant={'secondary'}
-        size={'sm'}
-        disabled={batchActionPending || selectedCount === 0}
-        onClick={(event) => setAnchorEl(event.currentTarget)}
-        aria-haspopup={'menu'}
-        aria-expanded={menuOpen ? 'true' : undefined}
-      >
-        {`Actions (${selectedCount})`}
-      </Button>
-      <Menu anchorEl={anchorEl} open={menuOpen} onClose={closeMenu}>
-        <MenuItem
-          onClick={() => {
-            closeMenu()
-            onApprove()
-          }}
-        >
-          {'Approve'}
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            closeMenu()
-            onReject()
-          }}
-        >
-          {'Reject'}
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            closeMenu()
-            onReprocess()
-          }}
-        >
-          {'Reprocess'}
-        </MenuItem>
-        {hasSelectedDraftDocuments ? (
-          <MenuItem
-            onClick={() => {
-              closeMenu()
-              onRemove()
-            }}
-          >
-            {'Remove from draft'}
-          </MenuItem>
-        ) : null}
-      </Menu>
-    </>
+    <SelectionActionsButton
+      selectedCount={selectedCount}
+      disabled={batchActionPending}
+      actions={[
+        { label: 'Approve', onClick: onApprove },
+        { label: 'Reject', onClick: onReject },
+        { label: 'Reprocess', onClick: onReprocess },
+        ...(hasSelectedDraftDocuments ? [{ label: 'Remove from draft', onClick: onRemove }] : []),
+      ]}
+    />
   )
 }

@@ -16,6 +16,8 @@ import { getBatchDetail } from '@lib/queries/batchQueries'
 import { getPipelineExecutionSnapshot } from '@lib/queries/pipelineExecutionQueries'
 import { getReprocessingDraft } from '@lib/queries/reprocessingDraftQueries'
 import { ReprocessingDraftWorkspace } from '@organisms/ReprocessingDraftWorkspace'
+import { PublicationDraftRetry } from '@organisms/PublicationDraftRetry'
+import { getPublicationDraftForRetry } from '@lib/queries/readyForLibraryPublicationQueries'
 
 export const dynamic = 'force-dynamic'
 
@@ -54,6 +56,10 @@ export default async function BatchDetailPage({ params, searchParams }: BatchDet
     notFound()
   }
 
+  const publicationDraft = detail.lifecycleStatus === 'draft'
+    ? await getPublicationDraftForRetry(batchId)
+    : null
+
   const requestedStages = executionSnapshot.batch?.pipelineRequestedStages ?? (draft ? [draft.restartStage] : [])
 
   return (
@@ -88,6 +94,12 @@ export default async function BatchDetailPage({ params, searchParams }: BatchDet
       </DetailPageSection>
 
       {draft ? <ReprocessingDraftWorkspace initialDraft={draft} /> : null}
+
+      {publicationDraft ? (
+        <DetailPageSection title={'Publication Draft'}>
+          <PublicationDraftRetry batchId={batchId} documentCount={publicationDraft.documentIds.length} />
+        </DetailPageSection>
+      ) : null}
 
       {!draft && executionSnapshot.batch ? (
         <DetailPageSection title={'Pipeline Progress'}>

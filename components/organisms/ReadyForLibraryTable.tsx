@@ -10,7 +10,7 @@ import { getDocumentDetailPath } from '@constants/paths'
 import { PAGE_LABELS } from '@constants/pageLabels'
 import { DateAtom } from '@atoms/Date'
 import { StatusPill } from '@atoms/Badges/StatusPill'
-import { DocumentReprocessingActions } from '@molecules/DocumentReprocessingActions'
+import { ReadyForLibraryActions } from '@organisms/ReadyForLibraryActions'
 import { DocumentTable } from '@organisms/DocumentTable/DocumentTable'
 import { useDocumentTableController } from '@organisms/DocumentTable/useDocumentTableController'
 import type { DocumentTableConfig, DocumentTableFetchResult, DocumentTableQuery } from '@organisms/DocumentTable/types'
@@ -188,7 +188,9 @@ export function ReadyForLibraryTable({
       filterOptions,
       onApply: controller.setFilters,
     },
-    trailingToolbarSlot: <DocumentReprocessingActions documentIds={selectedDocumentIds} />,
+    trailingToolbarSlot: (
+      <ReadyForLibraryActions documentIds={selectedDocumentIds} onPublished={() => setRowSelection({})} />
+    ),
     rowSelection,
     onRowSelectionChange: setRowSelection,
     enableRowSelection: true,

@@ -10,7 +10,7 @@ interface DocumentReprocessingActionsProps {
   documentIds: string[]
 }
 
-function buildSelectionBatch(): ProcessBatchStatus {
+export function buildSelectionBatch(): ProcessBatchStatus {
   const completedStage = { status: 'completed' } as ProcessStageStatus
   return {
     batchId: '',

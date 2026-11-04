@@ -15,6 +15,8 @@ const {
   mockTriggerContentDedup,
   mockTriggerMetadataExtractor,
   mockFinalizePipelineReadinessIfDue,
+  mockGetVerifiedPublicationContinuation,
+  mockTriggerFedoraIngester,
   mockLogEvent,
 } = vi.hoisted(() => ({
   mockGetProcessBatchStatus: vi.fn(),
@@ -30,6 +32,8 @@ const {
   mockTriggerContentDedup: vi.fn(),
   mockTriggerMetadataExtractor: vi.fn(),
   mockFinalizePipelineReadinessIfDue: vi.fn(),
+  mockGetVerifiedPublicationContinuation: vi.fn(),
+  mockTriggerFedoraIngester: vi.fn(),
   mockLogEvent: vi.fn(),
 }))
 
@@ -38,8 +42,16 @@ vi.mock('@lib/processBatches', () => ({
   markProcessStageCallbackReceived: mockMarkProcessStageCallbackReceived,
 }))
 
+vi.mock('@lib/observability', () => ({
+  logEvent: mockLogEvent,
+}))
+
+vi.mock('@lib/queries/readyForLibraryPublicationQueries', () => ({
+  getVerifiedPublicationContinuation: mockGetVerifiedPublicationContinuation,
+}))
+
 vi.mock('@lib/pipelineTriggers', () => ({
-  getPipelineContinuationContext: () => undefined,
+  getPipelineContinuationContext: () => ({ executionMode: 'reprocess', operationId: 'publication-operation' }),
   shouldTriggerDocumentSplitter: mockShouldTriggerDocumentSplitter,
   shouldTriggerPageRotator: mockShouldTriggerPageRotator,
   shouldTriggerOcrProcessor: mockShouldTriggerOcrProcessor,
@@ -50,11 +62,8 @@ vi.mock('@lib/pipelineTriggers', () => ({
   triggerOcrProcessor: mockTriggerOcrProcessor,
   triggerContentDedup: mockTriggerContentDedup,
   triggerMetadataExtractor: mockTriggerMetadataExtractor,
+  triggerFedoraIngester: mockTriggerFedoraIngester,
   finalizePipelineReadinessIfDue: mockFinalizePipelineReadinessIfDue,
-}))
-
-vi.mock('@lib/observability', () => ({
-  logEvent: mockLogEvent,
 }))
 
 import { POST } from '@api/pipeline/ingester/callback/route'
@@ -193,5 +202,38 @@ describe('ingester callback route', () => {
 
     expect(invalidModeResponse.status).toBe(400)
     expect(mockGetProcessBatchStatus).not.toHaveBeenCalled()
+  })
+
+  it('queues Fedora once for a verified selected publication and skips intermediate stages', async () => {
+    mockGetProcessBatchStatus.mockResolvedValue({
+      batchId: 'publication-batch',
+      batchName: 'Publication',
+      pipelineRequestedStages: ['fedora_ingester'],
+      fedoraIngester: null,
+    })
+    mockGetVerifiedPublicationContinuation.mockResolvedValue({ candidateIds: ['candidate-one'] })
+    mockTriggerFedoraIngester.mockResolvedValue({ batchId: 'publication-batch' })
+    const request = new NextRequest('http://localhost/api/pipeline/reprocess/callback', {
+      method: 'POST',
+      headers: { authorization: 'Bearer ingester-token', 'content-type': 'application/json' },
+      body: JSON.stringify({
+        batch_id: 'publication-batch', request_id: 'request-one', execution_mode: 'reprocess', status: 'completed',
+      }),
+    })
+
+    const response = await POST_REPROCESS(request)
+
+    expect(response.status).toBe(204)
+    expect(mockGetVerifiedPublicationContinuation).toHaveBeenCalledWith('publication-batch')
+    expect(mockTriggerFedoraIngester).toHaveBeenCalledWith(
+      expect.objectContaining({ batchId: 'publication-batch' }),
+      expect.objectContaining({
+        sourceDocumentIds: ['candidate-one'],
+        idempotencyKey: 'publication-fedora:publication-batch',
+      }),
+    )
+    expect(mockTriggerDocumentSplitter).not.toHaveBeenCalled()
+    expect(mockTriggerOcrProcessor).not.toHaveBeenCalled()
+    expect(mockFinalizePipelineReadinessIfDue).not.toHaveBeenCalled()
   })
 })

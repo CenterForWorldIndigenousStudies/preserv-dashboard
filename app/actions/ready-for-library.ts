@@ -3,142 +3,83 @@
 import { revalidatePath } from 'next/cache'
 
 import { READY_FOR_LIBRARY_PATH } from '@constants/paths'
-import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
-import { PIPELINE_STAGE_STATUSES } from '@constants/pipelineStageStatuses'
 import { getDashboardSession } from '@root/auth'
 import {
-  getReadyForLibraryBatchIds,
-  getReadyForLibraryDocumentIds,
   getReadyForLibraryDocuments,
   type ReadyForLibraryQueryParams,
 } from '@lib/queries/readyForLibraryQueries'
-import { getProcessBatchStatus } from '@lib/processBatches'
-import { isPipelineBatchTerminal } from '@lib/pipelineExecution'
-import { triggerFedoraIngester } from '@lib/pipelineTriggers'
+import { triggerDataIngesterReprocess } from '@lib/pipelineTriggers'
+import { getPublicationDraftForRetry, getReadyForLibrarySelectionNames, publishReadyForLibraryDocuments } from '@lib/queries/readyForLibraryPublicationQueries'
+import type { ProcessBatchStatus } from 'types/pipelineContracts'
 
-interface ReadyForLibraryHandoffFailure {
-  batchId: string
-  error: string
+export async function getReadyForLibrarySelectionAction(documentIds: readonly string[]): Promise<Array<{ id: string; name: string }>> {
+  const session = await getDashboardSession()
+  if (!session?.user?.email?.trim()) throw new Error('Authentication required.')
+  return getReadyForLibrarySelectionNames(documentIds)
 }
 
-export type ReadyForLibraryHandoffActionResult =
-  | {
-      ok: true
-      eligibleDocumentCount: number
-      queuedBatchCount: number
-      skippedBatchCount: number
-      failed: ReadyForLibraryHandoffFailure[]
-      message: string
+export async function retryPublicationDraftAction(batchId: string): Promise<{ ok: true; batchId: string } | { ok: false; error: string; batchId?: string }> {
+  const session = await getDashboardSession()
+  const email = session?.user?.email?.trim()
+  if (!email) return { ok: false, error: 'Authentication required.' }
+  const draft = await getPublicationDraftForRetry(batchId)
+  if (!draft) return { ok: false, error: 'This publication batch is no longer a queued-submission draft.' }
+  if (draft.requestedBy !== email) return { ok: false, error: 'Only the original requester can retry this publication draft.' }
+  return publishReadyForLibraryAction({
+    documentIds: draft.documentIds,
+    name: draft.name,
+    operationId: draft.operationId,
+  })
+}
+
+export async function publishReadyForLibraryAction(input: {
+  documentIds: readonly string[]
+  name: string
+  operationId: string
+}): Promise<{ ok: true; batchId: string } | { ok: false; error: string; batchId?: string }> {
+  const session = await getDashboardSession()
+  const startedBy = session?.user?.email?.trim()
+  if (!startedBy) return { ok: false, error: 'Authentication required.' }
+
+  const result = await publishReadyForLibraryDocuments({ ...input, startedBy })
+  if (!result.ok) return result
+  const sourceDocumentIds = [...new Set(input.documentIds.map((id) => id.trim()).filter(Boolean))].sort()
+  const batch: ProcessBatchStatus = {
+    batchId: result.batchId,
+    batchName: input.name.trim(),
+    startedBy,
+    createdAt: null,
+    pipelineRequestedStages: ['fedora_ingester'],
+    pipelineConfig: null,
+    ingester: null,
+    documentSplitter: null,
+    pageRotator: null,
+    ocrProcessor: null,
+    contentDedup: null,
+    metadataExtractor: null,
+    fedoraIngester: null,
+  }
+  try {
+    await triggerDataIngesterReprocess(batch, {
+      executionMode: 'reprocess',
+      operationId: input.operationId,
+      idempotencyKey: input.operationId,
+      reason: 'Publish selected Ready for Library documents.',
+      sourceDocumentIds,
+      draftBatchId: result.batchId,
+      requestedStages: ['fedora_ingester'],
+    })
+    revalidatePath(READY_FOR_LIBRARY_PATH)
+    return { ok: true, batchId: result.batchId }
+  } catch (error: unknown) {
+    return {
+      ok: false,
+      batchId: result.batchId,
+      error: error instanceof Error ? error.message : 'The publication batch could not be queued.',
     }
-  | {
-      ok: false
-      eligibleDocumentCount: number
-      queuedBatchCount: number
-      skippedBatchCount: number
-      failed: ReadyForLibraryHandoffFailure[]
-      error: string
-    }
+  }
+}
 
 export async function getReadyForLibraryAction(params: ReadyForLibraryQueryParams = {}) {
   return getReadyForLibraryDocuments(params)
-}
-
-function isHandoffAlreadyStarted(batch: Awaited<ReturnType<typeof getProcessBatchStatus>>): boolean {
-  if (!batch) {
-    return false
-  }
-
-  if (
-    batch.lifecycleStatus === GENERATED_BATCH_LIFECYCLE_STATUSES.PUBLISHED ||
-    batch.lifecycleStatus === GENERATED_BATCH_LIFECYCLE_STATUSES.PUBLICATION_LOCKED
-  ) {
-    return true
-  }
-
-  return new Set<string>([
-    PIPELINE_STAGE_STATUSES.QUEUED,
-    PIPELINE_STAGE_STATUSES.RUNNING,
-    PIPELINE_STAGE_STATUSES.COMPLETED,
-  ]).has(batch.fedoraIngester?.status ?? '')
-}
-
-export async function triggerReadyForLibraryAction(): Promise<ReadyForLibraryHandoffActionResult> {
-  const session = await getDashboardSession()
-  const startedBy = session?.user?.email?.trim()
-  if (!startedBy) {
-    return {
-      ok: false,
-      eligibleDocumentCount: 0,
-      queuedBatchCount: 0,
-      skippedBatchCount: 0,
-      failed: [],
-      error: 'Authentication required.',
-    }
-  }
-
-  const readyDocumentIds = await getReadyForLibraryDocumentIds()
-  const batchIds = await getReadyForLibraryBatchIds(readyDocumentIds)
-  const queuedBatchIds: string[] = []
-  const skippedBatchIds: string[] = []
-  const failed: ReadyForLibraryHandoffFailure[] = []
-
-  await Promise.all(
-    batchIds.map(async (batchId) => {
-      try {
-        const batch = await getProcessBatchStatus(batchId)
-        if (!batch) {
-          failed.push({ batchId, error: `Batch ${batchId} was not found.` })
-          return
-        }
-
-        if (isHandoffAlreadyStarted(batch)) {
-          skippedBatchIds.push(batchId)
-          return
-        }
-
-        if (!isPipelineBatchTerminal(batch)) {
-          skippedBatchIds.push(batchId)
-          return
-        }
-
-        await triggerFedoraIngester({ ...batch, startedBy })
-        queuedBatchIds.push(batchId)
-      } catch (error: unknown) {
-        failed.push({
-          batchId,
-          error: error instanceof Error ? error.message : 'The library handoff could not be queued.',
-        })
-      }
-    }),
-  )
-
-  revalidatePath(READY_FOR_LIBRARY_PATH)
-
-  if (queuedBatchIds.length === 0 && skippedBatchIds.length === 0) {
-    return {
-      ok: false,
-      eligibleDocumentCount: readyDocumentIds.length,
-      queuedBatchCount: 0,
-      skippedBatchCount: 0,
-      failed,
-      error:
-        failed.length > 0
-          ? 'No eligible batches could be queued for library handoff.'
-          : 'No process batches are associated with the current Ready for Library documents.',
-    }
-  }
-
-  const failedMessage = failed.length > 0 ? ` ${failed.length} batch${failed.length === 1 ? '' : 'es'} failed.` : ''
-  const skippedMessage =
-    skippedBatchIds.length > 0
-      ? ` ${skippedBatchIds.length} batch${skippedBatchIds.length === 1 ? '' : 'es'} skipped because handoff was already started or processing is incomplete.`
-      : ''
-  return {
-    ok: true,
-    eligibleDocumentCount: readyDocumentIds.length,
-    queuedBatchCount: queuedBatchIds.length,
-    skippedBatchCount: skippedBatchIds.length,
-    failed,
-    message: `${queuedBatchIds.length} batch${queuedBatchIds.length === 1 ? '' : 'es'} queued for library handoff.${skippedMessage}${failedMessage}`,
-  }
 }
