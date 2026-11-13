@@ -20,6 +20,12 @@ export const DOCUMENTS_ORDERABLE_FIELDS = [
   'is_duplicate',
 ] as const
 
+export type DocumentCursorSortField =
+  | (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
+  | 'fedoraUrl'
+  | 'uploadedAt'
+  | 'collections'
+
 export interface OverviewDocumentRow {
   id: string
   filesize: bigint | number | string | null
@@ -225,7 +231,11 @@ export async function getOverviewDocumentsPage(
   const countRow = Array.isArray(countRows) ? countRows[0] : undefined
   const totalCountValue = countRow?.total_count
   const totalCount =
-    typeof totalCountValue === 'bigint' ? Number(totalCountValue) : totalCountValue === undefined ? undefined : Number(totalCountValue)
+    typeof totalCountValue === 'bigint'
+      ? Number(totalCountValue)
+      : totalCountValue === undefined
+        ? undefined
+        : Number(totalCountValue)
 
   return {
     data: normalizedItems,
@@ -261,7 +271,7 @@ export function buildOverviewDocumentsWhereSql(params: {
   defaultSecondarySortExpression?: Prisma.Sql
   sortDirection: 'asc' | 'desc'
   sortExpression: Prisma.Sql
-  sortField: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
+  sortField: DocumentCursorSortField
 }): Prisma.Sql {
   const conditions: Prisma.Sql[] = [...(params.additionalConditions ?? [])]
 
@@ -564,7 +574,7 @@ export function buildOverviewDocumentsCursorConditionSql(params: {
   defaultSecondarySortExpression?: Prisma.Sql
   sortDirection: 'asc' | 'desc'
   sortExpression: Prisma.Sql
-  sortField: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
+  sortField: DocumentCursorSortField
 }): Prisma.Sql {
   const movesForward = params.cursorDirection === 'next'
   const usesAscendingPrimary =
@@ -635,7 +645,7 @@ export function buildOverviewDocumentsOrderBySql(params: {
 
 export function buildDocumentsCursor(
   row: OverviewDocumentRow | undefined,
-  sortField: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number],
+  sortField: DocumentCursorSortField,
   usesDefaultSort = false,
 ): DocumentsCursor | null {
   if (!row) {
@@ -650,14 +660,14 @@ export function buildDocumentsCursor(
 }
 
 export function serializeDocumentsCursorValue(
-  sortField: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number],
+  sortField: DocumentCursorSortField,
   value: OverviewDocumentRow['sort_value'],
 ): string {
   if (value === null || value === undefined) {
     return ''
   }
 
-  if (sortField === 'created_at' || sortField === 'updated_at') {
+  if (sortField === 'created_at' || sortField === 'updated_at' || sortField === 'uploadedAt') {
     const dateValue = value instanceof Date ? value : new Date(String(value))
     return dateValue.toISOString()
   }
@@ -665,15 +675,12 @@ export function serializeDocumentsCursorValue(
   return String(value)
 }
 
-export function coerceDocumentsCursorValue(
-  sortField: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number],
-  value: string,
-): string | number | Date {
+export function coerceDocumentsCursorValue(sortField: DocumentCursorSortField, value: string): string | number | Date {
   if (sortField === 'filesize' || sortField === 'is_duplicate') {
     return Number(value)
   }
 
-  if (sortField === 'created_at' || sortField === 'updated_at') {
+  if (sortField === 'created_at' || sortField === 'updated_at' || sortField === 'uploadedAt') {
     return new Date(value)
   }
 

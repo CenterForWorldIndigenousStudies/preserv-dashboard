@@ -6,9 +6,25 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({ publishDialog: vi.fn(), reprocessDialog: vi.fn() }))
 vi.mock('@organisms/ReadyForLibraryPublishDialog', () => ({
-  ReadyForLibraryPublishDialog: (props: { documentIds: readonly string[] }) => {
+  ReadyForLibraryPublishDialog: (props: {
+    documentIds: readonly string[]
+    onPublished: (batchId: string) => void
+    onClose: () => void
+  }) => {
     mocks.publishDialog(props)
-    return <div>Publish confirmation</div>
+    return (
+      <div>
+        Publish confirmation
+        <button
+          onClick={() => {
+            props.onPublished('publication-batch')
+            props.onClose()
+          }}
+        >
+          Queue publication
+        </button>
+      </div>
+    )
   },
 }))
 vi.mock('@molecules/PipelineExecutionDialog', () => ({
@@ -19,7 +35,6 @@ vi.mock('@molecules/PipelineExecutionDialog', () => ({
 }))
 
 import { ReadyForLibraryActions } from '@organisms/ReadyForLibraryActions'
-
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 let root: Root | undefined
 
@@ -35,30 +50,34 @@ describe('ReadyForLibraryActions', () => {
     const container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
-    act(() => root?.render(
-      <ReadyForLibraryActions documentIds={['doc-two', 'doc-one']} onPublished={vi.fn()} />,
-    ))
+    act(() => root?.render(<ReadyForLibraryActions documentIds={['doc-two', 'doc-one']} onPublished={vi.fn()} />))
     expect(container.textContent).toContain('Actions (2)')
     expect(container.textContent).not.toContain('Publish selected')
 
     const openMenu = () => act(() => container.querySelector<HTMLButtonElement>('button')?.click())
-    const clickItem = (label: string) => act(() => {
-      Array.from(document.body.querySelectorAll('[role="menuitem"]'))
-        .find((item) => item.textContent === label)
-        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    const clickItem = (label: string) =>
+      act(() => {
+        Array.from(document.body.querySelectorAll('[role="menuitem"]'))
+          .find((item) => item.textContent === label)
+          ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      })
     openMenu()
     expect(document.body.textContent).toContain('Reprocess')
     expect(document.body.textContent).toContain('Publish')
     clickItem('Publish')
-    expect(mocks.publishDialog).toHaveBeenLastCalledWith(expect.objectContaining({
-      documentIds: ['doc-one', 'doc-two'],
-    }))
+    expect(mocks.publishDialog).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        documentIds: ['doc-one', 'doc-two'],
+      }),
+    )
     openMenu()
     clickItem('Reprocess')
-    expect(mocks.reprocessDialog).toHaveBeenLastCalledWith(expect.objectContaining({
-      open: true, documentIds: ['doc-two', 'doc-one'],
-    }))
+    expect(mocks.reprocessDialog).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        open: true,
+        documentIds: ['doc-two', 'doc-one'],
+      }),
+    )
   })
 
   it('disables Actions with no selected documents', () => {
@@ -67,5 +86,27 @@ describe('ReadyForLibraryActions', () => {
     root = createRoot(container)
     act(() => root?.render(<ReadyForLibraryActions documentIds={[]} onPublished={vi.fn()} />))
     expect(container.querySelector('button')?.disabled).toBe(true)
+  })
+
+  it('shows a batch link after publication is queued and closes the confirmation', () => {
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+    act(() => root?.render(<ReadyForLibraryActions documentIds={['doc-one']} onPublished={vi.fn()} />))
+    act(() => container.querySelector<HTMLButtonElement>('button')?.click())
+    act(() => {
+      Array.from(document.body.querySelectorAll('[role="menuitem"]'))
+        .find((item) => item.textContent === 'Publish')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    act(() =>
+      Array.from(container.querySelectorAll('button'))
+        .find((button) => button.textContent === 'Queue publication')
+        ?.click(),
+    )
+
+    expect(container.textContent).not.toContain('Publish confirmation')
+    expect(document.body.querySelector('a[href="/batches/publication-batch"]')).not.toBeNull()
   })
 })

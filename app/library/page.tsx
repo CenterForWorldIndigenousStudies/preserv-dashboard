@@ -4,8 +4,11 @@ import { PageHeader } from '@organisms/PageHeader'
 import { LibraryTable } from '@organisms/LibraryTable'
 import type { DocumentTableFetchResult, DocumentTableQuery } from '@organisms/DocumentTable/types'
 import { getDocumentFilterOptions } from '@lib/queries/queries'
-import { getLibraryDocuments, parseLibraryQueryParams } from '@lib/queries/libraryQueries'
-import type { DocumentsQueryParams } from '@lib/queries/documentQueries'
+import {
+  getLibraryDocuments,
+  parseLibraryQueryParams,
+  type LibraryDocumentsQueryParams,
+} from '@lib/queries/libraryQueries'
 import type { AdvancedSearchFilters } from '@lib/search'
 import { PAGE_LABELS } from '@constants/pageLabels'
 import { LIBRARY_PAGE_DESCRIPTION } from '@constants/pageContent'
@@ -31,13 +34,13 @@ function buildInitialData(result: LibraryDocumentsPageResult): DocumentTableFetc
   }
 }
 
-function buildQueryParams(query: DocumentTableQuery<AdvancedSearchFilters>): DocumentsQueryParams {
+function buildQueryParams(query: DocumentTableQuery<AdvancedSearchFilters>): LibraryDocumentsQueryParams {
   return {
     ...query.filters,
     page: query.page,
     pageSize: query.pageSize,
     search: query.search,
-    orderBy: query.orderBy as DocumentsQueryParams['orderBy'],
+    orderBy: query.orderBy as LibraryDocumentsQueryParams['orderBy'],
     sortDirection: query.sortDirection,
     cursorValue: query.cursorValue,
     cursorId: query.cursorId,

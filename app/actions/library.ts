@@ -1,8 +1,7 @@
 'use server'
 
-import { getLibraryDocuments } from '@lib/queries/libraryQueries'
-import type { DocumentsQueryParams } from '@lib/queries/documentQueries'
+import { getLibraryDocuments, type LibraryDocumentsQueryParams } from '@lib/queries/libraryQueries'
 
-export async function getLibraryDocumentsAction(params: DocumentsQueryParams = {}) {
+export async function getLibraryDocumentsAction(params: LibraryDocumentsQueryParams = {}) {
   return getLibraryDocuments(params)
 }

@@ -83,16 +83,15 @@ describe('LibraryRemovalActions', () => {
     vi.clearAllMocks()
   })
 
-  it('renders no action without a selection and confirms destructive details for multi-selection', () => {
+  it('opens only when requested and confirms destructive details for multi-selection', () => {
     const container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
-    act(() => root?.render(<LibraryRemovalActions documentIds={[]} />))
+    act(() => root?.render(<LibraryRemovalActions documentIds={[]} open={false} onClose={vi.fn()} />))
     expect(container.textContent).toBe('')
 
-    act(() => root?.render(<LibraryRemovalActions documentIds={['doc-1', 'doc-2']} />))
-    expect(container.textContent).toContain('Remove from Library (2)')
-    act(() => container.querySelector('button')?.click())
+    act(() => root?.render(<LibraryRemovalActions documentIds={['doc-1', 'doc-2']} open onClose={vi.fn()} />))
+    expect(container.textContent).not.toContain('Remove from Library (2)')
     expect(document.body.textContent).toContain('deletes each selected Fedora node and its attached media/files')
     expect(document.body.textContent).toContain('reprocessing requires a new batch')
   })
@@ -104,8 +103,7 @@ describe('LibraryRemovalActions', () => {
     mockRequestRemoval.mockResolvedValue(attentionRequest)
     mockRetryItem.mockResolvedValue(attentionRequest.items[0])
 
-    act(() => root?.render(<LibraryRemovalActions documentIds={['doc-1', 'doc-2']} />))
-    act(() => container.querySelector('button')?.click())
+    act(() => root?.render(<LibraryRemovalActions documentIds={['doc-1', 'doc-2']} open onClose={vi.fn()} />))
     const confirmButton = Array.from(document.body.querySelectorAll('button')).find(
       (button) => button.textContent === 'Remove from Library',
     )
@@ -163,8 +161,7 @@ describe('LibraryRemovalActions', () => {
     mockRequestRemoval.mockResolvedValue({ ...attentionRequest, status: 'in_progress' as const })
     mockGetRemoval.mockResolvedValue({ ...attentionRequest, status: 'completed' as const })
 
-    act(() => root?.render(<LibraryRemovalActions documentIds={['doc-1']} />))
-    act(() => container.querySelector('button')?.click())
+    act(() => root?.render(<LibraryRemovalActions documentIds={['doc-1']} open onClose={vi.fn()} />))
     const confirmButton = Array.from(document.body.querySelectorAll('button')).find(
       (button) => button.textContent === 'Remove from Library',
     )

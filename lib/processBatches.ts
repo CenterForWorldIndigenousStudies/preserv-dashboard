@@ -327,6 +327,8 @@ export async function recordProcessStageFailure(
     data: {
       processing_details: JSON.stringify(nextDetails),
       ...(!ROLLBACK_IN_PROGRESS_BATCH_LIFECYCLE_STATUSES.has(batch.lifecycle_status)
+        && batch.lifecycle_status !== GENERATED_BATCH_LIFECYCLE_STATUSES.PUBLICATION_LOCKED
+        && batch.lifecycle_status !== GENERATED_BATCH_LIFECYCLE_STATUSES.PUBLISHED
         ? { lifecycle_status: GENERATED_BATCH_LIFECYCLE_STATUSES.FAILED }
         : {}),
     },

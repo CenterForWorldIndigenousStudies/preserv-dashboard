@@ -21,8 +21,8 @@ vi.mock('@actions/library', () => ({
   getLibraryDocumentsAction: mockGetLibraryDocumentsAction,
 }))
 
-vi.mock('@molecules/DocumentReprocessingActions', () => ({
-  DocumentReprocessingActions: () => null,
+vi.mock('@molecules/PipelineExecutionDialog', () => ({
+  PipelineExecutionDialog: () => null,
 }))
 
 vi.mock('@organisms/LibraryRemovalActions', () => ({
@@ -92,12 +92,13 @@ describe('LibraryTable', () => {
 
     const config = mocks.documentTableProps?.config as {
       definition: {
-        columns: Array<{ header?: string; Cell?: (args: unknown) => ReactNode }>
+        columns: Array<{ header?: string; enableSorting?: boolean; Cell?: (args: unknown) => ReactNode }>
         fetcher: (query: unknown) => Promise<unknown>
       }
       advancedSearch?: { filterOptions: FilterOptions }
       emptyMessage?: string
       getSelectCheckboxProps?: (row: { removalStatus?: string | null }) => { disabled?: boolean }
+      trailingToolbarSlot?: ReactNode
     }
 
     expect(config).toMatchObject({
@@ -113,8 +114,10 @@ describe('LibraryTable', () => {
       'Batch',
       'Removal status',
     ])
+    expect(config.definition.columns.slice(1, 4).map((column) => column.enableSorting)).toEqual([true, true, true])
     expect(config.getSelectCheckboxProps?.({ removalStatus: 'in_progress' })).toEqual({ disabled: true })
     expect(config.getSelectCheckboxProps?.({})).toEqual({ disabled: false })
+    expect(renderToStaticMarkup(config.trailingToolbarSlot ?? null)).toContain('Actions (0)')
 
     const row = {
       id: 'doc-1',

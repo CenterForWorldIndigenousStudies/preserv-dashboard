@@ -209,6 +209,14 @@ describeDbIntegration('library documents query (integration)', () => {
           { id: `x${token}b`, document_id: second.id, tag_id: collectionTag.id },
         ],
       })
+      const otherTag = await tx.tags.create({
+        data: { id: `t${token}other`, name: 'Aardvark Collection' },
+        select: { id: true },
+      })
+      await tx.collections.create({ data: { id: `c${token}other`, tag_id: otherTag.id } })
+      await tx.document_to_tags.create({
+        data: { id: `x${token}other`, document_id: second.id, tag_id: otherTag.id },
+      })
       await tx.document_to_metadata.create({
         data: {
           id: `n${token}review`,
@@ -250,6 +258,38 @@ describeDbIntegration('library documents query (integration)', () => {
       const collectionResult = await getLibraryDocuments({ collection: 'Library Integration Collection' }, tx)
       expect(collectionResult.items.map((item) => item.id).sort()).toEqual([first.id, second.id].sort())
       expect(collectionResult.items.some((item) => item.id.includes(`${token}c`))).toBe(false)
+
+      const byFedoraUrl = await getLibraryDocuments({ orderBy: 'fedoraUrl', sortDirection: 'desc' }, tx)
+      expect(byFedoraUrl.items.slice(0, 2).map((item) => item.id)).toEqual([second.id, first.id])
+
+      const byUploaded = await getLibraryDocuments({ orderBy: 'uploadedAt', sortDirection: 'asc' }, tx)
+      expect(byUploaded.items.slice(0, 2).map((item) => item.id)).toEqual([first.id, second.id])
+
+      const byCollection = await getLibraryDocuments({ orderBy: 'collections', sortDirection: 'desc' }, tx)
+      expect(byCollection.items.slice(0, 2).map((item) => item.id)).toEqual([first.id, second.id])
+      const byCollectionAscending = await getLibraryDocuments(
+        {
+          collection: 'Library Integration Collection',
+          orderBy: 'collections',
+          sortDirection: 'asc',
+        },
+        tx,
+      )
+      expect(byCollectionAscending.items.map((item) => item.id)).toEqual([second.id, first.id])
+
+      const byUploadedNext = await getLibraryDocuments(
+        {
+          orderBy: 'uploadedAt',
+          sortDirection: 'asc',
+          page: 2,
+          pageSize: 25,
+          cursorValue: byUploaded.endCursor?.value,
+          cursorId: byUploaded.endCursor?.id,
+        },
+        tx,
+      )
+      expect(byUploadedNext.items).toHaveLength(1)
+      expect(byUploadedNext.items[0]?.name).toBe('Library Integration Extra 24')
     })
   })
 

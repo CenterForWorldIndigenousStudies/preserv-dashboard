@@ -20,13 +20,13 @@ import {
   buildPreservationCandidateConditionSql,
   buildLibraryBatchConditionSql,
   DEFAULT_OVERVIEW_SECONDARY_SORT_FIELD,
-  DOCUMENTS_ORDERABLE_FIELDS,
   OVERVIEW_SORT_EXPRESSIONS,
   buildOverviewDocumentsOrderBySql,
   buildOverviewDocumentsWhereSql,
   isOverviewSortField,
   normalizeOverviewSortField,
   normalizePageNumber,
+  type DocumentCursorSortField,
   type OverviewDocumentRow,
   type QueryDbClient,
 } from '@lib/queries/documentQuerySupport'
@@ -34,6 +34,27 @@ import { normalizeDocumentTablePageSize, type DocumentsQueryParams } from '@lib/
 import { resolveBatchSearchIds, resolveTagSearchIds } from '@lib/queries/searchResolvers'
 import type { DocumentsCursor } from 'types/pagination'
 import type { LibraryBatch, LibraryCollection, LibraryDocumentItem, LibraryDocumentsPageResult } from 'types/documents'
+
+export type LibraryDocumentsQueryParams = Omit<DocumentsQueryParams, 'orderBy'> & {
+  orderBy?: DocumentCursorSortField
+}
+
+const LIBRARY_SORT_EXPRESSIONS = {
+  fedoraUrl: `COALESCE(JSON_UNQUOTE(JSON_EXTRACT(fedora_meta.value, '$.value')), JSON_UNQUOTE(JSON_EXTRACT(fedora_meta.value, '$')), fedora_meta.value, '')`,
+  uploadedAt: "COALESCE(latest_state.changed_at, TIMESTAMP('1000-01-01 00:00:00'))",
+  // The first alphabetic collection is the first value shown in the table cell.
+  collections: `COALESCE((
+    SELECT MIN(t.name)
+    FROM document_to_tags dtt
+    INNER JOIN tags t ON t.id = dtt.tag_id
+    INNER JOIN collections c ON c.tag_id = t.id
+    WHERE dtt.document_id = d.id
+  ), '')`,
+} as const
+
+function isLibrarySortField(value?: string): value is keyof typeof LIBRARY_SORT_EXPRESSIONS {
+  return value !== undefined && Object.hasOwn(LIBRARY_SORT_EXPRESSIONS, value)
+}
 
 export interface LibraryBatchAssociation {
   batchId: string
@@ -229,7 +250,7 @@ interface LibraryQueryContext {
   page: number
   pageSize: number
   usesDefaultSort: boolean
-  sortField: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
+  sortField: DocumentCursorSortField
   sortDirection: 'asc' | 'desc'
   cursorDirection: 'next' | 'prev'
   cursor: DocumentsCursor | null
@@ -245,26 +266,28 @@ interface LibraryQueryContext {
     publisherTerm?: string
     sortDirection: 'asc' | 'desc'
     sortExpression: Prisma.Sql
-    sortField: (typeof DOCUMENTS_ORDERABLE_FIELDS)[number]
+    sortField: DocumentCursorSortField
     statuses?: StatusOption[]
     tagIds?: string[]
   }
 }
 
 async function buildLibraryQueryContext(
-  params: DocumentsQueryParams,
+  params: LibraryDocumentsQueryParams,
   client: QueryDbClient,
 ): Promise<LibraryQueryContext> {
   const page = normalizePageNumber(params.page)
   const pageSize = normalizeDocumentTablePageSize(params.pageSize)
-  const hasExplicitSort = isOverviewSortField(params.orderBy)
+  const hasExplicitSort = isOverviewSortField(params.orderBy) || isLibrarySortField(params.orderBy)
   const usesDefaultSort = !hasExplicitSort
-  const sortField = normalizeOverviewSortField(params.orderBy)
+  const sortField = isLibrarySortField(params.orderBy) ? params.orderBy : normalizeOverviewSortField(params.orderBy)
   const sortDirection: 'asc' | 'desc' = usesDefaultSort ? 'asc' : params.sortDirection === 'asc' ? 'asc' : 'desc'
   const cursorDirection = params.cursorDirection === 'prev' ? 'prev' : 'next'
   const contributorTerm = normalizeTextFilter(params.contributor ?? params.search)
   const publisherTerm = normalizeTextFilter(params.publisher)
-  const sortExpression = Prisma.raw(OVERVIEW_SORT_EXPRESSIONS[sortField])
+  const sortExpression = Prisma.raw(
+    isLibrarySortField(sortField) ? LIBRARY_SORT_EXPRESSIONS[sortField] : OVERVIEW_SORT_EXPRESSIONS[sortField],
+  )
   const defaultSecondarySortExpression = usesDefaultSort
     ? Prisma.raw(OVERVIEW_SORT_EXPRESSIONS[DEFAULT_OVERVIEW_SECONDARY_SORT_FIELD])
     : undefined
@@ -490,7 +513,7 @@ async function hydrateLibraryItems(rows: LibraryDocumentRow[], client: QueryDbCl
 }
 
 export async function getLibraryDocuments(
-  params: DocumentsQueryParams = {},
+  params: LibraryDocumentsQueryParams = {},
   client: QueryDbClient = db,
 ): Promise<LibraryDocumentsPageResult> {
   const context = await buildLibraryQueryContext(params, client)

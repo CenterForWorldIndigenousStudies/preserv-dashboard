@@ -1,5 +1,7 @@
+'use client'
+
 import Link from 'next/link'
-import type { ReactElement } from 'react'
+import { useState, type ReactElement } from 'react'
 import { Box, Paper, Stack, Typography } from '@mui/material'
 
 import { DateAtom } from '@atoms/Date'
@@ -43,12 +45,14 @@ export function PipelineEventHistory({
   batchLinks = {},
   defaultExpanded = false,
 }: PipelineEventHistoryProps): ReactElement | null {
+  const [expandedOverride, setExpandedOverride] = useState<boolean | null>(null)
   if (events.length === 0) return null
 
   return (
     <AccordionPanel
       id={'pipeline-event-history'}
-      defaultExpanded={defaultExpanded}
+      expanded={expandedOverride ?? defaultExpanded}
+      onChange={(_event, expanded) => setExpandedOverride(expanded)}
       summary={
         <Stack direction={'row'} spacing={1.5} sx={{ alignItems: 'center', minWidth: 0 }}>
           <Typography component={'h3'} variant={'h6'} color={'text.primary'}>

@@ -15,6 +15,8 @@ import {
 
 interface LibraryRemovalActionsProps {
   documentIds: string[]
+  open: boolean
+  onClose: () => void
   onSubmitted?: () => void
 }
 
@@ -24,9 +26,8 @@ function itemStatus(item: LibraryRemovalItem): string {
   return `${item.status.replaceAll('_', ' ')} · Fedora ${item.fedora_delete_status.replaceAll('_', ' ')} · Drive ${item.drive_quarantine_status.replaceAll('_', ' ')} · restore ${item.restoration_status.replaceAll('_', ' ')}`
 }
 
-export function LibraryRemovalActions({ documentIds, onSubmitted }: LibraryRemovalActionsProps): ReactElement | null {
+export function LibraryRemovalActions({ documentIds, open, onClose, onSubmitted }: LibraryRemovalActionsProps): ReactElement {
   const router = useRouter()
-  const [confirmOpen, setConfirmOpen] = useState(false)
   const [progressOpen, setProgressOpen] = useState(false)
   const [request, setRequest] = useState<LibraryRemovalRequest | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -60,7 +61,7 @@ export function LibraryRemovalActions({ documentIds, onSubmitted }: LibraryRemov
       setProgressOpen(true)
       onSubmitted?.()
       router.refresh()
-      setConfirmOpen(false)
+      onClose()
     } catch (submitError: unknown) {
       setError(submitError instanceof Error ? submitError.message : 'Unable to request Fedora removal.')
     } finally {
@@ -81,19 +82,14 @@ export function LibraryRemovalActions({ documentIds, onSubmitted }: LibraryRemov
 
   return (
     <>
-      {documentIds.length > 0 ? (
-        <Button variant={'outlined'} color={'error'} onClick={() => setConfirmOpen(true)}>
-          {`Remove from Library (${documentIds.length})`}
-        </Button>
-      ) : null}
       {error ? <Alert severity={'error'}>{error}</Alert> : null}
       <Modal
-        open={confirmOpen}
-        onClose={() => setConfirmOpen(false)}
+        open={open}
+        onClose={onClose}
         title={'Remove selected documents from the Library?'}
         actions={
           <>
-            <Button variant={'text'} onClick={() => setConfirmOpen(false)} disabled={submitting}>
+            <Button variant={'text'} onClick={onClose} disabled={submitting}>
               Cancel
             </Button>
             <Button variant={'contained'} color={'error'} onClick={() => void submitRemoval()} disabled={submitting}>

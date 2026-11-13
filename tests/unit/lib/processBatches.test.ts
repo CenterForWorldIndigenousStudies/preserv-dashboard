@@ -24,6 +24,7 @@ import {
   getProcessBatchStatus,
   markProcessBatchComplete,
   markProcessStageCallbackReceived,
+  recordProcessStageFailure,
   recordMetadataExtractorCompletion,
 } from '@lib/processBatches'
 
@@ -85,6 +86,26 @@ describe('processBatches', () => {
         lifecycle_status: 'complete',
       },
     })
+  })
+
+  it('preserves a Fedora publication lock when the Fedora callback reports a failure', async () => {
+    mockFindUnique.mockResolvedValue({
+      ...buildBatchRow({ fedoraIngester: { status: 'running' } }),
+      lifecycle_status: 'publication_locked',
+    })
+
+    await recordProcessStageFailure('batch-1', 'fedora_ingester', {
+      requestId: 'request-1',
+      operationId: 'operation-1',
+      executionMode: 'normal',
+      errorType: 'WorkbenchError',
+      errorMessage: 'Drupal node 98 exists but media upload failed',
+      receivedAt: 1780027211,
+    })
+
+    expect(getUpdateArg().data).toHaveProperty('processing_details')
+    expect(getUpdateArg().data).not.toHaveProperty('lifecycle_status')
+    expect(getUpdatedProcessingDetails().fedoraIngester).toMatchObject({ status: 'failed' })
   })
 
   it('reports a post-start Dashboard edit as rollback ineligibility', async () => {

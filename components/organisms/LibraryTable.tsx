@@ -4,21 +4,19 @@ import { useEffect, useMemo, useState, type ReactElement } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import type { MRT_ColumnDef, MRT_RowSelectionState } from 'material-react-table'
-import { Stack } from '@mui/material'
 
 import { getLibraryDocumentsAction } from '@actions/library'
 import { DateAtom } from '@atoms/Date'
 import { getBatchDetailPath, getDocumentDetailPath, COLLECTIONS_PATH } from '@constants/paths'
 import { PAGE_LABELS } from '@constants/pageLabels'
 import { EntityNameBlock } from '@molecules/EntityNameBlock'
-import { DocumentReprocessingActions } from '@molecules/DocumentReprocessingActions'
-import { LibraryRemovalActions } from '@organisms/LibraryRemovalActions'
+import { LibraryActions } from '@organisms/LibraryActions'
 import { LibraryRemovalItemStatus } from '@organisms/LibraryRemovalItemStatus'
 import { DocumentTable } from '@organisms/DocumentTable/DocumentTable'
 import type { DocumentTableConfig, DocumentTableFetchResult, DocumentTableQuery } from '@organisms/DocumentTable/types'
 import { useDocumentTableController } from '@organisms/DocumentTable/useDocumentTableController'
 import { serializeStatusesParam, type AdvancedSearchFilters, type FilterOptions } from '@lib/search'
-import type { DocumentsQueryParams } from '@lib/queries/documentQueries'
+import type { LibraryDocumentsQueryParams } from '@lib/queries/libraryQueries'
 import type { LibraryDocumentItem } from 'types/documents'
 
 interface LibraryTableProps {
@@ -134,7 +132,7 @@ export function LibraryTable({ filterOptions, initialQuery, initialData }: Libra
         accessorKey: 'fedoraUrl',
         header: 'Fedora URL',
         size: 280,
-        enableSorting: false,
+        enableSorting: true,
         Cell: ({ row }) =>
           row.original.fedoraUrl ? (
             <Link href={row.original.fedoraUrl} target={'_blank'} rel={'noreferrer'}>
@@ -148,14 +146,14 @@ export function LibraryTable({ filterOptions, initialQuery, initialData }: Libra
         accessorKey: 'uploadedAt',
         header: 'Uploaded',
         size: 180,
-        enableSorting: false,
+        enableSorting: true,
         Cell: ({ row }) => <DateAtom value={row.original.uploadedAt} />,
       },
       {
         id: 'collections',
         header: 'Collection(s)',
         size: 260,
-        enableSorting: false,
+        enableSorting: true,
         Cell: ({ row }) =>
           row.original.collections.length > 0 ? (
             <span>
@@ -216,7 +214,7 @@ export function LibraryTable({ filterOptions, initialQuery, initialData }: Libra
           page: query.page,
           pageSize: query.pageSize,
           search: query.search,
-          orderBy: query.orderBy as DocumentsQueryParams['orderBy'],
+          orderBy: query.orderBy as LibraryDocumentsQueryParams['orderBy'],
           sortDirection: query.sortDirection,
           cursorValue: query.cursorValue,
           cursorId: query.cursorId,
@@ -237,12 +235,7 @@ export function LibraryTable({ filterOptions, initialQuery, initialData }: Libra
       filterOptions,
       onApply: controller.setFilters,
     },
-    trailingToolbarSlot: (
-      <Stack direction={'row'} spacing={1.5} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
-        <DocumentReprocessingActions documentIds={selectedDocumentIds} />
-        <LibraryRemovalActions documentIds={selectedDocumentIds} onSubmitted={() => setRowSelection({})} />
-      </Stack>
-    ),
+    trailingToolbarSlot: <LibraryActions documentIds={selectedDocumentIds} onRemoved={() => setRowSelection({})} />,
     rowSelection,
     onRowSelectionChange: setRowSelection,
     enableRowSelection: true,

@@ -1,6 +1,9 @@
 # CWIS Preservation Database Schema
 
-Keywords: CWIS Preservation Database Schema, PRESERVATION DB
+Keywords: CWIS Preservation Database Schema, PRESERVATION DB, collection qualifiers, publication claims, Alembic migrations, foreign key delete rules, database defaults, schema reference, hash_binary, hash_content, binary_hash metadata
+
+This is the canonical human-readable reference for the shared database schema through Alembic revision `0003_publication_claims`.
+The migrations in [`src/preserv_pipeline/db/alembic/versions/`](../../src/preserv_pipeline/db/alembic/versions/) implement this schema; an individual environment may be at an earlier revision until its migrations are applied.
 
 ```mermaid
 erDiagram
@@ -37,6 +40,7 @@ erDiagram
         varchar document_id FK, UK
         text comment
         text comment_additional
+        json review_checklist
         enum validation_status
         bigint validation_timestamp
         varchar validator_name
@@ -140,6 +144,7 @@ erDiagram
         int conflict_count
         int failed_count
         text last_failure
+        json callback_delivery
         datetime created_at
         datetime updated_at
     }
@@ -317,9 +322,37 @@ erDiagram
     collections {
         varchar id PK
         varchar tag_id FK, UK
+        varchar fedora_node_id
         text notes
         datetime created_at
         datetime updated_at
+    }
+
+    collection_qualifiers {
+        varchar id PK
+        varchar collection_id FK
+        varchar tag_id FK
+        datetime created_at
+        datetime updated_at
+    }
+
+    publication_attempts {
+        varchar id PK
+        varchar operation_id UK
+        varchar batch_id FK, UK
+        varchar requested_by
+        datetime created_at
+    }
+
+    publication_source_claims {
+        varchar id PK
+        varchar attempt_id FK
+        varchar source_document_id FK, UK
+        datetime created_at
+    }
+
+    alembic_version {
+        varchar version_num PK
     }
 
     document_versions {
@@ -387,6 +420,7 @@ erDiagram
     documents ||--o{ document_to_tags : "tags"
     documents ||--o{ document_versions : "versions"
     documents ||--o{ state_history : "state"
+    documents ||--o{ publication_source_claims : "claimed for publication"
     documents ||--o| version_groups : "canonical_for"
     contributors ||--o{ document_to_contributors : "document_to_contributors"
     publishers ||--o{ document_to_publishers : "document_to_publishers"
@@ -395,6 +429,8 @@ erDiagram
     batches ||--o| batch_rollbacks : "rollback"
     batches ||--o{ batch_mutations : "mutations"
     batches ||--o{ batch_external_operations : "external work"
+    batches ||--o| publication_attempts : "publication attempt"
+    publication_attempts ||--o{ publication_source_claims : "source claims"
     fedora_removal_requests ||--o{ fedora_removal_items : "items"
     batches ||--o{ pipeline_worker_leases : "active_batch"
     batch_rollbacks ||--o{ batch_mutations : "journal"
@@ -402,6 +438,8 @@ erDiagram
     batch_metadata ||--o{ batch_to_batches_metadata : "batch_metadata"
     tags ||--o{ document_to_tags : "document_to_tags"
     tags ||--o| collections : "collection"
+    tags ||--o{ collection_qualifiers : "additional qualifier"
+    collections ||--o{ collection_qualifiers : "qualifiers"
     version_groups ||--o{ document_versions : "document_versions"
     state_history ||--o{ document_quality : "current_status"
     access_levels ||--o{ document_access : "document_access"
@@ -413,6 +451,9 @@ erDiagram
 %%   document_to_publishers.(document_id, publisher_id) (composite unique)
 %%   document_to_tags.(document_id, tag_id) (composite unique)
 %%   document_versions.(document_id, version_group_id) (composite unique)
+%%   collection_qualifiers.(collection_id, tag_id) (composite unique)
+%%   publication_attempts.operation_id and publication_attempts.batch_id (individually unique)
+%%   publication_source_claims.source_document_id (unique active claim)
 ```
 
 ---
@@ -427,9 +468,11 @@ erDiagram
   They connect a core entity to a lookup table or to typed metadata values.
 - `metadata` and `batch_metadata` define field names.
   The actual values live in `document_to_metadata` and `batch_to_batches_metadata`.
+- `collections.tag_id` identifies the canonical qualifier tag, while `collection_qualifiers` links additional qualifier tags.
+  Collection membership is calculated from document tags and qualifying metadata values; there is no document-to-collection association table.
 - Several lookup tables use a generated `name_hash` column.
   This is primarily for deduplication and indexing, not for human-facing querying.
-- JSON values are stored in MariaDB `JSON` columns.
+- JSON values are stored in database `JSON` columns.
   For analysis, expect to use JSON extraction functions when reading structured values.
 
 ## Query-Oriented Notes
@@ -438,7 +481,7 @@ erDiagram
 - Use `documents.id_legacy` and `batches.id_legacy` when you need to match back to source-system identifiers.
 - `document_quality.validation_timestamp` and `document_versions.analyzed_at` are `BIGINT` unix timestamps.
   Most other temporal columns are SQL `DATETIME`.
-- `document_to_metadata.value` and `batch_to_batches_metadata.value` are MariaDB `JSON` columns.
+- `document_to_metadata.value` and `batch_to_batches_metadata.value` are database `JSON` columns.
   The pipeline convention is to store typed payloads in the wrapper shape
   `{"value": <typed_value>}`; the wrapper itself is not enforced by the database.
 - `document_to_metadata.value_type` and `batch_to_batches_metadata.value_type` describe the logical type of that inner typed value.
@@ -460,6 +503,9 @@ erDiagram
   It records database before-images and generated Google Drive artifacts; it does not authorize modifying pre-existing source files.
 - `batch_external_operations` is the durable intent ledger for external work.
   It is written before a Drive request, carries an idempotency key and recovery metadata, and remains available when a worker dies before the resulting Drive ID can be attached to `batch_mutations`.
+- `publication_attempts` records the operation and batch for a selected-document publication.
+  `publication_source_claims` reserves each selected source document while that attempt is active; its unique `source_document_id` prevents overlapping active claims.
+  Claims are removed after confirmed complete publication or successful pre-Fedora rollback, while the attempt row remains for audit and idempotent replay.
 - `pipeline_worker_leases` is a singleton durable coordination row.
   Its active batch lease keeps later batches queued while the current batch drains or rolls back, including after worker restart.
 
@@ -473,6 +519,9 @@ erDiagram
 - `document_to_metadata` supports both document-first and metadata-first access patterns.
 - `document_to_tags` supports both document-first and tag-first access patterns.
 - `collections` is indexed and unique on `tag_id`.
+- `collection_qualifiers` is unique on `(collection_id, tag_id)`; an additional tag may qualify multiple collections.
+- `publication_attempts` is unique on `operation_id` and separately on `batch_id`.
+- `publication_source_claims` is unique on `source_document_id` while a claim row exists.
 - `pipeline_queue_items` is indexed on `stage`, `batch_id`, and `status`.
 - `drive_exclusion_review_items` is indexed for root-scoped parent, item-type, effective-ancestor, and subtree-status access patterns.
 - `batch_rollbacks` is indexed on `batch_id` and `status`.
@@ -482,6 +531,30 @@ erDiagram
 - `batch_external_operations` is indexed on batch/status and status/next recovery time so scheduled reconciliation does not poll the provider on every worker loop.
 - Association tables use composite unique constraints to prevent duplicate links.
 
+## Referential And Default Rules
+
+These database rules affect application behavior beyond the column types and unique constraints listed below:
+
+| Relationship | On Delete | Effect |
+| --- | --- | --- |
+| `collections.tag_id` to `tags.id`; `collection_qualifiers` to `collections` and `tags` | CASCADE | Deleting a canonical tag deletes its collection definition; deleting a collection or additional qualifier tag deletes its qualifier links. |
+| Document association tables to their parent document or lookup row | CASCADE | Dependent document links are removed with the referenced row. |
+| `batch_rollbacks`, `batch_mutations`, `batch_external_operations`, and `publication_attempts` to `batches.id` | RESTRICT | Retained operational history prevents deleting a referenced batch. |
+| `publication_source_claims` to `publication_attempts.id` and `documents.id`; `fedora_removal_items` to `fedora_removal_requests.id` | RESTRICT | Active claims and removal audit items keep their referenced identities available. |
+| `batch_mutations.rollback_id`, `document_quality.current_status`, and `pipeline_worker_leases.active_batch_id` | SET NULL | Deleting the referenced rollback, state, or batch clears the optional pointer. |
+
+| Column | Database Default | Nullability / Use |
+| --- | --- | --- |
+| `batches.processing_details`, `document_to_batches.processing_details` | `{}` | Required JSON processing context. |
+| `batches.lifecycle_status`, `batches.publication_target` | `queued`, `fedora` | Required batch workflow and target. |
+| `pipeline_queue_items.attempt_count`, `pipeline_queue_items.queued_at` | `0`, `CURRENT_TIMESTAMP` | Required retry count and enqueue time; `status` must be supplied by the caller. |
+| `batch_rollbacks.status`, `batch_rollbacks.rollback_number`, rollback counters | `requested`, `1`, `0` | Required rollback status, suffix number, and progress counters. |
+| `batch_mutations.status`, `batch_external_operations.status`; both `attempts` columns | `planned`; `0` | Required state and retry counts for durable work. |
+| `collections.fedora_node_id` | No default | Nullable so a collection can exist before its Library ID is assigned. |
+| `publication_attempts.operation_id`, `publication_attempts.batch_id`, `publication_source_claims.source_document_id` | No default | Required identities; an existing claim row is an active reservation. |
+
+For exact DDL, consult the versioned Alembic migrations linked above. This document records the behavioral schema contract; the migration files define the executable schema.
+
 ## Meaningful Metadata
 
 The schema is intentionally generic: document metadata names live in `metadata`, and the actual values live in `document_to_metadata`.
@@ -490,7 +563,7 @@ Some keys are part of the shared pipeline contract and have stable meaning acros
 
 ### Canonical Document Metadata
 
-These keys are the current shared source of truth defined in `preserv-db` and are the safest keys for dashboard features to depend on when showing document lineage and managed Google Drive artifacts.
+These shared keys have stable meaning across the pipeline when showing document lineage, managed Google Drive artifacts, and Fedora publication identity.
 
 | Metadata Name | Meaning | Typical Producer | Dashboard Use |
 | --- | --- | --- | --- |
@@ -505,6 +578,12 @@ These keys are the current shared source of truth defined in `preserv-db` and ar
 | `content_dedup_text_source_id` | Google Drive file ID of the document artifact used as the text source for content deduplication. | `preserv-content-dedup` | Trace which managed artifact was actually hashed and compared during content deduplication. |
 | `needs_review` | Active, unresolved review reasons for the current review episode. | Pipeline stages and data-combiner | Drives Review Queue eligibility when no persisted quality status exists and provides the specific reasons shown to reviewers. |
 | `needs_review_history` | Append-only JSON history of resolved review episodes. | Dashboard decisions and legacy reconciliation | Preserves reasons, decisions, timestamps, and reviewers after active review metadata is removed. |
+| `fedora_url` | Islandora/Fedora object URL after confirmed publication. | `preserv-fedora-ingester` | Link to the Library object and identify the external target for removal. |
+| `fedora_node_id` | Existing Islandora/Fedora node identity for an update. | `preserv-fedora-ingester` | Update or remove the correct node. |
+| `fedora_media_id` | Existing Islandora/Fedora media identity for a binary update. | `preserv-fedora-ingester` | Update the correct media. |
+| `fedora_publication_source_document_id` | Document ID of the immediate pre-Fedora candidate used for the publication. | `preserv-fedora-ingester` | Restore that candidate after Library removal. |
+| `fedora_csv_source_id` | Google Drive file ID of the generated per-document Fedora CSV. | `preserv-fedora-ingester` | Trace the submission artifact. |
+| `fedora_generated` | Boolean marker for Fedora export metadata generated by the ingester. | `preserv-fedora-ingester` | Distinguish generated publication context from descriptive source metadata. |
 
 Practical rule:
 
@@ -542,6 +621,7 @@ These keys are not the primary lineage contract, but they are part of the active
 ### Related Non-Metadata Columns
 
 Some values that look similar to metadata are actually first-class columns and should be read from their tables directly instead of from `document_to_metadata`.
+Use `documents.hash_binary` for the current artifact's file checksum and `documents.hash_content` for its content-derived hash. The former `binary_hash` metadata key duplicated the file checksum and is no longer written or copied to derived artifacts.
 
 | Location | Meaning | Notes |
 | --- | --- | --- |
@@ -551,6 +631,7 @@ Some values that look similar to metadata are actually first-class columns and s
 | `document_to_batches.batch_origin` | Per-link batch origin text. | Useful for batch filtering and tracing document membership. |
 | `batches.name` | Unique batch name. |  |
 | `batches.id_legacy` | Registry-derived legacy batch identifier. | Stable batch identity from Master Registries. |
+| `collections.fedora_node_id` | Islandora/Fedora collection node ID (Library ID). | Unlike document metadata `fedora_node_id`, this identifies a collection node used in membership mapping. |
 
 ### Query Pattern
 
@@ -582,6 +663,14 @@ Review lifecycle note:
 
 ## Table Reference
 
+### alembic_version
+
+Alembic's migration tracking table. It records the revision applied to this database; it is maintained by Alembic rather than an application model.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `version_num` | `VARCHAR(32)` | Primary key. Current applied revision. |
+
 ### documents
 
 Primary document records.
@@ -590,8 +679,8 @@ Primary document records.
 | --- | --- | --- |
 | `id` | `VARCHAR(36)` | Primary key. UUID string. |
 | `filesize` | `BIGINT` | File size in bytes. |
-| `hash_binary` | `VARCHAR(255)` | Binary/file-level hash. Indexed. |
-| `hash_content` | `VARCHAR(255)` | Content/text-level hash. Indexed. |
+| `hash_binary` | `VARCHAR(255)` | SHA-256 of this document artifact's exact file bytes. Indexed; authoritative for the binary. |
+| `hash_content` | `VARCHAR(255)` | Content-derived hash. Content deduplication hashes normalized extracted text; other stages may use their own content representation. Indexed and nullable. |
 | `id_legacy` | `VARCHAR(255)` | Unique source-system document identifier. |
 | `name` | `VARCHAR(255)` | Document name. |
 | `created_at` | `DATETIME` | Row creation time. |
@@ -742,17 +831,34 @@ Query note: indexed on `name(191)` for name lookups.
 
 ### collections
 
-Collection records keyed to a single tag.
+Collection definitions. Each collection has one required canonical tag and may have additional qualifier tags through `collection_qualifiers`.
+Membership is calculated live: a document qualifies when it has any qualifier tag or a normalized qualifier name matches a whole value in `dc_coverage_cultural`, `dc_subject`, `dc_subject_unesco`, `long_tail_keywords`, or `seo_keywords`.
+List-valued metadata matches one complete list item, and matching is case-insensitive.
 
 | Column | Type | Notes |
 | --- | --- | --- |
 | `id` | `VARCHAR(36)` | Primary key. UUID string. |
-| `tag_id` | `VARCHAR(36)` | FK to `tags.id`. Unique. |
+| `tag_id` | `VARCHAR(36)` | FK to `tags.id`. Unique canonical qualifier; also supplies the collection name. |
+| `fedora_node_id` | `VARCHAR(255)` | Optional Islandora/Fedora collection node ID, shown as Library ID in the Dashboard. Required before a member can become Ready for Library. |
 | `notes` | `TEXT` | Optional collection note. |
 | `created_at` | `DATETIME` | Row creation time. |
 | `updated_at` | `DATETIME` | Row update time. |
 
 Constraint notes: unique on `tag_id`; deleting the referenced tag cascades to this row.
+
+### collection_qualifiers
+
+Additional qualifier tags for a collection. The canonical tag remains in `collections.tag_id` and is not duplicated here.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `VARCHAR(36)` | Primary key. UUID string. |
+| `collection_id` | `VARCHAR(36)` | FK to `collections.id`; deleting the collection cascades to this link. |
+| `tag_id` | `VARCHAR(36)` | FK to `tags.id`; deleting the tag cascades to this link. The tag can also qualify other collections. |
+| `created_at` | `DATETIME` | Row creation time. |
+| `updated_at` | `DATETIME` | Row update time. |
+
+Constraint notes: unique on `(collection_id, tag_id)`.
 
 ### document_to_tags
 
@@ -836,6 +942,31 @@ Core batch/process-run records.
 
 Query note: batch-specific metrics and registry-derived attributes often live in `batch_to_batches_metadata`, not as top-level columns here.
 
+### publication_attempts
+
+Durable identity for a Ready for Library selected-document publication. The batch's `processing_details.pipeline` stores the fixed publication workflow and selected source IDs; this row ties that batch to a stable operation for retries.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `VARCHAR(36)` | Primary key. UUID string. |
+| `operation_id` | `VARCHAR(255)` | Unique submission identity used for idempotent replay. |
+| `batch_id` | `VARCHAR(36)` | Unique FK to `batches.id`; deleting the batch is restricted while this row exists. |
+| `requested_by` | `VARCHAR(255)` | Authenticated requester identity. |
+| `created_at` | `DATETIME` | Row creation time. |
+
+### publication_source_claims
+
+One reservation per source document selected for an active publication attempt. Claims prevent another active attempt from selecting the same source, even when the selections span original batches.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `VARCHAR(36)` | Primary key. UUID string. |
+| `attempt_id` | `VARCHAR(36)` | FK to `publication_attempts.id`; deleting the attempt is restricted while claims exist. |
+| `source_document_id` | `VARCHAR(36)` | Unique FK to `documents.id`; deleting a claimed source is restricted. |
+| `created_at` | `DATETIME` | Row creation time. |
+
+The attempt remains after claims are released. A claim is released only after confirmed complete Fedora publication or successful pre-Fedora rollback; failed or uncertain outcomes retain it for recovery.
+
 ### pipeline_queue_items
 
 Durable queue entries for the combined pipeline server.
@@ -879,6 +1010,8 @@ The retained batch is renamed with an `<original-name>-rolled-back-<rollback-num
 | `requested_at` / `started_at` / `completed_at` / `resolved_at` | `DATETIME` | Rollback lifecycle timestamps. |
 | `restored_count` / `deleted_count` / `cancelled_count` / `conflict_count` / `failed_count` | `INT` | Counts for restored rows, purged rows/artifacts, cancelled queue items, conflicts, and failures. |
 | `last_failure` | `TEXT` | Latest failure or operator-resolution detail. |
+| `callback_delivery` | `JSON` | Persisted result of notifying the Dashboard after rollback completion. |
+| `created_at` / `updated_at` | `DATETIME` | Row creation and update times. |
 
 ### batch_mutations
 
@@ -889,6 +1022,7 @@ Created documents and related operational rows are purged during rollback; pre-e
 | --- | --- | --- |
 | `id` | `VARCHAR(36)` | Primary key. |
 | `batch_id` / `rollback_id` | `VARCHAR(36)` | Batch FK and optional rollback FK. |
+| `execution_order` | `INT` | Durable order within a batch, unique with `batch_id`, for reverse compensation. |
 | `stage` / `pass_number` | `VARCHAR(64)` / `INT` | Execution context that caused the mutation. |
 | `resource_type` / `resource_id` | `VARCHAR(64)` / `VARCHAR(255)` | Mutated resource identity. |
 | `operation` | `VARCHAR(64)` | Insert, update, delete, create-file, or similar operation. |
@@ -896,7 +1030,9 @@ Created documents and related operational rows are purged during rollback; pre-e
 | `after_fingerprint` | `VARCHAR(128)` | Fingerprint used for conflict-safe compensation. |
 | `rollback_action` | `VARCHAR(255)` | Inverse operation to execute. |
 | `status` | `VARCHAR(32)` | Journal state such as `planned`, `applied`, `rolled_back`, `conflict`, or `unknown`. |
-| `attempts` / timestamps / `last_error` | — | Retry and failure tracking. |
+| `attempts` | `INT` | Number of compensation or recovery attempts. |
+| `planned_at` / `applied_at` / `rolled_back_at` / `created_at` / `updated_at` | `DATETIME` | Mutation lifecycle timestamps. |
+| `last_error` | `TEXT` | Latest compensation or recovery failure. |
 
 ### batch_external_operations
 
@@ -913,7 +1049,9 @@ An operation may remain unresolved after a process crash; recovery reconciles it
 | `request` | `JSON` | Non-secret request metadata needed for reconciliation. |
 | `external_ids` | `JSON` | Provider IDs discovered or created by the operation. |
 | `status` | `VARCHAR(32)` | `planned`, `executing`, `applied`, `uncertain`, `failed`, or `compensated`. |
-| `attempts` / timestamps / `last_error` | — | Recovery and failure tracking. |
+| `attempts` | `INT` | Number of provider attempts. |
+| `planned_at` / `started_at` / `applied_at` / `completed_at` / `created_at` / `updated_at` | `DATETIME` | External operation lifecycle timestamps. |
+| `last_error` | `TEXT` | Latest provider or recovery failure. |
 | `next_recovery_at` | `DATETIME` | Earliest time for the next provider reconciliation attempt; used for bounded backoff. |
 
 ### fedora_removal_requests
@@ -928,6 +1066,7 @@ Durable audit record for an authenticated Dashboard request to remove one or mor
 | `status` | `VARCHAR(32)` | Aggregate request status, derived from its independently processed items. |
 | `requested_at` / `started_at` / `completed_at` | `DATETIME` | Request lifecycle timestamps. |
 | `last_failure` | `TEXT` | Most recently recorded item failure. |
+| `created_at` / `updated_at` | `DATETIME` | Row creation and update times. |
 
 ### fedora_removal_items
 
@@ -947,6 +1086,7 @@ The publication document is deleted after successful restoration, while this aud
 | `error_type` / `error_message` | — | Latest item failure detail. |
 | `last_retry_by` / `last_retry_at` | — | Operator and time for the latest explicit retry. |
 | `requested_at` / `started_at` / `completed_at` | `DATETIME` | Item lifecycle timestamps. |
+| `created_at` / `updated_at` | `DATETIME` | Row creation and update times. |
 
 The worker processes each item independently and resumes unfinished steps after restart. The item's `updated_at` timestamp acts as a five-minute processing lease so another worker cannot claim active work.
 It restores the source candidate only after Fedora deletion and Drive quarantine are verified.

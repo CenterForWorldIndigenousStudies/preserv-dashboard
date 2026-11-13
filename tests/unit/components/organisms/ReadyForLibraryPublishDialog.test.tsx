@@ -14,12 +14,27 @@ vi.mock('@actions/ready-for-library', () => ({
   publishReadyForLibraryAction: mocks.publish,
 }))
 vi.mock('@organisms/Modal', () => ({
-  Modal: ({ open, title, children, actions }: { open: boolean; title: string; children: React.ReactNode; actions: React.ReactNode }) =>
-    open ? <section><h2>{title}</h2>{children}{actions}</section> : null,
+  Modal: ({
+    open,
+    title,
+    children,
+    actions,
+  }: {
+    open: boolean
+    title: string
+    children: React.ReactNode
+    actions: React.ReactNode
+  }) =>
+    open ? (
+      <section>
+        <h2>{title}</h2>
+        {children}
+        {actions}
+      </section>
+    ) : null,
 }))
 
 import { ReadyForLibraryPublishDialog } from '@organisms/ReadyForLibraryPublishDialog'
-
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 let root: Root | undefined
@@ -42,7 +57,14 @@ describe('ReadyForLibraryPublishDialog', () => {
     document.body.appendChild(container)
     root = createRoot(container)
     await act(async () => {
-      root?.render(<ReadyForLibraryPublishDialog documentIds={['doc-two', 'doc-one']} operationId={'operation-one'} onClose={vi.fn()} onPublished={vi.fn()} />)
+      root?.render(
+        <ReadyForLibraryPublishDialog
+          documentIds={['doc-two', 'doc-one']}
+          operationId={'operation-one'}
+          onClose={vi.fn()}
+          onPublished={vi.fn()}
+        />,
+      )
       await Promise.resolve()
     })
 
@@ -59,11 +81,19 @@ describe('ReadyForLibraryPublishDialog', () => {
       .mockResolvedValueOnce({ ok: false, error: 'Queue unavailable', batchId: 'publication-batch' })
       .mockResolvedValueOnce({ ok: true, batchId: 'publication-batch' })
     const onPublished = vi.fn()
+    const onClose = vi.fn()
     const container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
     await act(async () => {
-      root?.render(<ReadyForLibraryPublishDialog documentIds={['doc-one']} operationId={'operation-one'} onClose={vi.fn()} onPublished={onPublished} />)
+      root?.render(
+        <ReadyForLibraryPublishDialog
+          documentIds={['doc-one']}
+          operationId={'operation-one'}
+          onClose={onClose}
+          onPublished={onPublished}
+        />,
+      )
       await Promise.resolve()
     })
     const input = container.querySelector('input')
@@ -73,7 +103,8 @@ describe('ReadyForLibraryPublishDialog', () => {
       setter?.call(input, 'Publish test batch')
       input?.dispatchEvent(new Event('input', { bubbles: true }))
     })
-    const button = (label: string) => Array.from(container.querySelectorAll('button')).find((item) => item.textContent === label)
+    const button = (label: string) =>
+      Array.from(container.querySelectorAll('button')).find((item) => item.textContent === label)
     await act(async () => {
       button('Publish')?.click()
       await Promise.resolve()
@@ -85,8 +116,17 @@ describe('ReadyForLibraryPublishDialog', () => {
       await Promise.resolve()
     })
     expect(mocks.publish).toHaveBeenCalledTimes(2)
-    expect(mocks.publish).toHaveBeenNthCalledWith(1, { documentIds: ['doc-one'], name: 'Publish test batch', operationId: 'operation-one' })
-    expect(mocks.publish).toHaveBeenNthCalledWith(2, { documentIds: ['doc-one'], name: 'Publish test batch', operationId: 'operation-one' })
-    expect(onPublished).toHaveBeenCalledOnce()
+    expect(mocks.publish).toHaveBeenNthCalledWith(1, {
+      documentIds: ['doc-one'],
+      name: 'Publish test batch',
+      operationId: 'operation-one',
+    })
+    expect(mocks.publish).toHaveBeenNthCalledWith(2, {
+      documentIds: ['doc-one'],
+      name: 'Publish test batch',
+      operationId: 'operation-one',
+    })
+    expect(onPublished).toHaveBeenCalledExactlyOnceWith('publication-batch')
+    expect(onClose).toHaveBeenCalledOnce()
   })
 })
