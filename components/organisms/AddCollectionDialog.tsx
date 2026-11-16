@@ -14,12 +14,16 @@ import { TagSearchCombobox } from '@molecules/TagSearchCombobox'
 import { Modal } from '@organisms/Modal'
 import type { TagSuggestion } from '@lib/hooks/useTagSearch'
 import { normalizeTagName } from '@lib/tagUtils'
-import type { CollectionWithMeta } from 'types/collections'
+import type { CollectionProposal, CollectionWithMeta } from 'types/collections'
 
 interface AddCollectionDialogProps {
   open: boolean
-  collections: CollectionWithMeta[]
+  collections: CollectionWithMeta[] | Pick<CollectionWithMeta, 'tag_id' | 'collection_name'>[]
   onClose: () => void
+  initialName?: string
+  initialProposal?: CollectionProposal | null
+  onCreated?: (collection: Pick<CollectionWithMeta, 'tag_id' | 'collection_name'>) => void
+  onProposalSaved?: (proposal: CollectionProposal) => void
 }
 
 interface SelectedQualifier {
@@ -27,7 +31,15 @@ interface SelectedQualifier {
   name: string
 }
 
-export function AddCollectionDialog({ open, collections, onClose }: AddCollectionDialogProps): ReactElement {
+export function AddCollectionDialog({
+  open,
+  collections,
+  onClose,
+  initialName = '',
+  initialProposal = null,
+  onCreated,
+  onProposalSaved,
+}: AddCollectionDialogProps): ReactElement {
   const router = useRouter()
   const [selectedTag, setSelectedTag] = useState<TagSuggestion | null>(null)
   const [pendingCreateName, setPendingCreateName] = useState('')
@@ -49,14 +61,14 @@ export function AddCollectionDialog({ open, collections, onClose }: AddCollectio
     }
 
     setSelectedTag(null)
-    setPendingCreateName('')
-    setCollectionNotes('')
-    setTagNotes('')
-    setQualifiers([])
-    setFedoraNodeId('')
+    setPendingCreateName(normalizeTagName(initialProposal?.name ?? initialName))
+    setCollectionNotes(initialProposal?.notes ?? '')
+    setTagNotes(initialProposal?.tagNotes ?? '')
+    setQualifiers(initialProposal?.qualifierNames.map((name) => ({ name })) ?? [])
+    setFedoraNodeId(initialProposal?.fedoraNodeId ?? '')
     setError(null)
     setIsSubmitting(false)
-  }, [open])
+  }, [open, initialName, initialProposal])
 
   function resetSelection(): void {
     setSelectedTag(null)
@@ -88,11 +100,52 @@ export function AddCollectionDialog({ open, collections, onClose }: AddCollectio
       return
     }
 
+    const name = normalizeTagName(selectedTag?.name ?? pendingCreateName)
+    if (
+      collections.some(
+        (collection) => normalizeTagName(collection.collection_name).toLowerCase() === name.toLowerCase(),
+      )
+    ) {
+      setError(`Collection "${name}" already exists. Choose a unique name.`)
+      return
+    }
+
+    if (onProposalSaved) {
+      setIsSubmitting(true)
+      setError(null)
+      try {
+        const response = await fetch('/api/collections/options', { cache: 'no-store' })
+        if (!response.ok) throw new Error('Unable to verify the collection name right now.')
+        const payload = (await response.json()) as { collections: Array<{ name: string }> }
+        if (
+          payload.collections.some(
+            (collection) => normalizeTagName(collection.name).toLowerCase() === name.toLowerCase(),
+          )
+        ) {
+          setError(`Collection "${name}" already exists. Choose a unique name.`)
+          return
+        }
+        onProposalSaved({
+          name,
+          notes: collectionNotes.trim() || null,
+          tagNotes: tagNotes.trim() || null,
+          qualifierNames: qualifiers.map((qualifier) => qualifier.name),
+          fedoraNodeId: fedoraNodeId.trim() || null,
+        })
+        onClose()
+      } catch (saveError) {
+        setError(saveError instanceof Error ? saveError.message : 'Unable to verify the collection name right now.')
+      } finally {
+        setIsSubmitting(false)
+      }
+      return
+    }
+
     setIsSubmitting(true)
     setError(null)
 
     try {
-      await createCollectionAction({
+      const collection = await createCollectionAction({
         tagId: selectedTag?.id,
         tagName: pendingCreateName,
         tagNotes: tagNotes.trim(),
@@ -102,6 +155,7 @@ export function AddCollectionDialog({ open, collections, onClose }: AddCollectio
         fedoraNodeId: fedoraNodeId.trim(),
       })
 
+      onCreated?.(collection)
       onClose()
       router.refresh()
     } catch (submitError) {
@@ -125,105 +179,110 @@ export function AddCollectionDialog({ open, collections, onClose }: AddCollectio
             {'Cancel'}
           </Button>
           <Button variant={'primary'} onClick={() => void handleSubmit()} loading={isSubmitting}>
-            {'Add Collection'}
+            {onProposalSaved ? 'Save for batch' : 'Add Collection'}
           </Button>
         </>
       }
     >
-        {error ? <Alert severity={'error'}>{error}</Alert> : null}
+      {error ? <Alert severity={'error'}>{error}</Alert> : null}
+      <TagSearchCombobox
+        open={open}
+        value={initialProposal?.name ?? initialName}
+        disabled={isSubmitting}
+        label={'Canonical qualifier (required)'}
+        placeholder={'Search for a tag or create a new one'}
+        onSelectExisting={(tag) => {
+          setSelectedTag(tag)
+          setPendingCreateName('')
+          setTagNotes('')
+          setError(null)
+        }}
+        onSelectCreate={(tagName) => {
+          setPendingCreateName(tagName.trim().replace(/\s+/g, ' '))
+          setSelectedTag(null)
+          setError(null)
+        }}
+        getOptionDisabled={(tag) => existingCollectionTagIds.has(tag.id)}
+        getOptionHelperText={(tag) => (existingCollectionTagIds.has(tag.id) ? 'Already a collection' : null)}
+      />
+
+      {selectedTag ? (
+        <Alert severity={'info'}>{`Creating a collection for existing tag "${selectedTag.name}".`}</Alert>
+      ) : null}
+
+      {pendingCreateName ? (
+        <Alert severity={'info'}>{`Creating a new tag and collection for "${pendingCreateName}".`}</Alert>
+      ) : null}
+
+      <Box sx={{ display: 'grid', gap: 1 }}>
+        <Typography variant={'body2'} sx={{ color: 'text.secondary', fontWeight: 600 }}>
+          {'Additional qualifiers'}
+        </Typography>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+          {qualifiers.map((qualifier) => (
+            <Chip
+              key={qualifier.id ?? qualifier.name}
+              label={qualifier.name}
+              onDelete={
+                isSubmitting
+                  ? undefined
+                  : () => setQualifiers((current) => current.filter((item) => item !== qualifier))
+              }
+            />
+          ))}
+        </Box>
         <TagSearchCombobox
           open={open}
           disabled={isSubmitting}
-          label={'Canonical qualifier (required)'}
+          label={'Add qualifier'}
           placeholder={'Search for a tag or create a new one'}
-          onSelectExisting={(tag) => {
-            setSelectedTag(tag)
-            setPendingCreateName('')
-            setTagNotes('')
-            setError(null)
+          onSelectExisting={(tag) => addQualifier({ id: tag.id, name: tag.name })}
+          onSelectCreate={(name) => {
+            const normalizedName = normalizeTagName(name)
+            if (normalizedName) addQualifier({ name: normalizedName })
           }}
-          onSelectCreate={(tagName) => {
-            setPendingCreateName(tagName.trim().replace(/\s+/g, ' '))
-            setSelectedTag(null)
-            setError(null)
-          }}
-          getOptionDisabled={(tag) => existingCollectionTagIds.has(tag.id)}
-          getOptionHelperText={(tag) => (existingCollectionTagIds.has(tag.id) ? 'Already a collection' : null)}
+          getOptionDisabled={(tag) =>
+            tag.id === selectedTag?.id || qualifiers.some((qualifier) => qualifier.id === tag.id)
+          }
         />
+      </Box>
 
-        {selectedTag ? (
-          <Alert severity={'info'}>{`Creating a collection for existing tag "${selectedTag.name}".`}</Alert>
-        ) : null}
+      {selectedTag || pendingCreateName ? (
+        <Button variant={'ghost'} onClick={resetSelection} disabled={isSubmitting} sx={{ justifySelf: 'start' }}>
+          {'Clear selection'}
+        </Button>
+      ) : null}
 
-        {pendingCreateName ? (
-          <Alert severity={'info'}>{`Creating a new tag and collection for "${pendingCreateName}".`}</Alert>
-        ) : null}
-
-        <Box sx={{ display: 'grid', gap: 1 }}>
-          <Typography variant={'body2'} sx={{ color: 'text.secondary', fontWeight: 600 }}>
-            {'Additional qualifiers'}
-          </Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-            {qualifiers.map((qualifier) => (
-              <Chip
-                key={qualifier.id ?? qualifier.name}
-                label={qualifier.name}
-                onDelete={isSubmitting ? undefined : () => setQualifiers((current) => current.filter((item) => item !== qualifier))}
-              />
-            ))}
-          </Box>
-          <TagSearchCombobox
-            open={open}
-            disabled={isSubmitting}
-            label={'Add qualifier'}
-            placeholder={'Search for a tag or create a new one'}
-            onSelectExisting={(tag) => addQualifier({ id: tag.id, name: tag.name })}
-            onSelectCreate={(name) => {
-              const normalizedName = normalizeTagName(name)
-              if (normalizedName) addQualifier({ name: normalizedName })
-            }}
-            getOptionDisabled={(tag) =>
-              tag.id === selectedTag?.id || qualifiers.some((qualifier) => qualifier.id === tag.id)
-            }
-          />
-        </Box>
-
-        {selectedTag || pendingCreateName ? (
-          <Button variant={'ghost'} onClick={resetSelection} disabled={isSubmitting} sx={{ justifySelf: 'start' }}>
-            {'Clear selection'}
-          </Button>
-        ) : null}
-
-        {pendingCreateName ? (
-          <TextField
-            label={'Tag notes'}
-            value={tagNotes}
-            onChange={(event) => setTagNotes(event.target.value)}
-            placeholder={'Optional notes for the new tag'}
-            fullWidth
-            multiline
-            minRows={3}
-          />
-        ) : null}
-
+      {pendingCreateName ? (
         <TextField
-          label={'Collection notes'}
-          value={collectionNotes}
-          onChange={(event) => setCollectionNotes(event.target.value)}
-          placeholder={'Optional notes for this collection'}
+          label={'Tag notes'}
+          value={tagNotes}
+          onChange={(event) => setTagNotes(event.target.value)}
+          placeholder={'Optional notes for the new tag'}
           fullWidth
           multiline
           minRows={3}
         />
+      ) : null}
 
-        <TextField
-          label={COLLECTION_LIBRARY_ID_LABEL}
-          value={fedoraNodeId}
-          onChange={(event) => setFedoraNodeId(event.target.value)}
-          placeholder={`Optional ${COLLECTION_LIBRARY_ID_LABEL}`}
-          disabled={isSubmitting}
-          fullWidth
-        />
+      <TextField
+        label={'Collection notes'}
+        value={collectionNotes}
+        onChange={(event) => setCollectionNotes(event.target.value)}
+        placeholder={'Optional notes for this collection'}
+        fullWidth
+        multiline
+        minRows={3}
+      />
+
+      <TextField
+        label={COLLECTION_LIBRARY_ID_LABEL}
+        value={fedoraNodeId}
+        onChange={(event) => setFedoraNodeId(event.target.value)}
+        placeholder={`Optional ${COLLECTION_LIBRARY_ID_LABEL}`}
+        disabled={isSubmitting}
+        fullWidth
+      />
     </Modal>
   )
 }

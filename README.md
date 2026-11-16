@@ -1,6 +1,6 @@
 # Preservation Dashboard
 
-For the Library removal workflow, its confirmation, per-document progress, and retry behavior, see [Library Document Removal](../../documentation/dashboard/LIBRARY_REMOVAL.md).
+For operator workflows, start with the [Dashboard Workflow Guide](../../documentation/dashboard/WORKFLOWS.md).
 
 ## Overview
 
@@ -139,6 +139,8 @@ npm run lint:markdown
 
 Additional project documentation:
 
+- [Operator workflow guide](../../documentation/dashboard/WORKFLOWS.md)
+- [Collections and membership](../../documentation/dashboard/COLLECTIONS.md)
 - [Documentation standards](../../documentation/standards/DOCUMENTATION_STANDARDS.md)
 - [Documentation roles](../../documentation/standards/DOCUMENTATION_ROLES.md)
 - [Environment variables](../../documentation/dashboard/ENV_VARS.md)

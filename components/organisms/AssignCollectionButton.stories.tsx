@@ -1,6 +1,7 @@
 import Box from '@mui/material/Box'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { expect, within } from 'storybook/test'
+import { ASSIGNED, EDIT_ASSIGNMENT } from '@constants/collections'
 import { AssignCollectionButton } from '@organisms/AssignCollectionButton'
 
 const meta = {
@@ -41,8 +42,8 @@ export const WithTags: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.getByText('Tags assigned.')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Edit assignment' })).toBeVisible()
+    await expect(canvas.getByText(ASSIGNED)).toBeVisible()
+    await expect(canvas.getByRole('button', { name: EDIT_ASSIGNMENT })).toBeVisible()
   },
 }
 

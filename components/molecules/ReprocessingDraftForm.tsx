@@ -10,11 +10,12 @@ import {
 } from '@lib/reprocessingDrafts'
 import type { PipelineConfig } from '@lib/pipelineConfig'
 import type { CallbackStageKey } from 'types/pipelineContracts'
+import type { CollectionProposal } from 'types/collections'
 
 interface ReprocessingDraftFormProps {
   name: string
   collectionName: string
-  collectionNotes: string
+  collectionProposal?: CollectionProposal | null
   restartStage: CallbackStageKey
   requestedStages: readonly CallbackStageKey[]
   pipelineConfig?: PipelineConfig
@@ -26,7 +27,7 @@ interface ReprocessingDraftFormProps {
   batchNameSearchError?: string | null
   onNameChange: (value: string) => void
   onCollectionNameChange: (value: string) => void
-  onCollectionNotesChange: (value: string) => void
+  onCollectionProposalChange?: (proposal: CollectionProposal | null) => void
   onRestartStageChange: (value: CallbackStageKey) => void
   onRequestedStagesChange: (value: CallbackStageKey[]) => void
   onPipelineConfigChange?: (value: PipelineConfig) => void
@@ -38,7 +39,7 @@ interface ReprocessingDraftFormProps {
 export function ReprocessingDraftForm({
   name,
   collectionName,
-  collectionNotes,
+  collectionProposal,
   restartStage,
   requestedStages,
   pipelineConfig,
@@ -50,7 +51,7 @@ export function ReprocessingDraftForm({
   batchNameSearchError = null,
   onNameChange,
   onCollectionNameChange,
-  onCollectionNotesChange,
+  onCollectionProposalChange,
   onRestartStageChange,
   onRequestedStagesChange,
   onPipelineConfigChange,
@@ -62,7 +63,7 @@ export function ReprocessingDraftForm({
     <BatchDraftForm
       name={name}
       collectionName={collectionName}
-      collectionNotes={collectionNotes}
+      collectionProposal={collectionProposal}
       startStage={restartStage}
       requestedStages={requestedStages}
       pipelineConfig={pipelineConfig}
@@ -78,7 +79,7 @@ export function ReprocessingDraftForm({
       batchNameSearchError={batchNameSearchError}
       onNameChange={onNameChange}
       onCollectionNameChange={onCollectionNameChange}
-      onCollectionNotesChange={onCollectionNotesChange}
+      onCollectionProposalChange={onCollectionProposalChange}
       onStartStageChange={onRestartStageChange}
       onRequestedStagesChange={onRequestedStagesChange}
       onPipelineConfigChange={onPipelineConfigChange}

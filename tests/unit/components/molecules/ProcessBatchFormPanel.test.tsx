@@ -22,6 +22,8 @@ vi.mock('@molecules/SearchEntityBox', () => ({
   ),
 }))
 
+vi.mock('@organisms/AddCollectionDialog', () => ({ AddCollectionDialog: () => null }))
+
 import { DEFAULT_SUBMIT_LABEL, ProcessBatchFormPanel } from '@molecules/ProcessBatchFormPanel'
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -37,7 +39,6 @@ function renderPanel(overrides: Record<string, unknown> = {}): HTMLElement {
       <ProcessBatchFormPanel
         batchName={'Existing batch'}
         collectionName={''}
-        collectionNotes={''}
         isSubmitting={false}
         isRefreshing={false}
         canSubmit={false}
@@ -47,7 +48,6 @@ function renderPanel(overrides: Record<string, unknown> = {}): HTMLElement {
         batchNameExists={true}
         onBatchNameChange={vi.fn()}
         onCollectionNameChange={vi.fn()}
-        onCollectionNotesChange={vi.fn()}
         onSubmit={vi.fn()}
         onRefresh={vi.fn()}
         {...overrides}

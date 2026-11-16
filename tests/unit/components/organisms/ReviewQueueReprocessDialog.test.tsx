@@ -9,6 +9,8 @@ vi.mock('@lib/hooks/useBatchSearch', () => ({
   useBatchSearch: mocks.useBatchSearch,
 }))
 
+vi.mock('@organisms/AddCollectionDialog', () => ({ AddCollectionDialog: () => null }))
+
 import { ReviewQueueReprocessDialog } from '@organisms/ReviewQueueReprocessDialog'
 
 const commonProps = {
@@ -17,7 +19,6 @@ const commonProps = {
   mode: 'create' as const,
   name: 'Retry metadata batch',
   collectionName: '',
-  collectionNotes: '',
   restartStage: 'metadata_extractor' as const,
   requestedStages: ['metadata_extractor'] as const,
   reason: 'Correct metadata',
@@ -29,7 +30,6 @@ const commonProps = {
   onModeChange: vi.fn(),
   onNameChange: vi.fn(),
   onCollectionNameChange: vi.fn(),
-  onCollectionNotesChange: vi.fn(),
   onRestartStageChange: vi.fn(),
   onRequestedStagesChange: vi.fn(),
   onReasonChange: vi.fn(),

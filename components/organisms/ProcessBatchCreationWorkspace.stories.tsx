@@ -16,7 +16,6 @@ const meta = {
   args: {
     batchName: 'Test Batch',
     collectionName: 'Collection',
-    collectionNotes: 'Sample notes',
     isSubmitting: false,
     isRefreshing: false,
     canSubmit: true,
@@ -37,7 +36,6 @@ const meta = {
     isManagingDraft: false,
     onBatchNameChange: () => {},
     onCollectionNameChange: () => {},
-    onCollectionNotesChange: () => {},
     onSubmit: () => {},
     onRefresh: () => {},
     onProfileChange: () => {},

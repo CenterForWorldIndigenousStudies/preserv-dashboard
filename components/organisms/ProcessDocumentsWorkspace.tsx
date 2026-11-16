@@ -27,6 +27,7 @@ import { ProcessBatchMonitor } from '@organisms/ProcessBatchMonitor'
 import type { CallbackStageKey, ProcessBatchStatus } from 'types/pipelineContracts'
 import type { BatchDraftSummary } from 'types/batchDrafts'
 import type { ReprocessingDraftDetail } from 'types/reprocessingDrafts'
+import type { CollectionProposal } from 'types/collections'
 import { BatchDraftWorkspace } from '@organisms/BatchDraftWorkspace'
 
 export const UNSAVED_NEW_BATCH_CHANGES_MESSAGE = 'Your unsaved new batch changes will be lost.'
@@ -51,7 +52,7 @@ export function ProcessDocumentsWorkspace({
   const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>(initialDraft ? 'draft' : 'create')
   const [batchName, setBatchName] = useState('')
   const [collectionName, setCollectionName] = useState('')
-  const [collectionNotes, setCollectionNotes] = useState('')
+  const [collectionProposal, setCollectionProposal] = useState<CollectionProposal | null>(null)
   const [reason, setReason] = useState('Initial preservation batch')
   const [startStage, setStartStage] = useState<CallbackStageKey>(DEFAULT_BATCH_DRAFT_START_STAGE)
   const [pipelineConfig, setPipelineConfig] = useState<PipelineConfig>(getBatchDraftInitialConfig)
@@ -106,7 +107,7 @@ export function ProcessDocumentsWorkspace({
   const hasNewBatchChanges =
     batchName.length > 0 ||
     collectionName.length > 0 ||
-    collectionNotes.length > 0 ||
+    collectionProposal !== null ||
     reason !== 'Initial preservation batch' ||
     startStage !== DEFAULT_BATCH_DRAFT_START_STAGE ||
     JSON.stringify(pipelineConfig) !== JSON.stringify(getBatchDraftInitialConfig()) ||
@@ -115,7 +116,7 @@ export function ProcessDocumentsWorkspace({
   function resetNewBatchForm(): void {
     setBatchName('')
     setCollectionName('')
-    setCollectionNotes('')
+    setCollectionProposal(null)
     setReason('Initial preservation batch')
     setStartStage(DEFAULT_BATCH_DRAFT_START_STAGE)
     setPipelineConfig(getBatchDraftInitialConfig())
@@ -211,7 +212,7 @@ export function ProcessDocumentsWorkspace({
           sourceFolderIds: selectedFolderIds,
           name: batchName,
           collectionName,
-          collectionNotes,
+          collectionProposal,
           restartStage: startStage,
           requestedStages: batchDraftPipelineConfigToRequestedStages(pipelineConfig),
           executionMode: 'normal',
@@ -233,11 +234,7 @@ export function ProcessDocumentsWorkspace({
     <Stack spacing={4}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
         {workspaceMode === 'draft' && initialDraft ? (
-          <Button
-            variant={'outlined'}
-            onClick={startNewBatch}
-            sx={{ whiteSpace: 'nowrap' }}
-          >
+          <Button variant={'outlined'} onClick={startNewBatch} sx={{ whiteSpace: 'nowrap' }}>
             {'Create New Batch'}
           </Button>
         ) : (
@@ -279,7 +276,7 @@ export function ProcessDocumentsWorkspace({
               <BatchDraftForm
                 name={batchName}
                 collectionName={collectionName}
-                collectionNotes={collectionNotes}
+                collectionProposal={collectionProposal}
                 startStage={startStage}
                 requestedStages={batchDraftPipelineConfigToRequestedStages(pipelineConfig)}
                 pipelineConfig={pipelineConfig}
@@ -295,7 +292,7 @@ export function ProcessDocumentsWorkspace({
                 batchNameSearchError={batchSearch.error}
                 onNameChange={setBatchName}
                 onCollectionNameChange={setCollectionName}
-                onCollectionNotesChange={setCollectionNotes}
+                onCollectionProposalChange={setCollectionProposal}
                 onStartStageChange={setStartStage}
                 onRequestedStagesChange={() => undefined}
                 onPipelineConfigChange={setPipelineConfig}

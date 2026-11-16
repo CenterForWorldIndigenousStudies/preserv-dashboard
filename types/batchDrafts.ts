@@ -1,5 +1,6 @@
 import type { CallbackStageKey } from 'types/pipelineContracts'
 import type { PipelineConfig } from '@lib/pipelineConfig'
+import type { CollectionProposal } from './collections'
 import { GENERATED_PIPELINE_EXECUTION_MODES } from '@constants/generated/pipelineExecutionModes'
 
 export type BatchDraftExecutionMode =
@@ -11,6 +12,7 @@ export interface BatchDraftSummary {
   name: string
   collectionName: string | null
   collectionNotes: string | null
+  collectionProposal?: CollectionProposal | null
   restartStage: CallbackStageKey
   requestedStages: readonly CallbackStageKey[]
   pipelineConfig?: PipelineConfig
@@ -47,6 +49,7 @@ export interface CreateBatchDraftInput {
   name: string
   collectionName?: string
   collectionNotes?: string
+  collectionProposal?: CollectionProposal | null
   restartStage: CallbackStageKey
   requestedStages: readonly CallbackStageKey[]
   executionMode?: BatchDraftExecutionMode
@@ -62,6 +65,7 @@ export interface UpdateBatchDraftInput {
   name: string
   collectionName?: string
   collectionNotes?: string
+  collectionProposal?: CollectionProposal | null
   restartStage: CallbackStageKey
   requestedStages: readonly CallbackStageKey[]
   executionMode?: BatchDraftExecutionMode
@@ -97,6 +101,4 @@ export interface BatchDraftMembershipRemovalFailure {
   error: string
 }
 
-export type BatchDraftMembershipRemovalResult =
-  | BatchDraftMembershipRemovalSuccess
-  | BatchDraftMembershipRemovalFailure
+export type BatchDraftMembershipRemovalResult = BatchDraftMembershipRemovalSuccess | BatchDraftMembershipRemovalFailure

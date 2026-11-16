@@ -11,6 +11,7 @@ import { Modal } from '@organisms/Modal'
 import type { CallbackStageKey } from 'types/pipelineContracts'
 import type { PipelineConfig } from '@lib/pipelineConfig'
 import type { ReprocessingDraftSummary } from 'types/reprocessingDrafts'
+import type { CollectionProposal } from 'types/collections'
 
 export type ReviewQueueReprocessMode = 'create' | 'existing'
 
@@ -20,7 +21,7 @@ export interface ReviewQueueReprocessDialogProps {
   mode: ReviewQueueReprocessMode
   name: string
   collectionName: string
-  collectionNotes: string
+  collectionProposal?: CollectionProposal | null
   restartStage: CallbackStageKey
   requestedStages: readonly CallbackStageKey[]
   pipelineConfig?: PipelineConfig
@@ -34,7 +35,7 @@ export interface ReviewQueueReprocessDialogProps {
   onModeChange: (mode: ReviewQueueReprocessMode) => void
   onNameChange: (value: string) => void
   onCollectionNameChange: (value: string) => void
-  onCollectionNotesChange: (value: string) => void
+  onCollectionProposalChange?: (proposal: CollectionProposal | null) => void
   onRestartStageChange: (value: CallbackStageKey) => void
   onRequestedStagesChange: (value: CallbackStageKey[]) => void
   onPipelineConfigChange?: (value: PipelineConfig) => void
@@ -49,7 +50,7 @@ export function ReviewQueueReprocessDialog({
   mode,
   name,
   collectionName,
-  collectionNotes,
+  collectionProposal,
   restartStage,
   requestedStages,
   pipelineConfig,
@@ -63,7 +64,7 @@ export function ReviewQueueReprocessDialog({
   onModeChange,
   onNameChange,
   onCollectionNameChange,
-  onCollectionNotesChange,
+  onCollectionProposalChange,
   onRestartStageChange,
   onRequestedStagesChange,
   onPipelineConfigChange,
@@ -98,57 +99,57 @@ export function ReviewQueueReprocessDialog({
         ) : null
       }
     >
-        <Stack spacing={2.5} sx={{ pt: 1 }}>
-          {!hasExistingDrafts ? (
+      <Stack spacing={2.5} sx={{ pt: 1 }}>
+        {!hasExistingDrafts ? (
+          <Typography variant={'body2'} color={'text.secondary'}>
+            {`Create a reprocessing batch for “${documentName}”.`}
+          </Typography>
+        ) : null}
+        {hasExistingDrafts ? (
+          <>
             <Typography variant={'body2'} color={'text.secondary'}>
-              {`Create a reprocessing batch for “${documentName}”.`}
+              {`Choose how to reprocess “${documentName}”.`}
             </Typography>
-          ) : null}
-          {hasExistingDrafts ? (
-            <>
-              <Typography variant={'body2'} color={'text.secondary'}>
-                {`Choose how to reprocess “${documentName}”.`}
-              </Typography>
-              <Tabs
-                value={activeMode}
-                onChange={(_, value: ReviewQueueReprocessMode) => onModeChange(value)}
-                aria-label={'Reprocessing batch options'}
-                variant={'fullWidth'}
-              >
-                <Tab value={'create'} label={'Create new draft'} />
-                <Tab value={'existing'} label={'Add to existing draft'} />
-              </Tabs>
-              <Divider />
-            </>
-          ) : null}
-          {activeMode === 'create' ? (
-            <ReprocessingDraftForm
-              name={name}
-              collectionName={collectionName}
-              collectionNotes={collectionNotes}
-              restartStage={restartStage}
-              requestedStages={requestedStages}
-              pipelineConfig={pipelineConfig}
-              reason={reason}
-              isSubmitting={pending}
-              canSubmit={canCreate}
-              error={error}
-              nameExists={batchNameExists}
-              batchNameSearchError={batchNameSearch.error}
-              onNameChange={onNameChange}
-              onCollectionNameChange={onCollectionNameChange}
-              onCollectionNotesChange={onCollectionNotesChange}
-              onRestartStageChange={onRestartStageChange}
-              onRequestedStagesChange={onRequestedStagesChange}
-              onPipelineConfigChange={onPipelineConfigChange}
-              onReasonChange={onReasonChange}
-              onSubmit={onSubmit}
-              submitLabel={'Create draft'}
-            />
-          ) : (
-            <ReprocessingDraftPicker drafts={drafts} value={selectedDraftId} onChange={onSelectedDraftChange} />
-          )}
-        </Stack>
+            <Tabs
+              value={activeMode}
+              onChange={(_, value: ReviewQueueReprocessMode) => onModeChange(value)}
+              aria-label={'Reprocessing batch options'}
+              variant={'fullWidth'}
+            >
+              <Tab value={'create'} label={'Create new draft'} />
+              <Tab value={'existing'} label={'Add to existing draft'} />
+            </Tabs>
+            <Divider />
+          </>
+        ) : null}
+        {activeMode === 'create' ? (
+          <ReprocessingDraftForm
+            name={name}
+            collectionName={collectionName}
+            collectionProposal={collectionProposal}
+            restartStage={restartStage}
+            requestedStages={requestedStages}
+            pipelineConfig={pipelineConfig}
+            reason={reason}
+            isSubmitting={pending}
+            canSubmit={canCreate}
+            error={error}
+            nameExists={batchNameExists}
+            batchNameSearchError={batchNameSearch.error}
+            onNameChange={onNameChange}
+            onCollectionNameChange={onCollectionNameChange}
+            onCollectionProposalChange={onCollectionProposalChange}
+            onRestartStageChange={onRestartStageChange}
+            onRequestedStagesChange={onRequestedStagesChange}
+            onPipelineConfigChange={onPipelineConfigChange}
+            onReasonChange={onReasonChange}
+            onSubmit={onSubmit}
+            submitLabel={'Create draft'}
+          />
+        ) : (
+          <ReprocessingDraftPicker drafts={drafts} value={selectedDraftId} onChange={onSelectedDraftChange} />
+        )}
+      </Stack>
     </Modal>
   )
 }

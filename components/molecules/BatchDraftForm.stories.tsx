@@ -19,8 +19,7 @@ const meta = {
   args: {
     name: 'Initial preservation batch',
     collectionName: 'Collection',
-    collectionNotes: '',
-        startStage: 'data_ingester' as const,
+    startStage: 'data_ingester' as const,
     requestedStages: batchDraftPipelineConfigToRequestedStages(config),
     pipelineConfig: config,
     stageOptions: BATCH_DRAFT_STAGE_OPTIONS,
@@ -33,7 +32,6 @@ const meta = {
     error: null,
     onNameChange: fn(),
     onCollectionNameChange: fn(),
-    onCollectionNotesChange: fn(),
     onStartStageChange: fn(),
     onRequestedStagesChange: fn(),
     onPipelineConfigChange: fn(),

@@ -1,7 +1,4 @@
-import type {
-  RenameCollectionInput,
-  UpdateCollectionInput,
-} from '@lib/queries/collectionQueries'
+import type { RenameCollectionInput, UpdateCollectionInput } from '@lib/queries/collectionQueries'
 import type { CollectionListPageResult, CollectionTableQuery } from 'types/collections'
 import type { PaginatedDocumentsResult } from 'types/pagination'
 
@@ -39,8 +36,8 @@ export function createCollectionAction(_input: {
   qualifierTagNames?: string[]
   collectionNotes?: string
   fedoraNodeId?: string
-}): Promise<void> {
-  return Promise.resolve()
+}): Promise<{ tag_id: string; collection_name: string }> {
+  return Promise.resolve({ tag_id: 'storybook-tag', collection_name: _input.tagName ?? 'Storybook collection' })
 }
 
 export function createCollectionWithNewTagAction(_input: {

@@ -29,3 +29,12 @@ export interface CollectionWithMeta {
   updated_at: Date | string | null
   document_count: number
 }
+
+/** Collection details saved with a batch draft until Data Ingester starts. */
+export interface CollectionProposal {
+  name: string
+  notes: string | null
+  tagNotes: string | null
+  qualifierNames: string[]
+  fedoraNodeId: string | null
+}

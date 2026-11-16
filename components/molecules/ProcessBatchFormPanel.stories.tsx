@@ -11,7 +11,6 @@ const meta = {
   args: {
     batchName: 'May 2026 Refugee Mental Health Ingest',
     collectionName: 'Refugee Mental Health Archive',
-    collectionNotes: 'Documents selected for the May preservation run.',
     isSubmitting: false,
     isRefreshing: false,
     canSubmit: true,
@@ -21,7 +20,6 @@ const meta = {
     batchNameExists: false,
     onBatchNameChange: fn(),
     onCollectionNameChange: fn(),
-    onCollectionNotesChange: fn(),
     onSubmit: fn(),
     onRefresh: fn(),
   },

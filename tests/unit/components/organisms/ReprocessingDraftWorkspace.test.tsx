@@ -10,6 +10,8 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
 }))
 
+vi.mock('@organisms/AddCollectionDialog', () => ({ AddCollectionDialog: () => null }))
+
 function buildDraft() {
   return {
     id: 'draft-1',

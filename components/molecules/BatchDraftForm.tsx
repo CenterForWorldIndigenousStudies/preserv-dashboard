@@ -7,11 +7,12 @@ import { ProcessBatchFormPanel } from '@molecules/ProcessBatchFormPanel'
 import { PipelineStageSelection, type PipelineStageOption } from '@molecules/PipelineStageSelection'
 import type { PipelineConfig } from '@lib/pipelineConfig'
 import type { CallbackStageKey } from 'types/pipelineContracts'
+import type { CollectionProposal } from 'types/collections'
 
 interface BatchDraftFormProps {
   name: string
   collectionName: string
-  collectionNotes: string
+  collectionProposal?: CollectionProposal | null
   startStage: CallbackStageKey
   requestedStages: readonly CallbackStageKey[]
   pipelineConfig?: PipelineConfig
@@ -29,7 +30,7 @@ interface BatchDraftFormProps {
   showNormalizationPasses?: boolean
   onNameChange: (value: string) => void
   onCollectionNameChange: (value: string) => void
-  onCollectionNotesChange: (value: string) => void
+  onCollectionProposalChange?: (proposal: CollectionProposal | null) => void
   onStartStageChange: (value: CallbackStageKey) => void
   onRequestedStagesChange: (value: CallbackStageKey[]) => void
   onPipelineConfigChange?: (value: PipelineConfig) => void
@@ -43,7 +44,7 @@ interface BatchDraftFormProps {
 export function BatchDraftForm({
   name,
   collectionName,
-  collectionNotes,
+  collectionProposal,
   startStage,
   requestedStages,
   pipelineConfig,
@@ -61,7 +62,7 @@ export function BatchDraftForm({
   showNormalizationPasses = false,
   onNameChange,
   onCollectionNameChange,
-  onCollectionNotesChange,
+  onCollectionProposalChange,
   onStartStageChange,
   onRequestedStagesChange,
   onPipelineConfigChange,
@@ -76,7 +77,7 @@ export function BatchDraftForm({
       <ProcessBatchFormPanel
         batchName={name}
         collectionName={collectionName}
-        collectionNotes={collectionNotes}
+        collectionProposal={collectionProposal}
         isSubmitting={isSubmitting}
         isRefreshing={false}
         canSubmit={canSubmit && !nameExists}
@@ -86,7 +87,7 @@ export function BatchDraftForm({
         batchNameExists={nameExists}
         onBatchNameChange={onNameChange}
         onCollectionNameChange={onCollectionNameChange}
-        onCollectionNotesChange={onCollectionNotesChange}
+        onCollectionProposalChange={onCollectionProposalChange}
         onSubmit={onSubmit}
         onRefresh={() => undefined}
         title={title}

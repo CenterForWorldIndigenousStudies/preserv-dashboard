@@ -35,7 +35,6 @@ vi.mock('@organisms/PipelineStepsModal', () => ({ PipelineStepsModal: () => null
 const baseProps = {
   batchName: '',
   collectionName: '',
-  collectionNotes: '',
   isSubmitting: false,
   isRefreshing: false,
   canSubmit: false,
@@ -54,7 +53,6 @@ const baseProps = {
   isManagingDraft: false,
   onBatchNameChange: () => {},
   onCollectionNameChange: () => {},
-  onCollectionNotesChange: () => {},
   onSubmit: () => {},
   onRefresh: () => {},
   onProfileChange: () => {},

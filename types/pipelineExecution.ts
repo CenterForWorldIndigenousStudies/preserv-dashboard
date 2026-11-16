@@ -15,6 +15,7 @@ export interface PipelineExecutionRequest {
   reason: string
   sourceBatchId?: string
   collection?: PipelineExecutionCollection
+  collectionResolution?: { kind: 'use_existing'; collectionId: string } | { kind: 'use_proposal'; name: string }
   pipelineConfig?: PipelineConfig
 }
 
@@ -28,6 +29,14 @@ export interface PipelineExecutionResult {
 export interface PipelineExecutionFailure {
   ok: false
   error: string
+  collectionConflict?: {
+    draftName: string
+    existingId: string
+    existingName: string
+    existingNotes: string | null
+    existingLibraryId: string | null
+    existingQualifiers: string[]
+  }
 }
 
 export type PipelineExecutionActionResult = PipelineExecutionResult | PipelineExecutionFailure

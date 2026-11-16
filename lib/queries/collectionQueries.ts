@@ -32,11 +32,7 @@ import {
   type DocumentTypeOption,
   type StatusOption,
 } from '@lib/search'
-import type {
-  CollectionListPageResult,
-  CollectionTableQuery,
-  CollectionWithMeta,
-} from 'types/collections'
+import type { CollectionListPageResult, CollectionTableQuery, CollectionWithMeta } from 'types/collections'
 import type { Document } from 'types/documents'
 
 const DEFAULT_COLLECTION_PAGE_SIZE = 25
@@ -98,15 +94,15 @@ export function parseCollectionQueryParams(
 function hasCollectionDocumentFilters(filters: AdvancedSearchFilters): boolean {
   return Boolean(
     filters.contributor?.trim() ||
-      filters.publisher?.trim() ||
-      filters.tag?.trim() ||
-      filters.statuses?.length ||
-      (filters.documentType && filters.documentType !== 'all') ||
-      filters.batch?.trim() ||
-      filters.createdFrom ||
-      filters.createdTo ||
-      filters.collection?.trim() ||
-      filters.accessLevel,
+    filters.publisher?.trim() ||
+    filters.tag?.trim() ||
+    filters.statuses?.length ||
+    (filters.documentType && filters.documentType !== 'all') ||
+    filters.batch?.trim() ||
+    filters.createdFrom ||
+    filters.createdTo ||
+    filters.collection?.trim() ||
+    filters.accessLevel,
   )
 }
 
@@ -280,11 +276,19 @@ export async function getCollectionPage(
       .map((row) => row.id)
   }
   const membershipIndex = hasCollectionDocumentFilters(filters)
-    ? await getCollectionMembershipIndex(client as unknown as CollectionMembershipDataClient, collectionMembershipOptions)
+    ? await getCollectionMembershipIndex(
+        client as unknown as CollectionMembershipDataClient,
+        collectionMembershipOptions,
+      )
     : undefined
   const allCollections = await getCollections(client, membershipIndex?.counts)
   const documentFilteredCollections = membershipIndex
-    ? await filterCollectionsByDocumentCriteria(allCollections, filters, client, membershipIndex.documentIdsByCollection)
+    ? await filterCollectionsByDocumentCriteria(
+        allCollections,
+        filters,
+        client,
+        membershipIndex.documentIdsByCollection,
+      )
     : allCollections
   const filteredCollections = normalizedSearch
     ? documentFilteredCollections.filter((collection) => {
@@ -314,6 +318,42 @@ export async function createCollection(
   input: CreateCollectionInput,
 ): Promise<{ collection: CollectionWithMeta; createdTag: boolean }> {
   return db.$transaction(async (tx) => createCollectionInTransaction(tx, input))
+}
+
+export async function findCollectionByCanonicalName(name: string): Promise<{
+  id: string
+  name: string
+  notes: string | null
+  libraryId: string | null
+  qualifiers: string[]
+} | null> {
+  const normalized = normalizeTagName(name)
+  if (!normalized) return null
+  const tag = await db.tags.findFirst({
+    where: { OR: [{ name_hash: buildNameHash(normalized) }, { name: normalized }], collections: { isNot: null } },
+    select: {
+      collections: {
+        select: {
+          id: true,
+          notes: true,
+          fedora_node_id: true,
+          tags: { select: { name: true } },
+          collection_qualifiers: { select: { tags: { select: { name: true } } } },
+        },
+      },
+    },
+  })
+  const collection = tag?.collections
+  if (!collection) return null
+  return {
+    id: collection.id,
+    name: collection.tags.name ?? normalized,
+    notes: collection.notes,
+    libraryId: collection.fedora_node_id,
+    qualifiers: collection.collection_qualifiers.flatMap((qualifier) =>
+      qualifier.tags.name ? [qualifier.tags.name] : [],
+    ),
+  }
 }
 
 // The transaction intentionally coordinates canonical-tag selection, qualifier creation, and audit records.
@@ -392,11 +432,11 @@ export async function createCollectionInTransaction(
   const qualifierTagNames = [
     ...new Set((input.qualifierTagNames ?? []).map((name) => normalizeTagName(name)).filter(Boolean)),
   ]
-  const namedQualifierTags = await Promise.all(
-    qualifierTagNames.map((name) => findOrCreateCollectionTag(client, name)),
-  )
+  const namedQualifierTags = await Promise.all(qualifierTagNames.map((name) => findOrCreateCollectionTag(client, name)))
   const qualifierTags = [
-    ...new Map([...existingQualifierTags, ...namedQualifierTags].map((qualifier) => [qualifier.id, qualifier])).values(),
+    ...new Map(
+      [...existingQualifierTags, ...namedQualifierTags].map((qualifier) => [qualifier.id, qualifier]),
+    ).values(),
   ]
   if (qualifierTags.some((qualifier) => qualifier.id === tag.id)) {
     throw new Error('The canonical tag is already a required collection qualifier.')
@@ -515,9 +555,7 @@ export async function updateCollectionInTransaction(
       return createdTag
     }),
   )
-  const allQualifierTags = [
-    ...new Map([...qualifierTags, ...namedQualifierTags].map((tag) => [tag.id, tag])).values(),
-  ]
+  const allQualifierTags = [...new Map([...qualifierTags, ...namedQualifierTags].map((tag) => [tag.id, tag])).values()]
   if (allQualifierTags.some((tag) => tag.id === collection.tag_id)) {
     throw new Error('The canonical tag is already a required collection qualifier.')
   }
@@ -633,10 +671,7 @@ export async function renameCollectionInTransaction(
   }
 
   const currentMemberDocumentIds = input.keepCurrentMembers
-    ? await getCollectionMemberDocumentIds(
-        collection.id,
-        client as unknown as CollectionMembershipDataClient,
-      )
+    ? await getCollectionMemberDocumentIds(collection.id, client as unknown as CollectionMembershipDataClient)
     : []
   const duplicatedQualifier = collection.collection_qualifiers.find(
     (qualifier) => qualifier.tag_id === nextCanonicalTag.id,
@@ -694,10 +729,7 @@ export async function renameCollectionInTransaction(
   )
 }
 
-async function findOrCreateCollectionTag(
-  client: Prisma.TransactionClient | PrismaClient,
-  tagName: string,
-) {
+async function findOrCreateCollectionTag(client: Prisma.TransactionClient | PrismaClient, tagName: string) {
   const nameHash = buildNameHash(tagName)
   const existingTag = await client.tags.findFirst({
     where: { OR: [{ name_hash: nameHash }, { name: tagName }] },
@@ -768,10 +800,7 @@ export async function getCollectionDeletionPreview(
   const tagIds = collectionTags.map((tag) => tag.id)
   const referencingCollections = await client.collections.findMany({
     where: {
-      OR: [
-        { tag_id: { in: tagIds } },
-        { collection_qualifiers: { some: { tag_id: { in: tagIds } } } },
-      ],
+      OR: [{ tag_id: { in: tagIds } }, { collection_qualifiers: { some: { tag_id: { in: tagIds } } } }],
     },
     include: { tags: true, collection_qualifiers: { select: { tag_id: true } } },
   })
@@ -781,7 +810,8 @@ export async function getCollectionDeletionPreview(
     const blockingCollection = referencingCollections.find(
       (candidate) =>
         candidate.id !== collection.id &&
-        (candidate.tag_id === tag.id || candidate.collection_qualifiers.some((qualifier) => qualifier.tag_id === tag.id)),
+        (candidate.tag_id === tag.id ||
+          candidate.collection_qualifiers.some((qualifier) => qualifier.tag_id === tag.id)),
     )
     if (blockingCollection) {
       blockedByTagId.set(tag.id, {
@@ -824,9 +854,7 @@ export async function deleteCollectionWithOptionsInTransaction(
   collectionId: string,
   options: DeleteCollectionOptions = {},
 ): Promise<void> {
-  const deletionPreview = options.deleteTagFromSystem
-    ? await getCollectionDeletionPreview(collectionId, client)
-    : null
+  const deletionPreview = options.deleteTagFromSystem ? await getCollectionDeletionPreview(collectionId, client) : null
   const collection = await client.collections.findUnique({
     where: { id: collectionId },
     include: { tags: true, collection_qualifiers: { include: { tags: true } } },

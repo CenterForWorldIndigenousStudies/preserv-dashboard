@@ -28,6 +28,7 @@ import { ReviewQueueReprocessDialog } from '@organisms/ReviewQueueReprocessDialo
 import { ReviewQueueChecklistPanel } from '@organisms/ReviewQueueChecklistPanel'
 import type { ReviewQueueDecision } from 'types/reviewQueue'
 import type { ReprocessingDraftSummary } from 'types/reprocessingDrafts'
+import type { CollectionProposal } from 'types/collections'
 import type { CallbackStageKey } from 'types/pipelineContracts'
 import type { NeedsReviewReasonGroup } from 'types/needsReview'
 
@@ -96,7 +97,7 @@ export function DocumentReviewToolbar({
   const [reprocessMode, setReprocessMode] = useState<'create' | 'existing'>('create')
   const [reprocessName, setReprocessName] = useState('')
   const [reprocessCollectionName, setReprocessCollectionName] = useState('')
-  const [reprocessCollectionNotes, setReprocessCollectionNotes] = useState('')
+  const [reprocessCollectionProposal, setReprocessCollectionProposal] = useState<CollectionProposal | null>(null)
   const [reprocessStage, setReprocessStage] = useState<CallbackStageKey>(DEFAULT_REPROCESSING_START_STAGE)
   const [reprocessRequestedStages, setReprocessRequestedStages] = useState<CallbackStageKey[]>(
     getReprocessingDownstreamStages(DEFAULT_REPROCESSING_START_STAGE),
@@ -187,7 +188,7 @@ export function DocumentReviewToolbar({
     setReprocessMode('create')
     setReprocessName('')
     setReprocessCollectionName('')
-    setReprocessCollectionNotes('')
+    setReprocessCollectionProposal(null)
     setReprocessStage(DEFAULT_REPROCESSING_START_STAGE)
     const defaultConfig = getDefaultReprocessingPipelineConfig(DEFAULT_REPROCESSING_START_STAGE)
     setReprocessPipelineConfig(defaultConfig)
@@ -210,7 +211,7 @@ export function DocumentReviewToolbar({
               documentIds: [documentId],
               name: reprocessName,
               collectionName: reprocessCollectionName,
-              collectionNotes: reprocessCollectionNotes,
+              collectionProposal: reprocessCollectionProposal,
               restartStage: reprocessStage,
               requestedStages: reprocessRequestedStages,
               pipelineConfig: reprocessPipelineConfig,
@@ -318,7 +319,7 @@ export function DocumentReviewToolbar({
         mode={reprocessMode}
         name={reprocessName}
         collectionName={reprocessCollectionName}
-        collectionNotes={reprocessCollectionNotes}
+        collectionProposal={reprocessCollectionProposal}
         restartStage={reprocessStage}
         requestedStages={reprocessRequestedStages}
         pipelineConfig={reprocessPipelineConfig}
@@ -332,7 +333,7 @@ export function DocumentReviewToolbar({
         onModeChange={setReprocessMode}
         onNameChange={setReprocessName}
         onCollectionNameChange={setReprocessCollectionName}
-        onCollectionNotesChange={setReprocessCollectionNotes}
+        onCollectionProposalChange={setReprocessCollectionProposal}
         onRestartStageChange={setReprocessStage}
         onRequestedStagesChange={setReprocessRequestedStages}
         onPipelineConfigChange={(config) => {

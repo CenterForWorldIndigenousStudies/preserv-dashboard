@@ -36,6 +36,7 @@ import type { Document } from 'types/documents'
 import type { DocumentsPageResult } from 'types/pagination'
 import type { ReviewQueueDecision } from 'types/reviewQueue'
 import type { ReprocessingDraftSummary } from 'types/reprocessingDrafts'
+import type { CollectionProposal } from 'types/collections'
 import type { CallbackStageKey } from 'types/pipelineContracts'
 import { EntityNameBlock } from '@molecules/EntityNameBlock'
 import { NeedsReviewReasonsPopover } from '@molecules/NeedsReviewReasonsPopover'
@@ -352,7 +353,7 @@ export function ReviewQueueTable({
   const [reprocessMode, setReprocessMode] = useState<'create' | 'existing'>('create')
   const [reprocessName, setReprocessName] = useState('')
   const [reprocessCollectionName, setReprocessCollectionName] = useState('')
-  const [reprocessCollectionNotes, setReprocessCollectionNotes] = useState('')
+  const [reprocessCollectionProposal, setReprocessCollectionProposal] = useState<CollectionProposal | null>(null)
   const [reprocessStage, setReprocessStage] = useState<CallbackStageKey>(DEFAULT_REPROCESSING_START_STAGE)
   const [reprocessRequestedStages, setReprocessRequestedStages] = useState<CallbackStageKey[]>(
     getReprocessingDownstreamStages(DEFAULT_REPROCESSING_START_STAGE),
@@ -378,7 +379,7 @@ export function ReviewQueueTable({
     setReprocessMode('create')
     setReprocessName('')
     setReprocessCollectionName('')
-    setReprocessCollectionNotes('')
+    setReprocessCollectionProposal(null)
     setReprocessStage(DEFAULT_REPROCESSING_START_STAGE)
     const defaultConfig = getDefaultReprocessingPipelineConfig(DEFAULT_REPROCESSING_START_STAGE)
     setReprocessPipelineConfig(defaultConfig)
@@ -398,7 +399,7 @@ export function ReviewQueueTable({
               documentIds: reprocessDocumentIds,
               name: reprocessName,
               collectionName: reprocessCollectionName,
-              collectionNotes: reprocessCollectionNotes,
+              collectionProposal: reprocessCollectionProposal,
               restartStage: reprocessStage,
               requestedStages: reprocessRequestedStages,
               pipelineConfig: reprocessPipelineConfig,
@@ -766,7 +767,7 @@ export function ReviewQueueTable({
         mode={reprocessMode}
         name={reprocessName}
         collectionName={reprocessCollectionName}
-        collectionNotes={reprocessCollectionNotes}
+        collectionProposal={reprocessCollectionProposal}
         restartStage={reprocessStage}
         requestedStages={reprocessRequestedStages}
         pipelineConfig={reprocessPipelineConfig}
@@ -779,7 +780,7 @@ export function ReviewQueueTable({
         onModeChange={setReprocessMode}
         onNameChange={setReprocessName}
         onCollectionNameChange={setReprocessCollectionName}
-        onCollectionNotesChange={setReprocessCollectionNotes}
+        onCollectionProposalChange={setReprocessCollectionProposal}
         onRestartStageChange={setReprocessStage}
         onRequestedStagesChange={setReprocessRequestedStages}
         onPipelineConfigChange={(config) => {

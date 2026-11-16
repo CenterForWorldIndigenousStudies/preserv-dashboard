@@ -244,6 +244,7 @@ function mapBatchDetail(row: BatchDatabaseRow): BatchDetail {
   return {
     id: row.id,
     name: row.name,
+    documentCount: getDocumentCount(row, details),
     startedBy: row.started_by ?? null,
     createdAt: row.created_at,
     startedAt: row.started_at,

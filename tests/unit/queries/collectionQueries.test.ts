@@ -13,6 +13,7 @@ const {
     $transaction: vi.fn(),
     $queryRaw: vi.fn(),
     collections: { findMany: vi.fn(), findUnique: vi.fn() },
+    tags: { findFirst: vi.fn() },
     documents: { findMany: vi.fn() },
     document_to_tags: { findMany: vi.fn() },
   },
@@ -38,12 +39,15 @@ vi.mock('@lib/queries/collectionMembershipQueries', () => ({
   getCollectionMemberDocumentIds: vi.fn(),
 }))
 vi.mock('@lib/queries/documentQuerySupport', async () => {
-  const actual = await vi.importActual<typeof import('@lib/queries/documentQuerySupport')>('@lib/queries/documentQuerySupport')
+  const actual = await vi.importActual<typeof import('@lib/queries/documentQuerySupport')>(
+    '@lib/queries/documentQuerySupport',
+  )
   return { ...actual, getOverviewDocumentsPage: mockGetOverviewDocumentsPage }
 })
 
 import {
   addDocumentsToCollection,
+  findCollectionByCanonicalName,
   getCollectionPage,
   parseCollectionQueryParams,
   removeDocumentsFromCollection,
@@ -82,6 +86,30 @@ const collectionRows = [
     updated_at: null,
   },
 ]
+
+describe('findCollectionByCanonicalName', () => {
+  it('returns the existing definition for a normalized canonical name', async () => {
+    mockDb.tags.findFirst.mockResolvedValue({
+      collections: {
+        id: 'collection-food',
+        notes: 'Existing notes',
+        fedora_node_id: '88',
+        tags: { name: 'Food Sovereignty' },
+        collection_qualifiers: [{ tags: { name: 'Nutrition' } }],
+      },
+    })
+
+    await expect(findCollectionByCanonicalName('  food sovereignty  ')).resolves.toEqual({
+      id: 'collection-food',
+      name: 'Food Sovereignty',
+      notes: 'Existing notes',
+      libraryId: '88',
+      qualifiers: ['Nutrition'],
+    })
+    const query = (mockDb.tags.findFirst.mock.calls as unknown as Array<[{ where: { collections: unknown } }]>)[0][0]
+    expect(query.where.collections).toEqual({ isNot: null })
+  })
+})
 
 describe('updateDocumentCollectionTags', () => {
   beforeEach(() => {

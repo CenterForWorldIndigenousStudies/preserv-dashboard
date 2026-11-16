@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useTransition, type ReactElement } from 'react'
-import { Alert, Box, Button as MuiButton, Card, CardContent, Stack, Typography } from '@mui/material'
+import { Alert, Box, Button as MuiButton, Card, CardContent, Stack, TextField, Typography } from '@mui/material'
 import { useRouter } from 'next/navigation'
 
 import { Button } from '@atoms/Button'
@@ -25,6 +25,8 @@ import { ReprocessingDraftSubmissionSummary } from '@molecules/ReprocessingDraft
 import { GoogleDriveFolderTree } from '@molecules/GoogleDriveFolderTree'
 import { ProcessSelectedFoldersPanel } from '@molecules/ProcessSelectedFoldersPanel'
 import type { DriveFolderOption } from '@lib/googleDrive'
+import type { PipelineExecutionRequest, PipelineExecutionFailure } from 'types/pipelineExecution'
+import { Modal } from '@organisms/Modal'
 
 export const SUBMIT_LABEL = 'Process batch'
 export interface BatchDraftWorkspaceProps {
@@ -48,6 +50,7 @@ function draftDetailsHaveChanged(
     currentDraft.name !== savedDraft.name ||
     (currentDraft.collectionName ?? '') !== (savedDraft.collectionName ?? '') ||
     (currentDraft.collectionNotes ?? '') !== (savedDraft.collectionNotes ?? '') ||
+    JSON.stringify(currentDraft.collectionProposal ?? null) !== JSON.stringify(savedDraft.collectionProposal ?? null) ||
     currentDraft.reason !== savedDraft.reason ||
     currentDraft.restartStage !== savedDraft.restartStage ||
     JSON.stringify(currentDraft.requestedStages) !== JSON.stringify(savedDraft.requestedStages) ||
@@ -76,6 +79,9 @@ export function BatchDraftWorkspace({
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [collectionConflict, setCollectionConflict] =
+    useState<PipelineExecutionFailure['collectionConflict']>(undefined)
+  const [newCollectionName, setNewCollectionName] = useState('')
   const [googleDriveExpanded, setGoogleDriveExpanded] = useState(true)
 
   useEffect(() => {
@@ -95,7 +101,13 @@ export function BatchDraftWorkspace({
   function updateDraftField<
     Field extends keyof Pick<
       ReprocessingDraftDetail,
-      'name' | 'collectionName' | 'collectionNotes' | 'restartStage' | 'requestedStages' | 'reason'
+      | 'name'
+      | 'collectionName'
+      | 'collectionNotes'
+      | 'collectionProposal'
+      | 'restartStage'
+      | 'requestedStages'
+      | 'reason'
     >,
   >(field: Field, value: Pick<ReprocessingDraftDetail, Field>[Field]): void {
     setDraft((current) => (current ? { ...current, [field]: value } : current))
@@ -112,6 +124,7 @@ export function BatchDraftWorkspace({
           batchId: currentDraft.id,
           name: currentDraft.name,
           collectionName: currentDraft.collectionName ?? undefined,
+          collectionProposal: currentDraft.collectionProposal,
           collectionNotes: currentDraft.collectionNotes ?? undefined,
           restartStage: currentDraft.restartStage,
           requestedStages: currentDraft.requestedStages,
@@ -184,7 +197,7 @@ export function BatchDraftWorkspace({
     })
   }
 
-  function submitDraft(): void {
+  function submitDraft(collectionResolution?: PipelineExecutionRequest['collectionResolution']): void {
     startTransition(() => {
       void (async () => {
         const { requestPipelineExecution } = await import('@actions/pipelineExecution')
@@ -201,11 +214,17 @@ export function BatchDraftWorkspace({
           collection: currentDraft.collectionName
             ? { name: currentDraft.collectionName, notes: currentDraft.collectionNotes }
             : undefined,
+          collectionResolution,
         })
         if (!result.ok) {
+          if (result.collectionConflict) {
+            setCollectionConflict(result.collectionConflict)
+            setNewCollectionName('')
+          }
           setError(result.error)
           return
         }
+        setCollectionConflict(undefined)
         setMessage('Draft submitted and queued for processing.')
         router.refresh()
       })().catch((caught: unknown) =>
@@ -239,7 +258,7 @@ export function BatchDraftWorkspace({
           <BatchDraftForm
             name={currentDraft.name}
             collectionName={currentDraft.collectionName ?? ''}
-            collectionNotes={currentDraft.collectionNotes ?? ''}
+            collectionProposal={currentDraft.collectionProposal}
             startStage={currentDraft.restartStage}
             requestedStages={currentDraft.requestedStages}
             pipelineConfig={currentDraft.pipelineConfig}
@@ -248,8 +267,10 @@ export function BatchDraftWorkspace({
             canSubmit={canSave}
             error={error}
             onNameChange={(value) => updateDraftField('name', value)}
-            onCollectionNameChange={(value) => updateDraftField('collectionName', value)}
-            onCollectionNotesChange={(value) => updateDraftField('collectionNotes', value)}
+            onCollectionNameChange={(value) =>
+              setDraft((current) => (current ? { ...current, collectionName: value, collectionNotes: null } : current))
+            }
+            onCollectionProposalChange={(proposal) => updateDraftField('collectionProposal', proposal)}
             onStartStageChange={(value) => updateDraftField('restartStage', value)}
             onRequestedStagesChange={(value) => updateDraftField('requestedStages', value)}
             onPipelineConfigChange={(config) => {
@@ -322,18 +343,64 @@ export function BatchDraftWorkspace({
             restartStage={currentDraft.restartStage}
             requestedStages={currentDraft.requestedStages}
             collectionName={currentDraft.collectionName}
-            collectionNotes={currentDraft.collectionNotes}
             reason={currentDraft.reason}
           />
           {message ? <Alert severity={'success'}>{message}</Alert> : null}
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-            <Button onClick={submitDraft} disabled={!canSubmit} loading={isPending}>
+            <Button onClick={() => submitDraft()} disabled={!canSubmit} loading={isPending}>
               {SUBMIT_LABEL}
             </Button>
             <MuiButton color={'error'} onClick={archiveDraft} disabled={isPending}>
               {'Discard draft'}
             </MuiButton>
           </Stack>
+          <Modal
+            open={Boolean(collectionConflict)}
+            onClose={() => setCollectionConflict(undefined)}
+            title={'Collection conflict'}
+            maxWidth={'sm'}
+            actions={
+              <Stack direction={'row'} spacing={1}>
+                <Button onClick={() => setCollectionConflict(undefined)} variant={'ghost'} disabled={isPending}>
+                  {'Cancel'}
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (collectionConflict)
+                      submitDraft({ kind: 'use_existing', collectionId: collectionConflict.existingId })
+                  }}
+                  disabled={isPending}
+                >
+                  {'Use existing collection'}
+                </Button>
+                <Button
+                  onClick={() => submitDraft({ kind: 'use_proposal', name: newCollectionName })}
+                  disabled={isPending || !newCollectionName.trim()}
+                >
+                  {'Create proposed collection'}
+                </Button>
+              </Stack>
+            }
+          >
+            <Stack spacing={2}>
+              <Typography>
+                {`A collection named "${collectionConflict?.existingName ?? ''}" was created after this batch draft. Choose it, or give your proposed collection a unique name.`}
+              </Typography>
+              <Typography variant={'body2'}>
+                {`Existing: ${collectionConflict?.existingName ?? ''}. Library ID: ${collectionConflict?.existingLibraryId ?? 'none'}. Notes: ${collectionConflict?.existingNotes ?? 'none'}. Qualifiers: ${collectionConflict?.existingQualifiers.join(', ') || 'none'}.`}
+              </Typography>
+              <Typography variant={'body2'}>
+                {`Proposal: ${currentDraft.collectionProposal?.name ?? ''}. Library ID: ${currentDraft.collectionProposal?.fedoraNodeId ?? 'none'}. Notes: ${currentDraft.collectionProposal?.notes ?? 'none'}. Qualifiers: ${currentDraft.collectionProposal?.qualifierNames.join(', ') || 'none'}.`}
+              </Typography>
+              <TextField
+                label={'Unique name for proposed collection'}
+                value={newCollectionName}
+                onChange={(event) => setNewCollectionName(event.target.value)}
+                fullWidth
+              />
+              {error ? <Alert severity={'error'}>{error}</Alert> : null}
+            </Stack>
+          </Modal>
         </Stack>
       </CardContent>
     </Card>

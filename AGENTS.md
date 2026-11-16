@@ -18,6 +18,8 @@ The dashboard is the operator-facing app for:
 Use the focused docs instead of growing this file:
 
 - overview and setup: [README.md](./README.md)
+- operator workflows: [../../documentation/dashboard/WORKFLOWS.md](../../documentation/dashboard/WORKFLOWS.md)
+- collections and membership: [../../documentation/dashboard/COLLECTIONS.md](../../documentation/dashboard/COLLECTIONS.md)
 - documentation standards: [../../documentation/standards/DOCUMENTATION_STANDARDS.md](../../documentation/standards/DOCUMENTATION_STANDARDS.md)
 - documentation roles: [../../documentation/standards/DOCUMENTATION_ROLES.md](../../documentation/standards/DOCUMENTATION_ROLES.md)
 - environment variables: [../../documentation/dashboard/ENV_VARS.md](../../documentation/dashboard/ENV_VARS.md)

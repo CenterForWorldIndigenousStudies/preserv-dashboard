@@ -37,6 +37,7 @@ export interface BatchProperty {
 export interface BatchDetail {
   id: string
   name: string | null
+  documentCount: number
   startedBy: string | null
   createdAt: string | Date | null
   startedAt: string | Date | null

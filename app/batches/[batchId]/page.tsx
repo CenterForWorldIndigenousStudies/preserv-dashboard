@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 
 import { ReturnToPreviousPage } from '@atoms/ReturnToPreviousPage'
 import { PAGE_LABELS } from '@constants/pageLabels'
-import { BATCHES_PATH } from '@constants/paths'
+import { BATCHES_PATH, getBatchDetailPath, getDocumentsBatchFilterPath } from '@constants/paths'
 import { BatchOverviewFields } from '@molecules/BatchOverviewFields'
 import { BatchProcessingDetails } from '@organisms/BatchProcessingDetails'
 import { MetadataTable } from '@molecules/MetadataTable'
@@ -55,10 +55,9 @@ export default async function BatchDetailPage({ params, searchParams }: BatchDet
   if (!detail) {
     notFound()
   }
+  const batchFilterName = detail.name?.trim() || detail.id
 
-  const publicationDraft = detail.lifecycleStatus === 'draft'
-    ? await getPublicationDraftForRetry(batchId)
-    : null
+  const publicationDraft = detail.lifecycleStatus === 'draft' ? await getPublicationDraftForRetry(batchId) : null
 
   const requestedStages = executionSnapshot.batch?.pipelineRequestedStages ?? (draft ? [draft.restartStage] : [])
 
@@ -79,6 +78,8 @@ export default async function BatchDetailPage({ params, searchParams }: BatchDet
           createdAt={detail.createdAt}
           startedAt={detail.startedAt}
           requestedStages={requestedStages}
+          documentCount={detail.documentCount}
+          documentsHref={getDocumentsBatchFilterPath(batchFilterName, getBatchDetailPath(detail.id), batchFilterName)}
           lifecycleStatus={detail.lifecycleStatus}
           publicationState={detail.publicationState}
           additionalFields={[

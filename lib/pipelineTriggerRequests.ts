@@ -259,15 +259,30 @@ async function triggerPipelineService(
     payloadSummary: getPayloadSummary(payload),
   })
 
-  const response = await fetch(new URL(config.endpointPath, baseUrl), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${triggerToken}`,
-    },
-    body: JSON.stringify(payload),
-    cache: 'no-store',
-  })
+  let response: Response
+  try {
+    response = await fetch(new URL(config.endpointPath, baseUrl), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${triggerToken}`,
+      },
+      body: JSON.stringify(payload),
+      cache: 'no-store',
+    })
+  } catch (error: unknown) {
+    const errorMessage =
+      'Pipeline server is unreachable. Check PIPELINE_API_BASE_URL and that the server is running, then retry.'
+    logEvent('error', `${config.serviceName}_trigger_failed`, {
+      batchId: batch.batchId,
+      batchName: batch.batchName,
+      requestId,
+      errorMessage,
+      cause: error instanceof Error ? error.message : String(error),
+      payloadSummary: getPayloadSummary(payload),
+    })
+    throw new Error(errorMessage, { cause: error })
+  }
 
   const responseBody = await parseResponseBody(response)
 

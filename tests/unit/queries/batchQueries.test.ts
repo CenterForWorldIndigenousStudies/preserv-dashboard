@@ -343,6 +343,7 @@ describe('batch query contracts', () => {
       startedBy: 'mary@example.org',
       createdAt: new Date('2026-07-01T00:00:00.000Z'),
       startedAt: new Date('2026-07-09T00:00:00.000Z'),
+      documentCount: 5,
       properties: [
         { key: 'total_documents', value: 5 },
         { key: 'batch_statistics', value: { speed: 42, units: 'documents/second' } },

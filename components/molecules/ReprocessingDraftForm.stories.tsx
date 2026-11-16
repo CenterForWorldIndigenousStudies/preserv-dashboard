@@ -11,7 +11,6 @@ const meta = {
   args: {
     name: 'Needs review corrections',
     collectionName: 'CWIS collection',
-    collectionNotes: 'Metadata correction run.',
     restartStage: DEFAULT_REPROCESSING_START_STAGE,
     requestedStages: ['ocr_processor', 'content_dedup', 'metadata_extractor'],
     pipelineConfig: getDefaultReprocessingPipelineConfig(DEFAULT_REPROCESSING_START_STAGE),
@@ -21,7 +20,6 @@ const meta = {
     error: null,
     onNameChange: fn(),
     onCollectionNameChange: fn(),
-    onCollectionNotesChange: fn(),
     onRestartStageChange: fn(),
     onRequestedStagesChange: fn(),
     onReasonChange: fn(),

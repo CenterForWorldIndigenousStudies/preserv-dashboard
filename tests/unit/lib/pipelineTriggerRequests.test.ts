@@ -202,6 +202,26 @@ describe('pipelineTriggerRequests', () => {
     )
   })
 
+  it('explains when the pipeline server cannot be contacted', async () => {
+    vi.mocked(fetch).mockRejectedValue(new TypeError('fetch failed'))
+
+    await expect(
+      triggerDataIngesterBatch(buildBatchStatus(), {
+        pipelineConfig: {
+          profileId: 'custom',
+          mode: 'custom',
+          metadataExtraction: { mode: 'direct' },
+          executionPlan: [],
+          sourceFolderIds: ['folder-1'],
+          sourceDocumentIds: [],
+        },
+        requestedStages: ['document_splitter'],
+      }),
+    ).rejects.toThrow(
+      'Pipeline server is unreachable. Check PIPELINE_API_BASE_URL and that the server is running, then retry.',
+    )
+  })
+
   it('serializes an explicit retry execution context', async () => {
     let receivedBody: string | null = null
     vi.mocked(fetch).mockImplementation((_input, init) => {

@@ -18,7 +18,7 @@ import {
   type RenameCollectionInput,
   type UpdateCollectionInput,
 } from '@lib/queries/collectionQueries'
-import type { CollectionListPageResult, CollectionTableQuery } from 'types/collections'
+import type { CollectionListPageResult, CollectionTableQuery, CollectionWithMeta } from 'types/collections'
 import type { PaginatedDocumentsResult } from 'types/pagination'
 
 export async function getCollectionsAction(query: CollectionTableQuery): Promise<CollectionListPageResult> {
@@ -52,9 +52,10 @@ export async function createCollectionAction(input: {
   qualifierTagNames?: string[]
   collectionNotes?: string
   fedoraNodeId?: string
-}): Promise<void> {
-  await createCollection(input)
+}): Promise<Pick<CollectionWithMeta, 'tag_id' | 'collection_name'>> {
+  const { collection } = await createCollection(input)
   revalidatePath(COLLECTIONS_PATH)
+  return { tag_id: collection.tag_id, collection_name: collection.collection_name }
 }
 
 export async function createCollectionWithNewTagAction(input: {

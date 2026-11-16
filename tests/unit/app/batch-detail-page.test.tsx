@@ -1,14 +1,15 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { mockGetBatchDetail, mockGetPipelineExecutionSnapshot, mockGetPublicationDraftForRetry, mockNotFound } = vi.hoisted(() => ({
-  mockGetBatchDetail: vi.fn(),
-  mockGetPipelineExecutionSnapshot: vi.fn(),
-  mockGetPublicationDraftForRetry: vi.fn(),
-  mockNotFound: vi.fn(() => {
-    throw new Error('NEXT_NOT_FOUND')
-  }),
-}))
+const { mockGetBatchDetail, mockGetPipelineExecutionSnapshot, mockGetPublicationDraftForRetry, mockNotFound } =
+  vi.hoisted(() => ({
+    mockGetBatchDetail: vi.fn(),
+    mockGetPipelineExecutionSnapshot: vi.fn(),
+    mockGetPublicationDraftForRetry: vi.fn(),
+    mockNotFound: vi.fn(() => {
+      throw new Error('NEXT_NOT_FOUND')
+    }),
+  }))
 
 vi.mock('@lib/queries/reprocessingDraftQueries', () => ({
   getReprocessingDraft: vi.fn().mockResolvedValue(null),
@@ -65,6 +66,7 @@ const detail = {
   startedBy: 'mary@example.org',
   createdAt: '2026-07-01T00:00:00.000Z',
   startedAt: '2026-07-09T00:00:00.000Z',
+  documentCount: 5,
   properties: [
     { key: 'total_documents', value: 5 },
     { key: 'batch_statistics', value: { speed: 42, unit: 'documents/second' } },
@@ -115,7 +117,10 @@ describe('BatchDetailPage', () => {
     expect(markup).toContain('batch-1')
     expect(markup).toContain('Created')
     expect(markup).toContain('Started')
-    expect(markup).toContain('Requested Stage')
+    expect(markup).toContain('Documents')
+    expect(markup).not.toContain('Requested Stage')
+    expect(markup).toContain('href="/documents?batch=Batch+One&amp;from=%2Fbatches%2Fbatch-1&amp;fromLabel=Batch+One"')
+    expect(markup).toMatch(/<a[^>]*href="\/documents\?batch=Batch\+One[^" ]*"[^>]*>5<\/a>/)
     expect(markup).not.toContain('Started At')
     expect(markup).toContain('Started By')
     expect(markup).toContain('mary@example.org')
@@ -175,11 +180,17 @@ describe('BatchDetailPage', () => {
     mockGetBatchDetail.mockResolvedValue({ ...detail, lifecycleStatus: 'draft' })
     mockGetPipelineExecutionSnapshot.mockResolvedValue({ batch: null, queueAttempts: [] })
     mockGetPublicationDraftForRetry.mockResolvedValue({
-      name: 'Batch One', operationId: 'operation-one', documentIds: ['doc-one'], requestedBy: 'mary@example.org',
+      name: 'Batch One',
+      operationId: 'operation-one',
+      documentIds: ['doc-one'],
+      requestedBy: 'mary@example.org',
     })
-    const markup = renderToStaticMarkup(await BatchDetailPage({
-      params: Promise.resolve({ batchId: 'batch-1' }), searchParams: Promise.resolve({}),
-    }))
+    const markup = renderToStaticMarkup(
+      await BatchDetailPage({
+        params: Promise.resolve({ batchId: 'batch-1' }),
+        searchParams: Promise.resolve({}),
+      }),
+    )
     expect(markup).toContain('Retry queueing publication')
     expect(markup).not.toContain('Reprocessing draft')
   })

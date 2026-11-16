@@ -3,19 +3,17 @@ import { Prisma, type PrismaClient } from '@lib/prisma/generated/client'
 import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
 import { GENERATED_PIPELINE_EXECUTION_MODES } from '@constants/generated/pipelineExecutionModes'
 import { BATCH_ORIGINS } from '@constants/batchOrigins'
-import {
-  DATA_INGESTER_SERVICE,
-  FEDORA_INGESTER_SERVICE,
-  SUPPORTED_DOWNSTREAM_SERVICES,
-} from '@constants/pipeline'
+import { DATA_INGESTER_SERVICE, FEDORA_INGESTER_SERVICE, SUPPORTED_DOWNSTREAM_SERVICES } from '@constants/pipeline'
 import { db } from '@lib/db'
 import { createEditHistoryEntry } from '@lib/editHistory'
 import { buildNameHash } from '@lib/tagHash'
+import { getReprocessingPipelineConfig, normalizeReprocessingRequestedStages } from '@lib/reprocessingDrafts'
 import {
-  getReprocessingPipelineConfig,
-  normalizeReprocessingRequestedStages,
-} from '@lib/reprocessingDrafts'
-import { createDefaultDraft, draftToPipelineConfig, parsePipelineConfig, type PipelineConfig } from '@lib/pipelineConfig'
+  createDefaultDraft,
+  draftToPipelineConfig,
+  parsePipelineConfig,
+  type PipelineConfig,
+} from '@lib/pipelineConfig'
 import type { CallbackStageKey } from 'types/pipelineContracts'
 import type {
   AddDocumentToReprocessingDraftInput,
@@ -30,17 +28,16 @@ import type {
   UpdateReprocessingDraftInput,
 } from 'types/reprocessingDrafts'
 import type { CreateBatchDraftInput } from 'types/batchDrafts'
+import type { CollectionProposal } from 'types/collections'
 
 type DraftQueryClient = PrismaClient | Prisma.TransactionClient
 
-const REPROCESSABLE_START_STAGES = new Set<CallbackStageKey>([
-  DATA_INGESTER_SERVICE,
-  ...SUPPORTED_DOWNSTREAM_SERVICES,
-])
+const REPROCESSABLE_START_STAGES = new Set<CallbackStageKey>([DATA_INGESTER_SERVICE, ...SUPPORTED_DOWNSTREAM_SERVICES])
 
 interface StoredCollectionDetails {
   name?: unknown
   notes?: unknown
+  proposal?: unknown
 }
 
 interface StoredBatchDraftDetails {
@@ -81,8 +78,12 @@ function pipelineRequestedStages(details: Record<string, unknown>): unknown {
 
 function isPublicationDraft(details: string | null): boolean {
   const pipeline = parseDetails(details).pipeline
-  return Boolean(pipeline && typeof pipeline === 'object' && 'workflow' in pipeline
-    && pipeline.workflow === 'ready_for_library_publish')
+  return Boolean(
+    pipeline &&
+    typeof pipeline === 'object' &&
+    'workflow' in pipeline &&
+    pipeline.workflow === 'ready_for_library_publish',
+  )
 }
 
 function pipelineConfig(details: Record<string, unknown>): PipelineConfig | undefined {
@@ -97,6 +98,38 @@ function pipelineConfig(details: Record<string, unknown>): PipelineConfig | unde
 function collectionDetails(details: Record<string, unknown>): StoredCollectionDetails {
   const collection = draftDetails(details).collection
   return collection && typeof collection === 'object' && !Array.isArray(collection) ? collection : {}
+}
+
+function collectionProposal(value: unknown): CollectionProposal | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+  const proposal = value as Record<string, unknown>
+  if (typeof proposal.name !== 'string' || !proposal.name.trim()) return null
+  return {
+    name: proposal.name.trim(),
+    notes: textValue(proposal.notes),
+    tagNotes: textValue(proposal.tagNotes),
+    qualifierNames: Array.isArray(proposal.qualifierNames)
+      ? proposal.qualifierNames.filter((name): name is string => typeof name === 'string' && Boolean(name.trim()))
+      : [],
+    fedoraNodeId: textValue(proposal.fedoraNodeId),
+  }
+}
+
+async function validateProposedCollection(
+  client: DraftQueryClient,
+  proposal: CollectionProposal | null | undefined,
+  collectionName: string | undefined,
+): Promise<string | null> {
+  if (!proposal) return null
+  const name = proposal.name.trim()
+  if (!name || name.toLowerCase() !== collectionName?.trim().toLowerCase()) {
+    return 'The proposed collection name must match the batch collection.'
+  }
+  const existingTag = await client.tags.findFirst({
+    where: { OR: [{ name_hash: buildNameHash(name) }, { name }], collections: { isNot: null } },
+    select: { collections: { select: { id: true } } },
+  })
+  return existingTag?.collections ? `Collection "${name}" already exists. Choose a unique name.` : null
 }
 
 function restartStageValue(value: unknown): CallbackStageKey | null {
@@ -155,18 +188,18 @@ function summaryFromRow(row: {
   const normalizedRequestedStages = requestedStagesValue(rawRequestedStages, restartStage)
   const collection = collectionDetails(details)
   const storedDetails = draftDetails(details)
-  const pipelineRecord = details.pipeline && typeof details.pipeline === 'object' && !Array.isArray(details.pipeline)
-    ? details.pipeline as Record<string, unknown>
-    : undefined
-  const executionMode = typeof pipelineRecord?.executionMode === 'string'
-    ? pipelineRecord.executionMode
-    : undefined
+  const pipelineRecord =
+    details.pipeline && typeof details.pipeline === 'object' && !Array.isArray(details.pipeline)
+      ? (details.pipeline as Record<string, unknown>)
+      : undefined
+  const executionMode = typeof pipelineRecord?.executionMode === 'string' ? pipelineRecord.executionMode : undefined
 
   return {
     id: row.id,
     name: row.name?.trim() || row.id,
     collectionName: textValue(collection.name),
     collectionNotes: textValue(collection.notes),
+    collectionProposal: collectionProposal(collection.proposal),
     restartStage,
     requestedStages: normalizedRequestedStages,
     pipelineConfig: pipeline ?? getReprocessingPipelineConfig(restartStage, normalizedRequestedStages),
@@ -227,15 +260,14 @@ function buildDraftProcessingDetails(input: {
   reason: string
   collectionName: string | null
   collectionNotes: string | null
-  executionMode:
-    | typeof GENERATED_PIPELINE_EXECUTION_MODES.NORMAL
-    | typeof GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS
+  collectionProposal?: CollectionProposal | null
+  executionMode: typeof GENERATED_PIPELINE_EXECUTION_MODES.NORMAL | typeof GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS
   pipelineConfig: PipelineConfig
 }): string {
   return JSON.stringify({
     reason: input.reason,
     collection: input.collectionName
-      ? { name: input.collectionName, notes: input.collectionNotes }
+      ? { name: input.collectionName, notes: input.collectionNotes, proposal: input.collectionProposal ?? null }
       : input.collectionNotes
         ? { name: null, notes: input.collectionNotes }
         : null,
@@ -255,6 +287,7 @@ function draftAuditValue(name: string | null, processingDetails: string | null):
     name: textValue(name),
     collectionName: textValue(collection.name),
     collectionNotes: textValue(collection.notes),
+    collectionProposal: collectionProposal(collection.proposal),
     requestedStages: pipelineRequestedStages(details),
     pipelineConfig: pipeline,
     reason: textValue(draftDetails(details).reason),
@@ -557,9 +590,10 @@ export async function createBatchDraft(input: CreateBatchDraftInput): Promise<Re
     sourceFolderIds,
     sourceDocumentIds: documentIds,
   }
-  const validationError = documentIds.length > 0 || sourceFolderIds.length > 0
-    ? validateDraftInput({ name, reason, restartStage, requestedStages })
-    : 'At least one source folder or document is required.'
+  const validationError =
+    documentIds.length > 0 || sourceFolderIds.length > 0
+      ? validateDraftInput({ name, reason, restartStage, requestedStages })
+      : 'At least one source folder or document is required.'
   if (validationError) return { ok: false, error: validationError }
 
   try {
@@ -577,6 +611,9 @@ export async function createBatchDraft(input: CreateBatchDraftInput): Promise<Re
       })
       if (existingName) return { ok: false, error: `Batch name “${name}” already exists.` }
 
+      const collectionError = await validateProposedCollection(tx, input.collectionProposal, input.collectionName)
+      if (collectionError) return { ok: false, error: collectionError }
+
       if (documentIds.length > 0) await removeOpenDraftMemberships(tx, documentIds)
 
       const batchId = crypto.randomUUID()
@@ -592,6 +629,7 @@ export async function createBatchDraft(input: CreateBatchDraftInput): Promise<Re
             reason,
             collectionName: textValue(input.collectionName),
             collectionNotes: textValue(input.collectionNotes),
+            collectionProposal: input.collectionProposal,
             executionMode,
             pipelineConfig,
           }),
@@ -725,6 +763,8 @@ export async function updateReprocessingDraft(
         select: { id: true },
       })
       if (existingName) return { ok: false, error: `Batch name “${name}” already exists.` }
+      const collectionError = await validateProposedCollection(tx, input.collectionProposal, input.collectionName)
+      if (collectionError) return { ok: false, error: collectionError }
       const currentDetails = parseDetails(draft.processing_details)
       const currentConfig = pipelineConfig(currentDetails)
       const basePipelineConfig =
@@ -733,7 +773,8 @@ export async function updateReprocessingDraft(
         (input.restartStage === DATA_INGESTER_SERVICE
           ? draftToPipelineConfig(createDefaultDraft())
           : getReprocessingPipelineConfig(input.restartStage, requestedStages))
-      const effectiveSourceDocumentIds = input.sourceDocumentIds ?? draft.document_to_batches.map((membership) => membership.document_id)
+      const effectiveSourceDocumentIds =
+        input.sourceDocumentIds ?? draft.document_to_batches.map((membership) => membership.document_id)
       const effectivePipelineConfig: PipelineConfig = {
         ...basePipelineConfig,
         sourceFolderIds: normalizeDocumentIds(input.sourceFolderIds ?? basePipelineConfig.sourceFolderIds ?? []),
@@ -745,6 +786,7 @@ export async function updateReprocessingDraft(
         reason,
         collectionName: textValue(input.collectionName),
         collectionNotes: textValue(input.collectionNotes),
+        collectionProposal: input.collectionProposal,
         executionMode:
           input.executionMode ??
           (input.restartStage === DATA_INGESTER_SERVICE

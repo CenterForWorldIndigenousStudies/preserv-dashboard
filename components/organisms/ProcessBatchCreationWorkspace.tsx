@@ -16,7 +16,6 @@ import type { PipelineSelectionDraft } from '@lib/pipelineConfig'
 interface ProcessBatchCreationWorkspaceProps {
   batchName: string
   collectionName: string
-  collectionNotes: string
   isSubmitting: boolean
   isRefreshing: boolean
   canSubmit: boolean
@@ -35,7 +34,6 @@ interface ProcessBatchCreationWorkspaceProps {
   isManagingDraft: boolean
   onBatchNameChange: (value: string) => void
   onCollectionNameChange: (value: string) => void
-  onCollectionNotesChange: (value: string) => void
   onSubmit: () => void
   onRefresh: () => void
   onProfileChange: (profileId: ProfileId) => void
@@ -51,7 +49,6 @@ interface ProcessBatchCreationWorkspaceProps {
 export function ProcessBatchCreationWorkspace({
   batchName,
   collectionName,
-  collectionNotes,
   isSubmitting,
   isRefreshing,
   canSubmit,
@@ -70,7 +67,6 @@ export function ProcessBatchCreationWorkspace({
   isManagingDraft,
   onBatchNameChange,
   onCollectionNameChange,
-  onCollectionNotesChange,
   onSubmit,
   onRefresh,
   onProfileChange,
@@ -105,7 +101,6 @@ export function ProcessBatchCreationWorkspace({
           <ProcessBatchFormPanel
             batchName={batchName}
             collectionName={collectionName}
-            collectionNotes={collectionNotes}
             isSubmitting={isSubmitting}
             isRefreshing={isRefreshing}
             canSubmit={canSubmit}
@@ -115,7 +110,6 @@ export function ProcessBatchCreationWorkspace({
             batchNameExists={batchNameExists}
             onBatchNameChange={onBatchNameChange}
             onCollectionNameChange={onCollectionNameChange}
-            onCollectionNotesChange={onCollectionNotesChange}
             onSubmit={onSubmit}
             onRefresh={onRefresh}
             title={'Batch details'}

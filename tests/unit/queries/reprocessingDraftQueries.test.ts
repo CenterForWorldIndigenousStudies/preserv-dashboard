@@ -4,6 +4,7 @@ const { mockDb, mockCreateEditHistoryEntry } = vi.hoisted(() => ({
   mockDb: {
     batches: { findMany: vi.fn(), findUnique: vi.fn(), findFirst: vi.fn(), create: vi.fn(), update: vi.fn() },
     documents: { findUnique: vi.fn() },
+    tags: { findFirst: vi.fn() },
     document_to_batches: {
       findMany: vi.fn(),
       findFirst: vi.fn(),
@@ -42,6 +43,7 @@ describe('reprocessing draft queries', () => {
     vi.clearAllMocks()
     mockDb.document_to_batches.findFirst.mockResolvedValue(null)
     mockDb.document_to_batches.findMany.mockResolvedValue([])
+    mockDb.tags.findFirst.mockResolvedValue(null)
     mockDb.$transaction.mockImplementation((callback: (tx: typeof mockDb) => unknown) => callback(mockDb))
   })
 
@@ -49,10 +51,12 @@ describe('reprocessing draft queries', () => {
     const publicationDraft = {
       id: 'publication-batch',
       name: 'Publish selected',
-      processing_details: JSON.stringify({ pipeline: {
-        workflow: 'ready_for_library_publish',
-        requestedStages: ['fedora_ingester'],
-      } }),
+      processing_details: JSON.stringify({
+        pipeline: {
+          workflow: 'ready_for_library_publish',
+          requestedStages: ['fedora_ingester'],
+        },
+      }),
       created_at: new Date(),
       updated_at: new Date(),
       document_to_batches: [],
@@ -66,9 +70,14 @@ describe('reprocessing draft queries', () => {
   })
 
   it('does not let ordinary draft operations steal a publication source', async () => {
-    mockDb.document_to_batches.findMany.mockResolvedValue([{ id: 'link-one', batch_id: 'publication-batch', document_id: 'source-1',
-      batches: { processing_details: JSON.stringify({ pipeline: { workflow: 'ready_for_library_publish' } }) },
-    }])
+    mockDb.document_to_batches.findMany.mockResolvedValue([
+      {
+        id: 'link-one',
+        batch_id: 'publication-batch',
+        document_id: 'source-1',
+        batches: { processing_details: JSON.stringify({ pipeline: { workflow: 'ready_for_library_publish' } }) },
+      },
+    ])
     await expect(removeOpenDraftMemberships(mockDb as never, ['source-1'])).rejects.toThrow('active publication')
     expect(mockDb.document_to_batches.delete).not.toHaveBeenCalled()
   })
@@ -105,6 +114,7 @@ describe('reprocessing draft queries', () => {
         name: 'Review retry one',
         collectionName: 'Collection A',
         collectionNotes: 'Review set',
+        collectionProposal: null,
         restartStage: 'ocr_processor',
         requestedStages: ['ocr_processor', 'content_dedup', 'metadata_extractor'],
         pipelineConfig,
@@ -316,9 +326,7 @@ describe('reprocessing draft queries', () => {
     })
 
     expect(result.ok).toBe(true)
-    const createCall = mockDb.batches.create.mock.calls[0] as unknown as [
-      { data: { processing_details: string } },
-    ]
+    const createCall = mockDb.batches.create.mock.calls[0] as unknown as [{ data: { processing_details: string } }]
     expect(JSON.parse(createCall[0].data.processing_details)).toMatchObject({
       reason: 'Initial preservation batch',
       pipeline: {
@@ -330,6 +338,41 @@ describe('reprocessing draft queries', () => {
         },
       },
     })
+  })
+
+  it('stores a proposed collection on the draft and rejects a name already used by a collection', async () => {
+    mockDb.batches.findFirst.mockResolvedValue(null)
+    mockDb.batches.create.mockResolvedValue({ id: 'draft-proposed' })
+    const proposal = {
+      name: 'Language Archive',
+      notes: 'Draft notes',
+      tagNotes: 'Tag notes',
+      qualifierNames: ['Education'],
+      fedoraNodeId: '50',
+    }
+    const input = {
+      sourceFolderIds: ['folder-1'],
+      name: 'Proposed collection draft',
+      collectionName: proposal.name,
+      collectionProposal: proposal,
+      restartStage: 'data_ingester' as const,
+      requestedStages: ['metadata_extractor' as const],
+      reason: 'Initial preservation batch',
+    }
+
+    await expect(createBatchDraft(input)).resolves.toMatchObject({ ok: true })
+    const createCall = mockDb.batches.create.mock.calls[0] as unknown as [{ data: { processing_details: string } }]
+    expect(JSON.parse(createCall[0].data.processing_details)).toMatchObject({
+      collection: { name: 'Language Archive', proposal },
+    })
+    mockDb.batches.create.mockClear()
+    mockDb.tags.findFirst.mockResolvedValue({ collections: { id: 'existing-1' } })
+
+    await expect(createBatchDraft(input)).resolves.toEqual({
+      ok: false,
+      error: 'Collection "Language Archive" already exists. Choose a unique name.',
+    })
+    expect(mockDb.batches.create).not.toHaveBeenCalled()
   })
 
   it('records the previous and new values when a draft is updated', async () => {

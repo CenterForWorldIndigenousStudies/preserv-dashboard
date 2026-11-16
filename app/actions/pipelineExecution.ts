@@ -19,6 +19,8 @@ import { PIPELINE_STAGE_PROPERTIES } from '@constants/pipelineStageProperties'
 import type { PipelineExecutionContextInput } from '@lib/pipelineExecutionContext'
 import { batchNameExists, documentIdsExist, getPipelineExecutionSnapshot } from '@lib/queries/pipelineExecutionQueries'
 import { getBatchDraft } from '@lib/queries/batchDraftQueries'
+import { createCollection, findCollectionByCanonicalName } from '@lib/queries/collectionQueries'
+import { normalizeTagName } from '@lib/tagUtils'
 import { normalizeReprocessingRequestedStages } from '@lib/reprocessingDrafts'
 import {
   triggerContentDedup,
@@ -30,7 +32,11 @@ import {
   triggerOcrProcessor,
   triggerPageRotator,
 } from '@lib/pipelineTriggerRequests'
-import type { PipelineExecutionActionResult, PipelineExecutionRequest } from 'types/pipelineExecution'
+import type {
+  PipelineExecutionActionResult,
+  PipelineExecutionFailure,
+  PipelineExecutionRequest,
+} from 'types/pipelineExecution'
 import type { CallbackStageKey, ProcessBatchStatus } from 'types/pipelineContracts'
 
 const REPROCESSABLE_STAGES = new Set<CallbackStageKey>([
@@ -220,6 +226,81 @@ function executionIdentity(request: PipelineExecutionRequest): { operationId: st
   return { operationId: randomUUID(), idempotencyKey: randomUUID() }
 }
 
+function collectionConflictFailure(
+  draftName: string,
+  existing: NonNullable<Awaited<ReturnType<typeof findCollectionByCanonicalName>>>,
+): PipelineExecutionFailure {
+  return {
+    ok: false,
+    error: `Collection "${draftName}" was created after this draft. Choose which collection to use.`,
+    collectionConflict: {
+      draftName,
+      existingId: existing.id,
+      existingName: existing.name,
+      existingNotes: existing.notes,
+      existingLibraryId: existing.libraryId,
+      existingQualifiers: existing.qualifiers,
+    },
+  }
+}
+
+// A draft may reference an existing collection or a proposed definition that must be checked again at submission.
+// eslint-disable-next-line complexity -- Conflict resolution and the concurrent-create check belong in one preflight.
+async function resolveDraftCollection(
+  request: PipelineExecutionRequest,
+): Promise<{ ok: true; collection: PipelineExecutionRequest['collection'] } | PipelineExecutionFailure> {
+  if (!request.draftBatchId) return { ok: true, collection: request.collection }
+  const draft = await getBatchDraft(request.draftBatchId)
+  if (!draft) {
+    return request.mode === GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS
+      ? { ok: true, collection: request.collection }
+      : { ok: false, error: 'The batch draft is no longer editable.' }
+  }
+
+  const proposal = draft.collectionProposal
+  if (!proposal) {
+    if (!draft.collectionName) return { ok: true, collection: undefined }
+    const existing = await findCollectionByCanonicalName(draft.collectionName)
+    if (!existing) return { ok: false, error: `Collection "${draft.collectionName}" no longer exists.` }
+    return { ok: true, collection: { name: existing.name, notes: existing.notes } }
+  }
+
+  if (proposal.name.toLowerCase() !== draft.collectionName?.toLowerCase()) {
+    return { ok: false, error: 'The proposed collection does not match the saved draft.' }
+  }
+  const originalConflict = await findCollectionByCanonicalName(proposal.name)
+  const resolution = request.collectionResolution
+  if (resolution?.kind === 'use_existing') {
+    if (!originalConflict || originalConflict.id !== resolution.collectionId) {
+      return { ok: false, error: 'The existing collection has changed. Review the conflict again.' }
+    }
+    return { ok: true, collection: { name: originalConflict.name, notes: originalConflict.notes } }
+  }
+  if (originalConflict && !resolution) return collectionConflictFailure(proposal.name, originalConflict)
+
+  const name = resolution?.kind === 'use_proposal' ? normalizeTagName(resolution.name) : proposal.name
+  if (!name) return { ok: false, error: 'Enter a unique name for the proposed collection.' }
+  const namedConflict = await findCollectionByCanonicalName(name)
+  if (namedConflict) return collectionConflictFailure(proposal.name, namedConflict)
+  try {
+    const { collection } = await createCollection({
+      tagName: name,
+      tagNotes: proposal.tagNotes ?? undefined,
+      qualifierTagNames: proposal.qualifierNames,
+      collectionNotes: proposal.notes ?? undefined,
+      fedoraNodeId: proposal.fedoraNodeId ?? undefined,
+    })
+    return { ok: true, collection: { name: collection.collection_name, notes: collection.notes } }
+  } catch (error: unknown) {
+    const concurrent = await findCollectionByCanonicalName(name)
+    if (concurrent) return collectionConflictFailure(proposal.name, concurrent)
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'The proposed collection could not be created.',
+    }
+  }
+}
+
 async function triggerRequestedExecution(
   request: PipelineExecutionRequest,
   sourceBatch: Awaited<ReturnType<typeof getPipelineExecutionSnapshot>>['batch'],
@@ -228,23 +309,24 @@ async function triggerRequestedExecution(
   idempotencyKey: string,
 ): Promise<unknown> {
   const draft = request.draftBatchId ? await getBatchDraft(request.draftBatchId) : null
-  const trigger = request.mode === GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS && request.draftBatchId
-    ? triggerDataIngesterReprocess
-    : request.mode === GENERATED_PIPELINE_EXECUTION_MODES.NORMAL && request.draftBatchId
-      ? triggerDataIngesterBatch
-      : triggerByStage[request.restartStage]
+  const trigger =
+    request.mode === GENERATED_PIPELINE_EXECUTION_MODES.REPROCESS && request.draftBatchId
+      ? triggerDataIngesterReprocess
+      : request.mode === GENERATED_PIPELINE_EXECUTION_MODES.NORMAL && request.draftBatchId
+        ? triggerDataIngesterBatch
+        : triggerByStage[request.restartStage]
   if (!trigger) {
     throw new Error(`Stage ${request.restartStage} cannot be triggered.`)
   }
 
   const triggerBatch = request.draftBatchId
     ? buildReprocessTriggerBatch(request, startedBy, draft?.name)
-    : sourceBatch ?? buildReprocessTriggerBatch(request, startedBy, draft?.name)
+    : (sourceBatch ?? buildReprocessTriggerBatch(request, startedBy, draft?.name))
   const sourceDocumentIds = draft?.sourceDocumentIds
     ? [...draft.sourceDocumentIds]
-    : draft?.documents.map((document) => document.id)
-    ?? sourceBatch?.currentExecution?.sourceDocumentIds
-    ?? request.documentIds
+    : (draft?.documents.map((document) => document.id) ??
+      sourceBatch?.currentExecution?.sourceDocumentIds ??
+      request.documentIds)
   return trigger(triggerBatch, {
     executionMode: request.mode,
     operationId,
@@ -281,6 +363,10 @@ export async function requestPipelineExecution(
       return preflight
     }
     const { sourceBatch } = preflight
+
+    const collectionResult = await resolveDraftCollection(request)
+    if (!collectionResult.ok) return collectionResult
+    request.collection = collectionResult.collection
 
     const { operationId, idempotencyKey } = executionIdentity(request)
     const accepted = await triggerRequestedExecution(

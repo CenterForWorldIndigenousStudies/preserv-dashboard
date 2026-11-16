@@ -1,14 +1,16 @@
-import type { ChangeEvent, ReactElement } from 'react'
-import { Alert, Paper, Stack, TextField, Typography } from '@mui/material'
+import { useState, type ReactElement } from 'react'
+import { Alert, Paper, Stack, Typography } from '@mui/material'
 
 import { Button } from '@atoms/Button'
 import { BATCH_NAME_EXISTS_MESSAGE } from '@constants/batches'
 import { SearchEntityBox } from '@molecules/SearchEntityBox'
+import { CollectionNameCombobox } from '@molecules/CollectionNameCombobox'
+import type { CollectionProposal } from 'types/collections'
 
 interface ProcessBatchFormPanelProps {
   batchName: string
   collectionName: string
-  collectionNotes: string
+  collectionProposal?: CollectionProposal | null
   isSubmitting: boolean
   isRefreshing: boolean
   canSubmit: boolean
@@ -18,19 +20,13 @@ interface ProcessBatchFormPanelProps {
   batchNameExists: boolean
   onBatchNameChange: (value: string) => void
   onCollectionNameChange: (value: string) => void
-  onCollectionNotesChange: (value: string) => void
+  onCollectionProposalChange?: (proposal: CollectionProposal | null) => void
   onSubmit: () => void
   onRefresh: () => void
   title?: string
   description?: string
   submitLabel?: string
   showRefresh?: boolean
-}
-
-function handleTextChange(callback: (value: string) => void): (event: ChangeEvent<HTMLInputElement>) => void {
-  return (event) => {
-    callback(event.target.value)
-  }
 }
 
 const DEFAULT_DESCRIPTION =
@@ -41,7 +37,7 @@ export const DEFAULT_SUBMIT_LABEL = 'Process'
 export function ProcessBatchFormPanel({
   batchName,
   collectionName,
-  collectionNotes,
+  collectionProposal,
   isSubmitting,
   isRefreshing,
   canSubmit,
@@ -51,7 +47,7 @@ export function ProcessBatchFormPanel({
   batchNameExists,
   onBatchNameChange,
   onCollectionNameChange,
-  onCollectionNotesChange,
+  onCollectionProposalChange,
   onSubmit,
   onRefresh,
   title = DEFAULT_TITLE,
@@ -59,6 +55,9 @@ export function ProcessBatchFormPanel({
   submitLabel = DEFAULT_SUBMIT_LABEL,
   showRefresh = true,
 }: ProcessBatchFormPanelProps): ReactElement {
+  const [collectionSelectionValid, setCollectionSelectionValid] = useState(true)
+  const [localProposal, setLocalProposal] = useState<CollectionProposal | null>(null)
+
   return (
     <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 4, p: 3 }}>
       <Stack spacing={3}>
@@ -90,25 +89,23 @@ export function ProcessBatchFormPanel({
           getOptionLabel={(option) => option}
         />
 
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-          <TextField
-            label={'Collection Name'}
-            value={collectionName}
-            onChange={handleTextChange(onCollectionNameChange)}
-            placeholder={'Optional collection'}
-            fullWidth
-          />
-          <TextField
-            label={'Collection Notes'}
-            value={collectionNotes}
-            onChange={handleTextChange(onCollectionNotesChange)}
-            placeholder={'Optional collection notes'}
-            fullWidth
-          />
-        </Stack>
+        <CollectionNameCombobox
+          value={collectionName}
+          proposal={collectionProposal === undefined ? localProposal : collectionProposal}
+          onChange={onCollectionNameChange}
+          onProposalChange={onCollectionProposalChange ?? setLocalProposal}
+          onValidityChange={setCollectionSelectionValid}
+        />
 
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-          <Button type={'button'} onClick={onSubmit} disabled={!canSubmit} loading={isSubmitting}>
+          <Button
+            type={'button'}
+            onClick={() => {
+              if (collectionSelectionValid) onSubmit()
+            }}
+            disabled={!canSubmit || !collectionSelectionValid}
+            loading={isSubmitting}
+          >
             {submitLabel}
           </Button>
           {showRefresh ? (
