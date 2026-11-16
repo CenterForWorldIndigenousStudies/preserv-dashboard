@@ -17,9 +17,11 @@ import { PageHeader } from '@organisms/PageHeader'
 import { buildPipelineDiagnostics } from '@lib/documentDetailViewModel'
 import { getDocumentEditWarning } from '@lib/documentEditAccess'
 import { GENERATED_BATCH_LIFECYCLE_STATUSES } from '@constants/generated/batchLifecycleStatuses'
+import { GENERATED_DOCUMENT_STATES } from '@constants/generated/documentStates'
 import { getDocumentDetail } from '@lib/queries/documentQueries'
 import { getBatchDrafts } from '@lib/queries/batchDraftQueries'
 import { getDocumentCollectionMemberships } from '@lib/queries/collectionMembershipQueries'
+import { getEligibleReadyForLibraryDocumentIds } from '@lib/queries/readyForLibraryQueries'
 import {
   COLLECTIONS_PATH,
   DOCUMENTS_PATH,
@@ -105,6 +107,7 @@ function buildCurrentDocumentHref(id: string, searchParams: Record<string, strin
 function buildDocumentReviewToolbar(
   detail: DocumentDetail,
   reprocessingDrafts: Awaited<ReturnType<typeof getBatchDrafts>>,
+  actionMode: 'review' | 'ready' | 'published',
   diagnosticsHref?: string,
 ): ReactNode {
   const { document, quality } = detail
@@ -113,6 +116,7 @@ function buildDocumentReviewToolbar(
     <DocumentReviewToolbar
       documentId={document.id}
       documentName={document.name || document.id}
+      actionMode={actionMode}
       validationStatus={quality?.validation_status}
       reviewReasons={document.needs_review_reasons}
       reviewChecklist={quality?.review_checklist}
@@ -163,10 +167,20 @@ export default async function DocumentDetailPage({
       batchLinks: pipelineBatchLinks,
       diagnosticsHref,
     } = buildPipelineDiagnostics(detail, metadata, currentDocumentHref)
-    const [reprocessingDrafts, collectionMemberships] = await Promise.all([
+    const latestState = detail.state_history[0]?.new_state
+    const [reprocessingDrafts, collectionMemberships, readyDocumentIds] = await Promise.all([
       getBatchDrafts(),
       getDocumentCollectionMemberships(document.id),
+      latestState === GENERATED_DOCUMENT_STATES.APPROVED
+        ? getEligibleReadyForLibraryDocumentIds([document.id])
+        : Promise.resolve([]),
     ])
+    const actionMode =
+      latestState === GENERATED_DOCUMENT_STATES.INGESTED_FEDORA
+        ? 'published'
+        : readyDocumentIds.includes(document.id)
+          ? 'ready'
+          : 'review'
     const collections = collectionMemberships
       .map((membership) => ({ id: membership.collectionId, name: membership.collectionName }))
       .sort((left, right) => left.name.localeCompare(right.name))
@@ -197,10 +211,8 @@ export default async function DocumentDetailPage({
             ),
             latestState: detail.state_history[0]?.new_state,
           })}
-          toolbarContent={buildDocumentReviewToolbar(detail, reprocessingDrafts, diagnosticsHref)}
-          toolbarTrailingContent={
-            reprocessingDrafts.length > 0 ? <BatchCart drafts={reprocessingDrafts} /> : undefined
-          }
+          toolbarContent={buildDocumentReviewToolbar(detail, reprocessingDrafts, actionMode, diagnosticsHref)}
+          toolbarTrailingContent={reprocessingDrafts.length > 0 ? <BatchCart drafts={reprocessingDrafts} /> : undefined}
         >
           <DocumentPropertiesSection document={document} metadata={metadata} />
           <Stack component={'section'} spacing={4}>

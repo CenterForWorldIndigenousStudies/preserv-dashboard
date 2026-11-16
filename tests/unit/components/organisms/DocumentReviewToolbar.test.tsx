@@ -8,6 +8,35 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ refresh: vi.fn() }),
 }))
 
+vi.mock('@molecules/SelectionActionsButton', () => ({
+  SelectionActionsButton: ({
+    actions,
+    selectedCount,
+  }: {
+    actions: Array<{ label: string }>
+    selectedCount: number
+  }) => (
+    <div data-testid={'document-actions'}>
+      {`Actions (${selectedCount})`}
+      {actions.map((action) => (
+        <span key={action.label}>{action.label}</span>
+      ))}
+    </div>
+  ),
+}))
+
+vi.mock('@organisms/ReadyForLibraryPublishDialog', () => ({
+  ReadyForLibraryPublishDialog: () => null,
+}))
+
+vi.mock('@organisms/LibraryRemovalActions', () => ({
+  LibraryRemovalActions: () => null,
+}))
+
+vi.mock('@molecules/PipelineExecutionDialog', () => ({
+  PipelineExecutionDialog: () => null,
+}))
+
 describe('DocumentReviewToolbar', () => {
   it('renders the review queue controls for the current document', () => {
     const markup = renderToStaticMarkup(
@@ -57,5 +86,36 @@ describe('DocumentReviewToolbar', () => {
 
     expect(markup).not.toContain('Candidate')
     expect(markup).not.toContain('Canonical')
+  })
+
+  it.each([
+    { actionMode: 'ready', expected: ['Publish', 'Reprocess'] },
+    { actionMode: 'published', expected: ['Remove', 'Reprocess'] },
+  ] as const)('shows $actionMode actions for a document', ({ actionMode, expected }) => {
+    const markup = renderToStaticMarkup(
+      <DocumentReviewToolbar
+        documentId={'doc-3'}
+        documentName={'Document Three'}
+        actionMode={actionMode}
+        validationStatus={'APPROVED'}
+        isCandidate
+        isCanonical
+        hasOpenReprocessingDraft={false}
+        initialDrafts={[]}
+      />,
+    )
+
+    const actions = markup.match(/<div data-testid="document-actions">(.*?)<\/div>/)?.[1]
+    expect(actions).toBeDefined()
+    for (const label of expected) expect(actions).toContain(label)
+    for (const label of ['Approve', 'Reject', 'Publish', 'Remove']) {
+      if (!expected.some((item) => item === label)) expect(actions).not.toContain(label)
+    }
+    if (actionMode === 'published') {
+      expect(markup).toContain('>Published</')
+      expect(markup).not.toContain('>Approved</')
+    } else {
+      expect(markup).toContain('>Approved</')
+    }
   })
 })

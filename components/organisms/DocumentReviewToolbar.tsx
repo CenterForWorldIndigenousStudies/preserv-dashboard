@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type ReactElement } from 'react'
+import { useMemo, useState, type ReactElement } from 'react'
 import Alert from '@mui/material/Alert'
 import Snackbar from '@mui/material/Snackbar'
 import Stack from '@mui/material/Stack'
@@ -24,6 +24,8 @@ import type { PipelineConfig } from '@lib/pipelineConfig'
 import { NeedsReviewReasonsPopover } from '@molecules/NeedsReviewReasonsPopover'
 import { DocumentRoleBadges } from '@molecules/DocumentRoleBadges'
 import { ReviewQueueActionButton } from '@molecules/ReviewQueueActionButton'
+import { LibraryActions } from '@organisms/LibraryActions'
+import { ReadyForLibraryActions } from '@organisms/ReadyForLibraryActions'
 import { ReviewQueueReprocessDialog } from '@organisms/ReviewQueueReprocessDialog'
 import { ReviewQueueChecklistPanel } from '@organisms/ReviewQueueChecklistPanel'
 import type { ReviewQueueDecision } from 'types/reviewQueue'
@@ -35,6 +37,7 @@ import type { NeedsReviewReasonGroup } from 'types/needsReview'
 interface DocumentReviewToolbarProps {
   documentId: string
   documentName: string
+  actionMode?: 'review' | 'ready' | 'published'
   validationStatus?: string | null
   reviewReasons?: NeedsReviewReasonGroup[]
   reviewChecklist?: ReviewQueueChecklistState | null
@@ -81,6 +84,7 @@ async function applyDecision(
 export function DocumentReviewToolbar({
   documentId,
   documentName,
+  actionMode = 'review',
   validationStatus,
   reviewReasons = [],
   reviewChecklist,
@@ -91,6 +95,7 @@ export function DocumentReviewToolbar({
   diagnosticsHref,
 }: DocumentReviewToolbarProps): ReactElement {
   const router = useRouter()
+  const selectedDocumentIds = useMemo(() => [documentId], [documentId])
   const [batchActionPending, setBatchActionPending] = useState(false)
   const [checklistState, setChecklistState] = useState(reviewChecklist ?? buildDefaultReviewQueueChecklistState())
   const [reprocessOpen, setReprocessOpen] = useState(false)
@@ -115,7 +120,9 @@ export function DocumentReviewToolbar({
     severity: 'success',
   })
 
-  const statusLabel = validationStatus ?? (reviewReasons.length > 0 ? 'Review' : null)
+  const statusLabel =
+    actionMode === 'published' ? 'Published' : (validationStatus ?? (reviewReasons.length > 0 ? 'Review' : null))
+  const statusVariant = actionMode === 'published' ? 'success' : getValidationStatusBadgeVariant(validationStatus)
   function showError(message: string): void {
     setToastState({ open: true, message, severity: 'error' })
   }
@@ -250,36 +257,48 @@ export function DocumentReviewToolbar({
           {isCandidate || isCanonical ? (
             <DocumentRoleBadges isCandidate={isCandidate} isCanonical={isCanonical} />
           ) : null}
-          <ReviewQueueActionButton
-            batchActionPending={batchActionPending}
-            selectedCount={1}
-            hasSelectedDraftDocuments={hasOpenReprocessingDraft}
-            onApprove={() => {
-              void handleDecision('APPROVED')
-            }}
-            onReject={() => {
-              void handleDecision('REJECTED')
-            }}
-            onReprocess={openReprocessDialog}
-            onRemove={() => {
-              void handleRemoveFromDraft()
-            }}
-          />
+          {actionMode === 'review' ? (
+            <ReviewQueueActionButton
+              batchActionPending={batchActionPending}
+              selectedCount={1}
+              hasSelectedDraftDocuments={hasOpenReprocessingDraft}
+              onApprove={() => {
+                void handleDecision('APPROVED')
+              }}
+              onReject={() => {
+                void handleDecision('REJECTED')
+              }}
+              onReprocess={openReprocessDialog}
+              onRemove={() => {
+                void handleRemoveFromDraft()
+              }}
+            />
+          ) : actionMode === 'ready' ? (
+            <ReadyForLibraryActions
+              documentIds={selectedDocumentIds}
+              onReprocess={openReprocessDialog}
+              onPublished={() => router.refresh()}
+            />
+          ) : (
+            <LibraryActions
+              documentIds={selectedDocumentIds}
+              onReprocess={openReprocessDialog}
+              onRemoved={() => router.refresh()}
+            />
+          )}
         </Stack>
         <Stack spacing={0.5} sx={{ minWidth: { lg: 150 } }}>
           {statusLabel ? (
-            reviewReasons.length > 0 ? (
+            actionMode !== 'published' && reviewReasons.length > 0 ? (
               <NeedsReviewReasonsPopover
                 documentId={documentId}
                 groups={reviewReasons}
-                trigger={
-                  <StatusPill status={statusLabel} variant={getValidationStatusBadgeVariant(validationStatus)} />
-                }
+                trigger={<StatusPill status={statusLabel} variant={statusVariant} />}
                 triggerLabel={`View review reasons for document ${documentId}`}
                 diagnosticsHref={diagnosticsHref}
               />
             ) : (
-              <StatusPill status={statusLabel} variant={getValidationStatusBadgeVariant(validationStatus)} />
+              <StatusPill status={statusLabel} variant={statusVariant} />
             )
           ) : (
             <Typography variant={'body2'} color={'text.secondary'}>

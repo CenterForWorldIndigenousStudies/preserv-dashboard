@@ -13,9 +13,14 @@ import { ReadyForLibraryPublishDialog } from '@organisms/ReadyForLibraryPublishD
 interface ReadyForLibraryActionsProps {
   documentIds: readonly string[]
   onPublished: () => void
+  onReprocess?: () => void
 }
 
-export function ReadyForLibraryActions({ documentIds, onPublished }: ReadyForLibraryActionsProps): ReactElement {
+export function ReadyForLibraryActions({
+  documentIds,
+  onPublished,
+  onReprocess,
+}: ReadyForLibraryActionsProps): ReactElement {
   const [reprocessIds, setReprocessIds] = useState<string[] | null>(null)
   const [publication, setPublication] = useState<{ documentIds: string[]; operationId: string } | null>(null)
   const [queuedBatchId, setQueuedBatchId] = useState<string | null>(null)
@@ -26,12 +31,12 @@ export function ReadyForLibraryActions({ documentIds, onPublished }: ReadyForLib
       <SelectionActionsButton
         selectedCount={selectedCount}
         actions={[
-          { label: 'Reprocess', onClick: () => setReprocessIds([...documentIds]) },
           {
             label: 'Publish',
             onClick: () =>
               setPublication({ documentIds: [...new Set(documentIds)].sort(), operationId: crypto.randomUUID() }),
           },
+          { label: 'Reprocess', onClick: onReprocess ?? (() => setReprocessIds([...documentIds])) },
         ]}
       />
       {reprocessIds ? (

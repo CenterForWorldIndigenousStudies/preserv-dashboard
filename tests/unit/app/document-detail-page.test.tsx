@@ -9,6 +9,7 @@ const {
   mockValuePillList,
   mockGetReprocessingDrafts,
   mockGetDocumentCollectionMemberships,
+  mockGetEligibleReadyForLibraryDocumentIds,
   mockReprocessingCart,
   mockDocumentReviewToolbar,
   mockDocumentPropertiesSection,
@@ -52,6 +53,7 @@ const {
   ),
   mockGetReprocessingDrafts: vi.fn().mockResolvedValue([]),
   mockGetDocumentCollectionMemberships: vi.fn().mockResolvedValue([]),
+  mockGetEligibleReadyForLibraryDocumentIds: vi.fn().mockResolvedValue([]),
   mockReprocessingCart: vi.fn(() => <div data-testid={'batch-cart'}>{'Batch cart'}</div>),
   mockDocumentReviewToolbar: vi.fn(
     ({
@@ -114,6 +116,10 @@ vi.mock('@lib/queries/batchDraftQueries', () => ({
 
 vi.mock('@lib/queries/collectionMembershipQueries', () => ({
   getDocumentCollectionMemberships: mockGetDocumentCollectionMemberships,
+}))
+
+vi.mock('@lib/queries/readyForLibraryQueries', () => ({
+  getEligibleReadyForLibraryDocumentIds: mockGetEligibleReadyForLibraryDocumentIds,
 }))
 
 vi.mock('@organisms/DocumentVersionsButton', () => ({
@@ -225,7 +231,7 @@ describe('DocumentDetailPage', () => {
         createdAt: '2026-06-03T08:00:00Z',
       },
     ])
-    mockGetDocumentDetail.mockResolvedValue({
+    const detail = {
       document: {
         id: 'doc-1',
         name: 'Document One',
@@ -395,7 +401,8 @@ describe('DocumentDetailPage', () => {
       ],
       audits: [],
       state_history: [],
-    })
+    }
+    mockGetDocumentDetail.mockResolvedValue(detail)
 
     const markup = renderToStaticMarkup(
       await DocumentDetailPage({
@@ -453,10 +460,43 @@ describe('DocumentDetailPage', () => {
     expect(mockDocumentReviewToolbar).toHaveBeenCalledWith(
       expect.objectContaining({
         documentId: 'doc-1',
+        actionMode: 'review',
         hasOpenReprocessingDraft: false,
         isCandidate: true,
         isCanonical: true,
       }),
+      undefined,
+    )
+
+    mockGetEligibleReadyForLibraryDocumentIds.mockResolvedValueOnce(['doc-1'])
+    mockGetDocumentDetail.mockResolvedValueOnce({
+      ...detail,
+      state_history: [{ new_state: 'approved' }],
+    })
+    renderToStaticMarkup(
+      await DocumentDetailPage({
+        params: Promise.resolve({ id: 'doc-1' }),
+        searchParams: Promise.resolve({}),
+      }),
+    )
+    expect(mockGetEligibleReadyForLibraryDocumentIds).toHaveBeenCalledWith(['doc-1'])
+    expect(mockDocumentReviewToolbar).toHaveBeenLastCalledWith(
+      expect.objectContaining({ actionMode: 'ready' }),
+      undefined,
+    )
+
+    mockGetDocumentDetail.mockResolvedValueOnce({
+      ...detail,
+      state_history: [{ new_state: 'ingested_fedora' }],
+    })
+    renderToStaticMarkup(
+      await DocumentDetailPage({
+        params: Promise.resolve({ id: 'doc-1' }),
+        searchParams: Promise.resolve({}),
+      }),
+    )
+    expect(mockDocumentReviewToolbar).toHaveBeenLastCalledWith(
+      expect.objectContaining({ actionMode: 'published' }),
       undefined,
     )
   })

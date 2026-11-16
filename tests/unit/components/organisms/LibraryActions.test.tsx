@@ -26,7 +26,6 @@ vi.mock('@organisms/LibraryRemovalActions', () => ({
 }))
 
 import { LibraryActions } from '@organisms/LibraryActions'
-
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 let root: Root | undefined
 
@@ -38,7 +37,7 @@ afterEach(() => {
 })
 
 describe('LibraryActions', () => {
-  it('offers Reprocess and Remove through one menu and preserves the selected IDs for each dialog', () => {
+  it('offers Remove and Reprocess through one menu and preserves the selected IDs for each dialog', () => {
     const container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
@@ -46,28 +45,59 @@ describe('LibraryActions', () => {
     act(() => root?.render(<LibraryActions documentIds={['doc-1', 'doc-2']} onRemoved={onRemoved} />))
 
     const openMenu = () => act(() => container.querySelector<HTMLButtonElement>('button')?.click())
-    const clickItem = (label: string) => act(() => {
-      Array.from(document.body.querySelectorAll('[role="menuitem"]'))
-        .find((item) => item.textContent === label)
-        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    const clickItem = (label: string) =>
+      act(() => {
+        Array.from(document.body.querySelectorAll('[role="menuitem"]'))
+          .find((item) => item.textContent === label)
+          ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      })
 
     expect(container.textContent).toContain('Actions (2)')
     openMenu()
     expect(Array.from(document.body.querySelectorAll('[role="menuitem"]')).map((item) => item.textContent)).toEqual([
-      'Reprocess',
       'Remove',
+      'Reprocess',
     ])
     clickItem('Reprocess')
-    expect(mocks.reprocessDialog).toHaveBeenLastCalledWith(expect.objectContaining({ documentIds: ['doc-1', 'doc-2'], open: true }))
-    act(() => Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Close reprocessing')?.click())
+    expect(mocks.reprocessDialog).toHaveBeenLastCalledWith(
+      expect.objectContaining({ documentIds: ['doc-1', 'doc-2'], open: true }),
+    )
+    act(() =>
+      Array.from(container.querySelectorAll('button'))
+        .find((button) => button.textContent === 'Close reprocessing')
+        ?.click(),
+    )
 
     openMenu()
     clickItem('Remove')
-    expect(mocks.removalDialog).toHaveBeenLastCalledWith(expect.objectContaining({ documentIds: ['doc-1', 'doc-2'], open: true }))
-    act(() => Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Submit removal')?.click())
+    expect(mocks.removalDialog).toHaveBeenLastCalledWith(
+      expect.objectContaining({ documentIds: ['doc-1', 'doc-2'], open: true }),
+    )
+    act(() =>
+      Array.from(container.querySelectorAll('button'))
+        .find((button) => button.textContent === 'Submit removal')
+        ?.click(),
+    )
     expect(onRemoved).toHaveBeenCalledOnce()
     expect(mocks.removalDialog).toHaveBeenLastCalledWith(expect.objectContaining({ open: false }))
+  })
+
+  it('can hand Reprocess to the document details workflow', () => {
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+    const onReprocess = vi.fn()
+    act(() => root?.render(<LibraryActions documentIds={['doc-1']} onRemoved={vi.fn()} onReprocess={onReprocess} />))
+
+    act(() => container.querySelector<HTMLButtonElement>('button')?.click())
+    act(() => {
+      Array.from(document.body.querySelectorAll('[role="menuitem"]'))
+        .find((item) => item.textContent === 'Reprocess')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(onReprocess).toHaveBeenCalledOnce()
+    expect(mocks.reprocessDialog).not.toHaveBeenCalled()
   })
 
   it('disables the menu without a selected document', () => {

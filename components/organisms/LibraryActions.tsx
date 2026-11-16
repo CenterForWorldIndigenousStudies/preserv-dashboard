@@ -10,9 +10,10 @@ import { LibraryRemovalActions } from '@organisms/LibraryRemovalActions'
 interface LibraryActionsProps {
   documentIds: readonly string[]
   onRemoved: () => void
+  onReprocess?: () => void
 }
 
-export function LibraryActions({ documentIds, onRemoved }: LibraryActionsProps): ReactElement {
+export function LibraryActions({ documentIds, onRemoved, onReprocess }: LibraryActionsProps): ReactElement {
   const [reprocessIds, setReprocessIds] = useState<string[] | null>(null)
   const [removeIds, setRemoveIds] = useState<string[] | null>(null)
 
@@ -21,8 +22,8 @@ export function LibraryActions({ documentIds, onRemoved }: LibraryActionsProps):
       <SelectionActionsButton
         selectedCount={documentIds.length}
         actions={[
-          { label: 'Reprocess', onClick: () => setReprocessIds([...documentIds]) },
           { label: 'Remove', onClick: () => setRemoveIds([...documentIds]) },
+          { label: 'Reprocess', onClick: onReprocess ?? (() => setReprocessIds([...documentIds])) },
         ]}
       />
       {reprocessIds ? (
