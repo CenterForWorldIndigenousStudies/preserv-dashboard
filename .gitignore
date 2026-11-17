@@ -27,6 +27,7 @@ next-env.d.ts
 
 # generated
 .eslintcache
+/READY_FOR_LIBRARY_PUBLICATION.md
 *.scss.d.ts
 *.css.d.ts
 /dist/

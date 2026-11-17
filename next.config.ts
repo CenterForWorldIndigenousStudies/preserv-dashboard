@@ -17,6 +17,9 @@ const nextConfig: NextConfig = {
     minimumCacheTTL: 60,
     formats: ['image/avif', 'image/webp'],
   },
+  outputFileTracingIncludes: {
+    '/ready-for-library': ['READY_FOR_LIBRARY_PUBLICATION.md'],
+  },
 }
 
 export default nextConfig

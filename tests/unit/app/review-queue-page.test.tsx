@@ -41,6 +41,7 @@ describe('ReviewQueuePage', () => {
 
     expect(markup).toContain('Review Queue')
     expect(markup).toContain('Documents needing review.')
+    expect(markup).toContain('aria-label="Page information"')
     expect(markup).toContain(
       'Use this human judgment workspace to review documents, make deliberate approve or reject decisions, and move approved work to Ready for Library.',
     )

@@ -1,6 +1,9 @@
+import fs from 'node:fs'
+import path from 'node:path'
 import { Suspense, type ReactElement } from 'react'
-import { Stack } from '@mui/material'
-import Link from 'next/link'
+import { Box, Stack } from '@mui/material'
+import ReactMarkdown, { type Components } from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 import { NeedsReviewReasons } from '@molecules/NeedsReviewReasons'
 import { PageHeader } from '@organisms/PageHeader'
@@ -31,13 +34,46 @@ const READINESS_EXPLANATION_GROUPS = {
   ],
 }
 
+const PUBLICATION_GUIDE = 'READY_FOR_LIBRARY_PUBLICATION.md'
+const DASHBOARD_DOCS_URL =
+  'https://github.com/CenterForWorldIndigenousStudies/preserv-pipeline/blob/main/documentation/dashboard/'
+
+const guideComponents: Components = {
+  h1: ({ children }) => <h2>{children}</h2>,
+  h2: ({ children }) => <h3>{children}</h3>,
+  a: ({ href, children }) => (
+    <a href={href?.startsWith('http') ? href : href ? `${DASHBOARD_DOCS_URL}${href}` : undefined}>{children}</a>
+  ),
+}
+
+function readPublicationGuide(): string {
+  let filePath = path.join(process.cwd(), '../../documentation/dashboard', PUBLICATION_GUIDE)
+  if (!fs.existsSync(filePath)) {
+    filePath = path.join(process.cwd(), PUBLICATION_GUIDE)
+  }
+
+  return fs.readFileSync(filePath, 'utf-8').replace(/^Keywords:.*\r?\n/m, '')
+}
+
 function ReadyForLibraryReadinessExplanation(): ReactElement {
   return (
     <Stack spacing={1.5}>
       <NeedsReviewReasons value={READINESS_EXPLANATION_GROUPS} />
-      <Link href={'https://github.com/CenterForWorldIndigenousStudies/preserv-pipeline/blob/main/documentation/dashboard/READY_FOR_LIBRARY_PUBLICATION.md'}>
-        Ready for Library publication guide
-      </Link>
+      <Box
+        component={'section'}
+        sx={{
+          '& h2, & h3': { color: 'text.primary', mb: 1.5, mt: 2 },
+          '& p, & li': { color: 'text.primary', lineHeight: 1.6 },
+          '& a': { color: 'primary.main' },
+          '& ul': { listStyleType: 'disc', pl: 3 },
+          '& ol': { listStyleType: 'decimal', pl: 3 },
+          '& li': { mb: 0.75 },
+        }}
+      >
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={guideComponents}>
+          {readPublicationGuide()}
+        </ReactMarkdown>
+      </Box>
     </Stack>
   )
 }
@@ -80,9 +116,7 @@ async function ReadyForLibraryContent({ searchParams }: ReadyForLibraryPageProps
   ])
   const initialData = buildReadyForLibraryInitialData(result, initialQuery)
 
-  return (
-      <ReadyForLibraryTable initialData={initialData} initialQuery={initialQuery} filterOptions={filterOptions} />
-  )
+  return <ReadyForLibraryTable initialData={initialData} initialQuery={initialQuery} filterOptions={filterOptions} />
 }
 
 export default function ReadyForLibraryPage({ searchParams }: ReadyForLibraryPageProps): ReactElement {

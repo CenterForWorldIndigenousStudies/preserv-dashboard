@@ -19,6 +19,7 @@ import { getBatchDrafts } from '@lib/queries/batchDraftQueries'
 import { PAGE_LABELS } from '@constants/pageLabels'
 
 import { ReviewQueueWorkspace } from './ReviewQueueWorkspace'
+import { ReviewQueueHelp } from './ReviewQueueHelp'
 
 export const dynamic = 'force-dynamic'
 
@@ -116,6 +117,8 @@ export default async function ReviewQueuePage({ searchParams }: ReviewQueuePageP
         description={
           'Use this human judgment workspace to review documents, make deliberate approve or reject decisions, and move approved work to Ready for Library.'
         }
+        infoTitle={'Using the Review Queue'}
+        infoContent={<ReviewQueueHelp />}
       />
       <Suspense fallback={null}>
         <ReviewQueueWorkspace

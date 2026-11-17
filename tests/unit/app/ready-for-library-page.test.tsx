@@ -3,11 +3,7 @@ import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { ACCESS_LEVEL_OPTIONS } from '@constants/accessLevels'
-const {
-  mockGetReadyForLibraryDocuments,
-  mockGetDocumentFilterOptions,
-  mockReadyForLibraryTable,
-} = vi.hoisted(() => ({
+const { mockGetReadyForLibraryDocuments, mockGetDocumentFilterOptions, mockReadyForLibraryTable } = vi.hoisted(() => ({
   mockGetReadyForLibraryDocuments: vi.fn(),
   mockGetDocumentFilterOptions: vi.fn(),
   mockReadyForLibraryTable: vi.fn(() => null),
@@ -70,12 +66,12 @@ describe('ReadyForLibraryPage', () => {
         createdFrom: '2026-01-01',
         createdTo: '2026-12-31',
         collection: 'Collection A',
-      accessLevel: ACCESS_LEVEL_OPTIONS[0],
+        accessLevel: ACCESS_LEVEL_OPTIONS[0],
       },
     })
   })
 
-  it('renders the updated post-approval framing and helper copy', () => {
+  it('renders the publication guide inside the page information modal', () => {
     mockGetReadyForLibraryDocuments.mockResolvedValue({
       items: [
         {
@@ -98,6 +94,14 @@ describe('ReadyForLibraryPage', () => {
       'Select the documents you want to publish, then choose Actions &gt; Publish to create a new Data Ingester and Fedora Ingester batch.',
     )
     expect(markup).toContain('What this workspace tells you')
+    expect(markup).toContain('<h2>Ready for Library Publication</h2>')
+    expect(markup).toContain('<h3>Publish a selection</h3>')
+    expect(markup).toContain('<ol>')
+    expect(markup).toContain(
+      'href="https://github.com/CenterForWorldIndigenousStudies/preserv-pipeline/blob/main/documentation/dashboard/LIBRARY_REMOVAL.md"',
+    )
+    expect(markup).not.toContain('Keywords:')
+    expect(markup).not.toContain('Ready for Library publication guide</a>')
     expect(markup).toContain('Why documents appear here')
     expect(markup).toContain('Validation status and latest document state are APPROVED.')
     expect(markup).toContain('An access level is set.')
