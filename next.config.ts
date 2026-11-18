@@ -18,6 +18,7 @@ const nextConfig: NextConfig = {
     formats: ['image/avif', 'image/webp'],
   },
   outputFileTracingIncludes: {
+    '/db': ['PRESERVATION_DB.md'],
     '/ready-for-library': ['READY_FOR_LIBRARY_PUBLICATION.md'],
   },
 }

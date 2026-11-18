@@ -1,10 +1,9 @@
 {
   "name": "cwis-preservation-dashboard",
-  "version": "0.2.135",
+  "version": "0.2.136",
   "private": true,
   "scripts": {
     "build": "run-s db:prisma:generate build:next",
-    "prebuild:next": "bash scripts/sync-publication-guide.sh",
     "build:next": "next build",
     "contracts:sync": "sh -c 'bash ../../scripts/dashboard/sync-contracts.sh'",
     "db:prisma:generate": "prisma generate --schema=./lib/prisma/schema.prisma",
