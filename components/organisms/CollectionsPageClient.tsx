@@ -7,6 +7,7 @@ import { COLLECTIONS_PATH } from '@constants/paths'
 import { PAGE_LABELS } from '@constants/pageLabels'
 import { ReturnToPreviousPage } from '@atoms/ReturnToPreviousPage'
 import { CollectionDetails } from '@organisms/CollectionDetails'
+import { CollectionsHelp } from '@organisms/CollectionsHelp'
 import { CollectionsTable } from '@organisms/CollectionsTable'
 import { PageHeader } from '@organisms/PageHeader'
 import type { FilterOptions } from '@lib/search'
@@ -33,9 +34,7 @@ export function CollectionsPageClient({
 
   return (
     <Stack spacing={4}>
-      {collection ? (
-        <ReturnToPreviousPage href={returnHref} label={`Return to ${returnLocation}`} />
-      ) : null}
+      {collection ? <ReturnToPreviousPage href={returnHref} label={`Return to ${returnLocation}`} /> : null}
       <PageHeader
         eyebrow={isCollectionDetail ? PAGE_LABELS.collectionDetail : PAGE_LABELS.collections}
         title={collection?.collection_name ?? 'Document Collections'}
@@ -44,6 +43,8 @@ export function CollectionsPageClient({
             ? 'Manage this document collection and its associated documents.'
             : 'Browse all document collections and their associated documents.'
         }
+        infoTitle={isCollectionDetail ? undefined : 'Using Collections'}
+        infoContent={isCollectionDetail ? undefined : <CollectionsHelp />}
       />
 
       {collection ? (

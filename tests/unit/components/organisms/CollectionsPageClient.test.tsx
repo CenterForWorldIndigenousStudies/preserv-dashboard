@@ -59,14 +59,11 @@ describe('CollectionsPageClient', () => {
   })
 
   it('renders the collection table for the collection index', () => {
-    renderToStaticMarkup(
-      <CollectionsPageClient
-        filterOptions={filterOptions}
-        initialData={initialData}
-        initialQuery={initialQuery}
-      />,
+    const markup = renderToStaticMarkup(
+      <CollectionsPageClient filterOptions={filterOptions} initialData={initialData} initialQuery={initialQuery} />,
     )
 
+    expect(markup).toContain('aria-label="Page information"')
     expect(mockCollectionsTable).toHaveBeenCalledWith(
       expect.objectContaining({ initialData, initialQuery, filterOptions }),
       undefined,
@@ -87,20 +84,13 @@ describe('CollectionsPageClient', () => {
     expect(markup).toContain('← Return to My Document')
     expect(markup).toContain('href="/documents/doc-1"')
     expect(markup).toContain('Collection Details')
-    expect(mockCollectionDetails).toHaveBeenCalledWith(
-      expect.objectContaining({ collection }),
-      undefined,
-    )
+    expect(markup).not.toContain('aria-label="Page information"')
+    expect(mockCollectionDetails).toHaveBeenCalledWith(expect.objectContaining({ collection }), undefined)
     expect(mockCollectionsTable).not.toHaveBeenCalled()
   })
 
   it('returns directly opened collection details to Collections by default', () => {
-    const markup = renderToStaticMarkup(
-      <CollectionsPageClient
-        collection={collection}
-        filterOptions={filterOptions}
-      />,
-    )
+    const markup = renderToStaticMarkup(<CollectionsPageClient collection={collection} filterOptions={filterOptions} />)
 
     expect(markup).toContain('← Return to Collections')
     expect(markup).toContain('href="/collections"')
